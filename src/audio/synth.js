@@ -275,6 +275,11 @@ export const SFX = {
     a.tone({ type: 'pulse', duty: 0.125, freq: 300, freq2: 1800, dur: 0.16, vol: 0.12 });
     a.noiseHit({ dur: 0.3, vol: 0.14, type: 'highpass', f0: 2000, f1: 6000, q: 0.8 });
   },
+  zap(a) {
+    // storm: crackling square burst with a jittery pitch
+    for (let i = 0; i < 3; i++) a.tone({ type: 'pulse', duty: 0.5, freq: 900 * rnd(0.5), freq2: 300 * rnd(0.4), dur: 0.06, vol: 0.08, time: a.ctx.currentTime + i * 0.035 });
+    a.noiseHit({ dur: 0.14, vol: 0.12, type: 'highpass', f0: 3000, f1: 5000, q: 1 });
+  },
   warp(a) {
     a.tone({ type: 'triangle', freq: 600, freq2: 120, dur: 0.4, vol: 0.2, send: 0.5 });
     a.noiseHit({ dur: 0.45, vol: 0.12, type: 'lowpass', f0: 3000, f1: 200 });

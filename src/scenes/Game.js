@@ -8,7 +8,7 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { saveState, heroInfo, rollFineDrop, setStatMods, addMats, addPotions, CRAFT } from '../game/state.js';
+import { saveState, heroInfo, rollFineDrop, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, VALE_THEME } from '../audio/music.js';
 import { CURSE_TINT } from '../gfx/palette.js';
@@ -36,6 +36,7 @@ export class Game extends Phaser.Scene {
 
   create(data) {
     const st = (this.state = data.state);
+    st.stats ??= { kills: 0, levelUps: [] };
     setStatMods(st);
     this.difficulty = { dmg: tuning.difficulty[st.difficulty] ?? 1, hp: 1 };
     this.speed = this.registry.get('gameSpeed') ?? tuning.gameSpeed;
@@ -106,9 +107,10 @@ export class Game extends Phaser.Scene {
     // enemies around the party are all in place, so nothing starts mid-load.
     this.loading = true;
     this.busy = true;
-    if (!this.scene.isActive('Loading')) this.scene.launch('Loading');
+    const place = this.placeName(start.x, start.y);
+    if (!this.scene.isActive('Loading')) this.scene.launch('Loading', { title: place });
     const curtain = this.scene.get('Loading');
-    curtain.setTitle?.(this.placeName(start.x, start.y));
+    if (this.scene.isActive('Loading')) curtain.setTitle(place);
     this.prepareAt(start.x, start.y, curtain, 8).then(() => {
       this.loading = false;
       this.busy = false;
@@ -221,14 +223,15 @@ export class Game extends Phaser.Scene {
   enemyLevel(x, y) {
     const r = W.regions.find((k) => k.id === biomeAt(Math.floor(x / TILE), Math.floor(y / TILE)));
     const avg = this.party.reduce((a, h) => a + h.level, 0) / this.party.length;
-    return Phaser.Math.Clamp(Math.round(avg), r?.band[0] ?? 1, r?.band[1] ?? 9);
+    const [lo, hi] = regionBand(this.state, r);
+    return Phaser.Math.Clamp(Math.round(avg), lo, hi);
   }
 
   spawnEnemy(kind, x, y, engaged = false, elite = false) {
     if (kind === 'mire' && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
-    const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y), elite });
+    const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
     this.enemies.push(e);
     if (engaged) { this.fx.puff(x, y, 'sparkCurse'); e.aggroOn(this.leader, false); }
     return e;
@@ -444,6 +447,20 @@ export class Game extends Phaser.Scene {
       const hit = this.party.find((h) => h.alive && !h.downed && !h.zipping && Math.hypot(h.x - p.x, h.y - 8 - p.y) < h.r + 4);
       const t = this.painter.typeAt(p.x, p.y + 8);
       const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM;
+      if (hit && hit.wallT > 0 && !p.reflected && p.from?.alive) {
+        // Shield Wall: send the arrow back at the archer
+        p.reflected = true; p.life = 1.1;
+        const [rx, ry] = norm(p.from.x - p.x, p.from.y - 8 - p.y);
+        p.vx = rx * 230; p.vy = ry * 230; p.s.setRotation(Math.atan2(ry, rx));
+        audio.sfx('block'); this.fx.burst('spark', p.x, p.y, 6);
+        continue;
+      }
+      if (p.reflected) {
+        const e = this.enemies.find((k) => k.alive && Math.hypot(k.x - p.x, k.y - 8 - p.y) < k.r + 4);
+        if (e) { this.dealDamage(this.party.find((h) => h.wallT > 0) || this.leader, e, p.dmg * 1.5, { knock: 40 }); p.dead = true; p.s.destroy(); continue; }
+        if (p.life <= 0) { p.dead = true; p.s.destroy(); }
+        continue;
+      }
       if (hit) { hit.damage(p.dmg, p.from); this.fx.burst('spark', p.x, p.y, 4); }
       if (hit || wall || p.life <= 0) { p.dead = true; p.s.destroy(); }
     }
@@ -687,6 +704,7 @@ export class Game extends Phaser.Scene {
     });
     kb.on('keydown-ONE', () => this.leaderSkill(0));
     kb.on('keydown-TWO', () => this.leaderSkill(1));
+    kb.on('keydown-THREE', () => this.leaderSkill(2));
     kb.on('keydown-Z', () => this.useUltimate(this.leader));
     kb.on('keydown-TAB', (e) => { e.preventDefault?.(); this.swapLeader(); });
     kb.on('keydown-Q', () => this.swapLeader(-1));
@@ -809,16 +827,62 @@ export class Game extends Phaser.Scene {
   nearestHero(from, range) {
     if (this.calmT > 0 && from.team !== 'party') return null; // just arrived: enemies haven't noticed yet
     let best = null, bd = range;
-    for (const h of this.party) { if (!h.alive || h.downed || h.zipping) continue; const d = dist(h, from); if (d < bd) { bd = d; best = h; } }
+    for (const h of this.party) { if (!h.alive || h.downed || h.zipping || h.hiddenT > 0) continue; const d = dist(h, from); if (d < bd) { bd = d; best = h; } }
     return best;
   }
 
+  // Smoke clouds (Sable): enemies inside miss half their attacks.
+  addSmoke(x, y, r, t) {
+    const g = this.add.graphics().setDepth(y + 30).setAlpha(0.8);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2, d = r * (0.3 + Math.random() * 0.55);
+      g.fillStyle(i % 2 ? 0x6e6a87 : 0x45405e, 0.55).fillCircle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.6 - 4, 8 + Math.random() * 6);
+    }
+    (this.smokes ??= []).push({ x, y, r, t, g });
+    this.tweens.add({ targets: g, alpha: 0.55, duration: t * 1000, onComplete: () => g.destroy() });
+    this.time.delayedCall(t * 1000, () => { this.smokes = this.smokes.filter((k) => k.g !== g); });
+  }
+
+  inSmoke(x, y) { return (this.smokes || []).some((k) => Math.hypot(x - k.x, (y - k.y) / 0.6) < k.r); }
+
   taunt(by, range, t) { for (const e of this.enemies) if (e.alive && dist(e, by) < range) e.setTaunt(by, t); }
 
-  dealDamage(src, target, amount, { crit = false, knock = 40 } = {}) {
+  // All hero damage goes through here: element, passives and marks apply.
+  // opts: crit, knock, element (forced, e.g. a skill), spell, basic (weapon hit), noProc
+  dealDamage(src, target, amount, { crit = false, knock = 40, element = null, spell = false, basic = false, noProc = false } = {}) {
+    const hero = src?.team === 'party' && src.passive;
+    const weaponEl = src?.stats?.element;
+    const el = element || weaponEl;
+    if (target.elementMul) amount *= target.elementMul(el);
+    if (target.status?.weaken) amount *= 1.1;
+    if (target.marked) amount *= target.marked.mul;
+    if (hero) {
+      const bs = src.passive('backstab');
+      if (bs && !spell && target.view) {
+        const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
+        const [dx, dy] = norm(src.x - target.x, src.y - target.y);
+        if (f[0] * dx + f[1] * dy < -0.3) { amount *= 1.5 + 0.1 * (bs - 1); if (!target.backstabShown) { target.backstabShown = true; this.floatText(target.x, target.y - 34, 'BACKSTAB', 'fontPlain', 0xff9ad8); } }
+      }
+    }
     const dealt = target.damage(amount, src, { crit, knock });
     if (!dealt) return;
-    if (src.stats?.element && target.applyElement) target.applyElement(src.stats.element, src);
+    if (!noProc && target.applyElement) {
+      if (element) target.applyElement(element, src);
+      else if (weaponEl && (!basic || Math.random() < 0.25)) target.applyElement(weaponEl, src);
+      if (hero && src.envenom > 0 && !spell) { src.envenom--; target.applyElement('venom', src); }
+      if (hero && src.surgeT > 0 && spell) for (const e of ['fire', 'frost', 'storm']) if (e !== element) target.applyElement(e, src);
+      // Shock: this hit arcs to two nearby foes for 40%
+      if (target.status?.shock && el !== 'storm' && !target.arcing) {
+        const near = this.enemies.filter((e) => e !== target && e.alive && dist(e, target) < 60).slice(0, 2);
+        for (const e of near) { e.arcing = true; this.dealDamage(src, e, dealt * 0.4, { knock: 0, noProc: true }); e.arcing = false; this.fx.burst('spark', e.x, e.y - 8, 4); }
+      }
+      if (el === 'light' && hero) { const low = this.party.filter((p) => !p.downed).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; low?.heal(Math.round(dealt * 0.02)); }
+    }
+    if (hero) {
+      if (crit && src.passive('quickhands')) for (const k of src.skills) k.t = Math.max(0, k.t - 0.3 - 0.05 * (src.passive('quickhands') - 1));
+      if (crit && spell && src.passive('studious')) { const k = [...src.skills].sort((a, b) => b.t - a.t)[0]; if (k) k.t = Math.max(0, k.t - 1); }
+      if (src.passive('lightfingers') && !target.fingered && target.s?.gold) { target.fingered = true; if (Math.random() < 0.15 + 0.03 * (src.passive('lightfingers') - 1)) { for (let i = 0; i < 3; i++) this.dropCoin(target.x, target.y); this.floatText(target.x, target.y - 34, 'PILFERED', 'fontPlain', 0xf2c14e); } }
+    }
     src.addUlt?.(dealt * tuning.ultChargeDeal);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
@@ -836,7 +900,7 @@ export class Game extends Phaser.Scene {
       s.play('firebolt');
       if (o.kind === 'fireball') s.setScale(o.echo ? 1.2 : 1.6);
       const el = o.owner?.stats?.element;
-      if (o.echo) s.setTint(0xd28cff);
+      if (o.echo || o.kind === 'missile') s.setTint(0xd28cff);
       else if (el === 'frost') s.setTint(0x9fe6ff);
       else if (el === 'venom') s.setTint(0xa6ff7a);
     }
@@ -848,7 +912,7 @@ export class Game extends Phaser.Scene {
     const targets = [...this.enemies, ...(this.ward && this.ward.alive ? [this.ward] : []), ...this.breakables.filter((b) => b.alive)];
     for (const p of this.projectiles) {
       p.life -= dt;
-      if (p.target && p.target.alive && p.kind === 'bolt') {
+      if (p.target && p.target.alive && (p.kind === 'bolt' || p.kind === 'missile')) {
         const [nx, ny] = norm(p.target.x - p.x, p.target.y - (p.target.boss ? 24 : 8) - p.y);
         const sp = Math.hypot(p.vx, p.vy);
         p.vx += (nx * sp - p.vx) * Math.min(1, dt * 6);
@@ -866,15 +930,16 @@ export class Game extends Phaser.Scene {
         p.dead = true;
         p.s.destroy();
         if (p.kind === 'knife') { if (hit) this.dealDamage(p.owner, hit, p.dmg, { knock: 30 }); continue; }
+        if (p.kind === 'missile') { this.fx.puff(p.x, p.y, 'sparkCurse'); if (hit) this.dealDamage(p.owner, hit, p.dmg, { knock: 20, spell: true }); continue; }
         audio.sfx('fireImpact');
         this.fx.burst('ember', p.x, p.y, p.kind === 'fireball' ? 22 : 8);
         if (p.aoe) {
           this.fx.ring(p.x, p.y + 6, 'ringGold', (p.aoe / 8) * 1.2);
           this.shake(90, 0.005);
-          for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.7), { knock: 90 });
+          for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.7), { knock: 90, element: p.element, spell: p.spell });
         } else if (hit) {
           const crit = Math.random() < p.owner.stats.crit;
-          this.dealDamage(p.owner, hit, p.dmg * (crit ? 2 : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 35 });
+          this.dealDamage(p.owner, hit, p.dmg * (crit ? tuning.critMult : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 35, element: p.element, spell: p.spell, basic: p.basic });
         }
       }
     }
@@ -1080,7 +1145,8 @@ export class Game extends Phaser.Scene {
     this.fx.burst('curse', e.x, e.y - 6, 10);
     const n = Phaser.Math.Between(...e.s.gold);
     for (let i = 0; i < n; i++) this.dropCoin(e.x, e.y);
-    for (const h of this.party) if (!h.downed) h.gainXp(e.s.xp);
+    for (const h of this.party) if (!h.downed) h.gainXp(xpFor(h.level, e.level, e.s.xp));
+    this.state.stats.kills++;
     const drop = rollFineDrop(this.state);
     if (drop) this.dropLoot(drop, e.x, e.y);
     const got = {};
@@ -1161,7 +1227,9 @@ export class Game extends Phaser.Scene {
   }
 
   onLevelUp(h) {
+    if (h === this.leader) this.state.stats.levelUps.push({ level: h.level, t: Math.round(this.state.playTime), kills: this.state.stats.kills });
     audio.sfx('levelUp');
+    this.time.delayedCall(900, () => this.floatText(h.x, h.y - 44, '+1 SKILL POINT', 'fontPlain', 0x8cff8c));
     this.floatText(h.x, h.y - 34, 'LEVEL UP!', 'fontGold', 0xffffff, true);
     this.fx.burst('gold', h.x, h.y - 10, 16);
     this.events.emit('party');
@@ -1578,6 +1646,7 @@ export class Game extends Phaser.Scene {
     }
     const fighting = this.golem || this.enemies.some((e) => e.alive && e.engaged && dist(e, L) < 220);
     if (fighting) this.combatHold = 2.5; else this.combatHold -= dt;
+    if (this.combatHold <= 0) for (const h of this.party) h.lastStandUsed = false;
     music.setCombat(this.combatHold > 0);
 
     for (const b of this.breakables) {
@@ -1606,6 +1675,18 @@ export class Game extends Phaser.Scene {
       `ASSETS ${[...loaded].join(',').toUpperCase()}`,
       `${assetStats.log.slice(-2).join('  ').toUpperCase()}`,
       `TILE ${Math.floor(this.leader.x / TILE)},${Math.floor(this.leader.y / TILE)}  ${this.region?.toUpperCase()}`,
+      this.pacingLine(),
     ];
+  }
+
+  // Pacing telemetry for tuning the XP curve: time on this level, how long
+  // the last level took, kills per minute over the whole save.
+  pacingLine() {
+    const st = this.state, ups = st.stats.levelUps, L = this.leader;
+    const last = ups[ups.length - 1], prev = ups[ups.length - 2];
+    const since = (st.playTime - (last?.t || 0)) / 60;
+    const took = last ? (last.t - (prev?.t || 0)) / 60 : null;
+    const kpm = st.stats.kills / Math.max(1, st.playTime / 60);
+    return `PACE LV${L.level} ${Math.round((L.hs.xp / xpToNext(L.level)) * 100)}%  ON LV ${since.toFixed(1)}M  LAST ${took === null ? '-' : took.toFixed(1) + 'M'}  KILLS/MIN ${kpm.toFixed(1)}`;
   }
 }

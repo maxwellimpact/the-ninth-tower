@@ -19,7 +19,8 @@
   "drops": {
    "gel": 0.4
   },
-  "weak": "fire"
+  "weak": "fire",
+  "hexed": true
  },
  "goblin": {
   "name": "HEX GOBLIN",
@@ -41,7 +42,8 @@
   "drops": {
    "scrap": 0.5
   },
-  "weak": "venom"
+  "weak": "venom",
+  "hexed": true
  },
  "archer": {
   "name": "GOBLIN ARCHER",
@@ -63,7 +65,8 @@
   "drops": {
    "scrap": 0.5
   },
-  "weak": "venom"
+  "weak": "venom",
+  "hexed": true
  },
  "knight": {
   "name": "HEX KNIGHT",
@@ -86,7 +89,8 @@
    "ore": 0.5,
    "scrap": 0.6
   },
-  "weak": "fire"
+  "weak": "fire",
+  "hexed": true
  },
  "mire": {
   "name": "MIRE SLIME",
@@ -134,6 +138,7 @@
    "ore": 1,
    "crystal": 1
   },
-  "weak": "frost"
+  "weak": "frost",
+  "hexed": true
  }
 }

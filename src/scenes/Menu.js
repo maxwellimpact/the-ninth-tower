@@ -3,7 +3,8 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { SLOTS, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName } from '../game/state.js';
+import { SLOTS, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
+import tuning from '../data/tuning.json';
 import { panel, RARITY } from './UI.js';
 import { GearFX } from '../game/gearfx.js';
 
@@ -111,7 +112,7 @@ export class Menu extends Phaser.Scene {
     const h = this.hero;
 
     // header: tabs
-    ['gear', 'craft', 'bag'].forEach((tb, i) => {
+    ['gear', 'skills', 'craft', 'bag'].forEach((tb, i) => {
       const x = 6 + i * 38, sel = tb === this.tab;
       panel(g, x, 4, 34, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
       this.t(x + 17 - tb.length * 2.5, 8, tb.toUpperCase(), sel ? 'fontGold' : 'fontPlain');
@@ -136,6 +137,7 @@ export class Menu extends Phaser.Scene {
     else this.t(12 + this.g.party.length * 28, 30, name, 'font');
 
     if (this.tab === 'craft') { this.renderCraft(W, H, mode); return; }
+    if (this.tab === 'skills') { this.renderSkills(W, H, mode); return; }
     if (mode === 'wide') {
       const top = 52, wL = 92, colM = 10 + wL + 8;
       const wM = Math.min(130, Math.max(110, (W - 230) * 0.45));
@@ -164,6 +166,78 @@ export class Menu extends Phaser.Scene {
       this.drawList(8, sy + 54, W - 16, H - 40, 24, false);
       this.drawDesc(8, H - 34, W - 16);
     }
+  }
+
+  // Skills: spend points to learn / rank up (1-5), tap a learned skill to
+  // equip or unequip it (3 active slots, 2 passive slots).
+  renderSkills(W, H, mode) {
+    const g = this.gfx, h = this.hero, hs = h.hs;
+    const all = heroSkillIds(h.def.id).sort((a, b) => a[1].unlock - b[1].unlock);
+    const act = all.filter(([, d]) => !d.passive), pas = all.filter(([, d]) => d.passive);
+    const top = mode === 'portrait' ? 70 : 58;
+    const spTxt = `SKILL POINTS ${hs.sp || 0}`;
+    this.t(W - 10 - spTxt.length * 5, top - 10, spTxt, hs.sp ? 'fontGold' : 'fontPlain');
+    const nA = hs.skills.active.filter(Boolean).length, nP = hs.skills.passive.filter(Boolean).length;
+    const row = (x, y, w, rh, [sid, d]) => {
+      const rank = skillRank(hs, sid), locked = hs.level < d.unlock;
+      const eq = (d.passive ? hs.skills.passive : hs.skills.active).includes(sid);
+      const sel = this.skillSel === sid;
+      panel(g, x, y, w, rh - 3, sel ? 0x3a2f52 : C.night, eq ? C.gold : sel ? C.stone : C.slate);
+      g.fillStyle(C.ink).fillRect(x + 2, y + Math.floor((rh - 3 - 16) / 2), 16, 16);
+      const ic = this.add.image(x + 2, y + Math.floor((rh - 3 - 16) / 2), d.icon).setOrigin(0);
+      if (!rank) ic.setAlpha(0.35);
+      this.dyn.push(ic);
+      this.t(x + 21, y + 2, d.name, rank ? 'font' : 'fontPlain', rank ? (eq ? 0xfff0a0 : 0xffffff) : 0x9d93b3);
+      if (locked) this.t(x + 21, y + rh - 11, `UNLOCKS AT LV${d.unlock}`, 'fontPlain', 0x9d93b3);
+      else {
+        for (let r = 0; r < 5; r++) g.fillStyle(r < rank ? C.gold : C.slate).fillRect(x + 21 + r * 6, y + rh - 9, 4, 3);
+        this.t(x + 54, y + rh - 11, eq ? 'EQUIPPED' : rank ? 'TAP TO EQUIP' : 'NOT LEARNED', 'fontPlain', eq ? 0xf2c14e : 0x9d93b3);
+      }
+      this.btn(x, y, w - 30, rh - 3, () => {
+        this.skillSel = sid;
+        if (rank) {
+          if (toggleSkill(hs, sid)) { audio.sfx('equip'); h.buildSkills(); h.refreshStats(); }
+          else audio.sfx('click');
+        } else audio.sfx('click');
+        this.render();
+      });
+      // rank-up button
+      const cost = nextRankCost(hs, sid), can = canRankUp(hs, sid);
+      if (cost !== null && !locked) {
+        const bx = x + w - 28, by = y + 3;
+        panel(g, bx, by, 25, rh - 9, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
+        this.t(bx + 3, by + Math.floor((rh - 9) / 2) - 3, `+${cost}`, can ? 'fontGold' : 'fontPlain');
+        this.btn(bx - 2, y, 30, rh - 3, () => {
+          this.skillSel = sid;
+          if (rankUp(hs, sid)) { audio.sfx('levelUp'); h.buildSkills(); h.refreshStats(); } else audio.sfx('click');
+          this.render();
+        });
+      }
+    };
+    if (mode === 'portrait') {
+      const rh = 24, x = 8, w = W - 16;
+      this.t(x, top - 10, `ACTIVE ${nA}/${tuning.activeSlots}`, 'fontPlain');
+      act.forEach((e, i) => row(x, top + i * rh, w, rh, e));
+      const py = top + act.length * rh + 12;
+      this.t(x, py - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
+      pas.forEach((e, i) => row(x, py + i * rh, w, rh, e));
+      this.drawSkillDesc(x, py + pas.length * rh + 4, w);
+    } else {
+      const rh = mode === 'wide' ? 24 : 21, gap = 6, cw = Math.floor((W - 16 - gap) / 2);
+      this.t(8, top - 10, `ACTIVE ${nA}/${tuning.activeSlots}`, 'fontPlain');
+      act.forEach((e, i) => row(8, top + i * rh, cw, rh, e));
+      this.t(8 + cw + gap, top - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
+      pas.forEach((e, i) => row(8 + cw + gap, top + i * rh, cw, rh, e));
+      this.drawSkillDesc(8 + cw + gap, top + pas.length * rh + 4, cw);
+    }
+  }
+
+  drawSkillDesc(x, y, w) {
+    const sid = this.skillSel;
+    const d = sid && heroSkillIds(this.hero.def.id).find(([k]) => k === sid)?.[1];
+    if (!d) { this.t(x, y, 'TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +15%).', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    this.t(x, y, d.name, 'fontGold');
+    this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain').setMaxWidth(w);
   }
 
   drawPreview(x, y, w, h) {

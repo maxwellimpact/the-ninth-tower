@@ -6,13 +6,14 @@ import items from '../data/items.json';
 import tuning from '../data/tuning.json';
 import crafting from '../data/crafting.json';
 import world from '../data/world.json';
+import skills from '../data/skills.json';
 
 export const SAVE_KEY = 'ninthTower.save.v1';
 export const SLOTS = ['head', 'body', 'weapon', 'offhand'];
 
 export function newState(leaderId) {
   const heroes = {};
-  for (const h of heroData) heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip } };
+  for (const h of heroData) heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip }, ...newSkillState(h.id) };
   return {
     version: 1,
     leader: leaderId,
@@ -31,9 +32,59 @@ export function newState(leaderId) {
     flies: [],          // indices into world.flies (+ 'whack' for the minigame prize)
     flyRewards: 0,      // reward tiers claimed from the Frog King
     playTime: 0,
+    stats: { kills: 0, levelUps: [] }, // pacing telemetry (debug readout)
     savedAt: null,
   };
 }
+
+// ------------------------------------------------------------------ skills
+// Per hero: ranks of learned skills/passives, which are equipped, unspent points.
+export const heroSkillIds = (id) => Object.entries(skills).filter(([, s]) => s.hero === id && !s.ult);
+export const skillDef = (sid) => skills[sid];
+
+export function newSkillState(id) {
+  const starters = heroSkillIds(id).filter(([, s]) => s.unlock === 1);
+  const act = starters.filter(([, s]) => !s.passive).map(([k]) => k);
+  const pas = starters.filter(([, s]) => s.passive).map(([k]) => k);
+  const ranks = Object.fromEntries(starters.map(([k]) => [k, 1]));
+  return { skills: { ranks, active: [...act, null].slice(0, tuning.activeSlots), passive: [...pas, null].slice(0, tuning.passiveSlots) }, sp: 0 };
+}
+
+// Saves from the demo: start the hero on the new tree and refund a point per level.
+function migrateSkills(id, hs) {
+  Object.assign(hs, newSkillState(id));
+  hs.sp = Math.max(0, (hs.level || 1) - 1);
+}
+
+export const skillRank = (hs, sid) => hs.skills?.ranks[sid] || 0;
+export const nextRankCost = (hs, sid) => tuning.skillRankCost[skillRank(hs, sid) + 1] ?? null;
+export function canRankUp(hs, sid) {
+  const d = skills[sid];
+  const cost = nextRankCost(hs, sid);
+  return !!d && cost !== null && hs.level >= d.unlock && hs.sp >= cost;
+}
+export function rankUp(hs, sid) {
+  if (!canRankUp(hs, sid)) return false;
+  hs.sp -= nextRankCost(hs, sid);
+  hs.skills.ranks[sid] = skillRank(hs, sid) + 1;
+  // auto-fill an empty slot with a newly learned skill
+  const list = skills[sid].passive ? hs.skills.passive : hs.skills.active;
+  if (!list.includes(sid)) { const i = list.indexOf(null); if (i >= 0) list[i] = sid; }
+  return true;
+}
+// Toggle a learned skill into / out of its slots.
+export function toggleSkill(hs, sid) {
+  if (!skillRank(hs, sid)) return false;
+  const list = skills[sid].passive ? hs.skills.passive : hs.skills.active;
+  const i = list.indexOf(sid);
+  if (i >= 0) { if (!skills[sid].passive && list.filter(Boolean).length <= 1) return false; list[i] = null; return true; }
+  const e = list.indexOf(null);
+  if (e < 0) return false;
+  list[e] = sid;
+  return true;
+}
+// Rank multiplier: +15% per rank above 1.
+export const rankMul = (rank) => 1 + Math.max(0, rank - 1) * tuning.skillRankBonus;
 
 export function saveState(state) {
   try {
@@ -55,6 +106,8 @@ export function loadState() {
     s.refine ??= {};
     s.flies ??= [];
     s.flyRewards ??= 0;
+    for (const [id, hs] of Object.entries(s.heroes)) if (!hs.skills) migrateSkills(id, hs);
+    s.stats ??= { kills: 0, levelUps: [] };
     return s;
   } catch { return null; }
 }
@@ -68,9 +121,9 @@ let MODS = { refine: {}, blessing: false };
 export function setStatMods(state) { MODS = { get refine() { return state.refine; }, get blessing() { return !!state.flags.blessing; } }; }
 
 // Level + gear -> final stats.
-export function computeStats(id, level, equip) {
+export function computeStats(id, level, equip, hs = null) {
   const base = heroInfo(id).stats;
-  const s = { ...base, def: 0, maxHp: Math.round(base.maxHp * Math.pow(1.1, level - 1)), atk: base.atk + (level - 1) * 2 };
+  const s = { ...base, def: 0, maxHp: Math.round(base.maxHp * (1 + (level - 1) * tuning.hpGrowth)), atk: base.atk + (level - 1) * tuning.atkGrowth };
   for (const slot of SLOTS) {
     const it = items[equip[slot]];
     if (!it) continue;
@@ -87,14 +140,23 @@ export function computeStats(id, level, equip) {
   // element comes from the weapon, else the off-hand (Sable's twin fang, Pip's grimoire)
   s.element = items[equip.weapon]?.element || items[equip.offhand]?.element || null;
   s.passives = SLOTS.map((k) => items[equip[k]]?.passive).filter(Boolean);
+  // equipped stat passives
+  const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);
+  if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
   return s;
 }
 
 // Damage after defence (diminishing returns).
-export const mitigate = (raw, def) => raw * (tuning.defK / (tuning.defK + def));
+// K grows with the attacker's level so armour keeps mattering late.
+export const mitigate = (raw, def, attackerLevel = 1) => { const k = tuning.defK + 6 * (attackerLevel - 1); return raw * (k / (k + Math.max(0, def))); };
 
 // steeper curve: linear + quadratic term so mid/late levels take real effort
 export const xpToNext = (level) => tuning.xpBase + level * tuning.xpPerLevel + level * level * (tuning.xpQuad || 0);
+// XP a hero earns from an enemy: damped when the enemy is far below the hero.
+export function xpFor(heroLevel, enemyLevel, xp) {
+  const gap = heroLevel - enemyLevel - tuning.overLevelGrace;
+  return Math.max(1, Math.round(xp * (gap > 0 ? Math.max(tuning.overLevelMin, 1 - gap * tuning.overLevelPenalty) : 1)));
+}
 
 // Stat delta of swapping `newId` into its slot for this hero.
 export function statDelta(id, level, equip, newId) {
@@ -156,3 +218,18 @@ export function sellPrice(itemId) {
 
 export function addMats(state, mats = {}) { for (const [k, n] of Object.entries(mats)) state.materials[k] = (state.materials[k] || 0) + n; }
 export function addPotions(state, p = {}) { for (const [k, n] of Object.entries(p)) state.potions[k] = (state.potions[k] || 0) + n; }
+
+// ------------------------------------------------------------ level bands
+// C1: the four outer regions take their band from how many outer Ward Stones
+// are already down; a freed region keeps the band it had, but never falls
+// more than 6 levels below the current outer floor.
+export const OUTER_REGIONS = ['marsh', 'gloam', 'cinder', 'frost'];
+export const outerWardsDown = (state) => OUTER_REGIONS.filter((r) => state.flags[`ward_${r}`]).length;
+export function regionBand(state, r) {
+  if (!r) return [1, 9];
+  if (!r.outer) return r.band;
+  const floor = 6 + 4 * outerWardsDown(state);
+  const frozen = state.flags[`band_${r.outer}`];
+  if (frozen) { const f = Math.max(frozen[0], floor - 6); return [f, f + (frozen[1] - frozen[0])]; }
+  return [floor, floor + 8];
+}

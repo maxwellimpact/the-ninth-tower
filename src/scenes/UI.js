@@ -28,9 +28,9 @@ export class UI extends Phaser.Scene {
     // combat cluster (bottom left): dodge, two skills, the leader's ultimate
     // combat grid (bottom left), all buttons the same size, each labelled:
     //   [ULT ]  [ALLY ULT] [ALLY ULT]
-    //   [DODGE] [SKILL 1]  [SKILL 2]
+    //   [DODGE] [SKILL 1]  [SKILL 2]  [SKILL 3]
     const SZ = 26;
-    this.skillBtns = [0, 1].map((i) => this.makeButton('icon_bash', () => this.g.leaderSkill(i), `${i + 1}`, null, SZ, true));
+    this.skillBtns = [0, 1, 2].map((i) => this.makeButton('icon_bash', () => this.g.leaderSkill(i), `${i + 1}`, null, SZ, true));
     this.dodgeBtn = this.makeButton('icon_dodge', () => { const L = this.g.leader; L.dodge(...L.facingVec()); }, 'SPC', null, SZ, true);
     this.ultBtn = this.makeButton('icon_meteor', () => this.g.useUltimate(this.g.leader), 'Z', null, SZ, true);
     this.allyBtns = [0, 1].map((i) => this.makeButton('icon_meteor', () => { const a = this.allies()[i]; if (a) this.g.useUltimate(a); }, '', null, SZ, true));
@@ -38,7 +38,7 @@ export class UI extends Phaser.Scene {
     this.dodgeBtn.lbl.setText('DODGE');
     this.arcG = this.add.graphics().setDepth(10); // recharge arcs drawn over the icons
     // touch devices don't need keyboard hints on the round buttons
-    if (this.sys.game.device.input.touch) for (const b of [this.dodgeBtn, this.ultBtn, ...this.skillBtns]) b.key.setVisible(false);
+    if (this.sys.game.device.input.touch) for (const b of [this.dodgeBtn, this.ultBtn, ...this.skillBtns]) { b.hideKey = true; b.key.setVisible(false); }
     this.bagBtn = this.makeButton('icon_bag', () => this.g.openMenu(), 'I');
     this.potBtn = this.makeButton('icon_potion', () => this.g.usePotion('potion'), 'H', null, 18);
     this.elxBtn = this.makeButton('icon_elixir', () => this.g.usePotion('elixir'), 'J', null, 18);
@@ -119,7 +119,7 @@ export class UI extends Phaser.Scene {
 
   setButtonVisible(b, v) {
     b.visible = v;
-    b.icon?.setVisible(v); b.key.setVisible(v); b.label?.setVisible(v);
+    b.icon?.setVisible(v); b.key.setVisible(v && !b.hideKey); b.label?.setVisible(v);
     if (v) b.zone.setInteractive(); else b.zone.disableInteractive();
   }
 
@@ -160,7 +160,7 @@ export class UI extends Phaser.Scene {
     //                                [DODGE] [S1]
     const colX = (c) => 6 + L0 + c * 38;
     const rowB = H - 40, rowT = rowB - 40;
-    [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB],
+    [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB], [this.skillBtns[2], 3, rowB],
       [this.ultBtn, 0, rowT], [this.allyBtns[0], 1, rowT], [this.allyBtns[1], 2, rowT]].forEach(([b, c, y]) => { b.x = colX(c); b.y = y; });
     for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl.setPosition(b.x + b.size / 2, b.y + b.size + 2);
     // utility, bottom right: bag + flasks
@@ -186,8 +186,8 @@ export class UI extends Phaser.Scene {
     this.coin.setPosition(W - 84, 8 + T0);
     this.goldTxt.setPosition(W - 74, 9 + T0);
     this.toast.setPosition(W - 8, 72);
-    this.hint.setPosition(124 + L0, H - 9).setMaxWidth(Math.max(40, W - 210));
-    if (W < 320) this.hint.setVisible(false); // no room beside the combat grid on narrow phones
+    this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
+    if (W < 360) this.hint.setVisible(false); // no room beside the combat grid on narrow phones
     this.bannerT.setPosition(W / 2, 40);
     this.bannerS.setPosition(W / 2, 56);
     this.bossName.setPosition(W / 2, 12);
@@ -325,7 +325,15 @@ export class UI extends Phaser.Scene {
       p.nm.setTint(lead ? C.goldL : 0xffffff);
     }
     const L = game.leader;
-    L.skills.forEach((s, i) => { const b = this.skillBtns[i]; b.icon.setTexture(s.icon); b.lbl.setText(s.short || s.name); this.drawBtn(g, b, s.t / s.cd); });
+    this.skillBtns.forEach((b, i) => {
+      const s = L.skills[i];
+      this.setButtonVisible(b, !!s);
+      b.lbl.setVisible(!!s);
+      if (!s) return;
+      if (this.textures.exists(s.icon)) b.icon.setTexture(s.icon);
+      b.lbl.setText(s.short || s.name);
+      this.drawBtn(g, b, s.t / s.cd);
+    });
     this.drawBtn(g, this.dodgeBtn, L.dodgeCd / 0.55);
     // ultimate: its own icon, a slow clockwise recharge sweep, gold pulse when ready
     const u = L.ultimate;

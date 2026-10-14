@@ -5,7 +5,8 @@ import { CURSE_TINT } from '../gfx/palette.js';
 import skillData from '../data/skills.json';
 import enemyData from '../data/enemies.json';
 import tuning from '../data/tuning.json';
-import { computeStats, heroInfo, mitigate, xpToNext } from './state.js';
+import { computeStats, heroInfo, mitigate, xpToNext, skillRank, rankMul } from './state.js';
+import { SKILL_FX, TARGETED } from './skills.js';
 import { bakeHero } from './bake.js';
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -90,10 +91,11 @@ export class Unit {
 import heroList from '../data/heroes.json';
 export const HERO_STATS = Object.fromEntries(heroList.map((h) => [h.id, h.stats]));
 export const SKILLS = Object.fromEntries(heroList.map((h) => [h.id, h.skills.map((id) => ({ id, ...skillData[id] }))]));
+const critMul = () => tuning.critMult || 1.75;
 
 export class Hero extends Unit {
   constructor(scene, id, hs, x, y) {
-    const st = computeStats(id, hs.level, hs.equip);
+    const st = computeStats(id, hs.level, hs.equip, hs);
     const texKey = bakeHero(scene, id, hs.equip);
     super(scene, x, y, { key: texKey, frame: 'idle_down_0', maxHp: st.maxHp, team: 'party', r: 5 });
     const info = heroInfo(id);
@@ -102,7 +104,9 @@ export class Hero extends Unit {
     this.def = { id, name: info.name, title: info.title, voice: info.voice };
     this.stats = st;
     this.hp = hs.hp ?? st.maxHp;
-    this.skills = info.skills.map((sid) => ({ id: sid, ...skillData[sid], t: 0 }));
+    this.skills = [];
+    this.buildSkills();
+    this.buffs = {};
     this.ultimate = { id: info.ultimate, ...skillData[info.ultimate] };
     this.shield = 0; this.shieldT = 0;
     this.isLeader = false;
@@ -129,10 +133,44 @@ export class Hero extends Unit {
   set ult(v) { this.hs.ult = Math.max(0, Math.min(100, v)); }
   addUlt(n) { if (!this.downed) this.ult = this.ult + n; }
 
+  // Equipped active skills (keeps cooldowns across loadout changes).
+  buildSkills() {
+    const prev = Object.fromEntries((this.skills || []).map((k) => [k.id, k.t]));
+    this.skills = this.hs.skills.active.filter(Boolean).map((sid) => ({ id: sid, ...skillData[sid], t: prev[sid] || 0, rank: skillRank(this.hs, sid) }));
+  }
+
+  // Rank of an equipped passive (0 when not equipped).
+  passive(id) { return this.hs.skills.passive.includes(id) ? skillRank(this.hs, id) : 0; }
+
+  // Lock into a skill action. extra: { hitAt, resolve(), tick(a, dt) }
+  act(id, dur, anim, extra = {}) {
+    this.action = { type: 'skill', id, t: 0, dur, ...extra };
+    this.anim = '';
+    if (anim) this.play(anim);
+  }
+
+  buff(stat, mul, t) { this.buffs[stat] = { mul, t }; }
+  buffMul(stat) { return this.buffs[stat]?.mul || 1; }
+
+  heal(amt) {
+    if (this.downed || amt <= 0) return;
+    const before = this.hp;
+    this.hp = Math.min(this.maxHp, this.hp + amt);
+    if (this.hp > before) { this.scene.floatText(this.x, this.y - 26, `+${this.hp - before}`, 'font', 0x8cff8c); this.scene.fx.heal(this.x, this.y); }
+  }
+
+  // Recompute stats only (skill/passive changes).
+  refreshStats() {
+    const frac = this.hp / this.maxHp;
+    this.stats = computeStats(this.def.id, this.hs.level, this.hs.equip, this.hs);
+    this.maxHp = this.stats.maxHp;
+    this.hp = Math.max(1, Math.round(this.maxHp * frac));
+  }
+
   // Re-bake sprites and recompute stats after an equipment change.
   refreshGear() {
     const frac = this.hp / this.maxHp;
-    this.stats = computeStats(this.def.id, this.hs.level, this.hs.equip);
+    this.stats = computeStats(this.def.id, this.hs.level, this.hs.equip, this.hs);
     this.maxHp = this.stats.maxHp;
     this.hp = Math.max(1, Math.round(this.maxHp * frac));
     const old = this.texKey;
@@ -197,14 +235,14 @@ export class Hero extends Unit {
     const sc = this.scene;
     if (this.def.id === 'pip') {
       const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
-      sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8 + ny * 6, vx: nx * 190, vy: ny * 190, dmg: this.stats.atk, kind: 'bolt', target });
+      sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8 + ny * 6, vx: nx * 190, vy: ny * 190, dmg: this.stats.atk, kind: 'bolt', target, spell: true, basic: true });
       this.maybeEcho(target, this.stats.atk * 0.6, 'bolt');
       return;
     }
     if (!target.alive || dist(this, target) > this.stats.range + target.r + 8) return;
     const crit = this.nextCrit || Math.random() < this.stats.crit;
     this.nextCrit = false;
-    sc.dealDamage(this, target, this.stats.atk * (crit ? 2 : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40 });
+    sc.dealDamage(this, target, this.stats.atk * (crit ? critMul() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40, basic: true });
   }
 
   // Orb of Echoes: every third spell repeats as a purple echo bolt from the orb.
@@ -241,80 +279,12 @@ export class Hero extends Unit {
   useSkill(i, target) {
     const sk = this.skills[i];
     if (!sk || sk.t > 0 || !this.canAct()) return false;
+    const fx = SKILL_FX[sk.id];
+    if (!fx) return false;
     const sc = this.scene;
-    const enemyNear = target && target.alive ? target : sc.nearestEnemy(this, sk.range || 120);
-    switch (sk.id) {
-      case 'bash': {
-        const t = enemyNear;
-        let [nx, ny] = t ? norm(t.x - this.x, t.y - this.y) : this.facingVec();
-        this.face(nx, ny);
-        this.action = { type: 'skill', id: 'bash', t: 0, dur: 0.3, nx, ny, hitAt: 0.16 };
-        this.anim = ''; this.play('attack');
-        audio.sfx('dash');
-        break;
-      }
-      case 'taunt': {
-        this.action = { type: 'skill', id: 'taunt', t: 0, dur: 0.4 };
-        this.anim = ''; this.play('cast');
-        this.taunting = 4;
-        sc.taunt(this, 110, 4);
-        audio.sfx('aggro'); audio.sfx('bash');
-        sc.fx.ring(this.x, this.y - 4, 'ringRed', 6);
-        sc.floatText(this.x, this.y - 30, 'TAUNT!', 'fontGold');
-        break;
-      }
-      case 'fireball': {
-        const t = enemyNear;
-        if (!t) return false;
-        this.face(t.x - this.x, t.y - this.y);
-        this.action = { type: 'skill', id: 'fireball', t: 0, dur: 0.4, hitAt: 0.2, target: t };
-        this.anim = ''; this.play('cast');
-        audio.sfx('fireCast');
-        break;
-      }
-      case 'mend': {
-        this.action = { type: 'skill', id: 'mend', t: 0, dur: 0.5 };
-        this.anim = ''; this.play('cast');
-        audio.sfx('heal');
-        for (const h of sc.party) {
-          if (!h.alive || dist(h, this) > 140) continue;
-          if (h.downed) h.revive(0.35);
-          const amt = Math.round(h.maxHp * 0.35);
-          h.hp = Math.min(h.maxHp, h.hp + amt);
-          sc.floatText(h.x, h.y - 26, `+${amt}`, 'font', 0x8cff8c);
-          sc.fx.heal(h.x, h.y);
-        }
-        break;
-      }
-      case 'step': {
-        const t = enemyNear;
-        if (!t || dist(this, t) > sk.range) return false;
-        sc.fx.puff(this.x, this.y, 'sparkCurse');
-        // appear behind the target (opposite side from where we stand)
-        const [nx, ny] = norm(t.x - this.x, t.y - this.y);
-        const bx = t.x + nx * 12, by = t.y + ny * 12;
-        if (!sc.nav.solidAtPx(bx, by)) { this.x = bx; this.y = by; } else { this.x = t.x - nx * 12; this.y = t.y - ny * 12; }
-        this.face(t.x - this.x, t.y - this.y);
-        sc.fx.puff(this.x, this.y, 'sparkCurse');
-        audio.sfx('dash');
-        this.nextCrit = true;
-        this.atkT = 0;
-        this.clearPath();
-        if (this.isLeader) this.command = { type: 'attack', target: t };
-        else this.target = t;
-        break;
-      }
-      case 'fan': {
-        this.action = { type: 'skill', id: 'fan', t: 0, dur: 0.3 };
-        this.anim = ''; this.play('cast');
-        for (let k = 0; k < 8; k++) {
-          const a = (k / 8) * Math.PI * 2;
-          sc.spawnProjectile({ owner: this, x: this.x, y: this.y - 8, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, dmg: this.stats.atk * 1.4, kind: 'knife', life: 0.32 });
-        }
-        audio.sfx('stab'); setTimeout(() => audio.sfx('stab'), 40); setTimeout(() => audio.sfx('swing', { pitch: 1.4 }), 80);
-        break;
-      }
-    }
+    let t = target && target.alive ? target : null;
+    if (!t && TARGETED.has(sk.id)) t = sc.nearestEnemy(this, sk.range || 120);
+    if (!fx.cast(this, { target: t, m: rankMul(sk.rank), rank: sk.rank, sk })) return false;
     sk.t = sk.cd;
     return true;
   }
@@ -342,37 +312,34 @@ export class Hero extends Unit {
       if (a.ghostT <= 0) { a.ghostT = 0.045; sc.fx.ghost(this); }
     }
     if (a.type === 'attack' && !a.done && a.t >= a.hitAt) { a.done = true; this.resolveAttack(a.target); }
-    if (a.type === 'skill' && !a.done && a.hitAt !== undefined && a.t >= a.hitAt) {
-      a.done = true;
-      if (a.id === 'fireball' && a.target) {
-        const [nx, ny] = norm(a.target.x - this.x, a.target.y - (this.y - 6));
-        sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8, vx: nx * 160, vy: ny * 160, dmg: this.stats.atk * 2.4, kind: 'fireball', aoe: 28, target: a.target });
-        this.maybeEcho(a.target, this.stats.atk * 1.2, 'fireball');
-      }
-      if (a.id === 'bash') {
-        const fx = this.x + a.nx * 14, fy = this.y + a.ny * 14;
-        sc.shake(90, 0.006);
-        let hitAny = false;
-        for (const e of sc.enemies) {
-          if (!e.alive || Math.hypot(e.x - fx, e.y - fy) > 24) continue;
-          sc.dealDamage(this, e, this.stats.atk * 1.6, { knock: 160, crit: false });
-          if (e.stun) e.stun(1.3);
-          hitAny = true;
-        }
-        if (hitAny) audio.sfx('bash');
-      }
+    if (a.type === 'skill') {
+      a.tick?.(a, dt);
+      if (!a.done && a.hitAt !== undefined && a.t >= a.hitAt) { a.done = true; a.resolve?.(); }
     }
-    if (a.type === 'skill' && a.id === 'bash' && a.t < 0.16) this.moveBy(a.nx * 170 * dt, a.ny * 170 * dt);
     if (a.t >= a.dur) { this.action = null; this.anim = ''; }
   }
 
   damage(amount, src) {
     if (!this.alive || this.downed) return 0;
     if (this.invuln > 0) { this.scene.floatText(this.x, this.y - 28, 'DODGE', 'fontPlain'); return 0; }
+    // Riposte: parry and counter with a guaranteed crit
+    if (this.riposteT > 0 && src && src.alive && !src.s?.ranged) {
+      this.riposteT = 0;
+      this.scene.floatText(this.x, this.y - 28, 'PARRY!', 'fontGold');
+      audio.sfx('block');
+      this.face(src.x - this.x, src.y - this.y);
+      this.anim = ''; this.play('attack');
+      this.scene.dealDamage(this, src, this.stats.atk * 2 * critMul() * (this.riposteMul || 1), { crit: true, knock: 90 });
+      return 0;
+    }
     if (this.taunting > 0) amount *= 0.5;
+    if (this.wallT > 0) amount *= 0.2;
+    if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
     if (this.action?.type === 'harvest') this.scene.cancelHarvest(this);
-    amount = Math.max(1, Math.round(mitigate(amount, this.stats.def)));
+    amount = Math.max(1, Math.round(mitigate(amount, this.stats.def * this.buffMul('def'), src?.level || 1)));
     this.addUlt(amount * tuning.ultChargeTake);
+    const ret = this.passive('retribution');
+    if (ret) { const bash = this.skills.find((k) => k.id === 'bash'); if (bash) bash.t = Math.max(0, bash.t - 0.5 - 0.1 * (ret - 1)); }
     if (this.shield > 0) {
       const absorbed = Math.min(this.shield, amount);
       this.shield -= absorbed;
@@ -385,6 +352,14 @@ export class Hero extends Unit {
     this.scene.floatText(this.x, this.y - 26, `${amount}`, 'font', 0xff6a6a);
     if (this.isLeader) this.scene.shake(70, 0.004);
     if (src) this.knock(this.x - src.x, this.y - src.y, 50);
+    if (this.hp <= 0 && this.passive('laststand') && !this.lastStandUsed) {
+      this.lastStandUsed = true;
+      this.hp = 1;
+      this.invuln = 3;
+      this.scene.floatText(this.x, this.y - 34, 'LAST STAND!', 'fontGold', 0xffffff, true);
+      this.scene.fx.ring(this.x, this.y - 6, 'ringGold', 3);
+      return amount;
+    }
     if (this.hp <= 0) this.goDown();
     return amount;
   }
@@ -411,11 +386,13 @@ export class Hero extends Unit {
 
   gainXp(n) {
     const hs = this.hs;
+    if (hs.level >= tuning.levelCap) { hs.xp = 0; return; }
     hs.xp += n;
     if (hs.xp >= xpToNext(hs.level)) {
       hs.xp -= xpToNext(hs.level);
       hs.level++;
-      this.stats = computeStats(this.def.id, hs.level, hs.equip);
+      hs.sp = (hs.sp || 0) + 1;
+      this.stats = computeStats(this.def.id, hs.level, hs.equip, hs);
       this.maxHp = this.stats.maxHp;
       this.hp = this.maxHp;
       this.scene.onLevelUp(this);
@@ -430,6 +407,11 @@ export class Hero extends Unit {
     this.invuln = Math.max(0, this.invuln - dt);
     this.taunting = Math.max(0, this.taunting - dt);
     if (this.shieldT > 0) { this.shieldT -= dt; if (this.shieldT <= 0) this.shield = 0; }
+    this.wallT = Math.max(0, (this.wallT || 0) - dt);
+    this.riposteT = Math.max(0, (this.riposteT || 0) - dt);
+    this.surgeT = Math.max(0, (this.surgeT || 0) - dt);
+    if (this.hiddenT > 0) { this.hiddenT -= dt; this.sprite.setAlpha(this.hiddenT > 0 ? 0.45 : 1); }
+    for (const [k, b] of Object.entries(this.buffs)) { b.t -= dt; if (b.t <= 0) delete this.buffs[k]; }
     if (!this.downed) this.addUlt(dt * tuning.ultPassive); // slow passive recharge (~45s)
     this.hs.hp = this.hp;
     for (const s of this.skills) s.t = Math.max(0, s.t - dt);
@@ -618,35 +600,22 @@ export class Hero extends Unit {
       const want = (id === 'bulwark' && (hurt || near.length >= 3 || boss)) || (id === 'meteor' && (near.length >= 2 || boss)) || (id === 'thousand_cuts' && (near.length >= 2 || boss));
       if (want && sc.useUltimate(this)) return;
     }
-    // healer: Mend when someone is hurt
-    const mend = this.skills.find((s) => s.id === 'mend');
-    if (mend && mend.t <= 0 && sc.party.some((h) => h.downed || (h.alive && h.hp / h.maxHp < 0.5))) { this.useSkill(this.skills.indexOf(mend)); return; }
-
     // pick a target: what the leader engages, else what's attacking us
     const engaged = sc.enemies.filter((e) => e.alive && e.engaged && dist(e, L) < 170);
     const leaderT = L.command && L.command.type === 'attack' && L.command.target.alive ? L.command.target : null;
+    const byDist = (list) => list.sort((a, b) => dist(a, this) - dist(b, this));
     let t = null;
-    if (st.role === 'tank') {
-      // protect squishies: enemies hitting someone else first
-      t = engaged.filter((e) => e.target && e.target !== this).sort((a, b) => dist(a, this) - dist(b, this))[0] || leaderT || engaged.sort((a, b) => dist(a, this) - dist(b, this))[0];
-      const taunt = this.skills.find((s) => s.id === 'taunt');
-      if (taunt.t <= 0 && engaged.filter((e) => e.target && e.target !== this && dist(e, this) < 100).length >= 2) { this.useSkill(1); return; }
-      const bash = this.skills.find((s) => s.id === 'bash');
-      if (t && bash.t <= 0 && dist(t, this) < 30 && t.kind !== 'ward') { this.useSkill(0, t); return; }
-    } else if (st.role === 'caster') {
-      t = leaderT || engaged.sort((a, b) => dist(a, this) - dist(b, this))[0];
-      const fb = this.skills.find((s) => s.id === 'fireball');
-      if (t && fb.t <= 0 && dist(t, this) < 115) {
-        // save the big spell for clusters or tough targets, not lone trash
-        const cluster = engaged.filter((e) => dist(e, t) < 30).length;
-        if (cluster >= 2 || t.maxHp >= 60) { this.useSkill(0, t); return; }
-      }
-    } else {
-      t = leaderT || engaged.sort((a, b) => a.hp - b.hp)[0];
-      const fan = this.skills.find((s) => s.id === 'fan');
-      if (fan.t <= 0 && engaged.filter((e) => dist(e, this) < 38).length >= 2) { this.useSkill(1); return; }
-      const step = this.skills.find((s) => s.id === 'step');
-      if (t && step.t <= 0 && dist(t, this) > 50 && dist(t, this) < 110 && t.kind !== 'ward') { this.useSkill(0, t); return; }
+    if (st.role === 'tank') t = byDist(engaged.filter((e) => e.target && e.target !== this))[0] || leaderT || byDist(engaged)[0]; // protect squishies first
+    else if (st.role === 'caster') t = leaderT || byDist(engaged)[0];
+    else t = leaderT || engaged.sort((a, b) => a.hp - b.hp)[0];
+
+    // skills: first ready one whose rule says it's worth it right now
+    const ctx = { target: t, engaged, leaderT };
+    for (let i = 0; i < this.skills.length; i++) {
+      const sk = this.skills[i];
+      if (sk.t > 0) continue;
+      const want = SKILL_FX[sk.id]?.ai?.(this, ctx);
+      if (want && this.useSkill(i, want === true ? t : want)) return;
     }
     // never wander off after the ward stone unless the leader is hitting it
     if (t && (t.kind === 'ward' || t.kind === 'breakable') && leaderT !== t) t = null;
@@ -697,9 +666,10 @@ export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
     const base = ENEMY[kind];
     // level scaling within the region's band, plus the elite affix
-    const hpMul = Math.pow(1.12, level - 1) * (elite ? 2.2 : 1);
-    const dmgMul = Math.pow(1.08, level - 1) * (elite ? 1.3 : 1);
-    const s = { ...base, dmg: base.dmg * dmgMul, xp: Math.round(base.xp * (1 + (level - 1) * 0.15) * (elite ? 2.5 : 1)), gold: base.gold.map((g) => Math.round(g * (elite ? 2 : 1) * (1 + (level - 1) * 0.1))) };
+    const L1 = level - 1;
+    const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 2.2 : 1);
+    const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.3 : 1);
+    const s = { ...base, dmg: base.dmg * dmgMul, xp: Math.round(base.xp * (1 + L1 * tuning.enemyXpGrowth) * (elite ? 2.5 : 1)), gold: base.gold.map((g) => Math.round(g * (elite ? 2 : 1) * (1 + L1 * tuning.enemyGoldGrowth))) };
     super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
     this.kind = kind;
     this.tex = ENEMY_TEX[kind];
@@ -722,12 +692,23 @@ export class Enemy extends Unit {
   }
 
   restoreTint() {
-    if (this.status?.chill) this.sprite.setTint(0x9fdcff);
-    else if (this.status?.burn) this.sprite.setTint(0xffb08a);
-    else if (this.status?.poison) this.sprite.setTint(0xb8ff9a);
+    const t = this.statusColor();
+    if (t) this.sprite.setTint(t);
     else if (this.elite) this.sprite.setTint(0xffd889);
     else if (this.puppet && this.cursed) this.sprite.setTint(0xd9b8ff);
     else this.sprite.clearTint();
+  }
+
+  statusColor() {
+    const st = this.status;
+    if (!st) return 0;
+    if (st.freeze) return 0x7fd0ff;
+    if (st.chill) return 0x9fdcff;
+    if (st.burn) return 0xffb08a;
+    if (st.poison) return 0xb8ff9a;
+    if (st.shock) return 0xc8d8ff;
+    if (st.weaken) return 0xb89ad8;
+    return 0;
   }
 
   play(anim) {
@@ -742,29 +723,51 @@ export class Enemy extends Unit {
     }
   }
 
-  stun(t) { this.stunT = t; this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain'); }
+  stun(t) { this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain'); }
 
-  // Elemental statuses: burn / poison tick damage, chill slows movement + windups.
+  // Damage multiplier for an element hitting this enemy (C2: weak x1.5, resist x0.5).
+  elementMul(el) {
+    if (!el) return 1;
+    if (this.s.resist === el || (this.s.hexed && el === 'shadow')) return 0.5;
+    if (this.s.weak === el || (this.s.hexed && el === 'light')) return 1.5;
+    return 1;
+  }
+
+  // Elemental statuses (C2). src = the hero who applied it.
   applyElement(el, src) {
-    if (!el || !this.alive) return;
+    if (!el || !this.alive || this.elementMul(el) < 1) return;
     this.status ??= {};
-    const weak = this.s.weak === el ? 1.5 : 1;
-    const base = src.stats.atk * weak;
-    if (el === 'fire') this.status.burn = { t: 2, tick: 0.5, next: 0.5, dmg: base * 0.22 };
-    else if (el === 'venom') this.status.poison = { t: 3, tick: 0.6, next: 0.6, dmg: base * 0.15 };
-    else if (el === 'frost') this.status.chill = { t: 2.5 * weak };
-    if (weak > 1 && !this.weakShown) { this.weakShown = true; this.scene.floatText(this.x, this.y - 40, 'WEAK!', 'fontGold'); }
+    const weak = this.elementMul(el) > 1 ? 1.5 : 1;
+    const dur = weak * (1 + (src.passive ? src.passive('attunement') ? 0.5 + 0.1 * (src.passive('attunement') - 1) : 0 : 0));
+    const base = src.stats.atk;
+    const sc = this.scene;
+    if (el === 'fire') this.status.burn = { t: 3 * dur, tick: 0.5, next: 0.5, dmg: base * 0.2 };
+    else if (el === 'venom') {
+      const n = Math.min(5, (this.status.poison?.n || 0) + 1);
+      this.status.poison = { t: 4 * dur, tick: 0.6, next: this.status.poison?.next ?? 0.6, dmg: base * 0.09, n };
+    } else if (el === 'frost') {
+      const n = (this.status.chill?.n || 0) + 1;
+      this.status.chill = { t: 3 * dur, n };
+      if (n >= 3) {
+        delete this.status.chill;
+        if (this.boss) this.status.chill = { t: 2 * dur, n: 2, heavy: true };
+        else { this.status.freeze = { t: 1.5 * dur }; this.stunT = Math.max(this.stunT, 1.5 * dur); this.clearZone(); sc.floatText(this.x, this.y - 30, 'FROZEN', 'fontPlain', 0x9fe6ff); }
+      }
+    } else if (el === 'storm') {
+      this.status.shock = { t: 3 * dur };
+      if (this.state === 'windup' && !this.boss) { this.clearZone(); this.state = 'recover'; this.t = 0; sc.floatText(this.x, this.y - 30, 'INTERRUPT', 'fontPlain', 0xc8d8ff); }
+    } else if (el === 'light') {
+      if (this.status.buff) delete this.status.buff;
+    } else if (el === 'shadow') this.status.weaken = { t: 4 * dur };
+    if (weak > 1 && !this.weakShown) { this.weakShown = true; sc.floatText(this.x, this.y - 40, 'WEAK!', 'fontGold'); }
     this.statusTint();
   }
 
-  get slow() { return this.status?.chill ? 0.55 : 1; }
+  get slow() { return this.status?.chill ? (this.status.chill.heavy ? 0.4 : 0.7) : 1; }
 
   statusTint() {
     if (this.flashT > 0) return;
-    if (this.status?.chill) this.sprite.setTint(0x9fdcff);
-    else if (this.status?.burn) this.sprite.setTint(0xffb08a);
-    else if (this.status?.poison) this.sprite.setTint(0xb8ff9a);
-    else this.restoreTint();
+    this.restoreTint();
   }
 
   updateStatus(dt) {
@@ -776,7 +779,7 @@ export class Enemy extends Unit {
         st.next -= dt;
         if (st.next <= 0 && this.alive) {
           st.next += st.tick;
-          const d = Math.max(1, Math.round(st.dmg));
+          const d = Math.max(1, Math.round(st.dmg * (st.n || 1)));
           sc.floatText(this.x + (Math.random() * 8 - 4), this.y - 18, `${d}`, 'font', k === 'burn' ? 0xffa060 : 0x9cff7a);
           sc.fx.burst(k === 'burn' ? 'ember' : 'heal', this.x, this.y - 8, 3);
           this.damage(d, sc.leader, { knock: 0, dot: true });
@@ -785,6 +788,7 @@ export class Enemy extends Unit {
       }
       if (st.t <= 0) { delete this.status[k]; this.statusTint(); }
     }
+    if (this.marked) { this.marked.t -= dt; if (this.marked.t <= 0) this.marked = null; }
   }
 
   setTaunt(by, t) { this.taunter = by; this.tauntT = t; this.target = by; this.engaged = true; if (this.state === 'idle') this.state = 'chase'; }
@@ -816,6 +820,7 @@ export class Enemy extends Unit {
 
   die(src) {
     this.alive = false;
+    if (this.marked) { const sk = this.marked.sk; if (sk) sk.t = 0; this.scene.floatText(this.x, this.y - 40, 'MARK RESET', 'fontPlain', 0xff6a6a); }
     this.clearZone();
     this.scene.onEnemyKilled(this, src);
     this.destroy();
@@ -972,9 +977,11 @@ export class Enemy extends Unit {
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
     else if (this.kind === 'golem') { this.sprite.play('golem_slam'); this.anim = 'golem_slam'; sc.fx.slam(z.x, z.y, z.r); }
     else { this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`; audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
+    if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
+    const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1);
     for (const h of sc.party) {
       if (!h.alive || h.downed) continue;
-      if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(this.s.dmg * sc.difficulty.dmg, this);
+      if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(dmg, this);
     }
   }
 }

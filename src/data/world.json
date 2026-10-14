@@ -16,35 +16,29 @@
    "sub": "THE KINGDOM OF ALDERMERE",
    "band": [
     1,
-    3
+    6
    ]
   },
   {
    "id": "meadow",
    "name": "HIGHMEADOW",
-   "sub": "EAST OF THE VALE",
+   "sub": "THE VALE'S EASTERN HILLS",
    "band": [
-    3,
-    5
+    2,
+    6
    ]
   },
   {
    "id": "marsh",
    "name": "MISTFEN",
    "sub": "WHERE THE PATHS SINK",
-   "band": [
-    3,
-    6
-   ]
+   "outer": "marsh"
   },
   {
    "id": "cave",
    "name": "DROWNED HOLLOW",
    "sub": "A CAVE BENEATH THE FEN",
-   "band": [
-    5,
-    7
-   ]
+   "outer": "marsh"
   },
   {
    "id": "shop",
@@ -69,7 +63,7 @@
    "name": "HIDDEN GROTTO",
    "sub": "YOU FOUND A SECRET!",
    "band": [
-    4,
+    3,
     6
    ]
   }

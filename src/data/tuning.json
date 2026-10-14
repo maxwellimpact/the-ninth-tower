@@ -1,8 +1,8 @@
 {
  "gameSpeed": 0.72,
  "defK": 40,
- "xpBase": 50,
- "xpPerLevel": 50,
+ "xpBase": 90,
+ "xpPerLevel": 85,
  "fineDropChance": 0.165,
  "ultChargeDeal": 0.2,
  "ultChargeTake": 0.35,
@@ -12,5 +12,27 @@
   "hard": 1.4
  },
  "ultPassive": 2.2,
- "xpQuad": 8
+ "xpQuad": 4,
+ "levelCap": 35,
+ "hpGrowth": 0.09,
+ "atkGrowth": 2,
+ "critMult": 1.75,
+ "enemyHpGrowth": 0.16,
+ "enemyDmgGrowth": 0.1,
+ "enemyXpGrowth": 0.15,
+ "enemyGoldGrowth": 0.1,
+ "overLevelGrace": 3,
+ "overLevelPenalty": 0.25,
+ "overLevelMin": 0.1,
+ "skillRankCost": [
+  0,
+  1,
+  1,
+  2,
+  2,
+  3
+ ],
+ "skillRankBonus": 0.15,
+ "activeSlots": 3,
+ "passiveSlots": 2
 }

@@ -1,66 +1,36 @@
 {
- "bash": {
-  "name": "SHIELD BASH",
-  "icon": "icon_bash",
-  "cd": 6,
-  "range": 34,
-  "short": "BASH"
- },
- "taunt": {
-  "name": "TAUNT",
-  "icon": "icon_taunt",
-  "cd": 10,
-  "range": 0,
-  "short": "TAUNT"
- },
- "fireball": {
-  "name": "FIREBALL",
-  "icon": "icon_fireball",
-  "cd": 5,
-  "range": 115,
-  "short": "FIRE"
- },
- "mend": {
-  "name": "MEND",
-  "icon": "icon_mend",
-  "cd": 9,
-  "range": 0,
-  "note": "CLERIC",
-  "short": "MEND"
- },
- "step": {
-  "name": "SHADOW STEP",
-  "icon": "icon_step",
-  "cd": 5,
-  "range": 110,
-  "short": "STEP"
- },
- "fan": {
-  "name": "FAN OF KNIVES",
-  "icon": "icon_fan",
-  "cd": 7,
-  "range": 40,
-  "short": "KNIVES"
- },
- "bulwark": {
-  "name": "BULWARK",
-  "desc": "SHIELDS THE WHOLE PARTY AND TAUNTS EVERYTHING NEARBY",
-  "ult": true,
-  "icon": "icon_bulwark",
-  "short": "BULWARK"
- },
- "meteor": {
-  "name": "METEOR",
-  "desc": "CALLS DOWN A METEOR ON A CLUSTER OF FOES",
-  "ult": true,
-  "icon": "icon_meteor",
-  "short": "METEOR"
- },
- "thousand_cuts": {
-  "name": "THOUSAND CUTS",
-  "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH",
-  "ult": true,
-  "icon": "icon_cuts",
-  "short": "CUTS"
- }
+ "bash": { "hero": "brann", "unlock": 1, "name": "SHIELD BASH", "short": "BASH", "icon": "icon_bash", "cd": 6, "range": 34, "desc": "SLAM YOUR SHIELD INTO A FOE: DAMAGE, KNOCKBACK AND A 1S STUN." },
+ "taunt": { "hero": "brann", "unlock": 1, "name": "TAUNT", "short": "TAUNT", "icon": "icon_taunt", "cd": 10, "range": 0, "desc": "EVERY ENEMY NEARBY ATTACKS BRANN FOR 4S. HE TAKES HALF DAMAGE MEANWHILE." },
+ "charge": { "hero": "brann", "unlock": 4, "name": "CHARGE", "short": "CHARGE", "icon": "icon_charge", "cd": 9, "range": 120, "desc": "DASH TO A FOE, KNOCKING ASIDE EVERYTHING IN THE WAY." },
+ "shieldwall": { "hero": "brann", "unlock": 8, "name": "SHIELD WALL", "short": "WALL", "icon": "icon_shieldwall", "cd": 14, "range": 0, "desc": "BLOCK 80% OF DAMAGE FOR 3S AND REFLECT ARROWS." },
+ "rally": { "hero": "brann", "unlock": 12, "name": "RALLYING CRY", "short": "RALLY", "icon": "icon_rally", "cd": 20, "range": 0, "desc": "PARTY +25% DEF FOR 6S AND HEALS 10%." },
+ "earthsplitter": { "hero": "brann", "unlock": 16, "name": "EARTHSPLITTER", "short": "SPLIT", "icon": "icon_earthsplitter", "cd": 12, "range": 70, "desc": "SLAM A LINE OF SHOCKWAVES AHEAD THAT STAGGERS FOES." },
+ "ironskin": { "hero": "brann", "unlock": 1, "passive": true, "name": "IRON SKIN", "short": "IRON", "icon": "icon_ironskin", "desc": "+12% DEF (+3% PER RANK)." },
+ "retribution": { "hero": "brann", "unlock": 6, "passive": true, "name": "RETRIBUTION", "short": "RETRIB", "icon": "icon_retribution", "desc": "TAKING A HIT CUTS SHIELD BASH'S COOLDOWN BY 0.5S." },
+ "laststand": { "hero": "brann", "unlock": 14, "passive": true, "name": "LAST STAND", "short": "STAND", "icon": "icon_laststand", "desc": "ONCE PER FIGHT, A LETHAL HIT LEAVES YOU AT 1 HP, INVULNERABLE FOR 3S." },
+ "bulwark": { "hero": "brann", "ult": true, "name": "BULWARK", "short": "BULWARK", "icon": "icon_bulwark", "desc": "SHIELDS THE WHOLE PARTY AND TAUNTS EVERYTHING NEARBY." },
+
+ "fireball": { "hero": "pip", "unlock": 1, "name": "FIREBALL", "short": "FIRE", "icon": "icon_fireball", "cd": 5, "range": 115, "element": "fire", "desc": "A BOLT THAT BURSTS IN A SMALL AREA AND BURNS." },
+ "frostnova": { "hero": "pip", "unlock": 1, "name": "FROST NOVA", "short": "NOVA", "icon": "icon_frostnova", "cd": 9, "range": 46, "element": "frost", "desc": "A RING OF FROST AROUND PIP: DAMAGE AND 2 CHILL STACKS." },
+ "chain": { "hero": "pip", "unlock": 4, "name": "CHAIN LIGHTNING", "short": "CHAIN", "icon": "icon_chain", "cd": 8, "range": 115, "element": "storm", "desc": "LIGHTNING THAT JUMPS BETWEEN UP TO 4 FOES." },
+ "blink": { "hero": "pip", "unlock": 8, "name": "BLINK", "short": "BLINK", "icon": "icon_blink", "cd": 12, "range": 80, "desc": "TELEPORT AWAY FROM DANGER, LEAVING A DECOY FOR 2S." },
+ "barrage": { "hero": "pip", "unlock": 12, "name": "ARCANE BARRAGE", "short": "BARRAGE", "icon": "icon_barrage", "cd": 11, "range": 120, "desc": "SIX HOMING MISSILES SPREAD ACROSS NEARBY FOES." },
+ "surge": { "hero": "pip", "unlock": 16, "name": "ELEMENTAL SURGE", "short": "SURGE", "icon": "icon_surge", "cd": 22, "range": 0, "desc": "FOR 6S EVERY SPELL BURNS, CHILLS AND SHOCKS." },
+ "attunement": { "hero": "pip", "unlock": 1, "passive": true, "name": "ATTUNEMENT", "short": "ATTUNE", "icon": "icon_attunement", "desc": "STATUSES PIP APPLIES LAST 50% LONGER (+10% PER RANK)." },
+ "studious": { "hero": "pip", "unlock": 6, "passive": true, "name": "STUDIOUS", "short": "STUDY", "icon": "icon_studious", "desc": "SPELL CRITS CUT 1S OFF YOUR LONGEST COOLDOWN." },
+ "wardweave": { "hero": "pip", "unlock": 14, "passive": true, "name": "WARDWEAVE", "short": "WARD", "icon": "icon_wardweave", "desc": "-20% DAMAGE TAKEN FROM ARROWS AND SPELLS." },
+ "meteor": { "hero": "pip", "ult": true, "name": "METEOR", "short": "METEOR", "icon": "icon_meteor", "desc": "CALLS DOWN A METEOR ON A CLUSTER OF FOES." },
+
+ "step": { "hero": "sable", "unlock": 1, "name": "SHADOW STEP", "short": "STEP", "icon": "icon_step", "cd": 5, "range": 110, "desc": "BLINK BEHIND A FOE. YOUR NEXT HIT CRITS." },
+ "fan": { "hero": "sable", "unlock": 1, "name": "FAN OF KNIVES", "short": "KNIVES", "icon": "icon_fan", "cd": 7, "range": 40, "desc": "A RING OF THROWN BLADES AROUND SABLE." },
+ "envenom": { "hero": "sable", "unlock": 4, "name": "ENVENOM", "short": "VENOM", "icon": "icon_envenom", "cd": 12, "range": 0, "element": "venom", "desc": "YOUR NEXT 6 HITS POISON." },
+ "smoke": { "hero": "sable", "unlock": 8, "name": "SMOKE BOMB", "short": "SMOKE", "icon": "icon_smoke", "cd": 15, "range": 0, "desc": "FOES IN THE CLOUD MISS HALF THEIR ATTACKS. SABLE VANISHES FOR 2S." },
+ "riposte": { "hero": "sable", "unlock": 12, "name": "RIPOSTE", "short": "PARRY", "icon": "icon_riposte", "cd": 10, "range": 0, "desc": "PARRY THE NEXT HIT WITHIN 0.6S AND COUNTER WITH A GUARANTEED CRIT." },
+ "deathmark": { "hero": "sable", "unlock": 16, "name": "DEATH MARK", "short": "MARK", "icon": "icon_deathmark", "cd": 18, "range": 120, "desc": "MARKED FOE TAKES +25% FROM THE PARTY. IF IT DIES, THE COOLDOWN RESETS." },
+ "backstab": { "hero": "sable", "unlock": 1, "passive": true, "name": "BACKSTAB", "short": "BACKSTAB", "icon": "icon_backstab", "desc": "+50% DAMAGE FROM BEHIND (+10% PER RANK)." },
+ "quickhands": { "hero": "sable", "unlock": 6, "passive": true, "name": "QUICK HANDS", "short": "QUICK", "icon": "icon_quickhands", "desc": "CRITS TAKE 0.3S OFF ALL COOLDOWNS." },
+ "lightfingers": { "hero": "sable", "unlock": 14, "passive": true, "name": "LIGHT FINGERS", "short": "FINGERS", "icon": "icon_lightfingers", "desc": "15% CHANCE OF BONUS GOLD THE FIRST TIME YOU HIT A FOE." },
+ "thousand_cuts": { "hero": "sable", "ult": true, "name": "THOUSAND CUTS", "short": "CUTS", "icon": "icon_cuts", "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH." },
+
+ "mend": { "discipline": "cleric", "unlock": 1, "name": "MEND", "short": "MEND", "icon": "icon_mend", "cd": 9, "range": 0, "desc": "HEALS NEARBY ALLIES AND REVIVES THE DOWNED. (CLERIC DISCIPLINE)" }
 }
