@@ -1181,18 +1181,29 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 ### Answered in Demo 2–3 (kept for history)
 Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; combat difficulty on Normal approved. See the decision log.
 
-### Questions for the Part II review
-1. **Gear slots:** OK to drop Feet and go with 4 visible slots + 2 trinkets (C4)?
-2. **Skill loadout:** 3 active skills (a 4-wide bottom row on the combat grid), or keep 2 and put the depth in choosing which 2?
-3. **Stats:** OK to replace stat-point allocation with automatic growth per hero (C1)?
-4. **No mana:** cooldowns only (C3)?
-5. **Elements:** Venom replaces Earth (C2)?
-6. **Gear generation:** generated Common/Fine/Rare tiers plus 40 hand-made Uniques and Legendaries, with no random stat rolls (C4)?
-7. **Refining:** +10 in three Blacksmith ranks, never fails (C5)?
-8. **Level cap 30**, with the story finishing around 25 (C1)?
-9. **Recruit placements** (C10): Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. Any swaps?
-10. **Tower scaling:** a floor is sealed per Ward Stone, and Malgrim gets an extra phase for each stone still standing (C8)?
-11. **Anything to cut for scope?** The biggest costs are the 5 new heroes, 4 new region tilesets and about 70 skill effects (C11).
+### Part II review — resolved 2026-10-14 (recommendations accepted)
+1. 4 visible gear slots + 2 trinkets; Feet dropped. **[LOCKED]**
+2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. **[LOCKED]**
+3. Automatic stat growth per hero; no stat points. **[LOCKED]**
+4. Cooldowns only; no mana. **[LOCKED]**
+5. Venom replaces Earth (Fire, Frost, Storm, Venom, Light, Shadow). **[LOCKED]**
+6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries; no random rolls. **[LOCKED]**
+7. Refine to +10 over three Blacksmith ranks; never fails. **[LOCKED]**
+8. Level cap 30; story ends around 25. **[LOCKED]**
+9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED]**
+10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED]**
+11. No cuts; build in three waves, each playtested:
+    - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
+    - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo.
+    - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. **[LOCKED]**
+
+### Build approach **[LOCKED]**
+- **The demo is the foundation, not a throwaway.** Its music, code-drawn art, puppet and gear renderer, systems and data are close to final.
+  - The full build extends them in place and only replaces something when Part II requires it.
+- **The demo is preserved:**
+  - a frozen copy lives in `untitled-rpg-demo/` and keeps serving on LAN port 5180 and at the original private Artifact link;
+  - this repo is under git with the snapshot tagged `demo-3`.
+- **The full build** gets its own private link and LAN port 5182.
 
 ### Known prototype shortcuts
 - The world is built in code (`map.js`) rather than in Tiled.
@@ -1251,3 +1262,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-14 | Grapple target changed from a chasm island to a raised rock bluff in Mistfen: hook post at the foot of the cliff hauls the party up, a post on top drops them back down (posts carry a `land` tile). The chasm looked out of place. Prototype is also published as a private claude.ai Artifact for off-network playtests (`npm run build && node tools/make-artifact.mjs`, then republish `dist/artifact.html` with the hashed `assets/*.js`) |
 | 2026-10-14 | Part II drafted for review: core numbers, elements, all 8 heroes' skills, gear system (tiers, 32 uniques, 8 legendaries, trinkets), upgrades, materials, enemies by region, lieutenants, relic placement, Brightwater rebuild, full progression |
 | 2026-10-14 | Loading curtain: entering the world (Continue / New Game) and slow teleports hold the game behind a full-screen loading screen until the area's art, terrain chunks and enemy groups are in place and the frame time settles; enemies ignore the party for ~1.5s after arrival |
+| 2026-10-14 | Part II questions resolved (all recommendations accepted). Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
