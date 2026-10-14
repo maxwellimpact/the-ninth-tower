@@ -189,6 +189,31 @@ export function makeTerrainPainter(world) {
         return (x + fy) % 9 === 0 && hash(x, fy, 98) < 0.4 ? C.mist : C.bone;
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
+      case T.DFLOOR: {
+        // dungeon flagstones: big worn slabs, dark mortar, moss in the cracks
+        const row = Math.floor(y / 10), ox = (row % 2) * 6;
+        const cx = Math.floor((x + ox) / 12);
+        if (y % 10 === 9 || (x + ox) % 12 === 11) return hash(x, y, 120) < 0.18 ? C.mossD : C.night;
+        const up = tileAtPx(x, y - 6);
+        if (up === T.DWALL && bayer(x, y) < 0.7) return C.night; // shadow under the wall
+        if (hash(x, y, 121) < 0.02) return C.slate;
+        const tint = hash(cx, row, 122);
+        if ((x + ox) % 12 === 0 || y % 10 === 0) return C.stone;
+        return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
+      }
+      case T.DWALL: {
+        const faceBelow = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+        if (!faceBelow) { const n = vnoise(x / 7, y / 7, 123) + (bayer(x, y) - 0.5) * 0.3; return n > 0.72 ? C.slate : n > 0.4 ? C.night : C.ink; }
+        // two-tile face of heavy blocks with a lit capstone edge
+        const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+        if (fy < 2) return C.mist;
+        if (fy < 4) return C.stone;
+        if (fy > 29) return C.ink;
+        const brow = Math.floor((fy - 4) / 6), bx = (x + (brow % 2) * 7) % 14;
+        if ((fy - 4) % 6 === 5 || bx === 0) return C.night;
+        if (hash(Math.floor((x + (brow % 2) * 7) / 14), brow + ty * 7, 124) < 0.12 && fy > 20) return C.mossD;
+        return bx < 2 ? C.stone : C.slate;
+      }
       case T.MARSH: {
         // olive moss with mud patches; darker lip at paths and water
         const n = vnoise(x / 40, y / 40, 80) * 0.7 + vnoise(x / 10, y / 10, 81) * 0.3 + (bayer(x, y) - 0.5) * 0.1;

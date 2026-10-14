@@ -104,7 +104,7 @@ export class UI extends Phaser.Scene {
     game.events.on('dialogue', this.openDialog, this);
     game.events.on('loot', this.showLoot, this);
     game.events.on('partyChanged', this.buildPortraits, this);
-    game.events.on('boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? 'HEX GOLEM' : ''); }, this);
+    game.events.on('boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }, this);
     game.events.on('saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }, this);
     game.events.on('loading', (on) => this.loadTxt.setVisible(on), this);
     this.scale.on('resize', () => this.layout());

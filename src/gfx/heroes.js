@@ -97,3 +97,6 @@ export const FOLK = {
   oswin: folk('oswin', 'brann', { head: 'helm_great', body: 'plate_guard', weapon: 'sword_long' }),
   quill: folk('quill', 'pip', { head: 'hat_star@2', body: 'robe_scholar@5' }),
 };
+
+// Hollow Guard: an empty suit of silversteel armour animated by the curse.
+export const HOLLOW = { ...composeHero('brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_iron@3', offhand: 'shield_round@4' }), id: 'hollow', name: 'Hollow Guard' };

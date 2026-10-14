@@ -2,9 +2,9 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -39,6 +39,7 @@ export const GROUPS = {
     ['hex golem', (s) => {
       creature(s, 'golem', buildGolem(), { idle: 2.5, walk: 5, windup: 4, slam: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup']);
       s.textures.addCanvas('boulder', boulder());
+      s.textures.addCanvas('plate', golemPlate());
     }],
     ['frog king', (s) => {
       const frog = buildFrogKing();
@@ -143,6 +144,11 @@ export const GROUPS = {
 };
 // errand townsfolk + props are small and needed across the Vale, so they ride with core
 GROUPS.core.push(
+  ['undercroft foes', (s) => {
+    creature(s, 'rats', buildRats(), { idle: 4, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+    registerPuppet(s, 'hollow', HOLLOW);
+    s.textures.addCanvas('hollowpile', hollowPile());
+  }],
   ...Object.entries(FOLK).map(([id, def]) => [`folk ${id}`, (s) => registerPuppet(s, id, def)]),
   ['errand props', (s) => {
     frames(s, 'dog', Q.dogFrames(), 4);

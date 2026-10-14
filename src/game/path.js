@@ -9,6 +9,7 @@ export class NavGrid {
     this.solid = new Uint8Array(w * h);
   }
   block(tx, ty) { if (this.inb(tx, ty)) this.solid[ty * this.w + tx] = 1; }
+  unblock(tx, ty) { if (this.inb(tx, ty)) this.solid[ty * this.w + tx] = 0; }
   inb(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.w && ty < this.h; }
   isSolid(tx, ty) { return !this.inb(tx, ty) || this.solid[ty * this.w + tx] === 1; }
   solidAtPx(x, y) { return this.isSolid(Math.floor(x / TILE), Math.floor(y / TILE)); }

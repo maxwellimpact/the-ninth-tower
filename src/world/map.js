@@ -13,9 +13,9 @@ export const MAP_H = W.size.h;
 export const T = {
   GRASS: 0, PATH: 1, SAND: 2, WATER: 3, PLATEAU: 4, CLIFF: 5, STAIRS: 6, PAVED: 7, WALL: 8, RIM: 9,
   MARSH: 10, SHALLOW: 11, BOG: 12, CHASM: 13, CAVEFLOOR: 14, CAVEWALL: 15, BRIDGE: 16, MOUTH: 17,
-  FLOOR: 18, IWALL: 19, HOUSE: 20,
+  FLOOR: 18, IWALL: 19, HOUSE: 20, DFLOOR: 21, DWALL: 22,
 };
-export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE]);
+export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL]);
 export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG]);
 
 export const MARSH_Y = 64;
@@ -29,6 +29,7 @@ export const AREAS = {
   shop: { x0: 236, y0: 2, x1: 248, y1: 11, interior: true },
   tavern: { x0: 236, y0: 16, x1: 250, y1: 27, interior: true },
   grotto: { x0: 236, y0: 32, x1: 248, y1: 43, interior: true, dark: true },
+  undercroft: { x0: 256, y0: 2, x1: 318, y1: 60, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -75,6 +76,7 @@ function distToLine(x, y, line) {
   return d;
 }
 const riverX = (y) => 134 + Math.sin(y / 9) * 3;
+const southRiverY = (x) => 53.5 + Math.sin(x / 13) * 1.6 + Math.sin(x / 5.3) * 0.5;
 
 export function buildWorld() {
   const tiles = new Uint8Array(MAP_W * MAP_H);
@@ -85,7 +87,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
@@ -108,9 +110,17 @@ export function buildWorld() {
       if (d < 1.9) set(x, y, y < MARSH_Y ? T.WATER : T.BOG);
       else if (d < 2.9 && y < MARSH_Y) set(x, y, T.SAND);
     }
+    // The Southwash: a river across the south of the Vale. Its bridge on the
+    // south road has collapsed (hook posts), so Mistfen opens with the Grapple.
+    if (x < OW_W && y > 46 && y < 62) {
+      const d = Math.abs(y - southRiverY(x));
+      if (d < 1.6 && x < riverX(y) - 1) set(x, y, T.WATER);
+      else if (d < 2.6 && x < riverX(y) - 1 && at(x, y) !== T.WATER) set(x, y, T.SAND);
+    }
     if (onPath(x, y)) {
       const t = at(x, y);
-      if (t === T.WATER || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
+      if (t === T.WATER && y > 46 && y < 62 && x < 60) { if (Math.abs(y - southRiverY(x)) > 0.9) set(x, y, T.BRIDGE); /* stubs on each bank, gap in the middle */ }
+      else if (t === T.WATER || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
       else if (t !== T.CAVEWALL) set(x, y, T.PATH);
     }
   }
@@ -124,6 +134,7 @@ export function buildWorld() {
   rect(13, 27, 15, 29, T.HOUSE);
   rect(20, 27, 22, 29, T.HOUSE);
   wall(38, 20, 39, 21); wall(48, 21, 50, 21); // collapsed house corners in the ruins
+  set(47, 25, T.STAIRS); // steps down to the Undercroft
 
   // NE plateau with cliff + stairs
   rect(58, 3, 80, 14, T.PLATEAU);
@@ -172,9 +183,19 @@ export function buildWorld() {
     if (d < 1) set(x, y, Math.hypot(x - 244.5, y - 35.5) < 1.6 ? T.WATER : T.CAVEFLOOR);
   }
   rect(241, 41, 242, 42, T.CAVEFLOOR);
+  // Brightwater Undercroft: cellars beneath the keep, explored south to north
+  const room = (x0, y0, x1, y1) => rect(x0, y0, x1, y1, T.DFLOOR);
+  room(282, 48, 294, 56); rect(288, 57, 288, 57, T.STAIRS);      // entry, stairs up
+  room(287, 44, 289, 47);                                          // corridor
+  room(278, 34, 298, 43);                                          // guard hall
+  room(270, 38, 277, 40); room(260, 33, 269, 44);                  // west passage + relic room
+  // the gallery: a raised ledge above the hall (face at y 32-33), reached by hook
+  room(280, 22, 296, 31);
+  room(287, 17, 289, 21);                                          // corridor north
+  room(274, 4, 302, 16); set(288, 4, T.STAIRS);                    // Gatewarden's arena, back stairs
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)
-  const room = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);
-  room(AREAS.shop); room(AREAS.tavern);
+  const shell = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);
+  shell(AREAS.shop); shell(AREAS.tavern);
   set(242, 11, T.FLOOR); // shop doorway
   set(243, 27, T.FLOOR); // tavern doorway
 

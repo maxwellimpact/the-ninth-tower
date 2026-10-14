@@ -140,5 +140,69 @@
   },
   "weak": "frost",
   "hexed": true
+ },
+ "rats": {
+  "name": "RAT SWARM",
+  "maxHp": 45,
+  "speed": 62,
+  "aggro": 100,
+  "reach": 16,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 7,
+  "xp": 5,
+  "gold": [
+   0,
+   1
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 18,
+  "weak": "fire",
+  "drops": {}
+ },
+ "hollow": {
+  "name": "HOLLOW GUARD",
+  "maxHp": 180,
+  "speed": 30,
+  "aggro": 100,
+  "reach": 24,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 26,
+  "xp": 20,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 18,
+  "weak": "light",
+  "resist": "venom",
+  "drops": {
+   "ore": 0.5
+  },
+  "reassemble": true
+ },
+ "hollowpile": {
+  "name": "ARMOUR PILE",
+  "maxHp": 40,
+  "speed": 0,
+  "aggro": 0,
+  "reach": 0,
+  "windup": 9,
+  "recover": 9,
+  "dmg": 0,
+  "xp": 2,
+  "gold": [
+   0,
+   0
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 0,
+  "inert": true,
+  "drops": {}
  }
 }

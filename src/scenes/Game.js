@@ -21,7 +21,7 @@ import items from '../data/items.json';
 import tuning from '../data/tuning.json';
 
 const TOP = 100000;
-const w_locked = (sc, o) => o.warp.lockedBy && !sc.flags[`broke_${o.warp.lockedBy}`];
+const w_locked = (sc, o) => (o.warp.lockedBy && !sc.flags[`broke_${o.warp.lockedBy}`]) || (o.warp.requires && !sc.flags[o.warp.requires]);
 const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 const PROP_GROUP = { deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
@@ -256,6 +256,7 @@ export class Game extends Phaser.Scene {
   }
 
   tryWarp(w) {
+    if (w.requires && !this.flags[w.requires]) { this.bark(this.leader, 'BARRED FROM THE OTHER SIDE.'); return; }
     if (w.lockedBy && !this.flags[`broke_${w.lockedBy}`]) {
       this.bark(this.leader, { brann: 'THIS ROCK IS CRACKED. ONE GOOD HIT...', pip: "THERE'S A DRAFT BEHIND THAT ROCK. SUSPICIOUS.", sable: 'HOLLOW BEHIND THERE. I CAN SMELL TREASURE.' }[this.leader.def.id]);
       return;
@@ -799,6 +800,9 @@ export class Game extends Phaser.Scene {
     const L = this.leader;
     if (L.downed) return;
     if (L.action?.type === 'harvest') this.cancelHarvest(L);
+    // boss plates take priority over the boss behind them
+    const plate = this.interactables.find((o) => o.kind === 'plate' && Math.hypot(o.x - wx, o.y - 24 - wy) < 16);
+    if (plate) { plate.interact(L, plate); audio.sfx('click'); return; }
     const all = [...this.enemies.filter((e) => e.alive), ...(this.ward && this.ward.alive ? [this.ward] : []), ...this.breakables.filter((b) => b.alive)];
     let best = null, bd = 16;
     for (const e of all) {
@@ -881,6 +885,7 @@ export class Game extends Phaser.Scene {
         if (f[0] * dx + f[1] * dy < -0.3) { amount *= 1.5 + 0.1 * (bs - 1); if (!target.backstabShown) { target.backstabShown = true; this.floatText(target.x, target.y - 34, 'BACKSTAB', 'fontPlain', 0xff9ad8); } }
       }
     }
+    target.lastElement = el;
     const dealt = target.damage(amount, src, { crit, knock });
     if (!dealt) return;
     if (!noProc && target.applyElement) {
@@ -1064,7 +1069,7 @@ export class Game extends Phaser.Scene {
 
   surfaceAt(x, y) {
     const t = this.painter.typeAt(x, y);
-    return t === T.PAVED || t === T.STAIRS || t === T.CAVEFLOOR || t === T.BRIDGE ? 'stone' : t === T.PATH || t === T.SAND || t === T.SHALLOW ? 'path' : 'grass';
+    return t === T.PAVED || t === T.STAIRS || t === T.CAVEFLOOR || t === T.DFLOOR || t === T.BRIDGE ? 'stone' : t === T.PATH || t === T.SAND || t === T.SHALLOW ? 'path' : 'grass';
   }
 
   floatText(x, y, text, font = 'font', tint = 0xffffff, big = false) {
@@ -1195,7 +1200,8 @@ export class Game extends Phaser.Scene {
     this.golem = null;
     this.shieldFx?.setVisible(false);
     this.events.emit('boss', null);
-    this.events.emit('banner', 'GUARDIAN FELLED', 'THE WARD STONE IS EXPOSED');
+    this.events.emit('banner', 'THE GATEWARDEN FALLS', "THE WARD STONE'S BARRIER HAS FAILED");
+    this.sealArena(false);
     for (const e of this.enemies) if (e.alive && e.summoned) e.damage(999, this.leader);
     this.autosave('boss');
   }
@@ -1273,7 +1279,7 @@ export class Game extends Phaser.Scene {
       const st = W.start;
       this.party.forEach((h, i) => { h.x = (st.x + i) * TILE; h.y = st.y * TILE; h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; h.clearPath(); h.command = null; });
       for (const e of this.enemies) if (e.alive) { e.x = e.spawn.x; e.y = e.spawn.y; e.state = 'idle'; e.target = null; e.engaged = false; e.hp = e.maxHp; e.clearZone(); }
-      if (this.golem) { this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); }
+      if (this.golem) { for (const p of this.golem.plates || []) { p.img.destroy(); this.removeInteractable(p.o); } this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); this.sealArena(false); }
       this.setLeader(this.party[0], true);
       this.cameras.main.centerOn(this.leader.x, this.leader.y);
       this.waitForWorld(() => { this.cameras.main.fadeIn(700); this.busy = false; });
@@ -1297,18 +1303,21 @@ export class Game extends Phaser.Scene {
     audio.sfx('chest');
     this.fx.burst('gold', img.x, img.y - 10, 24);
     this.state.gold += c.gold || 0;
-    this.state.inventory.push(...c.items);
+    const loot = c.items || [];
+    this.state.inventory.push(...loot);
     addMats(this.state, c.mats || {});
     addPotions(this.state, c.potions || {});
-    if (c.items.length) this.events.emit('loot', { ids: c.items, gold: c.gold });
-    const extras = [c.gold && !c.items.length ? `${c.gold} GOLD` : null,
+    if (loot.length) this.events.emit('loot', { ids: loot, gold: c.gold });
+    const extras = [c.gold && !loot.length ? `${c.gold} GOLD` : null,
       ...Object.entries(c.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`),
       ...Object.entries(c.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean);
-    if (extras.length) this.time.delayedCall(c.items.length ? 2600 * c.items.length : 0, () => this.events.emit('banner', 'TREASURE!', extras.join(', ')));
+    if (extras.length) this.time.delayedCall(loot.length ? 2600 * loot.length : 0, () => this.events.emit('banner', 'TREASURE!', extras.join(', ')));
     if (c.relic === 'grapple') {
       this.state.relics.push('grapple');
-      this.time.delayedCall(2600, () => { audio.sfx('levelUp'); this.events.emit('banner', 'GRAPPLE HOOK ACQUIRED', 'TAP A HOOK POST TO HAUL UP A CLIFF'); });
+      this.time.delayedCall(2600, () => { audio.sfx('levelUp'); this.events.emit('banner', 'GRAPPLE HOOK ACQUIRED', 'TAP A HOOK POST TO HAUL UP A LEDGE OR SWING OVER WATER'); });
     }
+    // some chests are bait: hollow guards rise when the lid opens
+    if (c.ambush) this.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) this.spawnEnemy(k, x * TILE + 8, y * TILE + 8, true); this.bark(h, 'THE ARMOUR IS MOVING!'); });
     this.time.delayedCall(1800, () => this.bark(h, BARKS.chest[h.def.id]));
     this.autosave('chest');
     this.events.emit('party');
@@ -1555,10 +1564,15 @@ export class Game extends Phaser.Scene {
   }
 
   updateBoss() {
-    if (this.flags.golemDefeated || this.golem || !this.ward) return;
-    const L = this.leader;
-    if (Math.hypot(L.x - this.ward.x, L.y - this.ward.y) > W.boss.trigger) return;
-    const g = new Golem(this, this.ward.x, this.ward.y + 44);
+    if (this.flags.golemDefeated || this.golem) return;
+    const L = this.leader, B = W.boss;
+    const ax = B.arena[0] * TILE + 8, ay = B.arena[1] * TILE + 8;
+    // wake only once the whole party is past the arena mouth, so the bars close behind it
+    const inArena = (h) => h.x > 274 * TILE && h.x < 303 * TILE && h.y < 16 * TILE && h.y > 3 * TILE;
+    if (!inArena(L) || Math.hypot(L.x - ax, L.y - ay) > B.trigger * TILE) return;
+    for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y + 6; }
+    const g = new Golem(this, ax, ay - 24, { level: this.enemyLevel(ax, ay) + 1 });
+    g.bossName = B.name;
     this.golem = g;
     this.enemies.push(g);
     audio.sfx('roar');
@@ -1567,9 +1581,26 @@ export class Game extends Phaser.Scene {
     this.tweens.add({ targets: g.sprite, alpha: 1, duration: 400 });
     this.fx.burst('curse', g.x, g.y - 20, 40);
     this.time.delayedCall(500, () => g.alive && g.aggroOn(L));
-    this.events.emit('banner', 'HEX GOLEM', 'GUARDIAN OF THE WARD STONE');
+    this.events.emit('banner', B.name, B.sub);
     this.events.emit('boss', g);
+    this.sealArena(true);
   }
+
+  // Bars drop across the arena's entrance during the boss fight.
+  sealArena(on) {
+    const gx = 288, gy = 16;
+    if (on && !this.arenaGate) {
+      this.arenaGate = this.add.graphics().setDepth(gy * TILE + 20);
+      for (let i = 0; i < 4; i++) this.arenaGate.fillStyle(0x1a1423).fillRect((gx - 1) * TILE + 6 + i * 11, gy * TILE - 6, 4, 26).fillStyle(0x6e6a87).fillRect((gx - 1) * TILE + 7 + i * 11, gy * TILE - 6, 2, 26);
+      for (let x = gx - 1; x <= gx + 1; x++) this.nav.block(x, gy);
+      audio.sfx('doorClose');
+    } else if (!on && this.arenaGate) {
+      this.arenaGate.destroy(); this.arenaGate = null;
+      for (let x = gx - 1; x <= gx + 1; x++) this.nav.unblock?.(x, gy);
+      audio.sfx('doorOpen');
+    }
+  }
+
 
   // ============================================================== update
   update(time, deltaMs) {

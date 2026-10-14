@@ -663,8 +663,8 @@ export class Hero extends Unit {
 
 // ---------------------------------------------------------------- Enemies
 const ENEMY = enemyData;
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow']);
 
 export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
@@ -674,7 +674,7 @@ export class Enemy extends Unit {
     const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 2.2 : 1);
     const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.3 : 1);
     const s = { ...base, dmg: base.dmg * dmgMul, xp: Math.round(base.xp * (1 + L1 * tuning.enemyXpGrowth) * (elite ? 2.5 : 1)), gold: base.gold.map((g) => Math.round(g * (elite ? 2 : 1) * (1 + L1 * tuning.enemyGoldGrowth))) };
-    super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
+    super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : base.inert ? undefined : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
     this.kind = kind;
     this.tex = ENEMY_TEX[kind];
     this.puppet = PUPPETS.has(kind);
@@ -824,6 +824,11 @@ export class Enemy extends Unit {
 
   die(src) {
     this.alive = false;
+    // Hollow Guards fall apart and reform unless burning or struck with light
+    if (this.s.reassemble && !this.reassembled && !this.status?.burn && this.lastElement !== 'light' && this.lastElement !== 'fire') {
+      const sc = this.scene;
+      sc.time.delayedCall(10, () => { const p = sc.spawnEnemy('hollowpile', this.x, this.y + 2, false); p.sprite.setOrigin(0.5, 0.8); sc.floatText(this.x, this.y - 30, 'SMASH THE ARMOUR!', 'fontPlain', 0xffd04a); });
+    }
     if (this.marked) { const sk = this.marked.sk; if (sk) sk.t = 0; this.scene.floatText(this.x, this.y - 40, 'MARK RESET', 'fontPlain', 0xff6a6a); }
     this.clearZone();
     this.scene.onEnemyKilled(this, src);
@@ -837,6 +842,19 @@ export class Enemy extends Unit {
 
   update(dt) {
     if (!this.alive) return;
+    if (this.s.inert) {
+      // armour pile: if nobody smashes it in time, the Hollow Guard stands back up
+      this.reformT = (this.reformT ?? 5) - dt;
+      this.sprite.setAngle(this.reformT < 1.5 ? Math.sin(this.reformT * 40) * 4 : 0);
+      if (this.reformT <= 0) {
+        this.alive = false; this.destroy();
+        const g = this.scene.spawnEnemy('hollow', this.x, this.y, true);
+        g.hp = Math.round(g.maxHp * 0.5); g.reassembled = true;
+        this.scene.floatText(this.x, this.y - 30, 'IT REASSEMBLED!', 'fontPlain', 0xd9b8ff);
+      }
+      this.sync(dt);
+      return;
+    }
     this.physics(dt);
     this.tauntT = Math.max(0, this.tauntT - dt);
     if (this.stunT > 0) {
@@ -995,8 +1013,8 @@ export class Enemy extends Unit {
 // Three phases: (1) slams; (2) <60%: summons hexlings + throws boulders at
 // telegraphed spots; (3) <30%: enraged, faster, slams send out shockwaves.
 export class Golem extends Enemy {
-  constructor(scene, x, y) {
-    super(scene, 'golem', x, y);
+  constructor(scene, x, y, opts = {}) {
+    super(scene, 'golem', x, y, opts);
     this.sprite.setOrigin(0.5, 60 / 64);
     this.shadow.setAlpha(0.28);
     this.phase = 1;
@@ -1015,6 +1033,7 @@ export class Golem extends Enemy {
   setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
 
   damage(amount, src, opts) {
+    if (this.armor > 0) { amount *= 0.2; if (Math.random() < 0.15) this.scene.floatText(this.x, this.y - 60, 'ARMOURED', 'fontPlain'); }
     const r = super.damage(amount, src, opts);
     if (!this.alive) return r;
     const f = this.hp / this.maxHp;
@@ -1029,8 +1048,9 @@ export class Golem extends Enemy {
     audio.sfx('roar');
     sc.shake(400, 0.008);
     if (n === 2) {
-      sc.floatText(this.x, this.y - 70, 'IT CALLS FOR HELP!', 'fontGold');
+      sc.floatText(this.x, this.y - 70, 'ARMOUR PLATES! HOOK THEM OFF!', 'fontGold');
       for (const dx of [-40, 40]) sc.spawnEnemy('hexling', this.x + dx, this.y + 10, true);
+      this.addPlates();
     } else {
       sc.floatText(this.x, this.y - 70, 'ENRAGED!', 'fontGold');
       this.sprite.setTint(0xffa8a8);
@@ -1040,9 +1060,43 @@ export class Golem extends Enemy {
 
   restoreTint() { if (this.phase === 3) this.sprite.setTint(0xffa8a8); else this.sprite.clearTint(); }
 
+  // Phase 2: two plates shield the core (80% less damage) until hooked off.
+  addPlates() {
+    const sc = this.scene;
+    this.armor = 2;
+    this.plates = [-1, 1].map((side) => {
+      const img = sc.add.image(this.x + side * 15, this.y - 34, 'plate').setDepth(this.y + 2);
+      const p = { side, img, on: true };
+      p.o = sc.addInteractable({ x: img.x, y: img.y + 24, reach: 110, standOff: 46, h: 30, kind: 'plate', interact: () => this.hookPlate(p) });
+      return p;
+    });
+    const pip = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
+    sc.time.delayedCall(900, () => sc.bark(pip, sc.state.relics.includes('grapple') ? 'THOSE PLATES! TAP ONE - HOOK IT OFF!' : 'IF ONLY WE COULD PRY THOSE PLATES OFF...'));
+  }
+
+  hookPlate(p) {
+    const sc = this.scene, L = sc.leader;
+    if (!p.on || !this.alive) return;
+    if (!sc.state.relics.includes('grapple')) { sc.bark(L, 'I CAN\'T REACH IT.'); return; }
+    p.on = false;
+    sc.removeInteractable(p.o);
+    const line = sc.add.graphics().setDepth(100000 - 18);
+    audio.sfx('zip');
+    const st = { k: 0 };
+    sc.tweens.add({ targets: st, k: 1, duration: 180, onUpdate: () => line.clear().lineStyle(1, 0xc4cfe2, 1).lineBetween(L.x, L.y - 12, L.x + (p.img.x - L.x) * st.k, L.y - 12 + (p.img.y - L.y + 12) * st.k), onComplete: () => {
+      line.destroy();
+      audio.sfx('bash'); audio.sfx('block');
+      sc.shake(160, 0.008);
+      sc.tweens.add({ targets: p.img, x: p.img.x + p.side * 40, y: p.img.y + 30, angle: p.side * 200, alpha: 0, duration: 500, onComplete: () => p.img.destroy() });
+      this.armor--;
+      if (this.armor <= 0) { this.stunT = 2.2; this.state = 'chase'; this.clearZone(); sc.floatText(this.x, this.y - 70, 'CORE EXPOSED!', 'fontGold', 0xffffff, true); }
+    } });
+  }
+
   die(src) {
     this.alive = false;
     this.clearZone();
+    for (const p of this.plates || []) { p.img.destroy(); this.scene.removeInteractable(p.o); }
     this.scene.onBossKilled(this, src);
     this.destroy();
   }
@@ -1062,6 +1116,7 @@ export class Golem extends Enemy {
     }
     super.update(dt);
     this.sprite.setDepth(this.y);
+    for (const p of this.plates || []) if (p.on) { p.img.setPosition(this.x + p.side * 15, this.y - 34 + Math.sin(Date.now() / 200) * 0.5).setDepth(this.y + 2); p.o.x = p.img.x; p.o.y = p.img.y + 24; }
   }
 
   throwBoulder() {

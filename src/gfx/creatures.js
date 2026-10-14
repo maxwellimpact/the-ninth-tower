@@ -171,3 +171,53 @@ export function portraitFrom(frame, sx, sy, size = 16) {
   ctx.drawImage(frame, sx, sy, size, size, 0, 0, size, size);
   return c;
 }
+
+// ------------------------------------------------------------ Rat swarm
+// Four rats scurrying as one enemy. 32x32 frames, feet on y=26.
+const RAT = { R: 'stone', r: 'slate', d: 'night', E: 'redL', T: 'skinD' };
+function ratAt(ctx, x, y, flip, frame) {
+  const body = frame ? ['.rRRr..', 'rRRRRrT', 'drRRrd.', '.d..d..'] : ['.rRRr..', 'rRRRRr.', 'drRRrdT', 'd....d.'];
+  grid(ctx, body, RAT, x, y, flip);
+  px(ctx, flip ? x + 5 : x + 1, y, 'redL');
+}
+function ratsFrame(phase, jump = 0) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const spots = [[6, 20, false], [17, 18, true], [10, 23, true], [20, 23, false]];
+  spots.forEach(([x, y, f], i) => ratAt(ctx, x + ((phase + i) % 2), y - (jump && i % 2 ? jump : 0), f, (phase + i) % 2));
+  outline(c, 'ink');
+  return c;
+}
+export function buildRats() {
+  return {
+    idle: [ratsFrame(0), ratsFrame(1)],
+    walk: [ratsFrame(0), ratsFrame(1), ratsFrame(0, 1), ratsFrame(1, 1)],
+    windup: [ratsFrame(0, 2)],
+    attack: [ratsFrame(1, 3), ratsFrame(0)],
+    hurt: [ratsFrame(1)],
+  };
+}
+
+// collapsed Hollow Guard armour (it reassembles unless smashed)
+export function hollowPile() {
+  const [c, ctx] = makeCanvas(24, 16);
+  grid(ctx, [
+    '.....kkkk...........',
+    '....kKKKKk..........',
+    '....kKEEKk...ddd....',
+    '.....kKKk...dKKKd...',
+    '..kkk..k...dKkkKd...',
+    '.kKKKk....kdKKKKdk..',
+    'kKkkKKkkkkKKkkkkKKk.',
+    'kkkkkkkkkkkkkkkkkkk.',
+  ], { k: 'steelD', K: 'mist', E: 'curseL', d: 'slate' }, 2, 6);
+  outline(c, 'ink');
+  return c;
+}
+
+// armour plate bolted onto the Gatewarden in phase 2 (hooked off with the Grapple)
+export function golemPlate() {
+  const [c, ctx] = makeCanvas(14, 16);
+  grid(ctx, ['.kkkkkkkk.', 'kKWWKKKKKk', 'kWKKKKKKKk', 'kKKdKKdKKk', 'kKKKKKKKKk', 'kKKKKKKKKk', 'kKKdKKdKKk', 'kKKKKKKKKk', '.kKKKKKKk.', '..kkkkkk..'], { k: 'steelD', K: 'steel', W: 'steelL', d: 'night' }, 2, 3);
+  outline(c, 'ink');
+  return c;
+}

@@ -7,7 +7,7 @@ import { T, MAP_W, MAP_H } from '../world/map.js';
 const COL = {
   [T.GRASS]: 'grass', [T.PATH]: 'dirtL', [T.SAND]: 'sand', [T.WATER]: 'water', [T.PLATEAU]: 'grassL',
   [T.CLIFF]: 'slate', [T.STAIRS]: 'bone', [T.PAVED]: 'mist', [T.WALL]: 'bone', [T.RIM]: 'slate',
-  [T.MARSH]: 'moss', [T.SHALLOW]: 'bogL', [T.BOG]: 'bogD', [T.CHASM]: 'ink', [T.CAVEFLOOR]: 'caveXL',
+  [T.MARSH]: 'moss', [T.SHALLOW]: 'bogL', [T.BOG]: 'bogD', [T.CHASM]: 'ink', [T.CAVEFLOOR]: 'caveXL', [T.DFLOOR]: 'stone', [T.DWALL]: 'night',
   [T.CAVEWALL]: 'caveD', [T.BRIDGE]: 'wood', [T.MOUTH]: 'ink',
 };
 const FOG = rgb('night');
