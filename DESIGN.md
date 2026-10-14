@@ -1182,7 +1182,7 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; combat difficulty on Normal approved. See the decision log.
 
 ### Part II review — in progress (going through one by one; nothing below is decided yet)
-1. 4 visible gear slots + 2 trinkets; Feet dropped. *(recommended)*
+1. 4 visible gear slots + 2 trinkets; Feet dropped. **[LOCKED 2026-10-14]**
 2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. *(recommended)*
 3. Automatic stat growth per hero; no stat points. *(recommended)*
 4. Cooldowns only; no mana. *(recommended)*
