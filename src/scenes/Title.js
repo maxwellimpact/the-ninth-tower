@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { HEROES } from '../gfx/heroes.js';
 import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
-import { newState, loadState, clearSave } from '../game/state.js';
+import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
 
 // Title + "choose your starting hero" (the other two join as first recruits).
 export class Title extends Phaser.Scene {
@@ -30,7 +30,7 @@ export class Title extends Phaser.Scene {
     this.add.circle(tx, base - 94, 2, 0xe7a6ff);
 
     this.add.bitmapText(W / 2, 22, 'fontGold', 'THE NINTH TOWER').setOrigin(0.5).setScale(3);
-    this.add.bitmapText(W / 2, 42, 'fontPlain', 'PROTOTYPE - DEMO 2').setOrigin(0.5);
+    this.add.bitmapText(W / 2, 42, 'fontPlain', 'WAVE 1 PREVIEW').setOrigin(0.5);
     const save = loadState();
     if (save) this.saveMenu(save);
     else this.heroSelect();
@@ -88,7 +88,7 @@ export class Title extends Phaser.Scene {
       this.add.bitmapText(x, y + 14, 'fontGold', def.name.toUpperCase()).setOrigin(0.5);
       this.add.bitmapText(x, y + 22, 'fontPlain', def.title.toUpperCase()).setOrigin(0.5);
       const st = HERO_STATS[def.id];
-      this.add.bitmapText(x, y + 31, 'fontPlain', SKILLS[def.id].map((k) => k.name).join('\n')).setOrigin(0.5, 0).setScale(1).setCenterAlign();
+      this.add.bitmapText(x, y + 31, 'fontPlain', newSkillState(def.id).skills.active.filter(Boolean).map((k) => skillDef(k).name).join('\n')).setOrigin(0.5, 0).setScale(1).setCenterAlign();
       const z = this.add.zone(x - 40, y - 52, 80, 96).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerover', () => { drawCard(true); s.play(`${def.id}_walk_down`); });
       z.on('pointerout', () => { drawCard(false); s.play(`${def.id}_idle_down`); });
