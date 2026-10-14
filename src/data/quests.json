@@ -845,9 +845,9 @@
    "giver": "kestrel",
    "region": "vale",
    "trigger": [
-    13,
-    40,
-    5
+    5,
+    38,
+    3
    ],
    "offer": [
     "A HAWK CIRCLES LOW, SCREECHING. IT DIPS TOWARD THE WESTERN WOODS, THEN BACK TO YOU.",
@@ -860,16 +860,12 @@
      "text": "FOLLOW THE HAWK INTO THE WESTERN WOODS",
      "path": [
       [
-       11,
+       5,
        41
       ],
       [
-       8,
-       43
-      ],
-      [
-       6,
-       45
+       5,
+       44
       ],
       [
        6,
@@ -1207,8 +1203,8 @@
   {
    "id": "kestrel",
    "name": "KESTREL",
-   "x": 13,
-   "y": 40,
+   "x": 5,
+   "y": 38,
    "look": "hawk",
    "hidden": true,
    "lines": [

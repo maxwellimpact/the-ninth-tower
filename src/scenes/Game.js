@@ -1161,6 +1161,27 @@ export class Game extends Phaser.Scene {
     return true;
   }
 
+  // Health bars over enemies you're fighting: they appear once a foe is
+  // engaged (or hurt) and stay until it disengages. Bosses use the top bar.
+  drawEnemyBars() {
+    const g = (this.hpBars ??= this.add.graphics().setDepth(TOP - 35));
+    g.clear();
+    for (const e of this.enemies) {
+      if (!e.alive || e.boss || e.submerged || e.riseT > 0) continue;
+      const hurt = e.hp < e.maxHp;
+      if (!(e.engaged || (hurt && e.state !== 'idle' && e.state !== 'return'))) continue;
+      const w = e.named ? 26 : e.elite ? 20 : 16;
+      const top = e.sprite.y - e.sprite.displayHeight * e.sprite.originY;
+      const x = Math.round(e.x - w / 2), y = Math.round(top + (e.puppet ? 10 : 6) - 6);
+      const f = Math.max(0, e.hp / e.maxHp);
+      g.fillStyle(0x1a1423, 0.9).fillRect(x - 1, y - 1, w + 2, 4);
+      g.fillStyle(0x3a2f52).fillRect(x, y, w, 2);
+      g.fillStyle(f > 0.5 ? 0xec6a5e : f > 0.25 ? 0xf29a4e : 0xffd04a).fillRect(x, y, Math.max(1, Math.round(w * f)), 2);
+      if (e.wardShield > 0) g.fillStyle(0xd9b8ff).fillRect(x, y - 1, Math.round(w * Math.min(1, e.wardShield / e.maxHp)), 1);
+      if (e.elite) g.fillStyle(0xf2c14e).fillRect(x - 1, y - 1, 1, 4).fillRect(x + w, y - 1, 1, 4);
+    }
+  }
+
   // ============================================================== helpers
   hitStop(t) { this.hitStopT = Math.max(this.hitStopT, t); }
   shake(ms, amt) { this.cameras.main.shake(ms, amt); }
@@ -1872,6 +1893,7 @@ export class Game extends Phaser.Scene {
 
     for (const h of this.party) { if (h.zipping) h.sync(dt); else h.update(dt); this.gearFx.update(h, dt); }
     for (const e of this.enemies) e.update(dt);
+    this.drawEnemyBars();
     this.enemies = this.enemies.filter((e) => e.alive);
     for (const u of this.wardUnits()) u.update(dt);
     this.updateProjectiles(dt);
