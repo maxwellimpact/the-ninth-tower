@@ -7,6 +7,7 @@ import { SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCo
 import tuning from '../data/tuning.json';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
+import { fitString } from './textfit.js';
 import { TRAITS } from '../game/itemgen.js';
 import { ERRANDS } from '../game/quests.js';
 import HERO_DATA from '../data/heroes.json';
@@ -69,8 +70,10 @@ export class Menu extends Phaser.Scene {
     return z;
   }
 
-  t(x, y, str, font = 'font', tint) {
-    const o = this.add.bitmapText(Math.round(x), Math.round(y), font, String(str).toUpperCase());
+  // maxW: fit inside this width (shortened with ".."); maxLines > 1 wraps first
+  t(x, y, str, font = 'font', tint, maxW = 0, maxLines = 1) {
+    const text = maxW > 0 ? fitString(str, maxW, maxLines) : String(str).toUpperCase();
+    const o = this.add.bitmapText(Math.round(x), Math.round(y), font, text);
     if (tint !== undefined) o.setTint(tint);
     this.dyn.push(o);
     return o;
@@ -117,16 +120,18 @@ export class Menu extends Phaser.Scene {
     const mode = H > W ? 'portrait' : W >= 360 && H >= 215 ? 'wide' : 'short';
     const g = this.add.graphics();
     this.dyn.push(g);
-    g.fillStyle(C.deep, 0.94).fillRect(0, 0, W, H);
+    g.fillStyle(C.deep, 1).fillRect(0, 0, W, H);
     this.gfx = g;
     const h = this.hero;
 
     // header: tabs
     const tabs = ['gear', 'skills', 'craft', 'bag', 'journal'];
-    const tw = Math.min(38, Math.floor((W - 34) / tabs.length)) - 3;
+    const narrow = W < 300;
+    // narrow screens: tabs share the row with only the close button; gold moves down a row
+    const tw = Math.min(38, Math.floor((W - (narrow ? 32 : 70)) / tabs.length)) - 3;
     tabs.forEach((tb, i) => {
       const x = 4 + i * (tw + 3), sel = tb === this.tab;
-      const label = tw < 36 && tb === 'journal' ? 'QUEST' : tb.toUpperCase();
+      const label = tw * 1 < tb.length * 5 + 4 ? { gear: 'GEAR', skills: 'SKILL', craft: 'CRAFT', bag: 'BAG', journal: 'QUEST' }[tb] : tb === 'journal' ? 'QUEST' : tb.toUpperCase();
       panel(g, x, 4, tw, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
       this.t(x + Math.round(tw / 2 - label.length * 2.5), 8, label, sel ? 'fontGold' : 'fontPlain');
       this.btn(x, 2, tw, 18, () => { if (this.tab !== tb) { audio.sfx('click'); this.tab = tb; this.selected = null; this.render(); } });
@@ -135,7 +140,8 @@ export class Menu extends Phaser.Scene {
     this.t(W - 20, 9, 'X');
     this.btn(W - 34, 0, 34, 24, () => this.close());
     const gold = `${this.g.state.gold}G`;
-    this.t(W - 32 - gold.length * 5, 9, gold, 'fontGold');
+    if (narrow) this.t(W - 6 - gold.length * 5, 25, gold, 'fontGold');
+    else this.t(W - 32 - gold.length * 5, 9, gold, 'fontGold');
 
     if (this.tab === 'bag') { this.renderBag(W, H); return; }
     if (this.tab === 'journal') { this.renderJournal(W, H); return; }
@@ -202,7 +208,7 @@ export class Menu extends Phaser.Scene {
       const ic = this.add.image(x + 2, y + Math.floor((rh - 3 - 16) / 2), d.icon).setOrigin(0);
       if (!rank) ic.setAlpha(0.35);
       this.dyn.push(ic);
-      this.t(x + 21, y + 2, d.name, rank ? 'font' : 'fontPlain', rank ? (eq ? 0xfff0a0 : 0xffffff) : 0x9d93b3);
+      this.t(x + 21, y + 2, d.name, rank ? 'font' : 'fontPlain', rank ? (eq ? 0xfff0a0 : 0xffffff) : 0x9d93b3, w - 52);
       if (locked) this.t(x + 21, y + rh - 11, `UNLOCKS AT LV${d.unlock}`, 'fontPlain', 0x9d93b3);
       else {
         for (let r = 0; r < 5; r++) g.fillStyle(r < rank ? C.gold : C.slate).fillRect(x + 21 + r * 6, y + rh - 9, 4, 3);
@@ -252,7 +258,7 @@ export class Menu extends Phaser.Scene {
     const d = sid && heroSkillIds(this.hero.def.id).find(([k]) => k === sid)?.[1];
     if (!d) { this.t(x, y, 'TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +15%).', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
     this.t(x, y, d.name, 'fontGold');
-    this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain').setMaxWidth(w);
+    this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain', undefined, w, 4);
   }
 
   drawPreview(x, y, w, h) {
@@ -302,10 +308,10 @@ export class Menu extends Phaser.Scene {
       const iy = yy + Math.floor((ph - isz) / 2);
       g.fillStyle(C.ink).fillRect(x + 2, iy, isz, isz);
       if (it) this.dyn.push(this.add.image(x + 2 + isz / 2, iy + isz / 2, itemTex(this, id)).setOrigin(0.5).setScale(isz / 16 > 1 ? 1 : isz / 16));
-      if (compact) this.t(x + isz + 6, yy + Math.floor(ph / 2) - 3, it ? itemName(id) : `${SLOT_LABEL[slot]} (EMPTY)`, it ? 'font' : 'fontPlain', it ? RARITY[it.rarity].col : 0x888888);
+      if (compact) this.t(x + isz + 6, yy + Math.floor(ph / 2) - 3, it ? itemName(id) : `${SLOT_LABEL[slot]} (EMPTY)`, it ? 'font' : 'fontPlain', it ? RARITY[it.rarity].col : 0x888888, w - isz - 10);
       else {
         this.t(x + 25, yy + 3, SLOT_LABEL[slot], 'fontPlain');
-        this.t(x + 25, yy + ph - 10, it ? itemName(id) : '-', 'font', it ? RARITY[it.rarity].col : 0x888888);
+        this.t(x + 25, yy + ph - 10, it ? itemName(id) : '-', 'font', it ? RARITY[it.rarity].col : 0x888888, w - 28);
       }
       this.btn(x, yy, w, rowH - 3, () => this.selectSlot(slot));
     });
@@ -326,7 +332,7 @@ export class Menu extends Phaser.Scene {
     });
     const it = items[hs.equip[this.slot]];
     this.t(x, y + 41, `${SLOT_LABEL[this.slot]}: `, 'fontPlain');
-    if (it) this.t(x + (SLOT_LABEL[this.slot].length + 2) * 5, y + 41, itemName(hs.equip[this.slot]), 'font', RARITY[it.rarity].col);
+    if (it) this.t(x + (SLOT_LABEL[this.slot].length + 2) * 5, y + 41, itemName(hs.equip[this.slot]), 'font', RARITY[it.rarity].col, w - (SLOT_LABEL[this.slot].length + 2) * 5);
   }
 
   drawList(x, y, w, bottom, rowH, header = true) {
@@ -345,7 +351,7 @@ export class Menu extends Phaser.Scene {
       const iy = yy + Math.floor((rowH - 3 - 17) / 2);
       g.fillStyle(C.ink).fillRect(x + 3, iy, 17, 17);
       this.dyn.push(this.add.image(x + 3, iy, itemTex(this, id)).setOrigin(0));
-      this.t(x + 23, yy + 3, itemName(id), 'font', RARITY[it.rarity].col);
+      this.t(x + 23, yy + 3, itemName(id), 'font', RARITY[it.rarity].col, w - 26);
       if (isEq) this.t(x + 23, yy + rowH - 12, 'EQUIPPED', 'fontPlain', 0xf2c14e);
       else {
         const d = statDelta(h.def.id, hs.level, hs.equip, id);
@@ -360,7 +366,7 @@ export class Menu extends Phaser.Scene {
       }
       this.btn(x, yy, w, rowH - 3, () => { if (isEq) { this.selected = id; this.render(); } else this.equip(id); });
     });
-    if (list.length <= 1) this.t(x, y + list.length * rowH + 4, kind === 'trinket' ? 'RINGS AND CHARMS: ANY HERO CAN WEAR TWO.' : 'FIND MORE IN CHESTS AND FROM FOES.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    if (list.length <= 1) this.t(x, y + list.length * rowH + 4, kind === 'trinket' ? 'RINGS AND CHARMS: ANY HERO CAN WEAR TWO.' : 'FIND MORE IN CHESTS AND FROM FOES.', 'fontPlain', 0x9d93b3, w, 3);
   }
 
   drawDesc(x, y, w) {
@@ -370,10 +376,10 @@ export class Menu extends Phaser.Scene {
     const st = this.g.state;
     panel(this.gfx, x, y, w, 28, C.night, C.slate);
     const tags = [RARITY[it.rarity].label, it.element ? it.element.toUpperCase() : null, it.passive ? 'ECHO' : null, it.trait ? TRAITS[it.trait]?.name : null].filter(Boolean).join(' - ');
-    this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col).setMaxWidth(w - 8);
+    this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col, w - 8);
     const sockets = socketCount(id) ? `  SOCKETS: ${Array.from({ length: socketCount(id) }, (_, i) => (st.sockets[id]?.[i] ? gemName(st.sockets[id][i]) : 'EMPTY')).join(', ')}` : '';
     const line = it.desc || [statLine(it), it.trait ? TRAITS[it.trait]?.desc : null].filter(Boolean).join('  ');
-    this.t(x + 4, y + 14, line + sockets, 'fontPlain').setMaxWidth(w - 8);
+    this.t(x + 4, y + 14, line + sockets, 'fontPlain', undefined, w - 8, 2);
   }
 
   // ------------------------------------------------------------------ CRAFT
@@ -400,8 +406,9 @@ export class Menu extends Phaser.Scene {
       panel(g, x, y, w, rowH - 3, C.night, ok ? 0x6fd3a0 : C.slate);
       g.fillStyle(C.ink).fillRect(x + 3, y + 2, 17, 17);
       this.dyn.push(this.add.image(x + 3, y + 2, icon).setOrigin(0));
-      this.t(x + 23, y + 3, title, 'font', titleCol);
-      this.t(x + 23, y + 12, sub, 'fontPlain', subCol).setMaxWidth(w - 80);
+      const bwid = btnLabel ? Math.max(26, btnLabel.length * 5 + 6) + 8 : 4;
+      this.t(x + 23, y + 3, title, 'font', titleCol, w - 23 - bwid);
+      this.t(x + 23, y + 12, sub, 'fontPlain', subCol, w - 23 - bwid);
       if (btnLabel) {
         const bw = Math.max(26, btnLabel.length * 5 + 6);
         panel(g, x + w - bw - 4, y + 4, bw, 13, ok ? 0x2f5d3a : C.night, ok ? 0x8cff8c : C.slate);
@@ -502,8 +509,8 @@ export class Menu extends Phaser.Scene {
       if (y + 30 > H - 4) break;
       const tracked = st.tracked === id;
       panel(g, x, y, w, 27, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
-      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font');
-      this.t(x + 5, y + 15, Qm.stepText(id), 'fontPlain').setMaxWidth(w - 60);
+      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font', w - 60);
+      this.t(x + 5, y + 15, Qm.stepText(id), 'fontPlain', undefined, w - 10);
       this.t(x + w - 50, y + 4, tracked ? 'TRACKED' : 'TAP: TRACK', 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
       this.btn(x, y, w, 27, () => { st.tracked = id; audio.sfx('click'); this.render(); });
       y += 30;

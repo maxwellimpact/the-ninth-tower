@@ -3,6 +3,7 @@ import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
+import { fitString } from './textfit.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
@@ -197,8 +198,10 @@ export class UI extends Phaser.Scene {
     this.trackTxt.setPosition(W - 6, this.mmY + this.MM.h + 13).setMaxWidth(tw);
     this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
     if (W < 360) this.hint.setVisible(false); // no room beside the combat grid on narrow phones
-    this.bannerT.setPosition(W / 2, 40);
-    this.bannerS.setPosition(W / 2, 56);
+    // portrait: drop banners below the hero portraits
+    this.bannerY = W < 300 ? 112 + T0 : 40;
+    this.bannerT.setPosition(W / 2, this.bannerY);
+    this.bannerS.setPosition(W / 2, this.bannerY + 16);
     this.bossName.setPosition(W / 2, 12);
     this.loadTxt.setPosition(W / 2, H / 2);
     this.setButtonVisible(this.speedDown, this.dbg.visible);
@@ -211,10 +214,14 @@ export class UI extends Phaser.Scene {
   }
 
   showBanner(title, sub) {
-    this.bannerT.setText(title); this.bannerS.setText(sub || '');
+    // big title at 2x when it fits, otherwise 1x; the subtitle wraps to two lines
+    this.bannerT.setScale(2).setText(title);
+    if (this.bannerT.width > this.W - 8) this.bannerT.setScale(1).setText(fitString(title, this.W - 8));
+    this.bannerS.setText(fitString(sub || '', this.W - 12, 2)).setCenterAlign();
     this.tweens.killTweensOf([this.bannerT, this.bannerS]);
-    this.bannerT.setAlpha(0).setY(34); this.bannerS.setAlpha(0);
-    this.tweens.add({ targets: this.bannerT, alpha: 1, y: 40, duration: 400 });
+    const by = this.bannerY ?? 40;
+    this.bannerT.setAlpha(0).setY(by - 6); this.bannerS.setAlpha(0).setY(by + (this.bannerT.scaleX > 1 ? 16 : 11));
+    this.tweens.add({ targets: this.bannerT, alpha: 1, y: by, duration: 400 });
     this.tweens.add({ targets: this.bannerS, alpha: 1, duration: 400, delay: 200 });
     this.tweens.add({ targets: [this.bannerT, this.bannerS], alpha: 0, duration: 600, delay: 3200 });
   }
@@ -239,10 +246,10 @@ export class UI extends Phaser.Scene {
     this.loot.add(g);
     this.loot.add(this.add.image(x + 8, y + 11, itemTex(this, n.id)).setOrigin(0).setScale(2));
     this.loot.add(this.add.bitmapText(x + 48, y + 7, 'font', 'FOUND!'));
-    this.loot.add(this.add.bitmapText(x + 48, y + 17, 'fontGold', it.name).setTint(it.rarity === 'unique' ? 0xffffff : r.col));
+    this.loot.add(this.add.bitmapText(x + 48, y + 17, 'fontGold', fitString(it.name, w - 52)).setTint(it.rarity === 'unique' ? 0xffffff : r.col));
     this.loot.add(this.add.bitmapText(x + 48, y + 27, 'fontPlain', `${r.label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY HERO'}`).setTint(r.col));
     const st = Object.entries(it.stats).map(([k, v]) => (k === 'crit' || k === 'cdr' ? `+${Math.round(v * 100)}% ${k === 'cdr' ? 'CDR' : 'CRIT'}` : `+${v} ${k.toUpperCase()}`)).join('  ') + (it.element ? `  ${it.element.toUpperCase()}` : '') + (it.passive ? '  ECHO' : '') + (it.trait ? `  ${TRAITS[it.trait].name}` : '');
-    this.loot.add(this.add.bitmapText(x + 48, y + 37, 'fontPlain', st + (n.gold ? `   +${n.gold} GOLD` : '')));
+    this.loot.add(this.add.bitmapText(x + 48, y + 37, 'fontPlain', fitString(st + (n.gold ? `   +${n.gold} GOLD` : ''), w - 52)));
     this.loot.setVisible(true).setAlpha(0);
     this.tweens.add({ targets: this.loot, alpha: 1, duration: 200 });
     this.tweens.add({ targets: this.loot, alpha: 0, duration: 300, delay: 2300, onComplete: () => { this.loot.setVisible(false); this.nextLoot(); } });

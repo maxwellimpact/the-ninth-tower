@@ -9,6 +9,7 @@ import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
 import { shopGear, gearPrice, tierForLevel, registerItem } from '../game/itemgen.js';
 import { statLine } from './Menu.js';
+import { fitString } from './textfit.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, gold: 0xf2c14e, deep: 0x16121f };
 
@@ -27,8 +28,8 @@ export class Shop extends Phaser.Scene {
 
   close() { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); }
 
-  t(x, y, str, font = 'font', tint) {
-    const o = this.add.bitmapText(Math.round(x), Math.round(y), font, String(str).toUpperCase());
+  t(x, y, str, font = 'font', tint, maxW = 0, maxLines = 1) {
+    const o = this.add.bitmapText(Math.round(x), Math.round(y), font, maxW > 0 ? fitString(str, maxW, maxLines) : String(str).toUpperCase());
     if (tint !== undefined) o.setTint(tint);
     this.dyn.push(o);
     return o;
@@ -78,7 +79,7 @@ export class Shop extends Phaser.Scene {
     const st = this.g.state;
     const g = this.add.graphics();
     this.dyn.push(g);
-    g.fillStyle(C.deep, 0.95).fillRect(0, 0, Wd, H);
+    g.fillStyle(C.deep, 1).fillRect(0, 0, Wd, H);
     this.t(8, 7, "MARLA'S GOODS", 'fontGold');
     panel(g, Wd - 26, 5, 18, 14, C.night, 0x6e6a87);
     this.t(Wd - 20, 9, 'X');
@@ -101,8 +102,8 @@ export class Shop extends Phaser.Scene {
       panel(g, x, y, w, rowH - 3, C.night, can ? e.col : C.slate);
       g.fillStyle(C.ink).fillRect(x + 3, y + 3, 17, 17);
       this.dyn.push(this.add.image(x + 3, y + 3, e.icon).setOrigin(0));
-      this.t(x + 23, y + 4, e.name, 'font', e.col);
-      this.t(x + 23, y + 13, e.sub, 'fontPlain').setMaxWidth(w - 80);
+      this.t(x + 23, y + 4, e.name, 'font', e.col, w - 23 - 48);
+      this.t(x + 23, y + 13, e.sub, 'fontPlain', undefined, w - 23 - 48);
       const label = `${e.sell ? '+' : ''}${e.price}G`;
       panel(g, x + w - 42, y + 5, 38, 13, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
       this.t(x + w - 23 - label.length * 2.5, y + 8, label, can ? 'fontGold' : 'fontPlain');

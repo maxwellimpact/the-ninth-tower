@@ -11,6 +11,7 @@ import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
 import { rollGearDrop, ensureItems } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
+import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
 import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
@@ -49,6 +50,7 @@ export class Game extends Phaser.Scene {
   create(data) {
     const st = (this.state = data.state);
     st.stats ??= { kills: 0, levelUps: [] };
+    this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
     ensureItems(st);
@@ -1201,8 +1203,9 @@ export class Game extends Phaser.Scene {
 
   bark(h, text) {
     if (!h || !text) return;
-    if (this.barkObj) this.barkObj.destroy();
-    const t = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5, 1).setDepth(TOP + 6);
+    if (this.barkObj?.active) this.barkObj.destroy();
+    text = fitString(text, Math.min(200, this.scale.width - 16), 3); // wraps on narrow screens
+    const t = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5, 1).setDepth(TOP + 6).setCenterAlign();
     this.barkObj = t;
     let i = 0;
     const ev = this.time.addEvent({ delay: 32, repeat: text.length - 1, callback: () => {
@@ -1909,7 +1912,13 @@ export class Game extends Phaser.Scene {
     this.groupT = (this.groupT || 0) - dt;
     if (this.groupT <= 0) { this.groupT = 0.4; this.updateGroups(0.4); }
 
-    if (this.barkObj && this.barkObj.follow) this.barkObj.setPosition(Math.round(this.barkObj.follow.x), Math.round(this.barkObj.follow.y) - 30);
+    if (this.barkObj && !this.barkObj.active) this.barkObj = null;
+    if (this.barkObj && this.barkObj.follow) {
+      // keep speech inside the view even when the speaker is at the screen edge
+      const v = this.cameras.main.worldView, half = this.barkObj.width / 2 + 4;
+      const bx = Phaser.Math.Clamp(this.barkObj.follow.x, v.x + half, Math.max(v.x + half, v.right - half));
+      this.barkObj.setPosition(Math.round(bx), Math.round(Math.max(this.barkObj.follow.y - 30, v.y + this.barkObj.height + 4)));
+    }
 
     this.moteT -= dt;
     const mw = this.wards.find((w) => !this.flags[w.def.flag] && Math.hypot(L.x - w.C.x, L.y - w.C.y) < 500);

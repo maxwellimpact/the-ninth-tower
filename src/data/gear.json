@@ -255,7 +255,7 @@
     ]
    },
    "offhand": {
-    "name": "PARRYING DAGGER",
+    "name": "PARRY DAGGER",
     "mat": "metal",
     "looks": [
      "parry_steel",
@@ -353,7 +353,7 @@
     ]
    },
    "body": {
-    "name": "RANGER LEATHERS",
+    "name": "LEATHERS",
     "mat": "leather",
     "looks": [
      "leathers_ranger",
