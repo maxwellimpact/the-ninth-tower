@@ -1,0 +1,95 @@
+{
+ "materials": {
+  "herb": {
+   "name": "MOONHERB",
+   "short": "HERB"
+  },
+  "gel": {
+   "name": "SLIME GEL",
+   "short": "GEL"
+  },
+  "ore": {
+   "name": "IRON ORE",
+   "short": "ORE"
+  },
+  "crystal": {
+   "name": "HOLLOW CRYSTAL",
+   "short": "CRYSTAL"
+  },
+  "scrap": {
+   "name": "GOBLIN SCRAP",
+   "short": "SCRAP"
+  }
+ },
+ "consumables": {
+  "potion": {
+   "name": "HEALTH POTION",
+   "desc": "HEALS THE LEADER FOR HALF THEIR HP.",
+   "heal": 0.5
+  },
+  "elixir": {
+   "name": "ELIXIR",
+   "desc": "REVIVES AND HEALS THE WHOLE PARTY.",
+   "heal": 0.6,
+   "revive": true
+  }
+ },
+ "recipes": [
+  {
+   "id": "potion",
+   "makes": "potion",
+   "needs": {
+    "herb": 2,
+    "gel": 1
+   }
+  },
+  {
+   "id": "elixir",
+   "makes": "elixir",
+   "needs": {
+    "herb": 2,
+    "gel": 2,
+    "crystal": 1
+   }
+  }
+ ],
+ "refine": {
+  "max": 3,
+  "perLevel": {
+   "ore": 2,
+   "scrap": 2
+  },
+  "goldPerLevel": 25,
+  "bonus": {
+   "weapon": {
+    "atk": 2
+   },
+   "head": {
+    "def": 2
+   },
+   "body": {
+    "def": 3
+   },
+   "offhand": {
+    "def": 2
+   }
+  }
+ },
+ "elements": {
+  "fire": {
+   "name": "FIRE",
+   "status": "burn",
+   "color": "0xff7b2e"
+  },
+  "frost": {
+   "name": "FROST",
+   "status": "chill",
+   "color": "0x6fd3ff"
+  },
+  "venom": {
+   "name": "VENOM",
+   "status": "poison",
+   "color": "0x8cff8c"
+  }
+ }
+}

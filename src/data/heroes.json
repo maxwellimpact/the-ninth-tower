@@ -1,0 +1,108 @@
+[
+ {
+  "id": "brann",
+  "name": "Brann",
+  "title": "Guardian",
+  "stats": {
+   "maxHp": 150,
+   "atk": 11,
+   "range": 17,
+   "atkCd": 0.75,
+   "speed": 64,
+   "crit": 0.08,
+   "role": "tank",
+   "hitAt": 0.1
+  },
+  "skills": [
+   "bash",
+   "taunt"
+  ],
+  "ultimate": "bulwark",
+  "voice": {
+   "pitch": 150,
+   "wave": "square",
+   "speed": 0.9
+  },
+  "equip": {
+   "head": "iron_helm",
+   "body": "guard_plate",
+   "weapon": "iron_sword",
+   "offhand": "round_shield"
+  },
+  "recruit": [
+   "YOU! YOU'RE HEADING EAST? THEN YOU'LL NEED A SHIELD BETWEEN YOU AND WHATEVER'S OUT THERE.",
+   "BRANN, LATE OF THE KING'S GUARD. I FAILED HIM ONCE. NOT AGAIN."
+  ]
+ },
+ {
+  "id": "pip",
+  "name": "Pip",
+  "title": "Arcanist",
+  "stats": {
+   "maxHp": 85,
+   "atk": 10,
+   "range": 105,
+   "atkCd": 1.0,
+   "speed": 62,
+   "crit": 0.1,
+   "role": "caster",
+   "hitAt": 0.13
+  },
+  "skills": [
+   "fireball",
+   "mend"
+  ],
+  "ultimate": "meteor",
+  "voice": {
+   "pitch": 520,
+   "wave": "triangle",
+   "speed": 1.25
+  },
+  "equip": {
+   "head": "apprentice_hat",
+   "body": "apprentice_robe",
+   "weapon": "oak_staff",
+   "offhand": "worn_tome"
+  },
+  "recruit": [
+   "OH THANK GOODNESS. I WAS LOSING TO A PUDDLE. AN ANGRY PUDDLE.",
+   "I'M PIP. I USED TO WORK FOR MALGRIM. FILING, MOSTLY. I KNOW HOW HIS WARDS WORK!"
+  ]
+ },
+ {
+  "id": "sable",
+  "name": "Sable",
+  "title": "Duelist",
+  "stats": {
+   "maxHp": 105,
+   "atk": 7,
+   "range": 15,
+   "atkCd": 0.42,
+   "speed": 74,
+   "crit": 0.25,
+   "role": "melee",
+   "hitAt": 0.07
+  },
+  "skills": [
+   "step",
+   "fan"
+  ],
+  "ultimate": "thousand_cuts",
+  "voice": {
+   "pitch": 330,
+   "wave": "square",
+   "speed": 1.1,
+   "duty": 0.25
+  },
+  "equip": {
+   "head": "red_bandana",
+   "body": "leather_jacket",
+   "weapon": "steel_dagger",
+   "offhand": "parrying_dagger"
+  },
+  "recruit": [
+   "RELAX. IF I WANTED YOUR PURSE I'D ALREADY HAVE IT.",
+   "SABLE. I GO WHERE THE TREASURE IS, AND LATELY THE TREASURE IS WHEREVER YOU'RE GOING."
+  ]
+ }
+]

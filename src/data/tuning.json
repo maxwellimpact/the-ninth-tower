@@ -1,0 +1,16 @@
+{
+ "gameSpeed": 0.72,
+ "defK": 40,
+ "xpBase": 50,
+ "xpPerLevel": 50,
+ "fineDropChance": 0.165,
+ "ultChargeDeal": 0.2,
+ "ultChargeTake": 0.35,
+ "difficulty": {
+  "easy": 0.6,
+  "normal": 1.0,
+  "hard": 1.4
+ },
+ "ultPassive": 2.2,
+ "xpQuad": 8
+}

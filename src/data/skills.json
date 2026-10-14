@@ -1,0 +1,66 @@
+{
+ "bash": {
+  "name": "SHIELD BASH",
+  "icon": "icon_bash",
+  "cd": 6,
+  "range": 34,
+  "short": "BASH"
+ },
+ "taunt": {
+  "name": "TAUNT",
+  "icon": "icon_taunt",
+  "cd": 10,
+  "range": 0,
+  "short": "TAUNT"
+ },
+ "fireball": {
+  "name": "FIREBALL",
+  "icon": "icon_fireball",
+  "cd": 5,
+  "range": 115,
+  "short": "FIRE"
+ },
+ "mend": {
+  "name": "MEND",
+  "icon": "icon_mend",
+  "cd": 9,
+  "range": 0,
+  "note": "CLERIC",
+  "short": "MEND"
+ },
+ "step": {
+  "name": "SHADOW STEP",
+  "icon": "icon_step",
+  "cd": 5,
+  "range": 110,
+  "short": "STEP"
+ },
+ "fan": {
+  "name": "FAN OF KNIVES",
+  "icon": "icon_fan",
+  "cd": 7,
+  "range": 40,
+  "short": "KNIVES"
+ },
+ "bulwark": {
+  "name": "BULWARK",
+  "desc": "SHIELDS THE WHOLE PARTY AND TAUNTS EVERYTHING NEARBY",
+  "ult": true,
+  "icon": "icon_bulwark",
+  "short": "BULWARK"
+ },
+ "meteor": {
+  "name": "METEOR",
+  "desc": "CALLS DOWN A METEOR ON A CLUSTER OF FOES",
+  "ult": true,
+  "icon": "icon_meteor",
+  "short": "METEOR"
+ },
+ "thousand_cuts": {
+  "name": "THOUSAND CUTS",
+  "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH",
+  "ult": true,
+  "icon": "icon_cuts",
+  "short": "CUTS"
+ }
+}

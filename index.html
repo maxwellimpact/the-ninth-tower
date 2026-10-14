@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>The Ninth Tower</title>
+<style>
+  html, body { margin:0; height:100%; background:#16121f; overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none; }
+  #app { width:100vw; height:100vh; }
+  canvas { display:block; image-rendering:pixelated; }
+  #loader { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#fff0a0; font:bold 14px/1 ui-monospace, Menlo, monospace; letter-spacing:.2em; }
+  #loader .bar { width:180px; height:8px; background:#2b2140; outline:2px solid #45405e; overflow:hidden; }
+  #loader .bar i { display:block; height:100%; width:30%; background:#f2c14e; animation:slide 1s steps(10) infinite; }
+  @keyframes slide { from { transform:translateX(-100%); } to { transform:translateX(330%); } }
+</style>
+</head>
+<body>
+<div id="loader">THE NINTH TOWER<div class="bar"><i></i></div><span style="color:#9d93b3;font-size:11px">LOADING ENGINE</span></div>
+<div id="app"></div>
+<div id="safe" style="position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninth Tower — Sprite & Sound Lab</title>
+<style>
+  :root { --bg:#16121f; --panel:#221b30; --text:#e9e3f3; --muted:#9d93b3; --accent:#f2c14e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 ui-monospace, Menlo, monospace; }
+  header { padding:16px 20px; border-bottom:1px solid #333; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; color:var(--accent); }
+  header a { color:var(--muted); }
+  main { padding:16px 20px; display:grid; gap:20px; }
+  section { background:var(--panel); border-radius:8px; padding:14px; }
+  section h2 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .cell { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:var(--muted); }
+  canvas { image-rendering:pixelated; background:#3c6b44; border-radius:4px; }
+  canvas.dark { background:#2b2140; }
+  button { background:#3a2f52; color:var(--text); border:1px solid #574a76; border-radius:6px; padding:7px 11px; font:inherit; cursor:pointer; }
+  button:hover { background:#4a3d68; }
+  button.on { background:var(--accent); color:#221b30; border-color:var(--accent); }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .swatch { width:22px; height:22px; border-radius:3px; }
+  #dialog { background:#1a1423; border:2px solid #574a76; border-radius:6px; padding:10px; min-height:60px; max-width:520px; }
+</style>
+</head>
+<body>
+<header><h1>The Ninth Tower — Sprite &amp; Sound Lab</h1><a href="./">← play the demo</a></header>
+<main id="lab"></main>
+<script type="module" src="/src/lab/lab.js"></script>
+</body>
+</html>

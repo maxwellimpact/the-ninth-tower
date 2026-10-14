@@ -1,0 +1,506 @@
+{
+ "iron_helm": {
+  "name": "IRON HELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "common",
+  "look": "helm_iron",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "knight_greathelm": {
+  "name": "KNIGHT GREATHELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "helm_great",
+  "stats": {
+   "def": 5,
+   "hp": 10
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "head"
+  }
+ },
+ "lionheart_helm": {
+  "name": "LIONHEART HELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "helm_lion",
+  "stats": {
+   "def": 7,
+   "hp": 25,
+   "atk": 2
+  },
+  "desc": "WORN BY THE KING'S CHAMPION. IT ROARS. A LITTLE.",
+  "fx": {
+   "type": "radiant",
+   "at": "head"
+  }
+ },
+ "guard_plate": {
+  "name": "GUARD PLATE",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "common",
+  "look": "plate_guard",
+  "stats": {
+   "def": 4
+  },
+  "desc": ""
+ },
+ "steel_hauberk": {
+  "name": "STEEL HAUBERK",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "hauberk_steel",
+  "stats": {
+   "def": 8,
+   "hp": 15
+  },
+  "desc": ""
+ },
+ "aegis_of_dawn": {
+  "name": "AEGIS OF DAWN",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "aegis_dawn",
+  "stats": {
+   "def": 12,
+   "hp": 40
+  },
+  "desc": "FORGED IN THE FIRST LIGHT OF ALDERMERE.",
+  "fx": {
+   "type": "radiant",
+   "at": "body"
+  }
+ },
+ "iron_sword": {
+  "name": "IRON SWORD",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "sword_iron",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "fine_longsword": {
+  "name": "FINE LONGSWORD",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "sword_long",
+  "stats": {
+   "atk": 5
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "emberbrand": {
+  "name": "EMBERBRAND",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "sword_ember",
+  "stats": {
+   "atk": 9,
+   "crit": 0.05
+  },
+  "desc": "THE BLADE NEVER QUITE STOPS SMOULDERING.",
+  "fx": {
+   "type": "flame",
+   "at": "weapon"
+  },
+  "element": "fire"
+ },
+ "round_shield": {
+  "name": "ROUND SHIELD",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "shield_round",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "kite_shield": {
+  "name": "KITE SHIELD",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "shield_kite",
+  "stats": {
+   "def": 6
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "offhand"
+  }
+ },
+ "bulwark_of_aldermere": {
+  "name": "BULWARK OF ALDERMERE",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "shield_bulwark",
+  "stats": {
+   "def": 10,
+   "hp": 20
+  },
+  "desc": "A WALL WITH A HANDLE.",
+  "fx": {
+   "type": "radiant",
+   "at": "offhand"
+  }
+ },
+ "apprentice_hat": {
+  "name": "APPRENTICE HAT",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "common",
+  "look": "hat_apprentice",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
+ },
+ "stargazer_hat": {
+  "name": "STARGAZER HAT",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "hat_star",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": "",
+  "fx": {
+   "type": "stars",
+   "at": "head"
+  }
+ },
+ "ember_circlet": {
+  "name": "EMBER CIRCLET",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "circlet_ember",
+  "stats": {
+   "atk": 6,
+   "crit": 0.08
+  },
+  "desc": "WARM TO THE TOUCH. WARMER TO THE THOUGHT.",
+  "fx": {
+   "type": "flame",
+   "at": "head"
+  }
+ },
+ "apprentice_robe": {
+  "name": "APPRENTICE ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "common",
+  "look": "robe_apprentice",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "scholar_robe": {
+  "name": "SCHOLAR ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "robe_scholar",
+  "stats": {
+   "def": 4,
+   "hp": 10,
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "phoenix_robe": {
+  "name": "PHOENIX ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "robe_phoenix",
+  "stats": {
+   "def": 6,
+   "hp": 25,
+   "atk": 4
+  },
+  "desc": "THE HEM IS ACTUALLY ON FIRE. DO NOT WASH.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  }
+ },
+ "oak_staff": {
+  "name": "OAK STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "staff_oak",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "crystal_staff": {
+  "name": "CRYSTAL STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "staff_crystal",
+  "stats": {
+   "atk": 5
+  },
+  "desc": "",
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  },
+  "element": "frost"
+ },
+ "sunspire_staff": {
+  "name": "SUNSPIRE STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "staff_sunspire",
+  "stats": {
+   "atk": 9
+  },
+  "desc": "CARVED FROM A TOWER THAT IS NOT THE NINTH.",
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  },
+  "element": "fire"
+ },
+ "worn_tome": {
+  "name": "WORN TOME",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "tome_worn",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
+ },
+ "frost_grimoire": {
+  "name": "FROST GRIMOIRE",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "tome_frost",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": "CHILLS FOES HIT BY PIP'S SPELLS.",
+  "fx": {
+   "type": "frost",
+   "at": "offhand"
+  },
+  "element": "frost"
+ },
+ "orb_of_echoes": {
+  "name": "ORB OF ECHOES",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "orb_echo",
+  "stats": {
+   "atk": 5,
+   "crit": 0.05
+  },
+  "desc": "EVERY THIRD SPELL ECHOES AS A SECOND BOLT.",
+  "fx": {
+   "type": "arcane",
+   "at": "orb"
+  },
+  "passive": "echo"
+ },
+ "red_bandana": {
+  "name": "RED BANDANA",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "common",
+  "look": "bandana_red",
+  "stats": {
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "shadow_hood": {
+  "name": "SHADOW HOOD",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "hood_shadow",
+  "stats": {
+   "def": 3,
+   "crit": 0.04
+  },
+  "desc": ""
+ },
+ "raven_mask": {
+  "name": "RAVEN MASK",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "mask_raven",
+  "stats": {
+   "def": 5,
+   "crit": 0.1
+  },
+  "desc": "THE LAST THING MANY GOBLINS SAW. ALSO, BIRDS.",
+  "fx": {
+   "type": "shadow",
+   "at": "head"
+  }
+ },
+ "leather_jacket": {
+  "name": "LEATHER JACKET",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "common",
+  "look": "jacket_leather",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "studded_leather": {
+  "name": "STUDDED LEATHER",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "leather_studded",
+  "stats": {
+   "def": 6,
+   "hp": 10
+  },
+  "desc": ""
+ },
+ "nightsilk_coat": {
+  "name": "NIGHTSILK COAT",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "coat_nightsilk",
+  "stats": {
+   "def": 9,
+   "hp": 20,
+   "crit": 0.05
+  },
+  "desc": "WOVEN FROM SHADOWS AND QUESTIONABLE DEALS.",
+  "fx": {
+   "type": "shadow",
+   "at": "body"
+  }
+ },
+ "steel_dagger": {
+  "name": "STEEL DAGGER",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "dagger_steel",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "curved_kris": {
+  "name": "CURVED KRIS",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "dagger_kris",
+  "stats": {
+   "atk": 4,
+   "crit": 0.03
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "wyrmfang": {
+  "name": "WYRMFANG",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "dagger_fang",
+  "stats": {
+   "atk": 7,
+   "crit": 0.06
+  },
+  "desc": "STILL A LITTLE VENOMOUS. HANDLE WITH CARE.",
+  "fx": {
+   "type": "venom",
+   "at": "weapon"
+  },
+  "element": "venom"
+ },
+ "parrying_dagger": {
+  "name": "PARRYING DAGGER",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "parry_steel",
+  "stats": {
+   "atk": 1,
+   "def": 1
+  },
+  "desc": ""
+ },
+ "hooked_kris": {
+  "name": "HOOKED KRIS",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "parry_kris",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": ""
+ },
+ "wyrmfang_twin": {
+  "name": "WYRMFANG TWIN",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "parry_fang",
+  "stats": {
+   "atk": 5,
+   "crit": 0.05
+  },
+  "desc": "THE OTHER FANG. THE WYRM WANTS THEM BOTH BACK.",
+  "fx": {
+   "type": "venom",
+   "at": "offhand"
+  },
+  "element": "venom"
+ }
+}
