@@ -632,7 +632,7 @@ Each discipline has **2 actives and 1 passive**. They're ranked with skill point
 - **Feet is dropped.** Boots are 2–3 pixels at 16×24 and wouldn't read on screen; speed bonuses move onto trinkets and Rare traits.
 
 ### Rarity **[REVISED]**
-**No random stat rolls.** Every item has fixed, designed stats. Finds stay memorable, the data stays readable, and the AI and balance stay predictable. A duplicate sells or salvages.
+**Light rolls, not Diablo-style randomness** (see §16 Q6). Base stats are fixed per item; Fine and Rare drops add one small bonus stat that fits the item (Rares also roll one trait), shown as a name prefix. Uniques are fixed until the post-game. A duplicate sells or salvages.
 
 | Rarity | Colour | Where it comes from | What it adds |
 |---|---|---|---|
@@ -1188,7 +1188,14 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 3. Automatic stat growth per hero; no stat points. **[LOCKED 2026-10-14]**
 4. Cooldowns only; no mana. Gear and charms can speed up cooldowns (Rare trait −10%, Arcane discipline passive, and an **Hourglass Charm**: −12% cooldowns). A few skills may cost HP where it fits the hero (Kesh's Frenzy). **[LOCKED 2026-10-14]**
 5. Venom replaces Earth (Fire, Frost, Storm, Venom, Light, Shadow). **[LOCKED 2026-10-14]**
-6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries; no random rolls. *(recommended)*
+6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries, with **light rolls**. **[LOCKED 2026-10-14]**
+   - **Common** (shops): fixed stats.
+   - **Fine** drops roll **1 bonus stat**. **Rare** drops roll **1 bonus stat + 1 random trait** from the Rare trait pool.
+   - **The bonus fits the item family:** frost weapon → +Frost damage or Chill chance; kite shield → +DEF or +HP; daggers → +crit or +ATK; staves → +ATK or faster cooldowns; robes → +HP or +DEF.
+   - **Size:** 5–15% of the item's stat budget, scaled by tier.
+   - **Naming:** the roll shows as a name prefix (Frosted, Sturdy, Keen, ...).
+   - **Rolls never carry a downside.**
+   - **Uniques and Legendaries** drop with fixed designed stats. In the **post-game**, re-earned boss and bounty Uniques can roll one small bonus stat.
 7. Refine to +10 over three Blacksmith ranks; never fails. *(recommended)*
 8. Level cap 30; story ends around 25. *(recommended)*
 9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. *(recommended)*
