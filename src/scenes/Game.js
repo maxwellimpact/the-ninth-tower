@@ -340,8 +340,8 @@ export class Game extends Phaser.Scene {
     if (!n.s) return;
     if (nodeBase(n) === 'herb') { if (n.ready) n.s.play('herb'); else { n.s.stop(); n.s.setTexture('herb_used'); } }
     else if (nodeBase(n) === 'ore') n.s.setTexture(n.ready ? 'ore' : 'ore_used');
-    if (NODE_KINDS[n.kind]?.tint) n.s.setTint(NODE_KINDS[n.kind].tint);
     else { if (n.ready) { n.s.setAlpha(1).play('crystal1'); } else { n.s.stop(); n.s.setAlpha(0.35); } }
+    if (NODE_KINDS[n.kind]?.tint) n.s.setTint(NODE_KINDS[n.kind].tint);
   }
 
   updateNodesAndNpcs(dt) {
