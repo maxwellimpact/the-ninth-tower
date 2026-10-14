@@ -329,5 +329,177 @@
   "hexed": true,
   "scale": 1.5,
   "named": true
+ },
+ "drowned": {
+  "name": "DROWNED",
+  "maxHp": 130,
+  "speed": 28,
+  "aggro": 90,
+  "reach": 22,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 22,
+  "xp": 13,
+  "gold": [
+   1,
+   4
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 16,
+  "weak": "light",
+  "resist": "frost",
+  "undead": true,
+  "rise": true,
+  "drops": {
+   "pearl": 0.1,
+   "scrap": 0.3
+  }
+ },
+ "witchling": {
+  "name": "MARSH WITCHLING",
+  "maxHp": 80,
+  "speed": 36,
+  "aggro": 130,
+  "reach": 105,
+  "windup": 0.85,
+  "recover": 1.1,
+  "dmg": 15,
+  "xp": 14,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 64,
+  "shot": "orb",
+  "ai": "blink",
+  "weak": "light",
+  "resist": "shadow",
+  "gem": 0.15,
+  "drops": {
+   "bogmoss": 0.4
+  }
+ },
+ "leeches": {
+  "name": "LEECH SWARM",
+  "maxHp": 55,
+  "speed": 50,
+  "aggro": 90,
+  "reach": 16,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 8,
+  "xp": 7,
+  "gold": [
+   0,
+   1
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 16,
+  "weak": "fire",
+  "resist": "venom",
+  "drain": true,
+  "drops": {}
+ },
+ "lurker": {
+  "name": "BOG LURKER",
+  "maxHp": 150,
+  "speed": 30,
+  "aggro": 46,
+  "reach": 24,
+  "windup": 0.45,
+  "recover": 1.0,
+  "dmg": 28,
+  "xp": 16,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 22,
+  "weak": "storm",
+  "resist": "venom",
+  "ai": "lurk",
+  "drops": {
+   "pearl": 0.3
+  }
+ },
+ "croaker": {
+  "name": "CROAKER",
+  "maxHp": 220,
+  "speed": 28,
+  "aggro": 100,
+  "reach": 90,
+  "windup": 0.8,
+  "recover": 1.2,
+  "dmg": 20,
+  "xp": 20,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 16,
+  "weak": "frost",
+  "ai": "tongue",
+  "drops": {
+   "gel": 0.5
+  }
+ },
+ "snapjaw": {
+  "name": "OLD SNAPJAW",
+  "maxHp": 1100,
+  "speed": 22,
+  "aggro": 110,
+  "reach": 28,
+  "windup": 0.8,
+  "recover": 1.0,
+  "dmg": 34,
+  "xp": 160,
+  "gold": [
+   30,
+   45
+  ],
+  "r": 12,
+  "zone": "self",
+  "zr": 30,
+  "weak": "storm",
+  "resist": "frost",
+  "ai": "shell",
+  "named": true,
+  "drops": {
+   "silver": 2,
+   "pearl": 2
+  }
+ },
+ "murk": {
+  "name": "MOTHER MURK",
+  "maxHp": 1700,
+  "speed": 20,
+  "aggro": 160,
+  "reach": 40,
+  "windup": 0.9,
+  "recover": 1.1,
+  "dmg": 30,
+  "xp": 220,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 16,
+  "zone": "self",
+  "zr": 40,
+  "boss": true,
+  "weak": "frost",
+  "resist": "venom",
+  "drops": {
+   "pearl": 2,
+   "crystal": 1
+  }
  }
 }

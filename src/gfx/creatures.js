@@ -293,3 +293,107 @@ export function buildWisp() {
   const fr = [0, 1, 2, 3].map(wispFrame);
   return { idle: fr, walk: fr, windup: [fr[0], fr[2]], attack: [fr[1], fr[3]], hurt: [fr[0]] };
 }
+
+// ------------------------------------------------------------ Leech swarm
+function leechFrame(phase, jump = 0) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const spots = [[7, 21], [16, 19], [11, 24], [20, 24], [24, 20]];
+  spots.forEach(([x, y], i) => {
+    const w = (phase + i) % 2 ? 5 : 4;
+    const yy = y - (jump && i % 2 ? jump : 0);
+    px(ctx, x, yy, 'bogD', w, 2); px(ctx, x + 1, yy, 'bogL', w - 2, 1); px(ctx, x + w - 1, yy - 1, 'redD');
+  });
+  outline(c, 'ink');
+  return c;
+}
+export function buildLeeches() {
+  return { idle: [leechFrame(0), leechFrame(1)], walk: [leechFrame(0), leechFrame(1), leechFrame(0, 1), leechFrame(1, 1)], windup: [leechFrame(0, 2)], attack: [leechFrame(1, 3), leechFrame(0)], hurt: [leechFrame(1)] };
+}
+
+// -------------------------------------------------------------- Bog Lurker
+// Mostly a head with a jaw full of teeth; it lives under the water.
+function lurkerFrame(open = 0, sub = 0) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const y0 = 12 + sub;
+  shadedBlob(ctx, 16, y0 + 5, 9, 6, ['bogD', 'bog', 'bogL', 'bogXL']);
+  px(ctx, 11, y0 + 1, 'goldL', 2, 2); px(ctx, 19, y0 + 1, 'goldL', 2, 2); px(ctx, 12, y0 + 2, 'ink'); px(ctx, 20, y0 + 2, 'ink');
+  if (open) { px(ctx, 9, y0 + 7, 'redD', 14, 2 + open); for (let x = 10; x < 22; x += 2) { px(ctx, x, y0 + 7, 'white'); px(ctx, x + 1, y0 + 8 + open, 'white'); } }
+  else px(ctx, 9, y0 + 7, 'bogD', 14, 1);
+  // water line hides the rest
+  px(ctx, 4, 24, 'waterL', 24, 1); px(ctx, 6, 25, 'water', 20, 1);
+  ctx.clearRect(0, 26, 32, 6);
+  outline(c, 'ink');
+  return c;
+}
+export function buildLurker() {
+  return { idle: [lurkerFrame(0, 2), lurkerFrame(0, 3)], walk: [lurkerFrame(0, 2), lurkerFrame(0, 3)], windup: [lurkerFrame(1), lurkerFrame(2)], attack: [lurkerFrame(3), lurkerFrame(1)], hurt: [lurkerFrame(0)] };
+}
+
+// ----------------------------------------------------------------- Croaker
+const TOAD = { G: 'moss', g: 'mossD', L: 'mossL', Y: 'sand', E: 'goldL', k: 'ink', R: 'redL' };
+function croakerFrame(puff = 0, step = 0, tongue = 0) {
+  const [c, ctx] = makeCanvas(40, 32);
+  shadedBlob(ctx, 20, 20 - puff * 0.5, 12 + puff, 8 + puff * 0.5, ['mossD', 'moss', 'mossL', 'mossXL']);
+  shadedBlob(ctx, 20, 24, 8, 4, ['mud', 'sand', 'sand', 'bone']);
+  for (const ex of [13, 25]) { shadedBlob(ctx, ex, 12 - puff, 3, 3, ['mossD', 'moss', 'mossL', 'mossXL']); px(ctx, ex - 1, 11 - puff, 'goldL', 2, 2); px(ctx, ex, 12 - puff, 'ink'); }
+  px(ctx, 12, 18, 'mossD', 16, 1);
+  if (tongue) { px(ctx, 19, 19, 'redL', 2, 8 + tongue * 3); px(ctx, 18, 26 + tongue * 3, 'redL', 4, 2); }
+  const legY = 26 + (step ? 1 : 0);
+  px(ctx, 7, legY, 'mossD', 5, 3); px(ctx, 28, 27 - (step ? 1 : 0), 'mossD', 5, 3);
+  outline(c, 'ink');
+  return c;
+}
+export function buildCroaker() {
+  return { idle: [croakerFrame(0), croakerFrame(1)], walk: [croakerFrame(0, 0), croakerFrame(0, 1)], windup: [croakerFrame(2), croakerFrame(2)], attack: [croakerFrame(0, 0, 2), croakerFrame(0, 0, 1)], hurt: [croakerFrame(0)] };
+}
+
+// ------------------------------------------------------------- Old Snapjaw
+function snapjawFrame(step = 0, open = 0, flipped = false) {
+  const [c, ctx] = makeCanvas(48, 40);
+  if (flipped) {
+    shadedBlob(ctx, 24, 22, 17, 10, ['mud', 'sand', 'sand', 'bone']);
+    for (let i = 0; i < 4; i++) px(ctx, 12 + i * 7 + (step ? 1 : 0), 10, 'mossD', 3, 4);
+  } else {
+    shadedBlob(ctx, 24, 20, 17, 11, ['leafD', 'mossD', 'moss', 'mossL']);
+    for (let y = 13; y < 28; y += 5) for (let x = 12; x < 38; x += 7) px(ctx, x + ((y / 5) % 2) * 3, y, 'leafD', 4, 1);
+    shadedBlob(ctx, 24, 32, 6, 4, ['mossD', 'moss', 'mossL', 'mossXL']);
+    px(ctx, 21, 31, 'goldL'); px(ctx, 26, 31, 'goldL');
+    if (open) { px(ctx, 20, 34, 'redD', 8, 2); px(ctx, 20, 34, 'white', 8, 1); }
+    px(ctx, 6 + (step ? 1 : 0), 26, 'mossD', 5, 5); px(ctx, 37 - (step ? 1 : 0), 26, 'mossD', 5, 5);
+  }
+  outline(c, 'ink');
+  return c;
+}
+export function buildSnapjaw() {
+  return { idle: [snapjawFrame(0), snapjawFrame(0)], walk: [snapjawFrame(0), snapjawFrame(1)], windup: [snapjawFrame(0, 1), snapjawFrame(1, 1)], attack: [snapjawFrame(0, 2), snapjawFrame(1, 0)], hurt: [snapjawFrame(0)], flipped: [snapjawFrame(0, 0, true), snapjawFrame(1, 0, true)] };
+}
+
+// ------------------------------------------------------------ Mother Murk
+// A bog hag riding a vast toad. 64x64 frames, feet on y=60.
+function murkFrame({ puff = 0, open = 0, raise = 0 } = {}) {
+  const [c, ctx] = makeCanvas(64, 64);
+  shadedBlob(ctx, 32, 46 - puff, 24 + puff, 14 + puff * 0.6, ['mossD', 'moss', 'mossL', 'mossXL']);
+  shadedBlob(ctx, 32, 54, 15, 6, ['mud', 'sand', 'sand', 'bone']);
+  for (const ex of [18, 46]) { shadedBlob(ctx, ex, 34 - puff, 5, 5, ['mossD', 'moss', 'mossL', 'mossXL']); px(ctx, ex - 2, 33 - puff, 'redL', 3, 3); px(ctx, ex - 1, 34 - puff, 'ink'); }
+  if (open) { px(ctx, 18, 48, 'redD', 28, 3 + open); for (let x = 19; x < 45; x += 3) px(ctx, x, 48, 'white'); }
+  else px(ctx, 18, 48, 'mossD', 28, 1);
+  // the hag: hunched in a shawl on the toad's back
+  shadedBlob(ctx, 32, 24, 8, 9, ['purpD', 'hexD', 'purp', 'curseL']);
+  shadedBlob(ctx, 32, 14, 5, 5, ['mossD', 'grassD', 'moss', 'mossL']);
+  px(ctx, 30, 13, 'goldL'); px(ctx, 34, 13, 'goldL');
+  px(ctx, 27, 8, 'night', 11, 2); px(ctx, 29, 4, 'night', 7, 4); px(ctx, 31, 1, 'night', 3, 3);
+  const ay = 22 - raise * 6;
+  px(ctx, 22, ay, 'moss', 3, 6); px(ctx, 40, ay, 'moss', 3, 6);
+  if (raise) { px(ctx, 21, ay - 2, 'curseL', 5, 2); px(ctx, 39, ay - 2, 'curseL', 5, 2); }
+  outline(c, 'ink');
+  return c;
+}
+export function buildMurk() {
+  return {
+    idle: [murkFrame(), murkFrame({ puff: 1 })],
+    walk: [murkFrame(), murkFrame({ puff: 1 })],
+    windup: [murkFrame({ puff: 2, raise: 1 }), murkFrame({ puff: 3, raise: 1 })],
+    slam: [murkFrame({ open: 3 }), murkFrame({ open: 1 })],
+    hurt: [murkFrame()],
+  };
+}

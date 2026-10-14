@@ -496,6 +496,228 @@
     "xp": 260,
     "item": "thornring"
    }
+  },
+  "lostPell": {
+   "title": "LOST IN THE FOG",
+   "giver": "mag",
+   "region": "marsh",
+   "offer": [
+    "MY BOY PELL WENT LOOKING FOR GLOWCAPS IN THE HOLLOW UNDER THE ROCKS. THE ONE WITH THE CAVE MOUTH.",
+    "IT'S BLACK AS PITCH IN THERE. TAKE A LIGHT IF YOU HAVE ONE. PLEASE."
+   ],
+   "accept": "I'LL BRING HIM BACK.",
+   "thanks": [
+    "PELL! YOU STUPID, WONDERFUL CHILD.",
+    "I'VE NOTHING MUCH. BUT YOU'VE GOT SHARPER EYES THAN ME NOW - SOMETHING IN YOU WOKE UP IN THAT DARK. I'M SURE OF IT."
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "FIND PELL IN THE DROWNED HOLLOW",
+     "x": 212,
+     "y": 21,
+     "kind": "glint",
+     "say": "PELL: I KNEW SOMEONE WOULD COME. I'LL FOLLOW YOUR LIGHT OUT."
+    },
+    {
+     "type": "talk",
+     "text": "BRING PELL HOME TO MAG",
+     "npc": "mag"
+    }
+   ],
+   "reward": {
+    "gold": 80,
+    "xp": 220,
+    "sp": 1
+   }
+  },
+  "leechCull": {
+   "title": "LEECH SEASON",
+   "giver": "silt",
+   "region": "marsh",
+   "offer": [
+    "THE LEECHES ARE BOLD THIS YEAR. THEY CRAWL INTO BOOTS. INTO BEDS. INTO SOUP.",
+    "CLEAR OUT FIVE SWARMS AND I'LL BREW YOU SOMETHING WORTH HAVING."
+   ],
+   "accept": "FIVE SWARMS.",
+   "thanks": [
+    "THE SOUP THANKS YOU. I THANK YOU. HERE - STRONG STUFF."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "CLEAR LEECH SWARMS",
+     "kind": "leeches",
+     "count": 5
+    },
+    {
+     "type": "talk",
+     "text": "TELL BROTHER SILT",
+     "npc": "silt"
+    }
+   ],
+   "reward": {
+    "gold": 60,
+    "xp": 200,
+    "potions": {
+     "potion": 2,
+     "elixir": 1
+    }
+   }
+  },
+  "bogmossBalm": {
+   "title": "BALM FOR THE CAMP",
+   "giver": "silt",
+   "region": "marsh",
+   "requires": "leechCull",
+   "offer": [
+    "LEECH BITES FESTER. BOGMOSS DRAWS THE POISON OUT. FIVE CLUMPS WOULD SEE THE CAMP THROUGH THE MONTH."
+   ],
+   "accept": "I'LL GATHER IT.",
+   "thanks": [
+    "PERFECT. THE CAMP WILL SLEEP EASIER. AND SO, FRANKLY, WILL I."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "GATHER BOGMOSS",
+     "mat": "bogmoss",
+     "count": 5
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE BOGMOSS TO SILT",
+     "npc": "silt",
+     "take": {
+      "bogmoss": 5
+     }
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 180,
+    "gear": {
+     "rarity": "fine"
+    }
+   }
+  },
+  "croakers": {
+   "title": "THE CROAKING",
+   "giver": "fenwick",
+   "region": "marsh",
+   "offer": [
+    "NO FISH FOR A MONTH. YOU KNOW WHY? CROAKERS. BIG AS CARTS. THEY EAT THE FISH, THEN EYE ME LIKE I'M DESSERT.",
+    "THREE OF THEM. SEND THEM OFF AND THE POND'S YOURS TO ENJOY."
+   ],
+   "accept": "THREE CROAKERS.",
+   "thanks": [
+    "LISTEN TO THAT. QUIET. BEAUTIFUL QUIET. TAKE THIS - I FOUND IT IN A FISH. DON'T ASK."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "DEFEAT CROAKERS",
+     "kind": "croaker",
+     "count": 3
+    },
+    {
+     "type": "talk",
+     "text": "TELL FENWICK",
+     "npc": "fenwick"
+    }
+   ],
+   "reward": {
+    "gold": 90,
+    "xp": 240,
+    "gear": {
+     "rarity": "rare"
+    }
+   }
+  },
+  "drownedBell": {
+   "title": "THE DROWNED BELL",
+   "giver": "cora",
+   "region": "marsh",
+   "requires": "lostPell",
+   "offer": [
+    "I RANG THE ABBEY BELL FOR SIXTY YEARS. WHEN THE FEN ROSE, THE CLAPPER FELL INTO THE DEEP WATER EAST OF THE RUINS.",
+    "FIND IT, AND THE BELL MAY SING ONCE MORE - FOR ME, AT LEAST. YOU'LL NEED TO SWIM."
+   ],
+   "accept": "I'LL DIVE FOR IT.",
+   "thanks": [
+    "THE CLAPPER. THANK YOU, CHILD. LISTEN...",
+    "...THERE. GO WITH THAT SOUND IN YOUR EARS. AND THIS, WHICH NO GHOST NEEDS."
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "DIVE FOR THE BELL CLAPPER IN THE POOL EAST OF THE ABBEY",
+     "x": 186,
+     "y": 99,
+     "kind": "glint",
+     "say": "A BRONZE CLAPPER, GREEN WITH AGE."
+    },
+    {
+     "type": "talk",
+     "text": "RETURN THE CLAPPER TO SISTER CORA",
+     "npc": "cora"
+    }
+   ],
+   "reward": {
+    "gold": 60,
+    "xp": 220,
+    "gear": {
+     "rarity": "rare"
+    },
+    "sp": 1
+   }
+  },
+  "snapjaw": {
+   "title": "BOUNTY: OLD SNAPJAW",
+   "giver": "fenboard",
+   "region": "marsh",
+   "offer": [
+    "BOUNTY: OLD SNAPJAW. A TURTLE THE SIZE OF A HUT. SPINS IN ITS SHELL; ONLY THE BELLY BRUISES. FLIP IT.",
+    "LAST SEEN SUNNING ON THE WEST SHORE OF THE FEN."
+   ],
+   "accept": "FLIP THAT TURTLE.",
+   "thanks": [
+    "MAG: SNAPJAW'S GONE? THE WHOLE CAMP OWES YOU A DRINK. WE'VE NO DRINK. HAVE GOLD."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND OLD SNAPJAW ON THE WEST SHORE",
+     "at": [
+      14,
+      112
+     ],
+     "r": 8,
+     "units": [
+      [
+       "snapjaw",
+       14,
+       112
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM MAG",
+     "npc": "mag"
+    }
+   ],
+   "reward": {
+    "gold": 180,
+    "xp": 320,
+    "gear": {
+     "rarity": "rare",
+     "slot": "weapon"
+    },
+    "mats": {
+     "silver": 3
+    }
+   }
   }
  },
  "npcs": [
@@ -672,6 +894,93 @@
     "wave": "sine",
     "speed": 0.9
    }
+  },
+  {
+   "id": "mag",
+   "name": "MAG",
+   "x": 28,
+   "y": 60,
+   "look": "ada",
+   "lines": [
+    "THE CAMP'S NOT MUCH. BUT IT'S DRY. MOSTLY."
+   ],
+   "voice": {
+    "pitch": 340,
+    "wave": "triangle",
+    "speed": 0.9
+   },
+   "errands": [
+    "lostPell"
+   ]
+  },
+  {
+   "id": "silt",
+   "name": "BROTHER SILT",
+   "x": 34,
+   "y": 61,
+   "look": "wick",
+   "lines": [
+    "BLESSINGS, MUD AND ALL."
+   ],
+   "voice": {
+    "pitch": 180,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "errands": [
+    "leechCull",
+    "bogmossBalm"
+   ]
+  },
+  {
+   "id": "fenwick",
+   "name": "FENWICK",
+   "x": 60,
+   "y": 71,
+   "look": "piet",
+   "lines": [
+    "SHH. YOU'LL SCARE THE NOTHING I'M CATCHING."
+   ],
+   "voice": {
+    "pitch": 250,
+    "wave": "square",
+    "duty": 0.5
+   },
+   "errands": [
+    "croakers"
+   ]
+  },
+  {
+   "id": "cora",
+   "name": "SISTER CORA",
+   "x": 168,
+   "y": 98,
+   "look": "ada",
+   "ghost": true,
+   "lines": [
+    "THE BELLS DROWNED. I DID NOT. NOT QUITE."
+   ],
+   "voice": {
+    "pitch": 300,
+    "wave": "sine",
+    "speed": 0.7
+   },
+   "errands": [
+    "drownedBell"
+   ]
+  },
+  {
+   "id": "fenboard",
+   "name": "CAMP BOARD",
+   "x": 31,
+   "y": 58,
+   "look": "board",
+   "lines": [
+    "A NOTICE: 'LOST: ONE BOOT. LEFT. THE LEECHES HAVE THE RIGHT ONE.'"
+   ],
+   "errands": [
+    "snapjaw"
+   ]
   }
  ]
 }

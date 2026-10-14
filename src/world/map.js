@@ -30,6 +30,7 @@ export const AREAS = {
   tavern: { x0: 236, y0: 16, x1: 250, y1: 27, interior: true },
   grotto: { x0: 236, y0: 32, x1: 248, y1: 43, interior: true, dark: true },
   undercroft: { x0: 256, y0: 2, x1: 318, y1: 60, interior: true },
+  abbey: { x0: 256, y0: 63, x1: 318, y1: 126, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -87,7 +88,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
@@ -193,6 +194,30 @@ export function buildWorld() {
   room(280, 22, 296, 31);
   room(287, 17, 289, 21);                                          // corridor north
   room(274, 4, 302, 16); set(288, 4, T.STAIRS);                    // Gatewarden's arena, back stairs
+  // Sunken Abbey (Mistfen): a drowned church, explored south to north
+  room(281, 116, 293, 123); set(287, 124, T.STAIRS);                // narthex, stairs up
+  room(286, 113, 288, 115);                                          // passage
+  room(272, 96, 302, 112);                                           // flooded nave
+  rect(284, 96, 290, 110, T.WATER);                                  // the drowned aisle (dry crossing at the south end)
+  room(270, 103, 271, 105); room(260, 100, 269, 108);                // west chapel (Tide Charm)
+  room(303, 103, 304, 105); room(305, 100, 314, 108);                // east chapel
+  rect(286, 94, 288, 95, T.WATER);                                   // the aisle runs on under the choir wall
+  room(278, 84, 296, 93);                                            // choir
+  rect(285, 84, 289, 93, T.WATER);
+  for (const [px0, py0] of [[280, 86], [293, 90]]) rect(px0, py0, px0 + 1, py0 + 1, T.WATER); // font basins
+  room(286, 79, 288, 83);                                            // passage north
+  room(270, 65, 304, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
+  for (let y = 68; y <= 75; y++) for (let x = 282; x <= 292; x++) if (Math.hypot((x - 287) / 5.2, (y - 71.5) / 3.6) < 1) set(x, y, T.WATER); // her pool
+  // Abbey ruins in the overworld fen, steps down into the nave
+  rect(165, 95, 178, 104, T.PAVED);
+  wall(165, 94, 169, 94); wall(173, 94, 178, 94); wall(164, 94, 164, 100); wall(179, 94, 179, 104);
+  wall(164, 104, 168, 104); wall(175, 104, 179, 104); wall(171, 96, 172, 97); // broken bell tower
+  set(171, 100, T.STAIRS);
+  // the deep pool east of the abbey, where the bell clapper sank
+  for (let y = 94; y <= 104; y++) for (let x = 181; x <= 190; x++) {
+    const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;
+    if (d < 1) set(x, y, T.WATER); else if (d < 1.35) set(x, y, T.SHALLOW);
+  }
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)
   const shell = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);
   shell(AREAS.shop); shell(AREAS.tavern);
@@ -224,7 +249,7 @@ export function buildWorld() {
     for (const b of st.bells || []) reserve(b[0], b[1], 2);
     for (const pt of st.path || []) reserve(pt[0], pt[1], 2.5);
   }
-  reserve(W.start.x, W.start.y, 4); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); reserve(LANDMARKS.ward.x, LANDMARKS.ward.y, 9);
+  reserve(W.start.x, W.start.y, 4); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
   const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH;
@@ -248,7 +273,7 @@ export function buildWorld() {
     const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : 0.72) || belt;
     if (!forest || hash(jx, jy, 13) < 0.15) continue;
     if (!free(jx, jy, 1) || isReserved(jx, jy)) continue;
-    if (Math.hypot(jx - LANDMARKS.curse.x, jy - LANDMARKS.curse.y) < 9) continue;
+    if (W.wards.some((wd) => Math.hypot(jx - wd.x, jy - wd.y) < 9)) continue;
     add(b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree', jx, jy, { seed: Math.floor(hash(jx, jy, 14) * 8) });
     claim(jx, jy);
   }

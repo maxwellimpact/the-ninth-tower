@@ -75,6 +75,12 @@
     3,
     6
    ]
+  },
+  {
+   "id": "abbey",
+   "name": "THE SUNKEN ABBEY",
+   "sub": "WHERE THE BELLS DROWNED",
+   "outer": "marsh"
   }
  ],
  "groups": [
@@ -856,6 +862,230 @@
      51
     ]
    ]
+  },
+  {
+   "id": "ab1",
+   "units": [
+    [
+     "drowned",
+     283,
+     119
+    ],
+    [
+     "leeches",
+     290,
+     118
+    ]
+   ],
+   "once": true
+  },
+  {
+   "id": "ab2",
+   "units": [
+    [
+     "drowned",
+     276,
+     100
+    ],
+    [
+     "witchling",
+     298,
+     98
+    ],
+    [
+     "drowned",
+     296,
+     108
+    ],
+    [
+     "lurker",
+     287,
+     104
+    ]
+   ],
+   "once": true
+  },
+  {
+   "id": "ab3",
+   "units": [
+    [
+     "drowned",
+     281,
+     88
+    ],
+    [
+     "drowned",
+     294,
+     86
+    ],
+    [
+     "witchling",
+     283,
+     85
+    ],
+    [
+     "lurker",
+     287,
+     89
+    ]
+   ],
+   "once": true
+  },
+  {
+   "id": "gL1",
+   "units": [
+    [
+     "leeches",
+     45,
+     74
+    ],
+    [
+     "leeches",
+     50,
+     76
+    ]
+   ]
+  },
+  {
+   "id": "gL2",
+   "units": [
+    [
+     "leeches",
+     115,
+     82
+    ],
+    [
+     "drowned",
+     118,
+     85
+    ],
+    [
+     "drowned",
+     112,
+     86
+    ]
+   ]
+  },
+  {
+   "id": "gL3",
+   "units": [
+    [
+     "croaker",
+     64,
+     80
+    ],
+    [
+     "leeches",
+     60,
+     83
+    ]
+   ]
+  },
+  {
+   "id": "gL4",
+   "units": [
+    [
+     "croaker",
+     142,
+     112
+    ],
+    [
+     "mire",
+     146,
+     110
+    ]
+   ]
+  },
+  {
+   "id": "gL5",
+   "units": [
+    [
+     "croaker",
+     80,
+     110
+    ],
+    [
+     "drowned",
+     84,
+     113
+    ]
+   ]
+  },
+  {
+   "id": "gL6",
+   "units": [
+    [
+     "witchling",
+     125,
+     72
+    ],
+    [
+     "mire",
+     122,
+     75
+    ],
+    [
+     "mire",
+     128,
+     74
+    ]
+   ]
+  },
+  {
+   "id": "gL7",
+   "units": [
+    [
+     "witchling",
+     175,
+     85
+    ],
+    [
+     "drowned",
+     172,
+     88
+    ],
+    [
+     "drowned",
+     178,
+     88
+    ]
+   ]
+  },
+  {
+   "id": "gL8",
+   "units": [
+    [
+     "drowned",
+     158,
+     112
+    ],
+    [
+     "drowned",
+     163,
+     118
+    ],
+    [
+     "witchling",
+     156,
+     118
+    ]
+   ],
+   "until": "ward_marsh"
+  },
+  {
+   "id": "gL9",
+   "units": [
+    [
+     "lurker",
+     186,
+     100
+    ],
+    [
+     "leeches",
+     182,
+     96
+    ]
+   ]
   }
  ],
  "chests": [
@@ -970,6 +1200,44 @@
    "mats": {
     "ore": 2
    }
+  },
+  {
+   "id": "abbeyTide",
+   "x": 264,
+   "y": 102,
+   "relic": "tide",
+   "gold": 30,
+   "ambush": [
+    [
+     "drowned",
+     262,
+     106
+    ],
+    [
+     "drowned",
+     267,
+     106
+    ]
+   ]
+  },
+  {
+   "id": "abbeyEast",
+   "x": 310,
+   "y": 102,
+   "gold": 40,
+   "mats": {
+    "silver": 2,
+    "pearl": 1
+   }
+  },
+  {
+   "id": "abbeyChoir",
+   "x": 281,
+   "y": 91,
+   "potions": {
+    "potion": 2
+   },
+   "gold": 20
   }
  ],
  "boss": {
@@ -1121,6 +1389,36 @@
    },
    "exit": true,
    "requires": "golemDefeated"
+  },
+  {
+   "id": "abbeyIn",
+   "x": 171,
+   "y": 100,
+   "to": {
+    "x": 287,
+    "y": 122
+   }
+  },
+  {
+   "id": "abbeyOut",
+   "x": 287,
+   "y": 124,
+   "to": {
+    "x": 171,
+    "y": 102
+   },
+   "exit": true
+  },
+  {
+   "id": "abbeyBack",
+   "x": 287,
+   "y": 64,
+   "to": {
+    "x": 171,
+    "y": 102
+   },
+   "exit": true,
+   "requires": "murkDefeated"
   }
  ],
  "posts": [
@@ -1197,6 +1495,10 @@
   {
    "x": 124,
    "y": 37
+  },
+  {
+   "x": 31,
+   "y": 62
   }
  ],
  "signs": [
@@ -1606,6 +1908,96 @@
    "kind": "crystal",
    "x": 245,
    "y": 39
+  },
+  {
+   "kind": "herb",
+   "x": 30,
+   "y": 40
+  },
+  {
+   "kind": "herb",
+   "x": 46,
+   "y": 44
+  },
+  {
+   "kind": "herb",
+   "x": 62,
+   "y": 47
+  },
+  {
+   "kind": "herb",
+   "x": 8,
+   "y": 30
+  },
+  {
+   "kind": "herb",
+   "x": 95,
+   "y": 30
+  },
+  {
+   "kind": "herb",
+   "x": 128,
+   "y": 20
+  },
+  {
+   "kind": "herb",
+   "x": 150,
+   "y": 42
+  },
+  {
+   "kind": "herb",
+   "x": 178,
+   "y": 12
+  },
+  {
+   "kind": "bogmoss",
+   "x": 35,
+   "y": 72
+  },
+  {
+   "kind": "bogmoss",
+   "x": 62,
+   "y": 80
+  },
+  {
+   "kind": "bogmoss",
+   "x": 78,
+   "y": 96
+  },
+  {
+   "kind": "bogmoss",
+   "x": 120,
+   "y": 88
+  },
+  {
+   "kind": "bogmoss",
+   "x": 150,
+   "y": 100
+  },
+  {
+   "kind": "bogmoss",
+   "x": 30,
+   "y": 95
+  },
+  {
+   "kind": "silver",
+   "x": 102,
+   "y": 86
+  },
+  {
+   "kind": "silver",
+   "x": 130,
+   "y": 96
+  },
+  {
+   "kind": "silver",
+   "x": 312,
+   "y": 106
+  },
+  {
+   "kind": "silver",
+   "x": 308,
+   "y": 101
   }
  ],
  "shop": {
@@ -1690,5 +2082,39 @@
    "r": 48,
    "name": "HIGHMEADOW LOOKOUT"
   }
- ]
+ ],
+ "wards": [
+  {
+   "id": "vale",
+   "x": 82,
+   "y": 38,
+   "r": 15,
+   "flag": "wardBroken",
+   "guardian": "golemDefeated",
+   "region": "vale",
+   "lifts": "THE CURSE LIFTS FROM THE VALE"
+  },
+  {
+   "id": "marsh",
+   "x": 160,
+   "y": 115,
+   "r": 13,
+   "flag": "ward_marsh",
+   "guardian": "murkDefeated",
+   "region": "marsh",
+   "lifts": "THE CURSE LIFTS FROM MISTFEN"
+  }
+ ],
+ "murk": {
+  "name": "MOTHER MURK",
+  "sub": "GUARDIAN OF THE MISTFEN WARD STONE",
+  "arena": [
+   287,
+   71
+  ],
+  "drops": [
+   "wyrmfang_twin"
+  ],
+  "gold": 120
+ }
 }

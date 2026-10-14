@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, WardStone, Breakable, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, WardStone, Breakable, dist, norm } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -23,6 +23,13 @@ import tuning from '../data/tuning.json';
 const TOP = 100000;
 const w_locked = (sc, o) => (o.warp.lockedBy && !sc.flags[`broke_${o.warp.lockedBy}`]) || (o.warp.requires && !sc.flags[o.warp.requires]);
 const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
+// Gathering node kinds: what they look like, how long they take, which tool
+const NODE_KINDS = {
+  herb: { base: 'herb', dur: 1.5 }, bogmoss: { base: 'herb', dur: 1.8, tint: 0xc9b46a },
+  ore: { base: 'ore', dur: 2.4 }, silver: { base: 'ore', dur: 2.9, tint: 0xd8e4ff },
+  crystal: { base: 'crystal', dur: 3.2 },
+};
+const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
 const PROP_GROUP = { deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
 const BARKS = {
@@ -65,7 +72,7 @@ export class Game extends Phaser.Scene {
     const WPX = MAP_W * TILE, HPX = MAP_H * TILE;
     this.area = null;
     this.nav = new NavGrid(MAP_W, MAP_H);
-    for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (SOLID.has(this.world.at(x, y))) this.nav.block(x, y);
+    for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) { const t = this.world.at(x, y); if (SOLID.has(t)) this.nav.block(x, y, t === T.WATER ? 2 : 1); }
     for (const p of this.world.props) if (BLOCKING.has(p.type)) this.nav.block(p.x, p.y);
 
     this.propsByChunk = new Map();
@@ -84,10 +91,10 @@ export class Game extends Phaser.Scene {
       onChunkOut: (cx, cy) => this.despawnChunk(cx, cy),
     });
 
-    this.curseC = { x: (LANDMARKS.curse.x + 0.5) * TILE, y: (LANDMARKS.curse.y + 0.5) * TILE, R: LANDMARKS.curse.r * TILE };
-    this.bloomR = -1;
+    // Ward Stones: each holds a region under a curse until its guardian falls and it breaks
+    this.wards = W.wards.map((def) => ({ def, C: { x: (def.x + 0.5) * TILE, y: (def.y + 0.5) * TILE, R: def.r * TILE }, bloomR: -1 }));
     this.moteT = 0;
-    if (!this.flags.wardBroken) this.buildCurse();
+    for (const w of this.wards) if (!this.flags[w.def.flag]) this.buildCurse(w);
 
     this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
@@ -199,7 +206,7 @@ export class Game extends Phaser.Scene {
   updateGroups(dt) {
     const L = this.leader;
     for (const g of this.groups) {
-      const blocked = (g.until === 'wardBroken' && this.flags.wardBroken) || (g.once && this.state.cleared[g.id]);
+      const blocked = (g.until && this.flags[g.until]) || (g.once && this.state.cleared[g.id]);
       const res = this.streamer.resident.has(g.chunk);
       if (!g.active) {
         if (blocked || !res) continue;
@@ -236,7 +243,7 @@ export class Game extends Phaser.Scene {
   }
 
   spawnEnemy(kind, x, y, engaged = false, elite = false) {
-    if (kind === 'mire' && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
+    if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -286,18 +293,19 @@ export class Game extends Phaser.Scene {
   harvest(n, h) {
     if (!n.ready) { this.floatText(n.px, n.py - 16, `REGROWS IN ${Math.ceil(n.t)}S`, 'fontPlain'); return; }
     if (!n.s || h.action) return;
-    const dur = { herb: 1.5, ore: 2.4, crystal: 3.2 }[n.kind];
+    const dur = NODE_KINDS[n.kind]?.dur || 2;
     h.face(n.px - h.x, n.py - h.y);
     h.clearPath();
-    h.action = { type: 'harvest', t: 0, dur, node: n, anim: n.kind === 'herb' ? 'gather' : 'mine', swingT: 0, period: n.kind === 'herb' ? 0.5 : 0.6 };
+    h.action = { type: 'harvest', t: 0, dur, node: n, anim: nodeBase(n) === 'herb' ? 'gather' : 'mine', swingT: 0, period: nodeBase(n) === 'herb' ? 0.5 : 0.6 };
     h.anim = '';
     h.play(h.action.anim);
   }
 
   harvestTick(h, n) {
-    audio.sfx(n.kind === 'herb' ? 'stab' : 'block');
-    this.fx.burst(n.kind === 'herb' ? 'heal' : 'spark', n.px + (Math.random() * 6 - 3), n.py - 4, n.kind === 'herb' ? 3 : 4);
-    if (n.kind !== 'herb') this.shake(30, 0.0015);
+    const herb = nodeBase(n) === 'herb';
+    audio.sfx(herb ? 'stab' : 'block');
+    this.fx.burst(herb ? 'heal' : 'spark', n.px + (Math.random() * 6 - 3), n.py - 4, herb ? 3 : 4);
+    if (!herb) this.shake(30, 0.0015);
   }
 
   cancelHarvest(h) {
@@ -312,9 +320,9 @@ export class Game extends Phaser.Scene {
     const amt = n.kind === 'crystal' ? 1 : 1 + (Math.random() < 0.5 ? 1 : 0);
     addMats(this.state, { [n.kind]: amt });
     this.quests?.onGather(n.kind, amt);
-    audio.sfx(n.kind === 'ore' ? 'bash' : n.kind === 'crystal' ? 'frost' : 'heal');
+    audio.sfx(nodeBase(n) === 'ore' ? 'bash' : n.kind === 'crystal' ? 'frost' : 'heal');
     audio.sfx('coin');
-    this.fx.burst(n.kind === 'herb' ? 'heal' : 'gold', n.px, n.py - 6, 10);
+    this.fx.burst(nodeBase(n) === 'herb' ? 'heal' : 'gold', n.px, n.py - 6, 10);
     this.floatText(n.px, n.py - 18, `+${amt} ${CRAFT.materials[n.kind].name}`, 'fontGold');
     this.nodeTexture(n);
     this.events.emit('party');
@@ -322,18 +330,19 @@ export class Game extends Phaser.Scene {
 
   nodeTexture(n) {
     if (!n.s) return;
-    if (n.kind === 'herb') { if (n.ready) n.s.play('herb'); else { n.s.stop(); n.s.setTexture('herb_used'); } }
-    else if (n.kind === 'ore') n.s.setTexture(n.ready ? 'ore' : 'ore_used');
+    if (nodeBase(n) === 'herb') { if (n.ready) n.s.play('herb'); else { n.s.stop(); n.s.setTexture('herb_used'); } }
+    else if (nodeBase(n) === 'ore') n.s.setTexture(n.ready ? 'ore' : 'ore_used');
+    if (NODE_KINDS[n.kind]?.tint) n.s.setTint(NODE_KINDS[n.kind].tint);
     else { if (n.ready) { n.s.setAlpha(1).play('crystal1'); } else { n.s.stop(); n.s.setAlpha(0.35); } }
   }
 
   updateNodesAndNpcs(dt) {
     for (const n of this.nodes) {
       if (!n.s) {
-        const grp = n.kind === 'herb' ? 'marsh' : n.kind === 'crystal' ? 'cave' : 'core';
+        const grp = n.kind === 'crystal' ? 'cave' : 'core';
         if (grp === 'core' || loaded.has(grp)) {
-          if (n.kind === 'herb') n.s = this.add.sprite(n.px, n.py + 6, 'herb').setOrigin(0.5, 1).play('herb');
-          else if (n.kind === 'ore') n.s = this.add.image(n.px, n.py + 6, 'ore').setOrigin(0.5, 1);
+          if (nodeBase(n) === 'herb') n.s = this.add.sprite(n.px, n.py + 6, 'herb').setOrigin(0.5, 1).play('herb');
+          else if (nodeBase(n) === 'ore') n.s = this.add.image(n.px, n.py + 6, 'ore').setOrigin(0.5, 1);
           else { n.s = this.add.sprite(n.px, n.py + 6, 'crystal1').setOrigin(0.5, 1).play('crystal1').setScale(1.3); n.s.isLight = true; }
           n.s.setDepth(n.py);
           this.nodeTexture(n);
@@ -373,7 +382,7 @@ export class Game extends Phaser.Scene {
       n.mkIcon = this.add.image(0, -1, `icon_${n.kind}`);
       n.mkRing = this.add.graphics();
       n.mk.add([n.mkBub, n.mkIcon, n.mkRing]);
-      n.label = this.add.bitmapText(n.px, n.py - 44, 'font', `${CRAFT.materials[n.kind].name} - TAP TO ${n.kind === 'ore' ? 'MINE' : n.kind === 'herb' ? 'PICK' : 'GATHER'}`).setOrigin(0.5).setDepth(TOP - 39).setVisible(false);
+      n.label = this.add.bitmapText(n.px, n.py - 44, 'font', `${CRAFT.materials[n.kind].name} - TAP TO ${nodeBase(n) === 'ore' ? 'MINE' : nodeBase(n) === 'herb' ? 'PICK' : 'GATHER'}`).setOrigin(0.5).setDepth(TOP - 39).setVisible(false);
     }
     const t = this.time.now / 1000;
     n.mk.y = n.py - 26 + Math.round(Math.sin(t * 3 + n.px) * 1.5);
@@ -388,7 +397,7 @@ export class Game extends Phaser.Scene {
     }
     const L = this.leader;
     const near = Math.hypot(L.x - n.px, L.y - n.py) < 48;
-    n.label.setVisible(near).setText(n.ready ? `${CRAFT.materials[n.kind].name} - TAP TO ${n.kind === 'ore' ? 'MINE' : n.kind === 'herb' ? 'PICK' : 'GATHER'}` : `REGROWS IN ${Math.ceil(n.t)}S`);
+    n.label.setVisible(near).setText(n.ready ? `${CRAFT.materials[n.kind].name} - TAP TO ${nodeBase(n) === 'ore' ? 'MINE' : nodeBase(n) === 'herb' ? 'PICK' : 'GATHER'}` : `REGROWS IN ${Math.ceil(n.t)}S`);
     if (near && n.ready && !this.flags.harvestHint) {
       this.flags.harvestHint = true;
       this.events.emit('banner', 'GATHERING', 'TAP ANYTHING WITH A BUBBLE. IT REGROWS.');
@@ -486,26 +495,28 @@ export class Game extends Phaser.Scene {
   }
 
   // ============================================================ curse
-  buildCurse() {
-    const c = LANDMARKS.curse;
+  buildCurse(w) {
+    const c = w.def;
     const m = c.r + 3;
     const x0 = Math.max(0, (c.x - m) * TILE), y0 = Math.max(0, (c.y - m) * TILE);
     const x1 = Math.min(MAP_W * TILE, (c.x + m) * TILE), y1 = Math.min(MAP_H * TILE, (c.y + m) * TILE);
-    this.curseRegion = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-    this.streamer.curse(this.curseRegion, c).then((canvas) => {
-      if (this.flags.wardBroken) return;
-      this.curseCanvas = canvas;
-      this.curseTex = this.textures.addCanvas('curseOverlay', canvas);
-      this.curseImg = this.add.image(x0, y0, 'curseOverlay').setOrigin(0).setDepth(-90);
+    w.region = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    this.streamer.curse(w.region, c).then((canvas) => {
+      if (this.flags[c.flag]) return;
+      w.canvas = canvas;
+      w.tex = this.textures.addCanvas(`curseOverlay_${c.id}`, canvas);
+      w.img = this.add.image(x0, y0, `curseOverlay_${c.id}`).setOrigin(0).setDepth(-90);
     });
   }
 
-  inCurse(x, y, pad = 0) {
-    if (this.flags.wardBroken) return false;
-    return Math.hypot(x - this.curseC.x, y - this.curseC.y) < this.curseC.R - pad;
-  }
+  // the unbroken ward whose curse covers this point
+  curseAt(x, y, pad = 0) { return this.wards.find((w) => !this.flags[w.def.flag] && Math.hypot(x - w.C.x, y - w.C.y) < w.C.R - pad); }
+  inCurse(x, y, pad = 0) { return !!this.curseAt(x, y, pad); }
+  get canSwim() { return this.state.relics.includes('tide'); }
 
-  wardShielded() { return !this.flags.golemDefeated; }
+  wardUnits() { return this.wards.filter((w) => w.unit?.alive).map((w) => w.unit); }
+
+  wardShielded(unit) { return !this.flags[unit?.wardDef?.guardian ?? 'golemDefeated']; }
 
   // ============================================================ landmarks
   addInteractable(o) { this.interactables.push(o); return o; }
@@ -614,14 +625,18 @@ export class Game extends Phaser.Scene {
     this.nav.block(f.x, f.y);
     this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
     // Ward Stone
-    const wd = LANDMARKS.ward;
-    if (!this.flags.wardBroken) {
-      this.ward = new WardStone(this, px(wd.x), px(wd.y));
-      this.shieldFx = this.add.ellipse(this.ward.x, this.ward.y - 18, 46, 60, 0x6f93e0, 0.12).setStrokeStyle(1, 0x9fd8ff, 0.6).setDepth(this.ward.y + 3);
-      this.tweens.add({ targets: this.shieldFx, alpha: 0.5, duration: 900, yoyo: true, repeat: -1 });
-      if (this.flags.golemDefeated) this.shieldFx.setVisible(false);
-    } else this.add.image(px(wd.x), px(wd.y) + 6, 'wardRubble').setOrigin(0.5, 1).setDepth(px(wd.y));
-    for (const dx of [-1, 0, 1]) this.nav.block(wd.x + dx, wd.y);
+    for (const w of this.wards) {
+      const wd = w.def;
+      if (!this.flags[wd.flag]) {
+        w.unit = new WardStone(this, px(wd.x), px(wd.y));
+        w.unit.wardDef = wd;
+        w.shieldFx = this.add.ellipse(w.unit.x, w.unit.y - 18, 46, 60, 0x6f93e0, 0.12).setStrokeStyle(1, 0x9fd8ff, 0.6).setDepth(w.unit.y + 3);
+        this.tweens.add({ targets: w.shieldFx, alpha: 0.5, duration: 900, yoyo: true, repeat: -1 });
+        if (this.flags[wd.guardian]) w.shieldFx.setVisible(false);
+      } else this.add.image(px(wd.x), px(wd.y) + 6, 'wardRubble').setOrigin(0.5, 1).setDepth(px(wd.y));
+      for (const dx of [-1, 0, 1]) this.nav.block(wd.x + dx, wd.y);
+    }
+    this.ward = this.wards[0].unit; // the Vale stone (kept for older code paths)
   }
 
   buildRecruits() {
@@ -797,7 +812,7 @@ export class Game extends Phaser.Scene {
       else if (o.kind === 'post') m.push({ ...t, kind: 'post' });
       else if (o.kind === 'shrine' || o.kind === 'lookout') m.push({ ...t, kind: 'recruit' });
     }
-    if (this.ward && this.ward.alive) m.push({ ...tile(this.ward), kind: 'boss' });
+    for (const u of this.wardUnits()) m.push({ ...tile(u), kind: 'boss' });
     for (const n of this.npcs) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'npc' });
     for (const n of this.quests.npcs) if (!n.hiddenNow) m.push({ x: n.x, y: n.y, kind: 'npc' });
     const pin = this.quests.pin();
@@ -827,7 +842,7 @@ export class Game extends Phaser.Scene {
     // boss plates take priority over the boss behind them
     const plate = this.interactables.find((o) => o.kind === 'plate' && Math.hypot(o.x - wx, o.y - 24 - wy) < 16);
     if (plate) { plate.interact(L, plate); audio.sfx('click'); return; }
-    const all = [...this.enemies.filter((e) => e.alive), ...(this.ward && this.ward.alive ? [this.ward] : []), ...this.breakables.filter((b) => b.alive)];
+    const all = [...this.enemies.filter((e) => e.alive && !e.submerged), ...this.wardUnits(), ...this.breakables.filter((b) => b.alive)];
     let best = null, bd = 16;
     for (const e of all) {
       const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' || e.kind === 'breakable' ? 10 : e.boss ? 16 : 0);
@@ -849,7 +864,9 @@ export class Game extends Phaser.Scene {
         return;
       }
     }
+    this.nav.swimmer = this.canSwim;
     const path = this.nav.find(L.x, L.y, wx, wy);
+    this.nav.swimmer = false;
     if (path) {
       L.command = { type: 'move' };
       L.path = path;
@@ -862,7 +879,7 @@ export class Game extends Phaser.Scene {
   // ============================================================== combat api
   nearestEnemy(from, range) {
     let best = null, bd = range;
-    for (const e of this.enemies) { if (!e.alive) continue; const d = dist(e, from); if (d < bd) { bd = d; best = e; } }
+    for (const e of this.enemies) { if (!e.alive || e.submerged) continue; const d = dist(e, from); if (d < bd) { bd = d; best = e; } }
     return best;
   }
 
@@ -956,7 +973,7 @@ export class Game extends Phaser.Scene {
   }
 
   updateProjectiles(dt) {
-    const targets = [...this.enemies, ...(this.ward && this.ward.alive ? [this.ward] : []), ...this.breakables.filter((b) => b.alive)];
+    const targets = [...this.enemies, ...this.wardUnits(), ...this.breakables.filter((b) => b.alive)];
     for (const p of this.projectiles) {
       p.life -= dt;
       if (p.target && p.target.alive && (p.kind === 'bolt' || p.kind === 'missile')) {
@@ -993,9 +1010,9 @@ export class Game extends Phaser.Scene {
     this.projectiles = this.projectiles.filter((p) => !p.dead);
   }
 
-  addShockwave(x, y, delay, maxR, speed) {
+  addShockwave(x, y, delay, maxR, speed, opts = {}) {
     const g = this.add.graphics().setDepth(-3);
-    this.shockwaves.push({ x, y, t: 0, delay, maxR, speed, hit: new Set(), g });
+    this.shockwaves.push({ x, y, t: 0, delay, maxR, speed, hit: new Set(), g, ...opts });
   }
 
   updateShockwaves(dt) {
@@ -1006,7 +1023,7 @@ export class Game extends Phaser.Scene {
       w.g.clear().lineStyle(2, 0xec6a5e, 1 - r / w.maxR).strokeEllipse(w.x, w.y, r * 2, r * 1.3);
       w.g.lineStyle(1, 0xffd04a, 0.7 * (1 - r / w.maxR)).strokeEllipse(w.x, w.y, r * 2 - 4, r * 1.3 - 3);
       for (const h of this.party) {
-        if (!h.alive || h.downed || w.hit.has(h)) continue;
+        if (!h.alive || h.downed || w.hit.has(h) || (w.skipSwimmers && h.swimming)) continue;
         const d = Math.hypot((h.x - w.x), (h.y - w.y) / 0.65);
         if (Math.abs(d - r) < 7) { w.hit.add(h); h.damage(16 * this.difficulty.dmg, { x: w.x, y: w.y }); }
       }
@@ -1056,7 +1073,7 @@ export class Game extends Phaser.Scene {
             this.shake(350, 0.014); this.cameras.main.flash(120, 255, 200, 120);
             audio.sfx('fireImpact'); audio.sfx('bash');
             this.fx.burst('ember', tx, ty, 50); this.fx.ring(tx, ty, 'ringGold', 7);
-            for (const e of [...this.enemies, ...(this.ward && this.ward.alive ? [this.ward] : [])]) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 6, { crit: true, knock: 200 });
+            for (const e of [...this.enemies, ...this.wardUnits()]) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 6, { crit: true, knock: 200 });
           },
         });
         sc.floatText(h.x, h.y - 36, 'METEOR!', 'fontGold', 0xffffff, true);
@@ -1136,7 +1153,7 @@ export class Game extends Phaser.Scene {
   // Biome art groups wanted around a tile (shared by streaming and preloading).
   groupsNear(tx, ty, area) {
     const out = [];
-    if (ty > MARSH_Y - 22 && area === 'overworld') out.push('marsh');
+    if ((ty > MARSH_Y - 22 && area === 'overworld') || area === 'abbey') out.push('marsh');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;
@@ -1218,20 +1235,21 @@ export class Game extends Phaser.Scene {
   }
 
   onBossKilled(b) {
-    this.flags.golemDefeated = true;
+    const B = b.bossDef || this.bossDefs()[0];
+    this.flags[B.flag] = true;
     audio.sfx('shatter'); audio.sfx('roar');
     this.shake(700, 0.014);
     this.cameras.main.flash(200, 255, 255, 255);
     this.fx.burst('curse', b.x, b.y - 20, 60);
     for (let i = 0; i < 4; i++) this.time.delayedCall(i * 150, () => this.fx.dust(b.x + (i - 1.5) * 12, b.y));
     for (let i = 0; i < 18; i++) this.dropCoin(b.x, b.y);
-    W.boss.drops.forEach((id, i) => this.time.delayedCall(300 + i * 200, () => this.dropLoot(id, b.x + (i - 1.5) * 14, b.y + 6)));
-    this.state.gold += W.boss.gold;
+    (B.cfg.drops || []).forEach((id, i) => this.time.delayedCall(300 + i * 200, () => this.dropLoot(id, b.x + (i - 1.5) * 14, b.y + 6)));
+    this.state.gold += B.cfg.gold || 0;
     for (const h of this.party) if (!h.downed) h.gainXp(b.s.xp);
     this.golem = null;
-    this.shieldFx?.setVisible(false);
+    for (const w of this.wards) if (this.flags[w.def.guardian]) w.shieldFx?.setVisible(false);
     this.events.emit('boss', null);
-    this.events.emit('banner', 'THE GATEWARDEN FALLS', "THE WARD STONE'S BARRIER HAS FAILED");
+    this.events.emit('banner', `${B.cfg.name} FALLS`, "THE WARD STONE'S BARRIER HAS FAILED");
     this.sealArena(false);
     for (const e of this.enemies) if (e.alive && e.summoned) e.damage(999, this.leader);
     this.autosave('boss');
@@ -1343,9 +1361,13 @@ export class Game extends Phaser.Scene {
       ...Object.entries(c.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`),
       ...Object.entries(c.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean);
     if (extras.length) this.time.delayedCall(loot.length ? 2600 * loot.length : 0, () => this.events.emit('banner', 'TREASURE!', extras.join(', ')));
-    if (c.relic === 'grapple') {
-      this.state.relics.push('grapple');
-      this.time.delayedCall(2600, () => { audio.sfx('levelUp'); this.events.emit('banner', 'GRAPPLE HOOK ACQUIRED', 'TAP A HOOK POST TO HAUL UP A LEDGE OR SWING OVER WATER'); });
+    const RELICS = {
+      grapple: ['GRAPPLE HOOK ACQUIRED', 'TAP A HOOK POST TO HAUL UP A LEDGE OR SWING OVER WATER'],
+      tide: ['TIDE CHARM ACQUIRED', 'THE PARTY CAN SWIM THROUGH DEEP WATER'],
+    };
+    if (c.relic && !this.state.relics.includes(c.relic)) {
+      this.state.relics.push(c.relic);
+      this.time.delayedCall(2600, () => { audio.sfx('levelUp'); this.events.emit('banner', ...(RELICS[c.relic] || [c.relic.toUpperCase(), ''])); });
     }
     // some chests are bait: hollow guards rise when the lid opens
     if (c.ambush) this.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) this.spawnEnemy(k, x * TILE + 8, y * TILE + 8, true); this.bark(h, 'THE ARMOUR IS MOVING!'); });
@@ -1543,42 +1565,52 @@ export class Game extends Phaser.Scene {
       ]
       : [
         { ...K, text: 'AH, HEROES! FORGIVE THE... GREEN. MALGRIM HAS MADE A FROG OF YOUR KING.' },
-        { ...K, text: 'A WARD STONE BURNS TO THE EAST, GUARDED BY A GOLEM OF HEXED ROCK. SMASH IT, AND THE VALE WILL BLOOM AGAIN!' },
+        { ...K, text: 'A WARD STONE BURNS TO THE EAST. ITS BARRIER DRAWS ON A GUARDIAN BENEATH THE OLD KEEP - STAIRS IN THE RUINS. DEFEAT IT, SMASH THE STONE, AND THE VALE WILL BLOOM AGAIN!' },
         { ...K, text: 'YOU WILL WANT FRIENDS FOR THAT. AND BETTER ARMOUR. AND IF YOU FIND ANY FLIES... NO. FORGET I SAID THAT.' },
       ];
     this.events.emit('dialogue', lines);
   }
 
-  onWardDestroyed(w) {
-    this.flags.wardBroken = true;
-    this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
+  onWardDestroyed(unit) {
+    const w = this.wards.find((k) => k.unit === unit) || this.wards[0];
+    const def = w.def;
+    // a freed outer region keeps the band it had (C1)
+    const region = W.regions.find((r) => r.outer === def.region);
+    if (region) this.flags[`band_${def.region}`] = regionBand(this.state, region);
+    this.flags[def.flag] = true;
+    if (def.id === 'vale') this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
+    const down = this.wards.filter((k) => this.flags[k.def.flag]).length;
+    if (down >= 2) this.flags.enchanter = true; // two stones: the Enchanter comes home
+    if (down >= 3) this.flags.smithRank = Math.max(this.flags.smithRank || 0, 2);
     this.hitStop(0.3);
     this.cameras.main.flash(250, 240, 200, 255);
     this.shake(500, 0.012);
     audio.sfx('shatter');
-    w.sprite.stop();
-    w.sprite.setTexture('wardRubble').clearTint();
-    this.fx.burst('curse', w.x, w.y - 20, 40);
-    for (const h of this.party) if (h.command?.target === w) h.command = null;
+    unit.sprite.stop();
+    unit.sprite.setTexture('wardRubble').clearTint();
+    this.fx.burst('curse', unit.x, unit.y - 20, 40);
+    for (const h of this.party) if (h.command?.target === unit) h.command = null;
     this.time.delayedCall(700, () => {
       audio.sfx('curseLift');
       music.setVariant('freed', 1.6);
-      this.bloomR = 0;
-      this.events.emit('banner', 'WARD STONE DESTROYED', 'THE CURSE LIFTS FROM THE VALE');
+      w.bloomR = 0;
+      this.events.emit('banner', 'WARD STONE DESTROYED', def.lifts);
     });
     this.time.delayedCall(4200, () => this.bark(this.leader, BARKS.ward[this.leader.def.id]));
     this.autosave('ward');
   }
 
-  updateBloom(dt) {
-    if (this.bloomR < 0 || !this.curseCanvas) { if (this.bloomR >= 0 && !this.curseCanvas) this.bloomR = -1; return; }
-    this.bloomR += dt * 190;
-    const ctx = this.curseCanvas.getContext('2d');
-    const { x: rx, y: ry } = this.curseRegion;
-    const cx = this.curseC.x - rx, cy = this.curseC.y - ry;
+  updateBloom(dt) { for (const w of this.wards) this.bloomWard(w, dt); }
+
+  bloomWard(w, dt) {
+    if (w.bloomR < 0 || !w.canvas) { if (w.bloomR >= 0 && !w.canvas) w.bloomR = -1; return; }
+    w.bloomR += dt * 190;
+    const ctx = w.canvas.getContext('2d');
+    const { x: rx, y: ry } = w.region;
+    const cx = w.C.x - rx, cy = w.C.y - ry;
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, this.bloomR - 10), 0, Math.PI * 2); ctx.fill();
-    const band = 10, r0 = this.bloomR - band, r1 = this.bloomR;
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, w.bloomR - 10), 0, Math.PI * 2); ctx.fill();
+    const band = 10, r0 = w.bloomR - band, r1 = w.bloomR;
     const steps = Math.ceil(r1 * Math.PI * 2);
     for (let i = 0; i < steps; i++) {
       const a = (i / steps) * Math.PI * 2;
@@ -1588,22 +1620,23 @@ export class Game extends Phaser.Scene {
       }
     }
     ctx.globalCompositeOperation = 'source-over';
-    this.curseTex.refresh();
+    w.tex.refresh();
     for (let k = 0; k < 6; k++) {
       const a = Math.random() * Math.PI * 2;
-      this.fx.burst('bloom', this.curseC.x + Math.cos(a) * this.bloomR, this.curseC.y + Math.sin(a) * this.bloomR, 1);
+      this.fx.burst('bloom', w.C.x + Math.cos(a) * w.bloomR, w.C.y + Math.sin(a) * w.bloomR, 1);
     }
     for (const objs of this.chunkObjs.values()) for (const img of objs) {
       if (img.cleansed || !img.tintTopLeft || img.tintTopLeft === 0xffffff) continue;
-      if (Math.hypot(img.x - this.curseC.x, img.y - this.curseC.y) < this.bloomR) { img.cleansed = true; img.clearTint(); }
+      if (Math.hypot(img.x - w.C.x, img.y - w.C.y) < w.bloomR) { img.cleansed = true; img.clearTint(); }
     }
     for (const e of this.enemies) {
-      if (e.alive && e.cursed && Math.hypot(e.x - this.curseC.x, e.y - this.curseC.y) < this.bloomR) {
+      if (e.alive && e.cursed && Math.hypot(e.x - w.C.x, e.y - w.C.y) < w.bloomR) {
         e.alive = false; e.clearZone(); this.fx.burst('bloom', e.x, e.y - 6, 14); this.fx.dust(e.x, e.y); e.destroy();
       }
     }
-    if (this.bloomR > this.curseC.R + 80) { this.bloomR = -1; this.curseImg.setVisible(false); }
+    if (w.bloomR > w.C.R + 80) { w.bloomR = -1; w.img.setVisible(false); }
   }
+
 
   // Walk-on doorways (plus visible markers once the cave art is loaded).
   updateWarps() {
@@ -1623,32 +1656,45 @@ export class Game extends Phaser.Scene {
     }
   }
 
+  // Lieutenant arenas: the boss wakes once the party is inside, bars close behind.
+  bossDefs() {
+    return [
+      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [274, 4, 302, 15], gate: [288, 16], make: (x, y, o) => new Golem(this, x, y - 24, o) },
+      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [270, 65, 304, 77], gate: [287, 78], make: (x, y, o) => new Murk(this, x, y, o) },
+    ];
+  }
+
   updateBoss() {
-    if (this.flags.golemDefeated || this.golem) return;
-    const L = this.leader, B = W.boss;
-    const ax = B.arena[0] * TILE + 8, ay = B.arena[1] * TILE + 8;
-    // wake only once the whole party is past the arena mouth, so the bars close behind it
-    const inArena = (h) => h.x > 274 * TILE && h.x < 303 * TILE && h.y < 16 * TILE && h.y > 3 * TILE;
-    if (!inArena(L) || Math.hypot(L.x - ax, L.y - ay) > B.trigger * TILE) return;
-    for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y + 6; }
-    const g = new Golem(this, ax, ay - 24, { level: this.enemyLevel(ax, ay) + 1 });
-    g.bossName = B.name;
-    this.golem = g;
-    this.enemies.push(g);
-    audio.sfx('roar');
-    this.shake(600, 0.01);
-    g.sprite.setAlpha(0).setY(g.y - 30);
-    this.tweens.add({ targets: g.sprite, alpha: 1, duration: 400 });
-    this.fx.burst('curse', g.x, g.y - 20, 40);
-    this.time.delayedCall(500, () => g.alive && g.aggroOn(L));
-    this.events.emit('banner', B.name, B.sub);
-    this.events.emit('boss', g);
-    this.sealArena(true);
+    if (this.golem) return;
+    const L = this.leader;
+    for (const B of this.bossDefs()) {
+      if (this.flags[B.flag]) continue;
+      const [x0, y0, x1, y1] = B.rect;
+      const inArena = (h) => h.x > x0 * TILE && h.x < (x1 + 1) * TILE && h.y < (y1 + 1) * TILE && h.y > y0 * TILE;
+      if (!inArena(L)) continue;
+      for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y - 6; }
+      const ax = B.cfg.arena[0] * TILE + 8, ay = B.cfg.arena[1] * TILE + 8;
+      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + 1 });
+      g.bossName = B.cfg.name; g.bossDef = B;
+      this.golem = g; // the active lieutenant (name kept from the demo)
+      this.enemies.push(g);
+      audio.sfx('roar');
+      this.shake(600, 0.01);
+      g.sprite.setAlpha(0).setY(g.y - 30);
+      this.tweens.add({ targets: g.sprite, alpha: 1, duration: 400 });
+      this.fx.burst('curse', g.x, g.y - 20, 40);
+      this.time.delayedCall(500, () => g.alive && g.aggroOn(L));
+      this.events.emit('banner', B.cfg.name, B.cfg.sub);
+      this.events.emit('boss', g);
+      this.sealArena(true, B.gate);
+      return;
+    }
   }
 
   // Bars drop across the arena's entrance during the boss fight.
-  sealArena(on) {
-    const gx = 288, gy = 16;
+  sealArena(on, gate) {
+    if (gate) this.arenaGatePos = gate;
+    const [gx, gy] = this.arenaGatePos || [288, 16];
     if (on && !this.arenaGate) {
       this.arenaGate = this.add.graphics().setDepth(gy * TILE + 20);
       for (let i = 0; i < 4; i++) this.arenaGate.fillStyle(0x1a1423).fillRect((gx - 1) * TILE + 6 + i * 11, gy * TILE - 6, 4, 26).fillStyle(0x6e6a87).fillRect((gx - 1) * TILE + 7 + i * 11, gy * TILE - 6, 2, 26);
@@ -1726,7 +1772,7 @@ export class Game extends Phaser.Scene {
     for (const h of this.party) { if (h.zipping) h.sync(dt); else h.update(dt); this.gearFx.update(h, dt); }
     for (const e of this.enemies) e.update(dt);
     this.enemies = this.enemies.filter((e) => e.alive);
-    if (this.ward && this.ward.alive) this.ward.update(dt);
+    for (const u of this.wardUnits()) u.update(dt);
     this.updateProjectiles(dt);
     this.updateEnemyShots(dt);
     this.updateNodesAndNpcs(dt);
@@ -1742,13 +1788,12 @@ export class Game extends Phaser.Scene {
 
     if (this.barkObj && this.barkObj.follow) this.barkObj.setPosition(Math.round(this.barkObj.follow.x), Math.round(this.barkObj.follow.y) - 30);
 
-    if (!this.flags.wardBroken) {
-      this.moteT -= dt;
-      if (this.moteT <= 0 && Math.hypot(L.x - this.curseC.x, L.y - this.curseC.y) < 500) {
-        this.moteT = 0.08;
-        const a = Math.random() * Math.PI * 2, r = Math.random() * this.curseC.R * 0.8;
-        this.fx.burst('motes', this.curseC.x + Math.cos(a) * r, this.curseC.y + Math.sin(a) * r * 0.8, 1);
-      }
+    this.moteT -= dt;
+    const mw = this.wards.find((w) => !this.flags[w.def.flag] && Math.hypot(L.x - w.C.x, L.y - w.C.y) < 500);
+    if (mw && this.moteT <= 0) {
+      this.moteT = 0.08;
+      const a = Math.random() * Math.PI * 2, r = Math.random() * mw.C.R * 0.8;
+      this.fx.burst('motes', mw.C.x + Math.cos(a) * r, mw.C.y + Math.sin(a) * r * 0.8, 1);
     }
 
     const inZone = this.inCurse(L.x, L.y, 30);

@@ -106,3 +106,6 @@ export const HOLLOW = { ...composeHero('brann', { head: 'helm_great@3', body: 'p
 
 // Hex Warlock: one of Malgrim's cultists - shields its allies and calls hexlings.
 export const WARLOCK = { ...composeHero('pip', { head: 'hat_apprentice@5', body: 'robe_apprentice@5', weapon: 'staff_oak@5', offhand: null }), id: 'warlock', name: 'Hex Warlock' };
+// Mistfen: the Drowned (waterlogged dead) and Marsh Witchlings (Malgrim's swamp cultists).
+export const DROWNED = { ...composeHero('sable', { head: 'hood_shadow@3', body: 'jacket_leather@3', weapon: 'dagger_steel@1', offhand: null }), id: 'drowned', name: 'Drowned' };
+export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

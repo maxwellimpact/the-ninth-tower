@@ -6,12 +6,14 @@ export class NavGrid {
   constructor(w, h) {
     this.w = w;
     this.h = h;
-    this.solid = new Uint8Array(w * h);
+    this.solid = new Uint8Array(w * h); // 0 open, 1 solid, 2 deep water (open to swimmers)
+    this.swimmer = false;               // set while moving / pathing a unit that can swim
   }
-  block(tx, ty) { if (this.inb(tx, ty)) this.solid[ty * this.w + tx] = 1; }
+  block(tx, ty, v = 1) { if (this.inb(tx, ty)) this.solid[ty * this.w + tx] = v; }
+  isWater(tx, ty) { return this.inb(tx, ty) && this.solid[ty * this.w + tx] === 2; }
   unblock(tx, ty) { if (this.inb(tx, ty)) this.solid[ty * this.w + tx] = 0; }
   inb(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.w && ty < this.h; }
-  isSolid(tx, ty) { return !this.inb(tx, ty) || this.solid[ty * this.w + tx] === 1; }
+  isSolid(tx, ty) { if (!this.inb(tx, ty)) return true; const v = this.solid[ty * this.w + tx]; return v === 1 || (v === 2 && !this.swimmer); }
   solidAtPx(x, y) { return this.isSolid(Math.floor(x / TILE), Math.floor(y / TILE)); }
 
   // Is the straight line between two world points clear for a body of radius r?

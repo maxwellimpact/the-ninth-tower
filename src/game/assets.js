@@ -2,9 +2,9 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -114,6 +114,15 @@ export const GROUPS = {
     }],
   ],
   marsh: [
+    ['fen foes', (s) => {
+      creature(s, 'leeches', buildLeeches(), { idle: 4, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'lurker', buildLurker(), { idle: 2, walk: 3, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'croaker', buildCroaker(), { idle: 2, walk: 6, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'snapjaw', buildSnapjaw(), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1, flipped: 5 }, ['idle', 'walk', 'windup', 'flipped']);
+      creature(s, 'murk', buildMurk(), { idle: 2.5, walk: 4, windup: 5, slam: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      registerPuppet(s, 'drowned', DROWNED);
+      registerPuppet(s, 'witchling', WITCHLING);
+    }],
     ['mire slime', (s) => creature(s, 'mire', buildHexling(MIRE_TONES, 'goldL'), HEX_RATES, ['idle', 'walk', 'windup'])],
     ['dead trees', (s) => { for (let k = 0; k < 8; k++) s.textures.addCanvas(`deadtree${k}`, P.deadTree(k)); }],
     ['reeds', (s) => {
@@ -123,7 +132,6 @@ export const GROUPS = {
       }
     }],
     ['mushrooms', (s) => { for (let k = 0; k < 4; k++) s.textures.addCanvas(`mushrooms${k}`, P.mushrooms(k)); }],
-    ['herbs', (s) => { frames(s, 'herb', P.herbNode(false), 2); s.textures.addCanvas('herb_used', P.herbNode(true)[0]); }],
   ],
   interior: [
     ['furniture', (s) => {
@@ -144,6 +152,7 @@ export const GROUPS = {
 };
 // errand townsfolk + props are small and needed across the Vale, so they ride with core
 GROUPS.core.push(
+  ['herbs', (s) => { frames(s, 'herb', P.herbNode(false), 2); s.textures.addCanvas('herb_used', P.herbNode(true)[0]); }],
   ['vale foes', (s) => {
     creature(s, 'boar', buildBoar(), { idle: 2, walk: 8, windup: 10, attack: 12, hurt: 1 }, ['idle', 'walk', 'windup']);
     creature(s, 'crab', buildCrab(), { idle: 2, walk: 9, windup: 6, attack: 10, hurt: 1, flipped: 6 }, ['idle', 'walk', 'windup', 'flipped']);
