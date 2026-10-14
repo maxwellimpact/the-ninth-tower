@@ -19,6 +19,22 @@
   "scrap": {
    "name": "GOBLIN SCRAP",
    "short": "SCRAP"
+  },
+  "silver": {
+   "name": "SILVER ORE",
+   "short": "SILVER"
+  },
+  "starmetal": {
+   "name": "STARMETAL",
+   "short": "STAR"
+  },
+  "bogmoss": {
+   "name": "BOGMOSS",
+   "short": "MOSS"
+  },
+  "pearl": {
+   "name": "RIVER PEARL",
+   "short": "PEARL"
   }
  },
  "consumables": {
@@ -54,26 +70,33 @@
   }
  ],
  "refine": {
-  "max": 3,
-  "perLevel": {
-   "ore": 2,
-   "scrap": 2
+  "rankCap": [
+   0,
+   3,
+   6,
+   10
+  ],
+  "statPerLevel": 0.06,
+  "goldPerLevel": 20,
+  "ore": {
+   "1": "ore",
+   "2": "ore",
+   "3": "silver",
+   "4": "silver",
+   "5": "starmetal",
+   "6": "starmetal"
   },
-  "goldPerLevel": 25,
-  "bonus": {
-   "weapon": {
-    "atk": 2
-   },
-   "head": {
-    "def": 2
-   },
-   "body": {
-    "def": 3
-   },
-   "offhand": {
-    "def": 2
-   }
-  }
+  "scrapPerLevel": 1,
+  "regionMat": {
+   "4": "pearl",
+   "6": "pearl"
+  },
+  "starAt": [
+   8,
+   9,
+   10
+  ],
+  "salvage": 0.4
  },
  "elements": {
   "fire": {
@@ -91,5 +114,102 @@
    "status": "poison",
    "color": "0x8cff8c"
   }
+ },
+ "gems": {
+  "kinds": {
+   "ember": {
+    "name": "EMBER",
+    "element": "fire",
+    "col": "fireL"
+   },
+   "rime": {
+    "name": "RIME",
+    "element": "frost",
+    "col": "blueL"
+   },
+   "storm": {
+    "name": "STORM",
+    "element": "storm",
+    "col": "white"
+   },
+   "venom": {
+    "name": "VENOM",
+    "element": "venom",
+    "col": "grassXL"
+   },
+   "sun": {
+    "name": "SUN",
+    "element": "light",
+    "col": "goldL"
+   },
+   "gloam": {
+    "name": "GLOAM",
+    "element": "shadow",
+    "col": "purpL"
+   },
+   "ruby": {
+    "name": "RUBY",
+    "stat": "hpPct",
+    "col": "red"
+   },
+   "onyx": {
+    "name": "ONYX",
+    "stat": "defPct",
+    "col": "slate"
+   },
+   "topaz": {
+    "name": "TOPAZ",
+    "stat": "crit",
+    "col": "gold"
+   },
+   "emerald": {
+    "name": "EMERALD",
+    "stat": "regen",
+    "col": "grass"
+   }
+  },
+  "grades": [
+   "CHIPPED",
+   "CLEAR",
+   "FLAWLESS",
+   "ROYAL"
+  ],
+  "elementDmg": [
+   0.03,
+   0.06,
+   0.09,
+   0.12
+  ],
+  "hpPct": [
+   0.04,
+   0.08,
+   0.12,
+   0.16
+  ],
+  "defPct": [
+   0.04,
+   0.08,
+   0.12,
+   0.16
+  ],
+  "crit": [
+   0.02,
+   0.04,
+   0.06,
+   0.08
+  ],
+  "regen": [
+   0.002,
+   0.004,
+   0.006,
+   0.008
+  ],
+  "socketGold": [
+   50,
+   100,
+   200,
+   400
+  ],
+  "combine": 3
  }
 }

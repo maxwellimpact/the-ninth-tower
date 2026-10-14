@@ -7,13 +7,17 @@ import tuning from '../data/tuning.json';
 import crafting from '../data/crafting.json';
 import world from '../data/world.json';
 import skills from '../data/skills.json';
+import gearData from '../data/gear.json';
+import { ensureItems, isGenerated, tierOf } from './itemgen.js';
 
 export const SAVE_KEY = 'ninthTower.save.v1';
-export const SLOTS = ['head', 'body', 'weapon', 'offhand'];
+export const SLOTS = ['head', 'body', 'weapon', 'offhand']; // drawn on the hero
+export const TRINKETS = ['trinket1', 'trinket2'];             // rings and charms
+export const ALL_SLOTS = [...SLOTS, ...TRINKETS];
 
 export function newState(leaderId) {
   const heroes = {};
-  for (const h of heroData) heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip }, ...newSkillState(h.id) };
+  for (const h of heroData) heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip, trinket1: null, trinket2: null }, ...newSkillState(h.id) };
   return {
     version: 1,
     leader: leaderId,
@@ -29,6 +33,8 @@ export function newState(leaderId) {
     materials: { herb: 0, gel: 0, ore: 0, crystal: 0, scrap: 0 },
     potions: { potion: 2, elixir: 0 },
     refine: {},         // itemId -> +N
+    gems: {},           // 'ember1' -> count (kind + grade 1-4)
+    sockets: {},        // itemId -> [gemKey|null, ...]
     flies: [],          // indices into world.flies (+ 'whack' for the minigame prize)
     flyRewards: 0,      // reward tiers claimed from the Frog King
     playTime: 0,
@@ -106,7 +112,13 @@ export function loadState() {
     s.refine ??= {};
     s.flies ??= [];
     s.flyRewards ??= 0;
-    for (const [id, hs] of Object.entries(s.heroes)) if (!hs.skills) migrateSkills(id, hs);
+    for (const [id, hs] of Object.entries(s.heroes)) {
+      if (!hs.skills) migrateSkills(id, hs);
+      hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null;
+    }
+    s.gems ??= {};
+    s.sockets ??= {};
+    ensureItems(s);
     s.stats ??= { kills: 0, levelUps: [] };
     return s;
   } catch { return null; }
@@ -117,29 +129,52 @@ export function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch {
 export const heroInfo = (id) => heroData.find((h) => h.id === id);
 
 // Live modifiers from the current save (gear refinement, the Frog King's blessing).
-let MODS = { refine: {}, blessing: false };
-export function setStatMods(state) { MODS = { get refine() { return state.refine; }, get blessing() { return !!state.flags.blessing; } }; }
+let MODS = { refine: {}, sockets: {}, blessing: false };
+export function setStatMods(state) { MODS = { get refine() { return state.refine; }, get sockets() { return state.sockets || {}; }, get blessing() { return !!state.flags.blessing; } }; }
 
 // Level + gear -> final stats.
 export function computeStats(id, level, equip, hs = null) {
   const base = heroInfo(id).stats;
-  const s = { ...base, def: 0, maxHp: Math.round(base.maxHp * (1 + (level - 1) * tuning.hpGrowth)), atk: base.atk + (level - 1) * tuning.atkGrowth };
-  for (const slot of SLOTS) {
-    const it = items[equip[slot]];
+  const s = { ...base, def: 0, cdr: 0, regen: 0, maxHp: Math.round(base.maxHp * (1 + (level - 1) * tuning.hpGrowth)), atk: base.atk + (level - 1) * tuning.atkGrowth };
+  const traits = [];
+  let hpPct = 0, defPct = 0;
+  s.gemElements = [];
+  for (const slot of ALL_SLOTS) {
+    const iid = equip[slot];
+    const it = items[iid];
     if (!it) continue;
-    s.atk += it.stats.atk || 0;
-    s.def += it.stats.def || 0;
-    s.maxHp += it.stats.hp || 0;
-    s.crit += it.stats.crit || 0;
-    const r = MODS.refine[equip[slot]] || 0;
-    const b = crafting.refine.bonus[slot] || {};
-    s.atk += (b.atk || 0) * r;
-    s.def += (b.def || 0) * r;
+    const r = MODS.refine[iid] || 0;
+    const mul = 1 + r * crafting.refine.statPerLevel;
+    // refinement: +6% of the item's stats per level, at least +1 per level to its main stat
+    const main = Object.entries(it.stats).sort((a, b) => (b[0] === 'crit' ? b[1] * 100 : b[1]) - (a[0] === 'crit' ? a[1] * 100 : a[1]))[0]?.[0];
+    for (const [k, v] of Object.entries(it.stats)) {
+      const key = k === 'hp' ? 'maxHp' : k;
+      let add = v * mul;
+      if (k === main && r && k !== 'crit' && k !== 'cdr') add = Math.max(add, v + r);
+      s[key] = (s[key] || 0) + (k === 'crit' || k === 'cdr' ? add : Math.round(add));
+    }
+    if (it.trait) traits.push(it.trait);
+    for (const g of MODS.sockets[iid] || []) {
+      if (!g) continue;
+      const kind = g.replace(/\d/g, ''), grade = +g.slice(kind.length) - 1;
+      const G = crafting.gems, gk = G.kinds[kind];
+      if (gk.element) s.gemElements.push({ el: gk.element, dmg: G.elementDmg[grade], armor: slot !== 'weapon' && slot !== 'offhand' });
+      else if (gk.stat === 'hpPct') hpPct += G.hpPct[grade];
+      else if (gk.stat === 'defPct') defPct += G.defPct[grade];
+      else if (gk.stat === 'crit') s.crit += G.crit[grade];
+      else if (gk.stat === 'regen') s.regen += G.regen[grade];
+    }
   }
+  s.maxHp = Math.round(s.maxHp * (1 + hpPct));
+  s.def = Math.round(s.def * (1 + defPct));
   if (MODS.blessing) s.maxHp = Math.round(s.maxHp * 1.15);
-  // element comes from the weapon, else the off-hand (Sable's twin fang, Pip's grimoire)
-  s.element = items[equip.weapon]?.element || items[equip.offhand]?.element || null;
-  s.passives = SLOTS.map((k) => items[equip[k]]?.passive).filter(Boolean);
+  // element comes from the weapon, else the off-hand (Sable's twin fang, Pip's grimoire), else a weapon gem
+  s.element = items[equip.weapon]?.element || items[equip.offhand]?.element || s.gemElements.find((g) => !g.armor)?.el || null;
+  s.passives = ALL_SLOTS.map((k) => items[equip[k]]?.passive).filter(Boolean);
+  s.traits = traits;
+  if (traits.includes('cdr')) s.cdr += 0.1;
+  if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
+  s.cdr = Math.min(0.4, s.cdr);
   // equipped stat passives
   const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);
   if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
@@ -160,7 +195,8 @@ export function xpFor(heroLevel, enemyLevel, xp) {
 
 // Stat delta of swapping `newId` into its slot for this hero.
 export function statDelta(id, level, equip, newId) {
-  const slot = items[newId].slot;
+  let slot = items[newId].slot;
+  if (slot === 'trinket') slot = equip.trinket1 ? (equip.trinket2 ? 'trinket1' : 'trinket2') : 'trinket1';
   const a = computeStats(id, level, equip);
   const b = computeStats(id, level, { ...equip, [slot]: newId });
   return { atk: b.atk - a.atk, def: b.def - a.def, maxHp: b.maxHp - a.maxHp, crit: Math.round((b.crit - a.crit) * 100) };
@@ -197,23 +233,88 @@ export function craft(state, recipe) {
   return true;
 }
 
+// Blacksmith rank 0-3 (C5): returns with the Vale stone, then 3 and 5 stones.
+export const smithRank = (state) => state.flags.smithRank || 0;
+export const refineCap = (state) => crafting.refine.rankCap[smithRank(state)] ?? 0;
+
 export function refineCost(state, itemId) {
+  const R = crafting.refine;
   const lvl = (state.refine[itemId] || 0) + 1;
-  const per = crafting.refine.perLevel;
-  return { level: lvl, needs: Object.fromEntries(Object.entries(per).map(([k, n]) => [k, n * lvl])), gold: crafting.refine.goldPerLevel * lvl };
+  const tier = tierOf(itemId);
+  const needs = { [R.ore[tier]]: lvl, scrap: R.scrapPerLevel * lvl };
+  if (R.regionMat[lvl]) needs[R.regionMat[lvl]] = (needs[R.regionMat[lvl]] || 0) + 1;
+  if (R.starAt.includes(lvl)) needs.starmetal = (needs.starmetal || 0) + 1;
+  return { level: lvl, needs, gold: R.goldPerLevel * lvl * tier };
 }
 
 export function refine(state, itemId) {
   const c = refineCost(state, itemId);
-  if (c.level > crafting.refine.max || !canAfford(state, c.needs, c.gold)) return false;
+  if (c.level > refineCap(state) || !canAfford(state, c.needs, c.gold)) return false;
   pay(state, c.needs, c.gold);
   state.refine[itemId] = c.level;
   return true;
 }
 
+// Break an item down for ~40% of what it took to make and refine (never Uniques).
+export function salvageYield(state, itemId) {
+  const it = items[itemId];
+  if (!it || it.rarity === 'unique' || it.rarity === 'legendary') return null;
+  const R = crafting.refine, tier = tierOf(itemId);
+  const out = { [R.ore[tier]]: Math.max(1, Math.round(tier * 0.8)), scrap: 1 };
+  for (let l = 1; l <= (state.refine[itemId] || 0); l++) {
+    const c = { [R.ore[tier]]: l, scrap: l };
+    for (const [k, n] of Object.entries(c)) out[k] = (out[k] || 0) + n * R.salvage;
+  }
+  for (const k of Object.keys(out)) out[k] = Math.max(1, Math.round(out[k]));
+  return out;
+}
+export function salvage(state, itemId) {
+  const y = salvageYield(state, itemId);
+  const i = state.inventory.indexOf(itemId);
+  if (!y || i < 0) return null;
+  state.inventory.splice(i, 1);
+  delete state.refine[itemId];
+  delete state.sockets[itemId];
+  addMats(state, y);
+  return y;
+}
+
 export function sellPrice(itemId) {
-  const base = world.shop.sell[items[itemId].rarity] || 10;
-  return base + (MODS.refine[itemId] || 0) * 10;
+  const it = items[itemId];
+  const base = it.generated ? Math.round(gearData.tiers[it.tier - 1].price * 0.25 * ({ common: 1, fine: 1.4, rare: 2 }[it.rarity] || 1)) : world.shop.sell[it.rarity] || 10;
+  return base + (MODS.refine[itemId] || 0) * 10 * tierOf(itemId);
+}
+
+// ------------------------------------------------------------------ gems
+export const socketCount = (itemId) => ({ rare: 1, unique: 1, legendary: 2 }[items[itemId]?.rarity] || 0);
+export const gemName = (g) => { const k = g.replace(/\d/g, ''); return `${crafting.gems.grades[+g.slice(k.length) - 1]} ${crafting.gems.kinds[k].name}`; };
+export function socketGem(state, itemId, slotIdx, gem) {
+  if (slotIdx >= socketCount(itemId) || !(state.gems[gem] > 0)) return false;
+  const grade = +gem.replace(/\D/g, '');
+  const gold = crafting.gems.socketGold[grade - 1];
+  if (state.gold < gold) return false;
+  state.gold -= gold;
+  const s = (state.sockets[itemId] ??= []);
+  if (s[slotIdx]) state.gems[s[slotIdx]] = (state.gems[s[slotIdx]] || 0) + 1; // removing is free: the old gem comes back
+  s[slotIdx] = gem;
+  state.gems[gem]--;
+  return true;
+}
+export function unsocket(state, itemId, slotIdx) {
+  const s = state.sockets[itemId];
+  if (!s?.[slotIdx]) return false;
+  state.gems[s[slotIdx]] = (state.gems[s[slotIdx]] || 0) + 1;
+  s[slotIdx] = null;
+  return true;
+}
+// three of a grade make one of the next
+export function combineGems(state, gem) {
+  const kind = gem.replace(/\d/g, ''), grade = +gem.slice(kind.length);
+  if (grade >= 4 || (state.gems[gem] || 0) < crafting.gems.combine) return false;
+  state.gems[gem] -= crafting.gems.combine;
+  const next = `${kind}${grade + 1}`;
+  state.gems[next] = (state.gems[next] || 0) + 1;
+  return true;
 }
 
 export function addMats(state, mats = {}) { for (const [k, n] of Object.entries(mats)) state.materials[k] = (state.materials[k] || 0) + n; }

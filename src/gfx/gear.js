@@ -248,8 +248,8 @@ const SHIELDS = {
   },
 };
 
-function shieldDraw(kind) {
-  const s = SHIELDS[kind];
+function shieldDraw(kind) { return shieldDrawFrom(SHIELDS[kind]); }
+function shieldDrawFrom(s) {
   const h = s.front.length;
   return (ctx, view, hL) => {
     const w = s.front[0].length;
@@ -263,8 +263,8 @@ const TOMES = {
   worn: { k: 'woodD', c: 'wood', p: 'bone', m: 'gold' },
   frost: { k: 'blueD', c: 'blue', p: 'white', m: 'foam' },
 };
-function tomeDraw(kind) {
-  const map = TOMES[kind];
+function tomeDraw(kind) { return tomeDrawFrom(TOMES[kind]); }
+function tomeDrawFrom(map) {
   const rows = ['kcck', 'cmcc', 'cccc', 'ppkp'];
   return (ctx, view, hL) => {
     if (view === 'side') return; // held on the far side
@@ -296,14 +296,68 @@ const OFFHAND = {
 
 export const LOOKS = { head: HEAD, body: BODY, weapon: WEAPON, offhand: OFFHAND };
 
+// ------------------------------------------------------------ tier recolours
+// Generated gear uses look ids like "sword_iron@3": the base look recoloured
+// with that tier's material ramp (iron, steel, silversteel, runesteel,
+// starsteel, kingsteel and the matching cloth / leather colours).
+const RAMPS = {
+  1: {},
+  2: { steelD: 'steel', steel: 'steelL', steelL: 'white', blue: 'red', blueD: 'redD', blueL: 'redL', purp: 'blue', purpD: 'blueD', purpL: 'blueL', leather: 'wood', leatherD: 'woodD' },
+  3: { steelD: 'stone', steel: 'mist', steelL: 'white', blue: 'grass', blueD: 'grassD', blueL: 'grassL', purp: 'grass', purpD: 'grassD', purpL: 'grassL', red: 'grass', redD: 'grassD', redL: 'grassL', leather: 'stone', leatherD: 'slate', wood: 'woodL', woodD: 'wood' },
+  4: { steelD: 'night', steel: 'blueD', steelL: 'blueL', blue: 'purp', blueD: 'purpD', blueL: 'purpL', purp: 'waterD', purpD: 'night', purpL: 'water', red: 'purp', redD: 'purpD', redL: 'purpL', leather: 'grassD', leatherD: 'leafD', gold: 'crystalL', goldL: 'white' },
+  5: { steelD: 'purpD', steel: 'purp', steelL: 'purpL', blue: 'night', blueD: 'ink', blueL: 'slate', purp: 'night', purpD: 'ink', purpL: 'slate', red: 'night', redD: 'ink', redL: 'slate', leather: 'night', leatherD: 'ink', wood: 'slate', woodD: 'night' },
+  6: { steelD: 'hairBlD', steel: 'gold', steelL: 'goldL', blue: 'white', blueD: 'bone', blueL: 'white', purp: 'white', purpD: 'bone', purpL: 'white', red: 'redD', redD: 'woodD', redL: 'red', leather: 'redD', leatherD: 'woodD', wood: 'gold', woodD: 'hairBlD', gold: 'goldL' },
+};
+const WEAPON_DEFAULTS = {
+  sword: { blade: 'steelL', edge: 'steel', guard: 'gold', tip: 'white', grip: 'woodD' },
+  staff: { shaft: ['wood', 'woodD'], rim: 'gold', core: 'goldL', glow: 'fireL' },
+  dagger: { blade: 'steelL', tip: 'white', guard: 'gold' },
+};
+const RINGS = { vigor: 'redL', might: 'fireL', warding: 'blueL', precision: 'grassXL' };
+const rc = (ramp) => (k) => (typeof k === 'string' && ramp[k]) || k;
+const mapObj = (o, f) => Object.fromEntries(Object.entries(o).map(([c, k]) => [c, Array.isArray(k) ? k.map(f) : f(k)]));
+const lookCache = new Map();
+
+export function getLook(slot, lookId) {
+  if (!lookId) return null;
+  if (!lookId.includes('@')) return LOOKS[slot][lookId];
+  const key = `${slot}|${lookId}`;
+  if (lookCache.has(key)) return lookCache.get(key);
+  const [baseId, t] = lookId.split('@');
+  const f = rc(RAMPS[t] || {});
+  const base = LOOKS[slot][baseId];
+  let out = null;
+  if (base && (slot === 'head' || slot === 'body')) {
+    out = { ...base, map: mapObj(base.map, f) };
+    if (base.legs) out.legs = base.legs.map(f);
+    if (base.arms) out.arms = base.arms.map(f);
+  } else if (base && slot === 'weapon') {
+    out = { kind: base.kind, style: mapObj({ ...WEAPON_DEFAULTS[base.kind], ...base.style }, f) };
+  } else if (base && slot === 'offhand') {
+    if (base.dagger) out = { dagger: mapObj({ ...WEAPON_DEFAULTS.dagger, ...base.dagger }, f) };
+    else if (baseId.startsWith('shield')) {
+      const sh = SHIELDS[baseId.split('_')[1]];
+      const s2 = { ...sh, map: mapObj(sh.map, f) };
+      out = { draw: shieldDrawFrom(s2), shield: s2 };
+    } else if (baseId.startsWith('tome')) {
+      const map = mapObj(TOMES[baseId.split('_')[1]], f);
+      out = { draw: tomeDrawFrom(map), tome: map };
+    } else out = base;
+  }
+  lookCache.set(key, out);
+  return out;
+}
+
 // ---------------------------------------------------------------- compose
 // equip: { head, body, weapon, offhand } -> look ids (null = nothing equipped)
+export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather' };
+export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel' };
 export function composeHero(heroId, equip, meta = {}) {
   const b = BASE[heroId];
-  const body = BODY[equip.body] || BODY[{ brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather' }[heroId]];
-  const head = equip.head ? HEAD[equip.head] : null;
-  const wpn = equip.weapon === 'none' ? null : WEAPON[equip.weapon] || WEAPON[{ brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel' }[heroId]];
-  const off = equip.offhand ? OFFHAND[equip.offhand] : null;
+  const body = getLook('body', equip.body) || BODY[DEFAULT_BODY[heroId]];
+  const head = equip.head ? getLook('head', equip.head) : null;
+  const wpn = equip.weapon === 'none' ? null : getLook('weapon', equip.weapon) || WEAPON[DEFAULT_WEAPON[heroId]];
+  const off = equip.offhand ? getLook('offhand', equip.offhand) : null;
   return {
     ...meta,
     id: heroId,
@@ -329,14 +383,21 @@ export function composeHero(heroId, equip, meta = {}) {
 // 16x16 inventory icon for an item look.
 export function itemIcon(heroId, slot, lookId) {
   const [c, ctx] = makeCanvas(16, 16);
-  if (slot === 'head') {
-    const L = HEAD[lookId];
+  if (slot === 'trinket') {
+    // ring: tier-coloured band with a gem in the ring's stat colour
+    const [kind, t] = lookId.replace('ring_', '').split('@');
+    const f = rc(RAMPS[t] || {});
+    const band = [f('steelD'), f('steel'), f('steelL')];
+    for (let a = 0; a < 24; a++) { const ang = (a / 24) * Math.PI * 2; px(ctx, Math.round(8 + Math.cos(ang) * 4), Math.round(9 + Math.sin(ang) * 3.4), band[a % 3 === 0 ? 2 : a % 2]); }
+    px(ctx, 7, 4, RINGS[kind] || 'redL', 3, 2); px(ctx, 8, 3, 'white');
+  } else if (slot === 'head') {
+    const L = getLook('head', lookId);
     const b = BASE[heroId];
     const top = Math.max(0, 16 - 8 - L.oy - 1);
     grid(ctx, b.head.down, b.headMap, 3, top + L.oy);
     grid(ctx, L.down, L.map, 3, top);
   } else if (slot === 'body') {
-    const L = BODY[lookId];
+    const L = getLook('body', lookId);
     const w = L.down[0].length;
     grid(ctx, L.down, L.map, 8 - Math.floor(w / 2), Math.floor((16 - L.down.length) / 2));
     // little sleeves
@@ -344,16 +405,17 @@ export function itemIcon(heroId, slot, lookId) {
     px(ctx, 8 - Math.floor(w / 2) - 1, y0 + 1, L.arms[0], 1, 3);
     px(ctx, 8 + Math.ceil(w / 2), y0 + 1, L.arms[0], 1, 3);
   } else if (slot === 'weapon') {
-    const L = WEAPON[lookId];
+    const L = getLook('weapon', lookId);
     WEAPONS[L.kind](ctx, { x: 4, y: 12 }, -0.785, L.kind === 'staff' ? 1 : 0, L.style);
   } else {
-    const L = OFFHAND[lookId];
+    const L = getLook('offhand', lookId);
+    const baseId = lookId.split('@')[0];
     if (L.dagger) WEAPONS.dagger(ctx, { x: 5, y: 11 }, -0.785, 0, L.dagger);
-    else if (lookId.startsWith('shield')) {
-      const s = SHIELDS[lookId.split('_')[1]];
-      grid(ctx, s.front, s.map, 8 - Math.floor(s.front[0].length / 2), 8 - Math.floor(s.front.length / 2));
-    } else if (lookId.startsWith('tome')) {
-      const map = TOMES[lookId.split('_')[1]];
+    else if (baseId.startsWith('shield')) {
+      const sh = L.shield || SHIELDS[baseId.split('_')[1]];
+      grid(ctx, sh.front, sh.map, 8 - Math.floor(sh.front[0].length / 2), 8 - Math.floor(sh.front.length / 2));
+    } else if (baseId.startsWith('tome')) {
+      const map = L.tome || TOMES[baseId.split('_')[1]];
       grid(ctx, ['kcccck', 'cmmccc', 'cmcccc', 'cccccc', 'cccccc', 'pppppk'], map, 5, 5);
     } else shadedBlob(ctx, 8, 8, 4, 4, ['purpD', 'purp', 'purpL', 'white']);
   }

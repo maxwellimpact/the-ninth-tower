@@ -1,0 +1,406 @@
+{
+ "tiers": [
+  {
+   "tier": 1,
+   "budget": 4,
+   "price": 30
+  },
+  {
+   "tier": 2,
+   "budget": 10,
+   "price": 120
+  },
+  {
+   "tier": 3,
+   "budget": 18,
+   "price": 270
+  },
+  {
+   "tier": 4,
+   "budget": 28,
+   "price": 480
+  },
+  {
+   "tier": 5,
+   "budget": 40,
+   "price": 750
+  },
+  {
+   "tier": 6,
+   "budget": 54,
+   "price": 1080
+  }
+ ],
+ "tierForLevel": [
+  5,
+  9,
+  13,
+  17,
+  21
+ ],
+ "slotWeight": {
+  "weapon": 1,
+  "body": 0.9,
+  "offhand": 0.7,
+  "head": 0.6,
+  "trinket": 0.5
+ },
+ "rarityMul": {
+  "common": 1,
+  "fine": 1.2,
+  "rare": 1.35
+ },
+ "statValue": {
+  "atk": 1,
+  "def": 1,
+  "hp": 0.2,
+  "crit": 200,
+  "cdr": 200
+ },
+ "materials": {
+  "metal": [
+   "IRON",
+   "STEEL",
+   "SILVERSTEEL",
+   "RUNESTEEL",
+   "STARSTEEL",
+   "KINGSTEEL"
+  ],
+  "cloth": [
+   "LINEN",
+   "WOOL",
+   "SILK",
+   "RUNESILK",
+   "STARWEAVE",
+   "MOONWEAVE"
+  ],
+  "leather": [
+   "HIDE",
+   "LEATHER",
+   "STUDDED",
+   "WYVERNHIDE",
+   "SHADOWHIDE",
+   "DRAGONHIDE"
+  ],
+  "wood": [
+   "OAK",
+   "ASH",
+   "YEW",
+   "RUNEWOOD",
+   "STARWOOD",
+   "MOONWOOD"
+  ],
+  "book": [
+   "WORN",
+   "BOUND",
+   "GILDED",
+   "RUNED",
+   "STARLIT",
+   "ROYAL"
+  ],
+  "ring": [
+   "COPPER",
+   "BRONZE",
+   "SILVER",
+   "RUNIC",
+   "STARLIT",
+   "ROYAL"
+  ]
+ },
+ "families": {
+  "brann": {
+   "weapon": {
+    "name": "LONGSWORD",
+    "mat": "metal",
+    "looks": [
+     "sword_iron",
+     "sword_long"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "SHIELD",
+    "mat": "metal",
+    "looks": [
+     "shield_round",
+     "shield_kite"
+    ],
+    "split": {
+     "def": 1
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   },
+   "head": {
+    "name": "HELM",
+    "mat": "metal",
+    "looks": [
+     "helm_iron",
+     "helm_great"
+    ],
+    "split": {
+     "def": 0.8,
+     "hp": 0.2
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   },
+   "body": {
+    "name": "PLATE",
+    "mat": "metal",
+    "looks": [
+     "plate_guard",
+     "hauberk_steel"
+    ],
+    "split": {
+     "def": 0.8,
+     "hp": 0.2
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   }
+  },
+  "pip": {
+   "weapon": {
+    "name": "STAFF",
+    "mat": "wood",
+    "looks": [
+     "staff_oak",
+     "staff_crystal"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "cdr"
+    ]
+   },
+   "offhand": {
+    "name": "TOME",
+    "mat": "book",
+    "looks": [
+     "tome_worn",
+     "tome_frost"
+    ],
+    "split": {
+     "atk": 0.7,
+     "crit": 0.3
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "head": {
+    "name": "HAT",
+    "mat": "cloth",
+    "looks": [
+     "hat_apprentice",
+     "hat_star"
+    ],
+    "split": {
+     "atk": 0.5,
+     "def": 0.5
+    },
+    "bonus": [
+     "atk",
+     "cdr"
+    ]
+   },
+   "body": {
+    "name": "ROBE",
+    "mat": "cloth",
+    "looks": [
+     "robe_apprentice",
+     "robe_scholar"
+    ],
+    "split": {
+     "def": 0.6,
+     "hp": 0.4
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   }
+  },
+  "sable": {
+   "weapon": {
+    "name": "DAGGER",
+    "mat": "metal",
+    "looks": [
+     "dagger_steel",
+     "dagger_kris"
+    ],
+    "split": {
+     "atk": 0.8,
+     "crit": 0.2
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "PARRYING DAGGER",
+    "mat": "metal",
+    "looks": [
+     "parry_steel",
+     "parry_kris"
+    ],
+    "split": {
+     "atk": 0.6,
+     "def": 0.4
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "head": {
+    "name": "HOOD",
+    "mat": "leather",
+    "looks": [
+     "bandana_red",
+     "hood_shadow"
+    ],
+    "split": {
+     "crit": 0.5,
+     "def": 0.5
+    },
+    "bonus": [
+     "crit",
+     "def"
+    ]
+   },
+   "body": {
+    "name": "LEATHERS",
+    "mat": "leather",
+    "looks": [
+     "jacket_leather",
+     "leather_studded"
+    ],
+    "split": {
+     "def": 0.7,
+     "hp": 0.3
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   }
+  }
+ },
+ "rings": {
+  "vigor": {
+   "name": "RING OF VIGOR",
+   "split": {
+    "hp": 1
+   }
+  },
+  "might": {
+   "name": "RING OF MIGHT",
+   "split": {
+    "atk": 1
+   }
+  },
+  "warding": {
+   "name": "RING OF WARDING",
+   "split": {
+    "def": 1
+   }
+  },
+  "precision": {
+   "name": "RING OF PRECISION",
+   "split": {
+    "crit": 1
+   }
+  }
+ },
+ "bonusPrefix": {
+  "atk": "MIGHTY",
+  "def": "STURDY",
+  "hp": "HALE",
+  "crit": "KEEN",
+  "cdr": "SWIFT"
+ },
+ "traits": {
+  "lifesteal": {
+   "name": "LIFESTEAL",
+   "desc": "HEALS 3% OF DAMAGE DEALT"
+  },
+  "cdr": {
+   "name": "QUICKENING",
+   "desc": "-10% SKILL COOLDOWNS"
+  },
+  "slayer": {
+   "name": "SLAYER",
+   "desc": "+15% DAMAGE VS ELITES AND BOSSES"
+  },
+  "thorns": {
+   "name": "THORNS",
+   "desc": "REFLECTS 10% OF MELEE DAMAGE"
+  },
+  "fleet": {
+   "name": "FLEET",
+   "desc": "+8% MOVE SPEED"
+  },
+  "tonic": {
+   "name": "TONIC",
+   "desc": "+20% POTION HEALING"
+  },
+  "edge": {
+   "name": "ELEMENTAL EDGE",
+   "desc": "WEAPON GAINS AN ELEMENT"
+  },
+  "zeal": {
+   "name": "ZEAL",
+   "desc": "+15% ULTIMATE CHARGE"
+  },
+  "heatproof": {
+   "name": "HEATPROOF",
+   "desc": "IMMUNE TO HEAT"
+  },
+  "coldproof": {
+   "name": "COLDPROOF",
+   "desc": "IMMUNE TO COLD"
+  },
+  "fortune": {
+   "name": "FORTUNE",
+   "desc": "+10% GOLD"
+  },
+  "opener": {
+   "name": "OPENER",
+   "desc": "YOUR FIRST HIT ON EACH FOE CRITS"
+  }
+ },
+ "edgeElements": [
+  "fire",
+  "frost",
+  "storm",
+  "venom",
+  "light",
+  "shadow"
+ ],
+ "drops": {
+  "chance": 0.165,
+  "common": 0.55,
+  "fine": 0.35,
+  "rare": 0.1,
+  "eliteFine": 0.6,
+  "eliteRare": 0.4
+ }
+}

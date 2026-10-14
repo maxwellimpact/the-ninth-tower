@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
+import { itemTex } from '../game/itemtex.js';
+import { TRAITS } from '../game/itemgen.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, boss: 0xc0394b };
-export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' } };
+export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
 export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0 };
@@ -228,11 +230,11 @@ export class UI extends Phaser.Scene {
     panel(g, x, y, w, h, C.night, r.col);
     g.fillStyle(C.ink).fillRect(x + 6, y + 9, 36, 36);
     this.loot.add(g);
-    this.loot.add(this.add.image(x + 8, y + 11, `item_${n.id}`).setOrigin(0).setScale(2));
+    this.loot.add(this.add.image(x + 8, y + 11, itemTex(this, n.id)).setOrigin(0).setScale(2));
     this.loot.add(this.add.bitmapText(x + 48, y + 7, 'font', 'FOUND!'));
     this.loot.add(this.add.bitmapText(x + 48, y + 17, 'fontGold', it.name).setTint(it.rarity === 'unique' ? 0xffffff : r.col));
-    this.loot.add(this.add.bitmapText(x + 48, y + 27, 'fontPlain', `${r.label} ${it.slot.toUpperCase()} - ${it.hero.toUpperCase()}`).setTint(r.col));
-    const st = Object.entries(it.stats).map(([k, v]) => (k === 'crit' ? `+${Math.round(v * 100)}% CRIT` : `+${v} ${k.toUpperCase()}`)).join('  ') + (it.element ? `  ${it.element.toUpperCase()}` : '') + (it.passive ? '  ECHO' : '');
+    this.loot.add(this.add.bitmapText(x + 48, y + 27, 'fontPlain', `${r.label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY HERO'}`).setTint(r.col));
+    const st = Object.entries(it.stats).map(([k, v]) => (k === 'crit' || k === 'cdr' ? `+${Math.round(v * 100)}% ${k === 'cdr' ? 'CDR' : 'CRIT'}` : `+${v} ${k.toUpperCase()}`)).join('  ') + (it.element ? `  ${it.element.toUpperCase()}` : '') + (it.passive ? '  ECHO' : '') + (it.trait ? `  ${TRAITS[it.trait].name}` : '');
     this.loot.add(this.add.bitmapText(x + 48, y + 37, 'fontPlain', st + (n.gold ? `   +${n.gold} GOLD` : '')));
     this.loot.setVisible(true).setAlpha(0);
     this.tweens.add({ targets: this.loot, alpha: 1, duration: 200 });

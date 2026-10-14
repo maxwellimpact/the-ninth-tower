@@ -8,7 +8,9 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { saveState, heroInfo, rollFineDrop, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
+import { rollGearDrop, ensureItems } from '../game/itemgen.js';
+import { itemTex } from '../game/itemtex.js';
+import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, VALE_THEME } from '../audio/music.js';
 import { CURSE_TINT } from '../gfx/palette.js';
@@ -37,6 +39,9 @@ export class Game extends Phaser.Scene {
   create(data) {
     const st = (this.state = data.state);
     st.stats ??= { kills: 0, levelUps: [] };
+    st.gems ??= {}; st.sockets ??= {};
+    for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
+    ensureItems(st);
     setStatMods(st);
     this.difficulty = { dmg: tuning.difficulty[st.difficulty] ?? 1, hp: 1 };
     this.speed = this.registry.get('gameSpeed') ?? tuning.gameSpeed;
@@ -417,7 +422,7 @@ export class Game extends Phaser.Scene {
     if (kind === 'potion') {
       const L = this.leader;
       if (L.downed || L.hp >= L.maxHp) { audio.sfx('click'); return false; }
-      const amt = Math.round(L.maxHp * c.heal);
+      const amt = Math.round(L.maxHp * c.heal * (L.hasTrait('tonic') ? 1.2 : 1));
       L.hp = Math.min(L.maxHp, L.hp + amt);
       this.floatText(L.x, L.y - 28, `+${amt}`, 'font', 0x8cff8c);
       this.fx.heal(L.x, L.y);
@@ -857,6 +862,9 @@ export class Game extends Phaser.Scene {
     if (target.status?.weaken) amount *= 1.1;
     if (target.marked) amount *= target.marked.mul;
     if (hero) {
+      if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
+      // weapon gems: a little extra elemental damage on every hit
+      for (const g of src.stats.gemElements || []) if (!g.armor) amount *= 1 + g.dmg * (target.elementMul ? target.elementMul(g.el) : 1);
       const bs = src.passive('backstab');
       if (bs && !spell && target.view) {
         const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
@@ -884,6 +892,7 @@ export class Game extends Phaser.Scene {
       if (src.passive('lightfingers') && !target.fingered && target.s?.gold) { target.fingered = true; if (Math.random() < 0.15 + 0.03 * (src.passive('lightfingers') - 1)) { for (let i = 0; i < 3; i++) this.dropCoin(target.x, target.y); this.floatText(target.x, target.y - 34, 'PILFERED', 'fontPlain', 0xf2c14e); } }
     }
     src.addUlt?.(dealt * tuning.ultChargeDeal);
+    if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
     this.hitStop(crit ? 0.085 : 0.045);
@@ -1147,7 +1156,7 @@ export class Game extends Phaser.Scene {
     for (let i = 0; i < n; i++) this.dropCoin(e.x, e.y);
     for (const h of this.party) if (!h.downed) h.gainXp(xpFor(h.level, e.level, e.s.xp));
     this.state.stats.kills++;
-    const drop = rollFineDrop(this.state);
+    const drop = rollGearDrop(this.state, e.level, e.elite);
     if (drop) this.dropLoot(drop, e.x, e.y);
     const got = {};
     for (const [m, chance] of Object.entries(e.s.drops || {})) {
@@ -1189,16 +1198,17 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(700 + Math.random() * 300, () => {
       const L = this.leader;
       this.tweens.add({ targets: c, x: L.x, y: L.y - 10, duration: 260, ease: 'Quad.easeIn', onComplete: () => {
-        c.destroy(); this.state.gold++; audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
+        c.destroy(); this.state.gold += this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1; audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
       } });
     });
   }
 
   dropLoot(id, x, y) {
     const it = items[id];
-    const key = it.rarity === 'unique' ? 'lootU' : it.rarity === 'fine' ? 'lootF' : 'lootC';
+    const key = it.rarity === 'unique' || it.rarity === 'legendary' ? 'lootU' : it.rarity === 'common' ? 'lootC' : 'lootF';
     const s = this.add.sprite(x, y - 6, key).play(key).setDepth(TOP - 31);
-    const beam = this.add.rectangle(x, y - 20, 2, 26, it.rarity === 'unique' ? 0xfff0a0 : 0xa6d36a, 0.5).setDepth(TOP - 32).setBlendMode(Phaser.BlendModes.ADD);
+    if (it.rarity === 'rare') s.setTint(0x9fc0ff);
+    const beam = this.add.rectangle(x, y - 20, 2, 26, { unique: 0xfff0a0, legendary: 0xffb060, rare: 0x6f93e0 }[it.rarity] || 0xa6d36a, 0.5).setDepth(TOP - 32).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: beam, alpha: 0.15, duration: 600, yoyo: true, repeat: -1 });
     const a = Math.random() * Math.PI * 2;
     const tx = x + Math.cos(a) * 10, ty = y + Math.sin(a) * 6;
@@ -1461,6 +1471,7 @@ export class Game extends Phaser.Scene {
 
   onWardDestroyed(w) {
     this.flags.wardBroken = true;
+    this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
     this.hitStop(0.3);
     this.cameras.main.flash(250, 240, 200, 255);
     this.shake(500, 0.012);

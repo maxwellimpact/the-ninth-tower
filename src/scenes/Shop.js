@@ -6,6 +6,9 @@ import items from '../data/items.json';
 import W from '../data/world.json';
 import { CRAFT, sellPrice, itemName } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
+import { itemTex } from '../game/itemtex.js';
+import { shopGear, gearPrice, tierForLevel, registerItem } from '../game/itemgen.js';
+import { statLine } from './Menu.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, gold: 0xf2c14e, deep: 0x16121f };
 
@@ -45,17 +48,20 @@ export class Shop extends Phaser.Scene {
         const def = isPotion ? CRAFT.consumables[s.id] : CRAFT.materials[s.id];
         return { icon: `icon_${s.id}`, name: def.name, sub: isPotion ? def.desc : 'CRAFTING MATERIAL', price: s.price, col: 0xd8d3e0, act: () => { if (isPotion) st.potions[s.id] = (st.potions[s.id] || 0) + 1; else st.materials[s.id] = (st.materials[s.id] || 0) + 1; } };
       });
-      const owned = new Set([...st.inventory, ...Object.values(st.heroes).flatMap((h) => Object.values(h.equip))]);
-      for (const [id, it] of Object.entries(items)) {
-        if (it.rarity !== 'fine' || owned.has(id) || !st.recruited.includes(it.hero)) continue;
-        out.push({ icon: `item_${id}`, name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${Object.entries(it.stats).map(([k, v]) => (k === 'crit' ? `+${Math.round(v * 100)}% CRIT` : `+${v} ${k.toUpperCase()}`)).join(' ')}`, price: W.shop.gearPrice.fine, col: RARITY.fine.col, once: true, act: () => st.inventory.push(id) });
+      // Marla stocks the current tier's Common gear for everyone in the party
+      const lv = Math.round(this.g.party.reduce((a, h) => a + h.level, 0) / this.g.party.length);
+      const tier = tierForLevel(lv);
+      for (const id of shopGear(st, tier)) {
+        const it = items[id];
+        out.push({ icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, price: gearPrice(tier), col: RARITY.common.col,
+          act: () => { const nid = id.replace('#shop', `#${Math.random().toString(36).slice(2, 7)}`); registerItem(nid); st.inventory.push(nid); } });
       }
       return out;
     }
     const out = [];
     for (const id of new Set(st.inventory)) {
       const it = items[id];
-      out.push({ icon: `item_${id}`, name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot.toUpperCase()} - ${it.hero.toUpperCase()}`, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; } });
+      out.push({ icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
     }
     for (const [k, m] of Object.entries(CRAFT.materials)) {
       if (!st.materials[k]) continue;

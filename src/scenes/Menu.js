@@ -3,14 +3,19 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { SLOTS, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
+import { SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
 import tuning from '../data/tuning.json';
 import { panel, RARITY } from './UI.js';
+import { itemTex } from '../game/itemtex.js';
+import { TRAITS } from '../game/itemgen.js';
 import { GearFX } from '../game/gearfx.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, deep: 0x16121f };
 const VIEWS = [['down', false], ['side', false], ['up', false], ['side', true]];
-const SLOT_LABEL = { head: 'HEAD', body: 'BODY', weapon: 'WEAPON', offhand: 'OFF-HAND' };
+const SLOT_LABEL = { head: 'HEAD', body: 'BODY', weapon: 'WEAPON', offhand: 'OFF-HAND', trinket1: 'RING', trinket2: 'RING' };
+const slotKind = (slot) => (slot.startsWith('trinket') ? 'trinket' : slot);
+// one-line stat summary for an item
+export const statLine = (it) => Object.entries(it.stats).map(([k, v]) => (k === 'crit' || k === 'cdr' ? `+${Math.round(v * 100)}% ${k === 'cdr' ? 'CDR' : 'CRIT'}` : `+${v} ${k.toUpperCase()}`)).join('  ');
 
 export class Menu extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -70,7 +75,8 @@ export class Menu extends Phaser.Scene {
   equip(id) {
     const h = this.hero;
     const hs = h.hs;
-    const slot = items[id].slot;
+    let slot = items[id].slot;
+    if (slot === 'trinket') slot = this.slot.startsWith('trinket') ? this.slot : !hs.equip.trinket1 ? 'trinket1' : 'trinket2';
     const cur = hs.equip[slot];
     if (cur === id) return;
     const inv = this.g.state.inventory;
@@ -277,29 +283,35 @@ export class Menu extends Phaser.Scene {
   drawSlotsColumn(x, y, w, rowH) {
     const g = this.gfx, hs = this.hero.hs;
     this.t(x, y - 8, 'EQUIPPED', 'fontPlain');
-    SLOTS.forEach((slot, i) => {
+    rowH = Math.min(rowH, Math.floor((this.scale.height - y - 36) / ALL_SLOTS.length));
+    ALL_SLOTS.forEach((slot, i) => {
       const yy = y + i * rowH;
       const id = hs.equip[slot], it = items[id], sel = slot === this.slot;
-      panel(g, x, yy, w, rowH - 4, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
-      const iy = yy + Math.floor((rowH - 4 - 18) / 2);
-      g.fillStyle(C.ink).fillRect(x + 3, iy, 18, 18);
-      if (it) this.dyn.push(this.add.image(x + 4, iy + 1, `item_${id}`).setOrigin(0));
-      this.t(x + 25, yy + 3, SLOT_LABEL[slot], 'fontPlain');
-      this.t(x + 25, yy + rowH - 13, it ? itemName(id) : '-', 'font', it ? RARITY[it.rarity].col : 0x888888);
-      this.btn(x, yy, w, rowH - 4, () => this.selectSlot(slot));
+      const ph = rowH - 3, compact = ph < 22;
+      panel(g, x, yy, w, ph, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
+      const isz = compact ? Math.min(16, ph - 2) : 18;
+      const iy = yy + Math.floor((ph - isz) / 2);
+      g.fillStyle(C.ink).fillRect(x + 2, iy, isz, isz);
+      if (it) this.dyn.push(this.add.image(x + 2 + isz / 2, iy + isz / 2, itemTex(this, id)).setOrigin(0.5).setScale(isz / 16 > 1 ? 1 : isz / 16));
+      if (compact) this.t(x + isz + 6, yy + Math.floor(ph / 2) - 3, it ? itemName(id) : `${SLOT_LABEL[slot]} (EMPTY)`, it ? 'font' : 'fontPlain', it ? RARITY[it.rarity].col : 0x888888);
+      else {
+        this.t(x + 25, yy + 3, SLOT_LABEL[slot], 'fontPlain');
+        this.t(x + 25, yy + ph - 10, it ? itemName(id) : '-', 'font', it ? RARITY[it.rarity].col : 0x888888);
+      }
+      this.btn(x, yy, w, rowH - 3, () => this.selectSlot(slot));
     });
   }
 
   // Portrait: four big slot tiles in a row, selected slot's item named below.
   drawSlotsRow(x, y, w) {
     const g = this.gfx, hs = this.hero.hs;
-    const tw = Math.floor((w - 9) / 4);
-    SLOTS.forEach((slot, i) => {
+    const tw = Math.floor((w - 15) / 6);
+    ALL_SLOTS.forEach((slot, i) => {
       const xx = x + i * (tw + 3);
       const id = hs.equip[slot], it = items[id], sel = slot === this.slot;
       panel(g, xx, y, tw, 36, sel ? 0x3a2f52 : C.night, sel ? C.gold : it ? RARITY[it.rarity].col : C.slate);
-      if (it) this.dyn.push(this.add.image(xx + tw / 2, y + 14, `item_${id}`).setOrigin(0.5));
-      const lab = { head: 'HEAD', body: 'BODY', weapon: 'WPN', offhand: 'OFF' }[slot];
+      if (it) this.dyn.push(this.add.image(xx + tw / 2, y + 14, itemTex(this, id)).setOrigin(0.5));
+      const lab = { head: 'HEAD', body: 'BODY', weapon: 'WPN', offhand: 'OFF', trinket1: 'RING', trinket2: 'RING' }[slot];
       this.t(xx + Math.round(tw / 2 - lab.length * 2.5), y + 26, lab, 'fontPlain');
       this.btn(xx, y, tw, 36, () => this.selectSlot(slot));
     });
@@ -311,7 +323,8 @@ export class Menu extends Phaser.Scene {
   drawList(x, y, w, bottom, rowH, header = true) {
     const g = this.gfx, h = this.hero, hs = h.hs;
     const equipped = hs.equip[this.slot];
-    const owned = this.g.state.inventory.filter((id) => items[id].hero === h.def.id && items[id].slot === this.slot);
+    const kind = slotKind(this.slot);
+    const owned = this.g.state.inventory.filter((id) => items[id].slot === kind && (kind === 'trinket' || items[id].hero === h.def.id));
     const list = [...(equipped ? [equipped] : []), ...new Set(owned)];
     const maxRows = Math.max(1, Math.floor((bottom - y) / rowH));
     if (header) this.t(x, y - 8, 'TAP TO EQUIP', 'fontPlain');
@@ -322,13 +335,13 @@ export class Menu extends Phaser.Scene {
       panel(g, x, yy, w, rowH - 3, isSel ? 0x3a2f52 : C.night, isEq ? C.gold : RARITY[it.rarity].col);
       const iy = yy + Math.floor((rowH - 3 - 17) / 2);
       g.fillStyle(C.ink).fillRect(x + 3, iy, 17, 17);
-      this.dyn.push(this.add.image(x + 3, iy, `item_${id}`).setOrigin(0));
+      this.dyn.push(this.add.image(x + 3, iy, itemTex(this, id)).setOrigin(0));
       this.t(x + 23, yy + 3, itemName(id), 'font', RARITY[it.rarity].col);
       if (isEq) this.t(x + 23, yy + rowH - 12, 'EQUIPPED', 'fontPlain', 0xf2c14e);
       else {
         const d = statDelta(h.def.id, hs.level, hs.equip, id);
         let xx = x + 23;
-        for (const [k, label] of [['atk', 'ATK'], ['def', 'DEF'], ['maxHp', 'HP'], ['crit', 'CRIT']]) {
+        for (const [k, label] of [['atk', 'ATK'], ['def', 'DEF'], ['maxHp', 'HP'], ['crit', 'CRIT'], ['cdr', 'CDR']]) {
           if (!d[k]) continue;
           const str = `${d[k] > 0 ? '+' : ''}${d[k]}${k === 'crit' ? '%' : ''} ${label}`;
           if (xx + str.length * 5 > x + w) break;
@@ -338,17 +351,20 @@ export class Menu extends Phaser.Scene {
       }
       this.btn(x, yy, w, rowH - 3, () => { if (isEq) { this.selected = id; this.render(); } else this.equip(id); });
     });
-    if (list.length <= 1) this.t(x, y + list.length * rowH + 4, 'FIND MORE IN CHESTS AND FROM FOES.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    if (list.length <= 1) this.t(x, y + list.length * rowH + 4, kind === 'trinket' ? 'RINGS AND CHARMS: ANY HERO CAN WEAR TWO.' : 'FIND MORE IN CHESTS AND FROM FOES.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
   }
 
   drawDesc(x, y, w) {
     const id = this.selected || this.hero.hs.equip[this.slot];
     if (!id) return;
     const it = items[id];
+    const st = this.g.state;
     panel(this.gfx, x, y, w, 28, C.night, C.slate);
-    this.t(x + 4, y + 4, `${it.name} - ${RARITY[it.rarity].label}${it.element ? ` - ${it.element.toUpperCase()}` : ''}${it.passive ? ' - ECHO' : ''}`, 'font', RARITY[it.rarity].col);
-    const statStr = Object.entries(it.stats).map(([k, v]) => (k === 'crit' ? `+${Math.round(v * 100)}% CRIT` : `+${v} ${k.toUpperCase()}`)).join('  ');
-    this.t(x + 4, y + 14, it.desc || statStr, 'fontPlain').setMaxWidth(w - 8);
+    const tags = [RARITY[it.rarity].label, it.element ? it.element.toUpperCase() : null, it.passive ? 'ECHO' : null, it.trait ? TRAITS[it.trait]?.name : null].filter(Boolean).join(' - ');
+    this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col).setMaxWidth(w - 8);
+    const sockets = socketCount(id) ? `  SOCKETS: ${Array.from({ length: socketCount(id) }, (_, i) => (st.sockets[id]?.[i] ? gemName(st.sockets[id][i]) : 'EMPTY')).join(', ')}` : '';
+    const line = it.desc || [statLine(it), it.trait ? TRAITS[it.trait]?.desc : null].filter(Boolean).join('  ');
+    this.t(x + 4, y + 14, line + sockets, 'fontPlain').setMaxWidth(w - 8);
   }
 
   // ------------------------------------------------------------------ CRAFT
@@ -357,41 +373,81 @@ export class Menu extends Phaser.Scene {
     let y = mode === 'portrait' ? 60 : 50;
     const x = 8, w = W - 16;
     const matStr = (needs) => Object.entries(needs).map(([k, n]) => `${n} ${CRAFT.materials[k].short}`).join(' ');
-    this.t(x, y, 'BREW', 'fontGold'); y += 10;
-    for (const r of CRAFT.recipes) {
-      const ok = canAfford(st, r.needs);
-      panel(g, x, y, w, 24, C.night, ok ? 0x6fd3a0 : C.slate);
-      g.fillStyle(C.ink).fillRect(x + 3, y + 3, 18, 18);
-      this.dyn.push(this.add.image(x + 4, y + 4, `icon_${r.makes}`).setOrigin(0));
-      this.t(x + 25, y + 3, `${CRAFT.consumables[r.makes].name} (${st.potions[r.makes] || 0})`, 'font');
-      this.t(x + 25, y + 13, matStr(r.needs), 'fontPlain', ok ? 0x8cff8c : 0xff7a7a);
-      panel(g, x + w - 30, y + 5, 26, 14, ok ? 0x2f5d3a : C.night, ok ? 0x8cff8c : C.slate);
-      this.t(x + w - 27, y + 9, 'MAKE', ok ? 'font' : 'fontPlain');
-      this.btn(x + w - 44, y, 44, 24, () => { if (craft(st, r)) { audio.sfx('chest'); this.render(); } else audio.sfx('click'); });
-      y += 27;
+    // sub tabs
+    this.craftTab ??= 'brew';
+    const subs = [['brew', 'BREW'], ['upgrade', 'UPGRADE'], ['salvage', 'SALVAGE'], ['gems', 'GEMS']];
+    let sx = x;
+    for (const [k, label] of subs) {
+      const sel = this.craftTab === k, bw = label.length * 5 + 8;
+      panel(g, sx, y, bw, 12, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
+      this.t(sx + 4, y + 3, label, sel ? 'fontGold' : 'fontPlain');
+      this.btn(sx, y - 2, bw, 16, () => { if (this.craftTab !== k) { audio.sfx('click'); this.craftTab = k; this.render(); } });
+      sx += bw + 4;
     }
-    y += 4;
-    this.t(x, y, `UPGRADE GEAR (MAX +${CRAFT.refine.max})`, 'fontGold'); y += 10;
+    y += 18;
     const rowH = 24;
-    for (const slot of SLOTS) {
-      const id = h.hs.equip[slot];
-      if (!id || y + rowH > H - 4) continue;
-      const lvl = st.refine[id] || 0;
-      const c = refineCost(st, id);
-      const maxed = lvl >= CRAFT.refine.max;
-      const ok = !maxed && canAfford(st, c.needs, c.gold);
+    const fits = () => y + rowH <= H - 4;
+    const row = (icon, title, titleCol, sub, subCol, btnLabel, ok, fn) => {
       panel(g, x, y, w, rowH - 3, C.night, ok ? 0x6fd3a0 : C.slate);
       g.fillStyle(C.ink).fillRect(x + 3, y + 2, 17, 17);
-      this.dyn.push(this.add.image(x + 3, y + 2, `item_${id}`).setOrigin(0));
-      const b = CRAFT.refine.bonus[slot];
-      this.t(x + 23, y + 3, itemName(id), 'font', RARITY[items[id].rarity].col);
-      this.t(x + 23, y + 12, maxed ? 'FULLY UPGRADED' : `${matStr(c.needs)} ${c.gold}G: +${b.atk ? `${b.atk} ATK` : `${b.def} DEF`}`, 'fontPlain', maxed ? 0xf2c14e : ok ? 0x8cff8c : 0xff7a7a);
-      if (!maxed) {
-        panel(g, x + w - 30, y + 4, 26, 13, ok ? 0x2f5d3a : C.night, ok ? 0x8cff8c : C.slate);
-        this.t(x + w - 25, y + 7, 'UP', ok ? 'font' : 'fontPlain');
-        this.btn(x + w - 44, y, 44, rowH - 3, () => { if (refine(st, id)) { audio.sfx('equip'); audio.sfx('bash'); h.refreshGear(); this.render(); } else audio.sfx('click'); });
+      this.dyn.push(this.add.image(x + 3, y + 2, icon).setOrigin(0));
+      this.t(x + 23, y + 3, title, 'font', titleCol);
+      this.t(x + 23, y + 12, sub, 'fontPlain', subCol).setMaxWidth(w - 80);
+      if (btnLabel) {
+        const bw = Math.max(26, btnLabel.length * 5 + 6);
+        panel(g, x + w - bw - 4, y + 4, bw, 13, ok ? 0x2f5d3a : C.night, ok ? 0x8cff8c : C.slate);
+        this.t(x + w - bw - 1, y + 7, btnLabel, ok ? 'font' : 'fontPlain');
+        this.btn(x + w - bw - 18, y, bw + 18, rowH - 3, fn);
       }
       y += rowH;
+    };
+    if (this.craftTab === 'brew') {
+      for (const r of CRAFT.recipes) {
+        const ok = canAfford(st, r.needs);
+        row(`icon_${r.makes}`, `${CRAFT.consumables[r.makes].name} (${st.potions[r.makes] || 0})`, 0xffffff, matStr(r.needs), ok ? 0x8cff8c : 0xff7a7a, 'MAKE', ok, () => { if (craft(st, r)) { audio.sfx('chest'); this.render(); } else audio.sfx('click'); });
+      }
+    } else if (this.craftTab === 'upgrade') {
+      const cap = refineCap(st);
+      if (!cap) { this.t(x, y, 'THE BLACKSMITH RETURNS TO BRIGHTWATER ONCE THE VALE WARD STONE FALLS.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      this.t(x, y, `BLACKSMITH RANK ${smithRank(st)}: UP TO +${cap}. EACH +1 ADDS 6% OF THE ITEM'S STATS.`, 'fontPlain', 0x9d93b3).setMaxWidth(w); y += 12;
+      for (const slot of ALL_SLOTS) {
+        const id = h.hs.equip[slot];
+        if (!id || !fits()) continue;
+        const lvl = st.refine[id] || 0, c = refineCost(st, id);
+        const maxed = lvl >= 10, capped = lvl >= cap;
+        const ok = !capped && canAfford(st, c.needs, c.gold);
+        row(itemTex(this, id), itemName(id), RARITY[items[id].rarity].col, maxed ? 'FULLY UPGRADED' : capped ? `MAX +${cap} AT THIS RANK` : `${matStr(c.needs)} ${c.gold}G`, maxed ? 0xf2c14e : ok ? 0x8cff8c : 0xff7a7a,
+          maxed ? null : `+${lvl + 1}`, ok, () => { if (refine(st, id)) { audio.sfx('equip'); audio.sfx('bash'); h.refreshGear(); this.render(); } else audio.sfx('click'); });
+      }
+    } else if (this.craftTab === 'salvage') {
+      const list = [...new Set(st.inventory)].filter((id) => salvageYield(st, id));
+      if (!list.length) { this.t(x, y, 'NOTHING TO SALVAGE. SPARE GEAR (NOT UNIQUES) BREAKS DOWN INTO MATERIALS.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      for (const id of list) {
+        if (!fits()) break;
+        const yd = salvageYield(st, id);
+        row(itemTex(this, id), itemName(id), RARITY[items[id].rarity].col, `GIVES ${matStr(yd)}`, 0xbfe6f2, 'BREAK', true, () => { if (salvage(st, id)) { audio.sfx('bash'); this.render(); } });
+      }
+    } else {
+      if (!st.flags.enchanter) { this.t(x, y, 'THE ENCHANTER RETURNS TO BRIGHTWATER ONCE TWO WARD STONES FALL. RARE AND UNIQUE GEAR HAS A GEM SOCKET.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      const gems = Object.entries(st.gems).filter(([, n]) => n > 0);
+      const target = ALL_SLOTS.map((s) => h.hs.equip[s]).find((id) => id === this.gemItem) || ALL_SLOTS.map((s) => h.hs.equip[s]).find((id) => id && socketCount(id));
+      if (!target) { this.t(x, y, 'NO SOCKETED GEAR EQUIPPED. RARE AND UNIQUE ITEMS HAVE A SOCKET.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      this.gemItem = target;
+      const sk = st.sockets[target] || [];
+      row(itemTex(this, target), itemName(target), RARITY[items[target].rarity].col, `SOCKET: ${sk[0] ? gemName(sk[0]) : 'EMPTY'}${socketCount(target) > 1 ? `, ${sk[1] ? gemName(sk[1]) : 'EMPTY'}` : ''}`, 0xbfe6f2, sk[0] ? 'REMOVE' : null, true, () => { unsocket(st, target, 0); h.refreshStats(); audio.sfx('click'); this.render(); });
+      for (const [gem, n] of gems) {
+        if (!fits()) break;
+        const can3 = n >= CRAFT.gems.combine;
+        row(`icon_crystal`, `${gemName(gem)} X${n}`, 0xffffff, can3 ? 'TAP COMBINE: 3 -> 1 OF THE NEXT GRADE' : 'SET INTO THE SOCKET', 0x9d93b3, 'SET', st.gold >= CRAFT.gems.socketGold[+gem.replace(/\D/g, '') - 1], () => {
+          const arr = st.sockets[target] || [];
+          let idx = 0;
+          for (let i = 0; i < socketCount(target); i++) if (!arr[i]) { idx = i; break; }
+          if (socketGem(st, target, idx, gem)) { audio.sfx('equip'); h.refreshStats(); } else audio.sfx('click');
+          this.render();
+        });
+        if (can3) this.btn(x, y - rowH, 22, rowH - 3, () => { if (combineGems(st, gem)) audio.sfx('chest'); this.render(); });
+      }
+      if (!gems.length) this.t(x, y, 'NO GEMS YET. WITCHLINGS, WARLOCKS, BOSSES AND CHESTS DROP THEM.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
     }
   }
 

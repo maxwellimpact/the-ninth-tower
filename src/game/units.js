@@ -131,7 +131,8 @@ export class Hero extends Unit {
   get level() { return this.hs.level; }
   get ult() { return this.hs.ult; }
   set ult(v) { this.hs.ult = Math.max(0, Math.min(100, v)); }
-  addUlt(n) { if (!this.downed) this.ult = this.ult + n; }
+  addUlt(n) { if (!this.downed) this.ult = this.ult + n * (this.stats?.traits?.includes('zeal') ? 1.15 : 1); }
+  hasTrait(t) { return !!this.stats.traits?.includes(t); }
 
   // Equipped active skills (keeps cooldowns across loadout changes).
   buildSkills() {
@@ -240,7 +241,8 @@ export class Hero extends Unit {
       return;
     }
     if (!target.alive || dist(this, target) > this.stats.range + target.r + 8) return;
-    const crit = this.nextCrit || Math.random() < this.stats.crit;
+    let crit = this.nextCrit || Math.random() < this.stats.crit;
+    if (this.stats.traits?.includes('opener') && !target.openedBy?.has(this)) { (target.openedBy ??= new Set()).add(this); crit = true; }
     this.nextCrit = false;
     sc.dealDamage(this, target, this.stats.atk * (crit ? critMul() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40, basic: true });
   }
@@ -285,7 +287,7 @@ export class Hero extends Unit {
     let t = target && target.alive ? target : null;
     if (!t && TARGETED.has(sk.id)) t = sc.nearestEnemy(this, sk.range || 120);
     if (!fx.cast(this, { target: t, m: rankMul(sk.rank), rank: sk.rank, sk })) return false;
-    sk.t = sk.cd;
+    sk.t = sk.cd * (1 - (this.stats.cdr || 0));
     return true;
   }
 
@@ -352,6 +354,7 @@ export class Hero extends Unit {
     this.scene.floatText(this.x, this.y - 26, `${amount}`, 'font', 0xff6a6a);
     if (this.isLeader) this.scene.shake(70, 0.004);
     if (src) this.knock(this.x - src.x, this.y - src.y, 50);
+    if (src?.alive && src.team === 'enemy' && !src.s?.ranged && this.hasTrait('thorns')) src.damage(Math.max(1, Math.round(amount * 0.1)), this, { knock: 0, dot: true });
     if (this.hp <= 0 && this.passive('laststand') && !this.lastStandUsed) {
       this.lastStandUsed = true;
       this.hp = 1;
@@ -412,6 +415,7 @@ export class Hero extends Unit {
     this.surgeT = Math.max(0, (this.surgeT || 0) - dt);
     if (this.hiddenT > 0) { this.hiddenT -= dt; this.sprite.setAlpha(this.hiddenT > 0 ? 0.45 : 1); }
     for (const [k, b] of Object.entries(this.buffs)) { b.t -= dt; if (b.t <= 0) delete this.buffs[k]; }
+    if (this.stats.regen && !this.downed) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.stats.regen * dt);
     if (!this.downed) this.addUlt(dt * tuning.ultPassive); // slow passive recharge (~45s)
     this.hs.hp = this.hp;
     for (const s of this.skills) s.t = Math.max(0, s.t - dt);
