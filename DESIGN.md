@@ -1184,7 +1184,7 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 ### Part II review — in progress (going through one by one; nothing below is decided yet)
 1. 4 visible gear slots + 2 trinkets; Feet dropped. **[LOCKED 2026-10-14]**
 2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. **[LOCKED 2026-10-14]** Skills rank up by **spending skill points**: 1 per hero level, plus bonus points from shrines and other special rewards where it fits (e.g. some quests). No automatic skill levelling.
-3. Automatic stat growth per hero; no stat points. *(recommended)*
+3. Automatic stat growth per hero; no stat points. **[LOCKED 2026-10-14]**
 4. Cooldowns only; no mana. *(recommended)*
 5. Venom replaces Earth (Fire, Frost, Storm, Venom, Light, Shadow). *(recommended)*
 6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries; no random rolls. *(recommended)*
