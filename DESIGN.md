@@ -1002,7 +1002,7 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 | **Snow Goblin Raider** | 1.0 | 1.1 | Rides a sled and drops bombs in passes | Fire / Frost | Scrap |
 | *Mini-boss:* **Avalanche Troll** | 14 | 2.1 | Pounds the ground to bring down icicles; regenerates unless Burning | Fire / Frost | Troll-Hide Mantle |
 
-### Blight Basin & the Ninth Tower (levels 22+)
+### Blight Basin & the Ninth Tower (levels 24+)
 Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and one affix. There are also four new enemies:
 
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
@@ -1138,11 +1138,11 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 | 3 | **Brightwater Undercroft** (tutorial dungeon): get the **Grapple Hook**; fight the Gatewarden; **Vale Ward Stone** falls (first colour bloom) | 25 min | 5–6 |
 | 4 | **Lantern quest** in Brightwater; the hook bridges out of the Vale open. The map shows four regions | 10 min | 6 |
 | 5–8 | **Four outer regions, in any order.** Each one: refugee camp → overworld (relic hints, bounties, recruit quest) → dungeon → lieutenant → **Ward Stone** → village reopens and a Brightwater service returns | ~1.5 h each | see C1 |
-| 9 | **Blight Basin:** the barrier is down to its last layer; Hexborn enemies; final shrines | 30 min | 22–24 |
-| 10 | **The Ninth Tower → Malgrim** | 45–75 min | 24–26 |
-| 11 | **Post-game** | — | up to 30 |
+| 9 | **Blight Basin:** the barrier is down to its last layer; Hexborn enemies; final shrines | 30 min | 24–26 |
+| 10 | **The Ninth Tower → Malgrim** | 45–75 min | 26–28 |
+| 11 | **Post-game** | — | up to 35 |
 
-**Early Tower attempt:** the Tower door opens once the Vale stone is down. Malgrim warns you off at the door ("Come back when you are less... small"). Going in is allowed, but at band 30 with 9 floors.
+**Early Tower attempt:** the Tower door opens once the Vale stone is down. Malgrim warns you off at the door ("Come back when you are less... small"). Going in is allowed, but at band 32 with 9 floors.
 
 ### Recruiting the other five heroes (each joins at the party's average level)
 | Hero | Where | Quest |
@@ -1185,9 +1185,9 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 - **Wipe penalty** (§8): Normal loses 10% of carried gold, Hard 20%, Easy none.
 
 ### Post-game
-- **The world stays open** after Malgrim. Bands rise to 26–30 everywhere, and Hexborn remnants spread out.
+- **The world stays open** after Malgrim. Bands rise to 30–35 everywhere, and Hexborn remnants spread out.
 - **Unlocks:**
-  - the **Tower of Echoes**, a boss rush against all lieutenants at level 30,
+  - the **Tower of Echoes**, a boss rush against all lieutenants at level 35,
   - the last bounty tier,
   - Royal gems,
   - Re-forging.
