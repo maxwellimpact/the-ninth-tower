@@ -128,6 +128,7 @@ export class Hero extends Unit {
   }
 
   get name() { return this.def.name; }
+  get spd() { return this.stats.speed * this.buffMul('slow'); }
   get level() { return this.hs.level; }
   get ult() { return this.hs.ult; }
   set ult(v) { this.hs.ult = Math.max(0, Math.min(100, v)); }
@@ -201,7 +202,7 @@ export class Hero extends Unit {
     const wp = this.path[0];
     const dx = wp.x - this.x, dy = wp.y - this.y;
     const d = Math.hypot(dx, dy);
-    const sp = this.stats.speed * speedMul * dt;
+    const sp = this.spd * speedMul * dt;
     if (d <= Math.max(1.5, sp)) {
       this.moveBy(dx, dy);
       this.path.shift();
@@ -460,7 +461,7 @@ export class Hero extends Unit {
       this.command = null; this.clearPath();
       const [nx, ny] = norm(this.direct.x, this.direct.y);
       this.face(nx, ny);
-      this.moveBy(nx * this.stats.speed * dt, ny * this.stats.speed * dt);
+      this.moveBy(nx * this.spd * dt, ny * this.spd * dt);
       return;
     }
     const c = this.command;
@@ -507,7 +508,7 @@ export class Hero extends Unit {
     if (danger) {
       const [nx, ny] = norm(this.x - danger.x, this.y - danger.y);
       this.face(nx, ny);
-      this.moveBy(nx * this.stats.speed * 1.3 * dt, ny * this.stats.speed * 1.3 * dt);
+      this.moveBy(nx * this.spd * 1.3 * dt, ny * this.spd * 1.3 * dt);
       this.clearPath();
       return;
     }
@@ -580,7 +581,7 @@ export class Hero extends Unit {
 
   moveTowards(p, dt, mul = 1) {
     const [nx, ny] = norm(p.x - this.x, p.y - this.y);
-    this.moveBy(nx * this.stats.speed * mul * dt, ny * this.stats.speed * mul * dt);
+    this.moveBy(nx * this.spd * mul * dt, ny * this.spd * mul * dt);
   }
 
   think() {
@@ -663,8 +664,8 @@ export class Hero extends Unit {
 
 // ---------------------------------------------------------------- Enemies
 const ENEMY = enemyData;
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth']);
 
 export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
@@ -692,6 +693,8 @@ export class Enemy extends Unit {
     this.hop = Math.random() * 6;
     this.engaged = false;
     this.cursed = scene.inCurse(x, y, 0);
+    if (s.scale) this.sprite.setScale(s.scale);
+    if (s.named) { this.elite = true; this.named = true; }
     this.restoreTint();
   }
 
@@ -727,7 +730,13 @@ export class Enemy extends Unit {
     }
   }
 
-  stun(t) { this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain'); }
+  stun(t) {
+    if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play('crab_flipped'); this.anim = 'crab_flipped'; this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
+    this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain');
+  }
+
+  // flying foes drift over water and walls
+  moveBy(dx, dy) { if (this.s.flying) { this.x += dx; this.y += dy; } else super.moveBy(dx, dy); }
 
   // Damage multiplier for an element hitting this enemy (C2: weak x1.5, resist x0.5).
   elementMul(el) {
@@ -805,13 +814,28 @@ export class Enemy extends Unit {
     if (this.state === 'idle' || this.state === 'return') this.state = 'chase';
     if (!was) {
       this.scene.fx.alert(this);
-      if (this.elite) this.scene.floatText(this.x, this.y - 34, `ELITE ${this.s.name}`, 'fontGold');
+      if (this.elite) this.scene.floatText(this.x, this.y - 34, this.named ? this.s.name : `ELITE ${this.s.name}`, 'fontGold');
       if (spread) for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && dist(e, this) < 70) e.aggroOn(h, false);
     }
   }
 
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
+    if (this.s.ai === 'shell' && src && !dot) {
+      // the shell turns blows from the front; a flipped crab takes extra
+      if (this.flippedT > 0) amount *= 1.5;
+      else {
+        const f = this.view === 'side' ? [this.flip ? -1 : 1, 0] : [0, this.view === 'down' ? 1 : -1];
+        const [dx, dy] = norm(src.x - this.x, src.y - this.y);
+        if (f[0] * dx + f[1] * dy > 0.2) { amount *= 0.3; if (Math.random() < 0.3) this.scene.floatText(this.x, this.y - 24, 'CLANG', 'fontPlain'); }
+      }
+    }
+    if (this.wardShield > 0 && !dot) {
+      const a = Math.min(this.wardShield, amount);
+      this.wardShield -= a; amount -= a;
+      if (this.wardShield <= 0) { this.wardRing?.destroy(); this.wardRing = null; }
+      if (amount <= 0) { this.scene.floatText(this.x, this.y - 24, 'WARDED', 'fontPlain', 0xd9b8ff); return 1; }
+    }
     amount = Math.round(amount);
     this.hp -= amount;
     if (!dot) this.flash(crit ? 90 : 60);
@@ -821,6 +845,8 @@ export class Enemy extends Unit {
     if (this.hp <= 0) this.die(src);
     return amount;
   }
+
+  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.clearCharge?.(); super.destroy(); }
 
   die(src) {
     this.alive = false;
@@ -835,7 +861,14 @@ export class Enemy extends Unit {
     this.destroy();
   }
 
+  sync(dt) {
+    super.sync(dt);
+    if (this.s.flying) this.sprite.y = Math.round(this.y) - 8 - Math.sin(Date.now() / 300 + this.id) * 2;
+    if (this.wardRing) this.wardRing.setPosition(Math.round(this.x), Math.round(this.y) - 8).setDepth(this.y + 2);
+  }
+
   clearZone() {
+    this.clearCharge?.();
     if (this.zone) { this.scene.dangers = this.scene.dangers.filter((z) => z !== this.zone); this.zone = null; }
     if (this.zoneGfx) { this.zoneGfx.destroy(); this.zoneGfx = null; }
   }
@@ -869,6 +902,9 @@ export class Enemy extends Unit {
     const s = this.s;
     this.updateStatus(dt);
     if (!this.alive) return;
+    if (this.flippedT > 0) { this.flippedT -= dt; if (this.flippedT <= 0) this.anim = ''; this.sync(dt); return; }
+    if (s.ai === 'warlock' && this.engaged) this.aiWarlock(dt);
+    this.chargeCd = Math.max(0, (this.chargeCd || 0) - dt);
     this.t += dt * this.slow;
 
     if (this.target && (this.target.downed || !this.target.alive)) {
@@ -902,8 +938,25 @@ export class Enemy extends Unit {
           this.stepTo(t, dt, 1);
           break;
         }
+        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2)) { this.beginCharge(t); break; }
         if (d <= s.reach + t.r) { this.beginWindup(t); break; }
         this.stepTo(t, dt, 1);
+        break;
+      }
+      case 'chargeWindup': {
+        this.play('windup');
+        if (Math.random() < 0.2) sc.fx.dust(this.x - this.cdir[0] * 8, this.y);
+        if (this.t >= 0.8) { this.clearCharge(); this.state = 'charging'; this.t = 0; this.chargeHit = new Set(); audio.sfx('dash'); }
+        break;
+      }
+      case 'charging': {
+        this.play('walk');
+        const ox = this.x, oy = this.y;
+        this.moveBy(this.cdir[0] * 230 * dt, this.cdir[1] * 230 * dt);
+        if (Math.random() < 0.5) sc.fx.dust(this.x, this.y);
+        for (const h of sc.party) if (h.alive && !h.downed && !this.chargeHit.has(h) && Math.hypot(h.x - this.x, h.y - this.y) < this.r + h.r + 3) { this.chargeHit.add(h); h.damage(s.dmg * 1.3 * sc.difficulty.dmg, this); h.knock(this.cdir[0], this.cdir[1], 160); }
+        if (Math.hypot(this.x - ox, this.y - oy) < 230 * dt * 0.3) { this.state = 'chase'; this.chargeCd = 3.5; this.stunT = 1.6; sc.shake(120, 0.006); audio.sfx('bash'); sc.floatText(this.x, this.y - 24, 'THUNK!', 'fontPlain'); break; }
+        if (this.t >= 0.6) { this.state = 'recover'; this.t = 0; this.chargeCd = 3.5; }
         break;
       }
       case 'windup': {
@@ -959,6 +1012,54 @@ export class Enemy extends Unit {
     this.play('walk');
   }
 
+  // Boar charge: paw the ground (telegraphed line), then rush in a straight line.
+  beginCharge(t) {
+    this.state = 'chargeWindup';
+    this.t = 0;
+    this.cdir = norm(t.x - this.x, t.y - this.y);
+    this.face(...this.cdir);
+    this.chargeZones = [];
+    for (let i = 1; i <= 5; i++) {
+      const z = { x: this.x + this.cdir[0] * i * 26, y: this.y + this.cdir[1] * i * 26, r: 12, until: 0.8 };
+      this.scene.dangers.push(z); this.chargeZones.push(z);
+    }
+    const g = this.scene.add.graphics().setDepth(-2);
+    g.lineStyle(6, 0xec6a5e, 0.25).lineBetween(this.x, this.y, this.x + this.cdir[0] * 130, this.y + this.cdir[1] * 130);
+    this.chargeGfx = g;
+    audio.sfx('aggro');
+  }
+
+  clearCharge() {
+    if (this.chargeZones) this.scene.dangers = this.scene.dangers.filter((z) => !this.chargeZones.includes(z));
+    this.chargeZones = null;
+    this.chargeGfx?.destroy(); this.chargeGfx = null;
+  }
+
+  // Hex Warlock: wards nearby allies and calls hexlings to its side.
+  aiWarlock(dt) {
+    const sc = this.scene;
+    this.wardT = (this.wardT ?? 2) - dt;
+    this.summonT = (this.summonT ?? 6) - dt;
+    if (this.wardT <= 0) {
+      this.wardT = 7;
+      for (const e of sc.enemies) {
+        if (!e.alive || Math.hypot(e.x - this.x, e.y - this.y) > 90 || e.s.inert) continue;
+        e.wardShield = Math.round(e.maxHp * 0.3);
+        e.wardRing?.destroy();
+        e.wardRing = sc.add.ellipse(e.x, e.y - 8, 26, 30, 0xb24ce6, 0.12).setStrokeStyle(1, 0xd9b8ff, 0.8).setDepth(e.y + 2);
+      }
+      sc.fx.ring(this.x, this.y - 6, 'ringBlue', 4);
+      sc.floatText(this.x, this.y - 30, 'HEX WARD!', 'fontPlain', 0xd9b8ff);
+      audio.sfx('frost', { pitch: 0.7 });
+    }
+    if (this.summonT <= 0) {
+      this.summonT = 11;
+      const mine = sc.enemies.filter((e) => e.alive && e.summonedBy === this).length;
+      for (let i = mine; i < Math.min(mine + 2, 3); i++) { const e = sc.spawnEnemy('hexling', this.x + (i ? 20 : -20), this.y + 10, true); e.summonedBy = this; e.summoned = true; }
+      sc.fx.burst('curse', this.x, this.y - 10, 16);
+    }
+  }
+
   beginWindup(t) {
     this.state = 'windup';
     this.t = 0;
@@ -993,7 +1094,7 @@ export class Enemy extends Unit {
     const sc = this.scene;
     if (this.s.ranged) {
       this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`;
-      sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg);
+      sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg, this.s.shot);
       return;
     }
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }

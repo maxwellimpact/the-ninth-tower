@@ -113,3 +113,22 @@ export function questMark(ch = '!') {
   outline(c, 'ink');
   return c;
 }
+
+// open-air forge for Greta: hearth with embers and an anvil
+export function forge() {
+  const [c, ctx] = makeCanvas(26, 22);
+  grid(ctx, [
+    '..ssssssss..............',
+    '.sSSSSSSSSs.............',
+    '.sSffFFffSs.............',
+    '.sSfFWWFfSs.............',
+    '.sSSFFFFSSs.....kkkkkk..',
+    '.sSSSSSSSSs....kKKKKKKk.',
+    '.ssssssssss.....kkKKkk..',
+    '................dkKKkd..',
+    '.................dKKd...',
+    '................dddddd..',
+  ], { s: 'slate', S: 'stone', f: 'fire', F: 'fireL', W: 'goldL', k: 'steelD', K: 'steel', d: 'night' }, 1, 9);
+  outline(c, 'ink');
+  return c;
+}

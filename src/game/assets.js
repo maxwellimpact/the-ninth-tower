@@ -2,9 +2,9 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -144,6 +144,12 @@ export const GROUPS = {
 };
 // errand townsfolk + props are small and needed across the Vale, so they ride with core
 GROUPS.core.push(
+  ['vale foes', (s) => {
+    creature(s, 'boar', buildBoar(), { idle: 2, walk: 8, windup: 10, attack: 12, hurt: 1 }, ['idle', 'walk', 'windup']);
+    creature(s, 'crab', buildCrab(), { idle: 2, walk: 9, windup: 6, attack: 10, hurt: 1, flipped: 6 }, ['idle', 'walk', 'windup', 'flipped']);
+    creature(s, 'wisp', buildWisp(), { idle: 6, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+    registerPuppet(s, 'warlock', WARLOCK);
+  }],
   ['undercroft foes', (s) => {
     creature(s, 'rats', buildRats(), { idle: 4, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
     registerPuppet(s, 'hollow', HOLLOW);
@@ -158,6 +164,7 @@ GROUPS.core.push(
     s.textures.addCanvas('bell', Q.bell()); s.textures.addCanvas('bellRung', Q.bell(true));
     frames(s, 'cart', Q.cartFrames(), 6);
     s.textures.addCanvas('board', Q.noticeBoard());
+    s.textures.addCanvas('forge', Q.forge());
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
 );

@@ -46,14 +46,15 @@ export class QuestManager {
     npc.mark = sc.add.image(npc.px, npc.py - 30, 'markQ').setDepth(100000 - 40).setVisible(false);
     sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', interact: () => this.talk(npc) });
-    if (n.hidden) this.setNpcVisible(npc, false);
+    if (n.hidden || (n.requires && !this.sc.flags[n.requires])) this.setNpcVisible(npc, false);
+    if (n.service === 'smith') npc.forge = this.sc.add.image(npc.px + 18, npc.py + 6, 'forge').setOrigin(0.5, 1).setDepth(npc.py).setVisible(!npc.hiddenNow);
     this.npcs.push(npc);
   }
 
   npc(id) { return this.npcs.find((n) => n.id === id); }
 
   setNpcVisible(npc, v) {
-    npc.s.setVisible(v); npc.shadow?.setVisible(v);
+    npc.s.setVisible(v); npc.shadow?.setVisible(v); npc.forge?.setVisible(v);
     npc.o.hidden = !v;
     npc.hiddenNow = !v;
   }
@@ -79,6 +80,12 @@ export class QuestManager {
     if (tid) { this.advance(tid, npc); return; }
     const oid = this.offerFor(npc);
     if (oid) { this.offer(oid, npc); return; }
+    if (npc.service) {
+      // Brightwater services open the matching crafting screen
+      const lines = npc.lines.map((t) => this.line(npc, t));
+      sc.events.emit('dialogue', lines.slice(npc.met ? lines.length - 1 : 0), () => { npc.met = true; sc.openMenu({ tab: 'craft', craftTab: npc.service === 'smith' ? 'upgrade' : 'gems' }); });
+      return;
+    }
     // an errand of theirs is in progress: remind; otherwise small talk
     const doing = (npc.errands || []).find((id) => this.q(id) && !this.q(id).done);
     const text = doing ? `${ERRANDS[doing].title}: ${this.step(doing).text}.` : npc.lines[Math.floor(Math.random() * npc.lines.length)];
@@ -198,6 +205,11 @@ export class QuestManager {
     if (r.xp) { for (const h of sc.party) if (!h.downed) h.gainXp(r.xp); out.push(`${r.xp} XP`); }
     if (r.mats) addMats(st, r.mats);
     if (r.potions) { addPotions(st, r.potions); out.push(Object.entries(r.potions).map(([k, n]) => `${n} ${k.toUpperCase()}${n > 1 ? 'S' : ''}`).join(' ')); }
+    if (r.relic && !st.relics.includes(r.relic)) {
+      st.relics.push(r.relic);
+      const names = { lantern: ['LANTERN OF EMBERS ACQUIRED', 'DARK CAVES ARE NOW LIT AROUND YOU'] };
+      sc.time.delayedCall(1200, () => { audio.sfx('levelUp'); sc.events.emit('banner', ...(names[r.relic] || [r.relic.toUpperCase(), ''])); });
+    }
     if (r.sp) { for (const id of st.recruited) st.heroes[id].sp = (st.heroes[id].sp || 0) + r.sp; out.push(`+${r.sp} SKILL POINT`); }
     const give = [];
     if (r.item) give.push(r.item);
@@ -304,6 +316,7 @@ export class QuestManager {
     const sc = this.sc, L = sc.leader;
     // markers: "!" when an errand is on offer, "?" when they're waiting on you
     for (const n of this.npcs) {
+      if (n.requires && n.hiddenNow && sc.flags[n.requires]) this.setNpcVisible(n, true);
       if (n.hiddenNow) { n.mark.setVisible(false); continue; }
       const ready = this.turnInFor(n), offer = this.offerFor(n);
       n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');

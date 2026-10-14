@@ -4,104 +4,674 @@
    "title": "BISCUIT'S GONE AGAIN",
    "giver": "tam",
    "region": "vale",
-   "offer": ["MY DOG BISCUIT CHASED A SQUIRREL INTO THE WOODS UP NORTH. THAT WAS THIS MORNING.", "HE ALWAYS COMES BACK FOR SUPPER. HE DIDN'T COME BACK FOR SUPPER."],
-   "accept": "I'LL LOOK FOR HIM.",
-   "thanks": ["BISCUIT! YOU DAFT MUTT. COME HERE.", "THANK YOU, TRULY. TAKE THIS - MY WIFE'S OLD RING. SHE'D WANT IT WORN."],
-   "steps": [
-    { "type": "spawn", "text": "SEARCH THE NORTH WOODS FOR BISCUIT", "at": [11, 14], "r": 7, "units": [["hexling", 9, 13], ["hexling", 13, 15], ["hexling", 11, 11]], "prop": { "kind": "dog", "x": 11, "y": 14 } },
-    { "type": "find", "text": "BISCUIT IS SAFE. CALL HIM OVER", "x": 11, "y": 14, "kind": "dog", "say": "WOOF! (BISCUIT TROTS OFF HOME.)" },
-    { "type": "talk", "text": "TELL OLD TAM BISCUIT IS HOME", "npc": "tam" }
+   "offer": [
+    "MY DOG BISCUIT CHASED A SQUIRREL INTO THE WOODS UP NORTH. THAT WAS THIS MORNING.",
+    "HE ALWAYS COMES BACK FOR SUPPER. HE DIDN'T COME BACK FOR SUPPER."
    ],
-   "reward": { "gold": 60, "xp": 140, "gear": { "slot": "trinket", "rarity": "fine" } }
+   "accept": "I'LL LOOK FOR HIM.",
+   "thanks": [
+    "BISCUIT! YOU DAFT MUTT. COME HERE.",
+    "THANK YOU, TRULY. TAKE THIS - MY WIFE'S OLD RING. SHE'D WANT IT WORN."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "SEARCH THE NORTH WOODS FOR BISCUIT",
+     "at": [
+      11,
+      14
+     ],
+     "r": 7,
+     "units": [
+      [
+       "hexling",
+       9,
+       13
+      ],
+      [
+       "hexling",
+       13,
+       15
+      ],
+      [
+       "hexling",
+       11,
+       11
+      ]
+     ],
+     "prop": {
+      "kind": "dog",
+      "x": 11,
+      "y": 14
+     }
+    },
+    {
+     "type": "find",
+     "text": "BISCUIT IS SAFE. CALL HIM OVER",
+     "x": 11,
+     "y": 14,
+     "kind": "dog",
+     "say": "WOOF! (BISCUIT TROTS OFF HOME.)"
+    },
+    {
+     "type": "talk",
+     "text": "TELL OLD TAM BISCUIT IS HOME",
+     "npc": "tam"
+    }
+   ],
+   "reward": {
+    "gold": 60,
+    "xp": 140,
+    "gear": {
+     "slot": "trinket",
+     "rarity": "fine"
+    }
+   }
   },
   "delivery": {
    "title": "MARLA'S DELIVERY",
    "giver": "piet",
    "region": "vale",
-   "offer": ["MARLA WANTS THIS CART OF GOODS DOWN AT HOBB'S FARM BY THE SOUTH ROAD.", "TROUBLE IS, GOBLINS LIKE CARTS. AND I LIKE NOT BEING STABBED. WALK WITH ME?"],
-   "accept": "LEAD THE WAY.",
-   "thanks": ["HOBB: THE SEED SACKS! AND NOT A GOBLIN BITE ON THEM.", "HERE'S YOUR CUT. MARLA SAYS YOU'RE ALRIGHT, WHICH FROM MARLA IS PRACTICALLY A HUG."],
-   "steps": [
-    { "type": "escort", "text": "KEEP THE CART SAFE ON THE SOUTH ROAD", "path": [[16, 33], [20, 37], [20, 44], [21, 50], [24, 57], [27, 63]], "hp": 120, "ambush": [{ "at": 2, "units": [["goblin", 24, 44], ["goblin", 16, 46], ["archer", 25, 47]] }, { "at": 4, "units": [["goblin", 28, 56], ["goblin", 20, 58]] }] },
-    { "type": "talk", "text": "HAND THE GOODS TO HOBB", "npc": "hobb" }
+   "offer": [
+    "MARLA WANTS THIS CART OF GOODS DOWN AT HOBB'S FARM BY THE SOUTH ROAD.",
+    "TROUBLE IS, GOBLINS LIKE CARTS. AND I LIKE NOT BEING STABBED. WALK WITH ME?"
    ],
-   "reward": { "gold": 90, "xp": 180, "potions": { "potion": 2 } }
+   "accept": "LEAD THE WAY.",
+   "thanks": [
+    "HOBB: THE SEED SACKS! AND NOT A GOBLIN BITE ON THEM.",
+    "HERE'S YOUR CUT. MARLA SAYS YOU'RE ALRIGHT, WHICH FROM MARLA IS PRACTICALLY A HUG."
+   ],
+   "steps": [
+    {
+     "type": "escort",
+     "text": "KEEP THE CART SAFE ON THE SOUTH ROAD",
+     "path": [
+      [
+       16,
+       33
+      ],
+      [
+       20,
+       37
+      ],
+      [
+       20,
+       44
+      ],
+      [
+       21,
+       50
+      ],
+      [
+       24,
+       57
+      ],
+      [
+       27,
+       63
+      ]
+     ],
+     "hp": 120,
+     "ambush": [
+      {
+       "at": 2,
+       "units": [
+        [
+         "goblin",
+         24,
+         44
+        ],
+        [
+         "goblin",
+         16,
+         46
+        ],
+        [
+         "archer",
+         25,
+         47
+        ]
+       ]
+      },
+      {
+       "at": 4,
+       "units": [
+        [
+         "goblin",
+         28,
+         56
+        ],
+        [
+         "goblin",
+         20,
+         58
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "HAND THE GOODS TO HOBB",
+     "npc": "hobb"
+    }
+   ],
+   "reward": {
+    "gold": 90,
+    "xp": 180,
+    "potions": {
+     "potion": 2
+    }
+   }
   },
   "goblinCull": {
    "title": "THIN THE GOBLINS",
    "giver": "board",
    "region": "vale",
-   "offer": ["NOTICE: HEX GOBLINS ARE RAIDING THE VALE ROADS. THE TAVERN PAYS FOR EVERY SIX DRIVEN OFF. - BRUNO"],
-   "accept": "TAKE THE NOTICE.",
-   "thanks": ["BRUNO: SIX? THAT'S SIX FEWER GOBLINS DRINKING FROM MY RAIN BARREL. HERE."],
-   "steps": [
-    { "type": "kill", "text": "DEFEAT HEX GOBLINS", "kind": "goblin", "count": 6 },
-    { "type": "talk", "text": "COLLECT THE BOUNTY FROM BRUNO", "npc": "bruno" }
+   "offer": [
+    "NOTICE: HEX GOBLINS ARE RAIDING THE VALE ROADS. THE TAVERN PAYS FOR EVERY SIX DRIVEN OFF. - BRUNO"
    ],
-   "reward": { "gold": 70, "xp": 160, "gear": { "rarity": "rare" } }
+   "accept": "TAKE THE NOTICE.",
+   "thanks": [
+    "BRUNO: SIX? THAT'S SIX FEWER GOBLINS DRINKING FROM MY RAIN BARREL. HERE."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "DEFEAT HEX GOBLINS",
+     "kind": "goblin",
+     "count": 6
+    },
+    {
+     "type": "talk",
+     "text": "COLLECT THE BOUNTY FROM BRUNO",
+     "npc": "bruno"
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 160,
+    "gear": {
+     "rarity": "rare"
+    }
+   }
   },
   "moonherb": {
    "title": "HERBS FOR THE SICK",
    "giver": "ada",
    "region": "vale",
-   "offer": ["HALF THE HAMLET HAS CURSE-COUGH. MOONHERB TEA HELPS, BUT MY KNEES DON'T BEND FOR PICKING ANY MORE.", "FOUR SPRIGS WOULD DO IT. THEY GROW IN THE MEADOWS - LOOK FOR THE LITTLE BUBBLE MARKS."],
-   "accept": "I'LL PICK SOME.",
-   "thanks": ["LOVELY AND FRESH. THE KETTLE'S ALREADY ON.", "TAKE A COUPLE OF MY POTIONS. I BREW THEM STRONGER THAN MARLA, DON'T TELL HER."],
-   "steps": [
-    { "type": "gather", "text": "PICK MOONHERB", "mat": "herb", "count": 4 },
-    { "type": "talk", "text": "BRING THE MOONHERB TO WIDOW ADA", "npc": "ada", "take": { "herb": 4 } }
+   "offer": [
+    "HALF THE HAMLET HAS CURSE-COUGH. MOONHERB TEA HELPS, BUT MY KNEES DON'T BEND FOR PICKING ANY MORE.",
+    "FOUR SPRIGS WOULD DO IT. THEY GROW IN THE MEADOWS - LOOK FOR THE LITTLE BUBBLE MARKS."
    ],
-   "reward": { "gold": 40, "xp": 100, "potions": { "potion": 2 } }
+   "accept": "I'LL PICK SOME.",
+   "thanks": [
+    "LOVELY AND FRESH. THE KETTLE'S ALREADY ON.",
+    "TAKE A COUPLE OF MY POTIONS. I BREW THEM STRONGER THAN MARLA, DON'T TELL HER."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "PICK MOONHERB",
+     "mat": "herb",
+     "count": 4
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE MOONHERB TO WIDOW ADA",
+     "npc": "ada",
+     "take": {
+      "herb": 4
+     }
+    }
+   ],
+   "reward": {
+    "gold": 40,
+    "xp": 100,
+    "potions": {
+     "potion": 2
+    }
+   }
   },
   "lostRing": {
    "title": "A RING IN THE REEDS",
    "giver": "ada",
    "region": "vale",
    "requires": "moonherb",
-   "offer": ["YOU'VE A KIND FACE. I DROPPED MY WEDDING BAND IN THE LAKE SHALLOWS YEARS AGO, SOUTH SHORE.", "THE CURSE MAKES THINGS GLINT AT NIGHT. MAYBE IT GLINTS NOW."],
-   "accept": "I'LL WADE IN.",
-   "thanks": ["OH. OH, IT IS. FORTY YEARS AND IT STILL FITS NOBODY BUT ME.", "NO - YOU KEEP IT. IT'S DONE ITS JOB. IT'LL KEEP YOU STANDING."],
-   "steps": [
-    { "type": "find", "text": "SEARCH THE LAKE'S SOUTH SHORE", "x": 9, "y": 41, "kind": "glint", "say": "A TARNISHED SILVER BAND, STILL WARM SOMEHOW." },
-    { "type": "talk", "text": "RETURN THE RING TO WIDOW ADA", "npc": "ada" }
+   "offer": [
+    "YOU'VE A KIND FACE. I DROPPED MY WEDDING BAND IN THE LAKE SHALLOWS YEARS AGO, SOUTH SHORE.",
+    "THE CURSE MAKES THINGS GLINT AT NIGHT. MAYBE IT GLINTS NOW."
    ],
-   "reward": { "gold": 30, "xp": 120, "item": "widows_band", "sp": 1 }
+   "accept": "I'LL WADE IN.",
+   "thanks": [
+    "OH. OH, IT IS. FORTY YEARS AND IT STILL FITS NOBODY BUT ME.",
+    "NO - YOU KEEP IT. IT'S DONE ITS JOB. IT'LL KEEP YOU STANDING."
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "SEARCH THE LAKE'S SOUTH SHORE",
+     "x": 9,
+     "y": 41,
+     "kind": "glint",
+     "say": "A TARNISHED SILVER BAND, STILL WARM SOMEHOW."
+    },
+    {
+     "type": "talk",
+     "text": "RETURN THE RING TO WIDOW ADA",
+     "npc": "ada"
+    }
+   ],
+   "reward": {
+    "gold": 30,
+    "xp": 120,
+    "item": "widows_band",
+    "sp": 1
+   }
   },
   "bells": {
    "title": "THE THREE BELLS",
    "giver": "oswin",
    "region": "vale",
-   "offer": ["HALT. OR DON'T - I CAN'T STOP YOU. I'M A GHOST. SIR OSWIN, LAST WARDEN OF THESE WALLS.", "THE OLD BELLS SANG THE KEEP TO SLEEP: LOW, THEN HIGH, THEN THE MIDDLE ONE. RING THEM SO, AND I CAN REST."],
-   "accept": "LOW, HIGH, MIDDLE.",
-   "thanks": ["AHH. THERE IT IS. I'D FORGOTTEN HOW THAT SOUNDED.", "TAKE WHAT I KNEW OF FIGHTING. I'VE NO MORE USE FOR IT."],
-   "steps": [
-    { "type": "bells", "text": "RING THE BELLS: LOW, HIGH, MIDDLE", "bells": [[38, 19, "high"], [50, 19, "low"], [44, 27, "mid"]], "order": ["low", "high", "mid"] },
-    { "type": "talk", "text": "TELL SIR OSWIN", "npc": "oswin" }
+   "offer": [
+    "HALT. OR DON'T - I CAN'T STOP YOU. I'M A GHOST. SIR OSWIN, LAST WARDEN OF THESE WALLS.",
+    "THE OLD BELLS SANG THE KEEP TO SLEEP: LOW, THEN HIGH, THEN THE MIDDLE ONE. RING THEM SO, AND I CAN REST."
    ],
-   "reward": { "xp": 150, "sp": 1 }
+   "accept": "LOW, HIGH, MIDDLE.",
+   "thanks": [
+    "AHH. THERE IT IS. I'D FORGOTTEN HOW THAT SOUNDED.",
+    "TAKE WHAT I KNEW OF FIGHTING. I'VE NO MORE USE FOR IT."
+   ],
+   "steps": [
+    {
+     "type": "bells",
+     "text": "RING THE BELLS: LOW, HIGH, MIDDLE",
+     "bells": [
+      [
+       38,
+       19,
+       "high"
+      ],
+      [
+       50,
+       19,
+       "low"
+      ],
+      [
+       44,
+       27,
+       "mid"
+      ]
+     ],
+     "order": [
+      "low",
+      "high",
+      "mid"
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "TELL SIR OSWIN",
+     "npc": "oswin"
+    }
+   ],
+   "reward": {
+    "xp": 150,
+    "sp": 1
+   }
   },
   "ambush": {
    "title": "TROUBLE ON THE EAST ROAD",
    "giver": "quill",
    "region": "meadow",
-   "trigger": [92, 31, 9],
-   "offer": ["HELP! GOBLINS! THEY WANT MY INKWELLS. WHAT DOES A GOBLIN DO WITH AN INKWELL?!"],
-   "accept": "HOLD ON!",
-   "thanks": ["QUILL: YOU SAVED MY STOCK AND, LESS IMPORTANTLY, ME.", "A TRAVELLING SCRIBE PAYS IN GOLD AND GOSSIP. HERE'S THE GOLD."],
-   "steps": [
-    { "type": "defend", "text": "DRIVE OFF THE GOBLINS BEFORE THEY REACH QUILL", "npc": "quill", "hp": 90, "units": [["goblin", 96, 29], ["goblin", 97, 33], ["archer", 99, 31]] },
-    { "type": "talk", "text": "CHECK ON QUILL", "npc": "quill" }
+   "trigger": [
+    92,
+    31,
+    9
    ],
-   "reward": { "gold": 110, "xp": 160, "gear": { "rarity": "fine" } }
+   "offer": [
+    "HELP! GOBLINS! THEY WANT MY INKWELLS. WHAT DOES A GOBLIN DO WITH AN INKWELL?!"
+   ],
+   "accept": "HOLD ON!",
+   "thanks": [
+    "QUILL: YOU SAVED MY STOCK AND, LESS IMPORTANTLY, ME.",
+    "A TRAVELLING SCRIBE PAYS IN GOLD AND GOSSIP. HERE'S THE GOLD."
+   ],
+   "steps": [
+    {
+     "type": "defend",
+     "text": "DRIVE OFF THE GOBLINS BEFORE THEY REACH QUILL",
+     "npc": "quill",
+     "hp": 90,
+     "units": [
+      [
+       "goblin",
+       96,
+       29
+      ],
+      [
+       "goblin",
+       97,
+       33
+      ],
+      [
+       "archer",
+       99,
+       31
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CHECK ON QUILL",
+     "npc": "quill"
+    }
+   ],
+   "reward": {
+    "gold": 110,
+    "xp": 160,
+    "gear": {
+     "rarity": "fine"
+    }
+   }
+  },
+  "lantern": {
+   "title": "THE LAMPLIGHTER'S LANTERN",
+   "giver": "wick",
+   "region": "vale",
+   "offer": [
+    "THE STONE'S DOWN AND THE LIGHTS CAN COME BACK. EXCEPT MINE.",
+    "MY LANTERN OF EMBERS. I DROPPED IT UP ON THE NORTH-EAST HEIGHTS THE NIGHT THE CURSE FELL, AND THE WISPS TOOK A LIKING TO IT."
+   ],
+   "accept": "I'LL FETCH IT.",
+   "thanks": [
+    "THERE SHE IS. NEVER QUITE GOES OUT, THAT ONE.",
+    "KEEP IT. CAVES ARE DARK AND YOU'RE YOUNG. IT BURNS BRIGHTEST WHERE IT'S DARKEST."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "CLIMB THE NORTH-EAST HEIGHTS",
+     "at": [
+      70,
+      8
+     ],
+     "r": 6,
+     "units": [
+      [
+       "hexling",
+       67,
+       7
+      ],
+      [
+       "hexling",
+       73,
+       9
+      ],
+      [
+       "goblin",
+       70,
+       11
+      ]
+     ],
+     "prop": {
+      "kind": "glint",
+      "x": 70,
+      "y": 8
+     }
+    },
+    {
+     "type": "find",
+     "text": "TAKE THE LANTERN",
+     "x": 70,
+     "y": 8,
+     "kind": "glint",
+     "say": "A BRASS LANTERN, STILL WARM. EMBERS STIR INSIDE."
+    },
+    {
+     "type": "talk",
+     "text": "RETURN THE LANTERN TO OLD WICK",
+     "npc": "wick"
+    }
+   ],
+   "reward": {
+    "xp": 160,
+    "gold": 40,
+    "relic": "lantern"
+   }
+  },
+  "snagtooth": {
+   "title": "BOUNTY: SNAGTOOTH",
+   "giver": "board",
+   "region": "meadow",
+   "requires": "goblinCull",
+   "offer": [
+    "BOUNTY: SNAGTOOTH, GOBLIN CHIEF. SPINS. THROWS BOMBS. BITES. LAST SEEN CAMPED EAST OF THE OLD WATCHTOWER ROAD.",
+    "REWARD: 150 GOLD AND HIS RING, IF YOU CAN GET IT OFF HIM."
+   ],
+   "accept": "HUNT HIM DOWN.",
+   "thanks": [
+    "BRUNO: SNAGTOOTH? GONE? I'M PINNING THAT NOTICE UP AGAIN JUST TO TEAR IT DOWN."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND SNAGTOOTH'S CAMP EAST OF THE WATCHTOWER ROAD",
+     "at": [
+      178,
+      30
+     ],
+     "r": 8,
+     "units": [
+      [
+       "snagtooth",
+       178,
+       30
+      ],
+      [
+       "goblin",
+       175,
+       28
+      ],
+      [
+       "archer",
+       181,
+       33
+      ],
+      [
+       "goblin",
+       176,
+       33
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM BRUNO",
+     "npc": "bruno"
+    }
+   ],
+   "reward": {
+    "gold": 150,
+    "xp": 260,
+    "item": "thornring"
+   }
   }
  },
  "npcs": [
-  { "id": "tam", "name": "OLD TAM", "x": 18, "y": 33, "look": "tam", "lines": ["NICE DAY FOR IT. FOR WHAT, I COULDN'T SAY."], "voice": { "pitch": 150, "wave": "triangle", "speed": 0.8 }, "errands": ["biscuit"] },
-  { "id": "ada", "name": "WIDOW ADA", "x": 11, "y": 33, "look": "ada", "lines": ["MIND THE HERBS, DEAR."], "voice": { "pitch": 360, "wave": "triangle", "speed": 0.85 }, "errands": ["moonherb", "lostRing"] },
-  { "id": "piet", "name": "PIET", "x": 16, "y": 32, "look": "piet", "lines": ["I PUSH CARTS. IT'S A LIVING."], "voice": { "pitch": 260, "wave": "square", "duty": 0.5 }, "errands": ["delivery"] },
-  { "id": "hobb", "name": "FARMER HOBB", "x": 29, "y": 63, "look": "hobb", "lines": ["THE FEN STARTS PAST MY FENCE. I DON'T GO PAST MY FENCE."], "voice": { "pitch": 170, "wave": "square", "duty": 0.5 } },
-  { "id": "oswin", "name": "SIR OSWIN", "x": 44, "y": 23, "look": "oswin", "ghost": true, "lines": ["THE WALLS REMEMBER. I REMEMBER LESS EACH YEAR."], "voice": { "pitch": 120, "wave": "sine", "speed": 0.7 }, "errands": ["bells"] },
-  { "id": "quill", "name": "QUILL", "x": 94, "y": 31, "look": "quill", "lines": ["NEED ANYTHING WRITTEN? I DO SIGNS, LETTERS AND THREATENING NOTES."], "voice": { "pitch": 300, "wave": "square", "duty": 0.125 }, "hidden": true },
-  { "id": "board", "name": "RUMOUR BOARD", "x": 246, "y": 19, "look": "board", "lines": ["PINNED NOTICES. MOST ARE ABOUT A MISSING CHEESE."], "errands": ["goblinCull"] }
+  {
+   "id": "tam",
+   "name": "OLD TAM",
+   "x": 18,
+   "y": 33,
+   "look": "tam",
+   "lines": [
+    "NICE DAY FOR IT. FOR WHAT, I COULDN'T SAY."
+   ],
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.8
+   },
+   "errands": [
+    "biscuit"
+   ]
+  },
+  {
+   "id": "ada",
+   "name": "WIDOW ADA",
+   "x": 11,
+   "y": 33,
+   "look": "ada",
+   "lines": [
+    "MIND THE HERBS, DEAR."
+   ],
+   "voice": {
+    "pitch": 360,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "errands": [
+    "moonherb",
+    "lostRing"
+   ]
+  },
+  {
+   "id": "piet",
+   "name": "PIET",
+   "x": 16,
+   "y": 32,
+   "look": "piet",
+   "lines": [
+    "I PUSH CARTS. IT'S A LIVING."
+   ],
+   "voice": {
+    "pitch": 260,
+    "wave": "square",
+    "duty": 0.5
+   },
+   "errands": [
+    "delivery"
+   ]
+  },
+  {
+   "id": "hobb",
+   "name": "FARMER HOBB",
+   "x": 29,
+   "y": 63,
+   "look": "hobb",
+   "lines": [
+    "THE FEN STARTS PAST MY FENCE. I DON'T GO PAST MY FENCE."
+   ],
+   "voice": {
+    "pitch": 170,
+    "wave": "square",
+    "duty": 0.5
+   }
+  },
+  {
+   "id": "oswin",
+   "name": "SIR OSWIN",
+   "x": 44,
+   "y": 23,
+   "look": "oswin",
+   "ghost": true,
+   "lines": [
+    "THE WALLS REMEMBER. I REMEMBER LESS EACH YEAR."
+   ],
+   "voice": {
+    "pitch": 120,
+    "wave": "sine",
+    "speed": 0.7
+   },
+   "errands": [
+    "bells"
+   ]
+  },
+  {
+   "id": "quill",
+   "name": "QUILL",
+   "x": 94,
+   "y": 31,
+   "look": "quill",
+   "lines": [
+    "NEED ANYTHING WRITTEN? I DO SIGNS, LETTERS AND THREATENING NOTES."
+   ],
+   "voice": {
+    "pitch": 300,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "hidden": true
+  },
+  {
+   "id": "board",
+   "name": "RUMOUR BOARD",
+   "x": 246,
+   "y": 19,
+   "look": "board",
+   "lines": [
+    "PINNED NOTICES. MOST ARE ABOUT A MISSING CHEESE."
+   ],
+   "errands": [
+    "goblinCull",
+    "snagtooth"
+   ]
+  },
+  {
+   "id": "greta",
+   "name": "GRETA THE SMITH",
+   "x": 27,
+   "y": 32,
+   "look": "greta",
+   "requires": "smithRank",
+   "service": "smith",
+   "lines": [
+    "BACK AT THE ANVIL. FEELS LIKE BREATHING AGAIN.",
+    "BRING ORE AND I'LL MAKE THAT KIT SING."
+   ],
+   "voice": {
+    "pitch": 220,
+    "wave": "square",
+    "duty": 0.5
+   }
+  },
+  {
+   "id": "wick",
+   "name": "OLD WICK",
+   "x": 24,
+   "y": 35,
+   "look": "wick",
+   "requires": "wardBroken",
+   "lines": [
+    "EVERY LAMP IN BRIGHTWATER, LIT BY THESE HANDS. WELL. SOON."
+   ],
+   "voice": {
+    "pitch": 200,
+    "wave": "triangle",
+    "speed": 0.8
+   },
+   "errands": [
+    "lantern"
+   ]
+  },
+  {
+   "id": "orla",
+   "name": "MADAME ORLA",
+   "x": 9,
+   "y": 30,
+   "look": "orla",
+   "requires": "enchanter",
+   "service": "enchanter",
+   "lines": [
+    "GEMS REMEMBER. I SIMPLY ASK THEM NICELY.",
+    "SET A STONE, REMOVE A STONE - REMOVING IS FREE. I'M NOT A MONSTER."
+   ],
+   "voice": {
+    "pitch": 440,
+    "wave": "sine",
+    "speed": 0.9
+   }
+  }
  ]
 }

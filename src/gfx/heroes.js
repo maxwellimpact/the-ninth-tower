@@ -96,7 +96,13 @@ export const FOLK = {
   hobb: folk('hobb', 'brann', { body: 'apron_brown@2' }),
   oswin: folk('oswin', 'brann', { head: 'helm_great', body: 'plate_guard', weapon: 'sword_long' }),
   quill: folk('quill', 'pip', { head: 'hat_star@2', body: 'robe_scholar@5' }),
+  greta: folk('greta', 'brann', { head: 'kerchief@5', body: 'apron_brown', weapon: 'sword_iron@1' }),
+  wick: folk('wick', 'pip', { head: 'hat_apprentice@2', body: 'robe_apprentice@3' }),
+  orla: folk('orla', 'pip', { head: 'hat_star@4', body: 'robe_scholar@4' }),
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.
 export const HOLLOW = { ...composeHero('brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_iron@3', offhand: 'shield_round@4' }), id: 'hollow', name: 'Hollow Guard' };
+
+// Hex Warlock: one of Malgrim's cultists - shields its allies and calls hexlings.
+export const WARLOCK = { ...composeHero('pip', { head: 'hat_apprentice@5', body: 'robe_apprentice@5', weapon: 'staff_oak@5', offhand: null }), id: 'warlock', name: 'Hex Warlock' };

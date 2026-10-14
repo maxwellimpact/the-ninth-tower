@@ -21,11 +21,12 @@ export const statLine = (it) => Object.entries(it.stats).map(([k, v]) => (k === 
 export class Menu extends Phaser.Scene {
   constructor() { super('Menu'); }
 
-  create({ game }) {
+  create({ game, tab, craftTab }) {
     this.g = game;
     this.heroIdx = Math.max(0, game.party.indexOf(game.leader));
     this.slot = 'weapon';
-    this.tab = 'gear';
+    this.tab = tab || 'gear';
+    this.craftTab = craftTab;
     this.viewIdx = 0;
     this.selected = null;
     this.dyn = [];

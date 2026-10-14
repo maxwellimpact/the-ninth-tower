@@ -441,11 +441,14 @@ export class Game extends Phaser.Scene {
   }
 
   // ============================================================ enemy arrows
-  spawnEnemyArrow(from, to, dmg) {
+  // kind: arrow (default), orb (slow curse orb that slows), bolt (hex bolt)
+  spawnEnemyArrow(from, to, dmg, kind = 'arrow') {
     const [nx, ny] = norm(to.x - from.x, to.y - (from.y - 8));
-    const s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx));
-    audio.sfx('swing', { pitch: 1.6 });
-    (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * 210, vy: ny * 210, dmg, life: 1.1, from });
+    let s, sp = 210;
+    if (kind === 'orb') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(2).setDepth(TOP - 21); sp = 110; audio.sfx('frost', { pitch: 0.6 }); }
+    else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
+    else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
+    (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' ? 1.8 : 1.1, from, kind });
   }
 
   updateEnemyShots(dt) {
@@ -472,7 +475,11 @@ export class Game extends Phaser.Scene {
         if (p.life <= 0) { p.dead = true; p.s.destroy(); }
         continue;
       }
-      if (hit) { hit.damage(p.dmg, p.from); this.fx.burst('spark', p.x, p.y, 4); }
+      if (hit) {
+        hit.damage(p.dmg, p.from);
+        this.fx.burst(p.kind === 'arrow' || !p.kind ? 'spark' : 'curse', p.x, p.y, 4);
+        if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
+      }
       if (hit || wall || p.life <= 0) { p.dead = true; p.s.destroy(); }
     }
     this.enemyShots = this.enemyShots.filter((p) => !p.dead);
@@ -645,11 +652,12 @@ export class Game extends Phaser.Scene {
     const cam = this.cameras.main;
     const rt = this.darkRT;
     rt.clear();
-    rt.fill(0x05030a, 0.94);
+    const lantern = this.state.relics.includes('lantern');
+    rt.fill(0x05030a, lantern ? 0.86 : 0.94);
     const light = (wx, wy, s) => rt.erase('lightMask', Math.round(wx - cam.worldView.x - 64 * s), Math.round(wy - cam.worldView.y - 64 * s)).setScale?.(1);
     const stamp = (wx, wy, s) => { this.lightStamp ??= this.make.image({ key: 'lightMask', add: false }); this.lightStamp.setScale(s).setOrigin(0.5); rt.erase(this.lightStamp, Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
     void light;
-    stamp(L.x, L.y - 10, 1.25 + Math.sin(this.time.now / 180) * 0.03);
+    stamp(L.x, L.y - 10, (lantern ? 2.1 : 1.25) + Math.sin(this.time.now / 180) * 0.03); // the Lantern of Embers lights far more
     for (const h of this.party) if (h !== L) stamp(h.x, h.y - 10, 0.55);
     for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stamp(o.x, o.y - 6, 0.35);
     for (const i of this.interactables) if (i.needsLight) stamp(i.x, i.y - 10, 0.9);
@@ -743,11 +751,11 @@ export class Game extends Phaser.Scene {
     this.registry.set('gameSpeed', this.speed);
   }
 
-  openMenu() {
+  openMenu(opts = {}) {
     if (this.busy || this.ui?.dialogOpen || this.scene.isActive('Menu')) return;
     audio.sfx('click');
     this.scene.pause();
-    this.scene.launch('Menu', { game: this });
+    this.scene.launch('Menu', { game: this, ...opts });
   }
 
   openMap() {
@@ -1170,6 +1178,13 @@ export class Game extends Phaser.Scene {
     for (let i = 0; i < n; i++) this.dropCoin(e.x, e.y);
     for (const h of this.party) if (!h.downed) h.gainXp(xpFor(h.level, e.level, e.s.xp));
     this.state.stats.kills++;
+    if (e.s.gem && Math.random() < e.s.gem) {
+      // warlocks and witchlings sometimes carry a chipped gem
+      const kinds = ['ember', 'rime', 'storm', 'venom', 'sun', 'gloam', 'ruby', 'onyx', 'topaz', 'emerald'];
+      const g = `${kinds[Math.floor(Math.random() * kinds.length)]}1`;
+      this.state.gems[g] = (this.state.gems[g] || 0) + 1;
+      this.time.delayedCall(400, () => this.floatText(e.x, e.y - 40, 'A GEM!', 'fontGold'));
+    }
     const drop = rollGearDrop(this.state, e.level, e.elite);
     if (drop) this.dropLoot(drop, e.x, e.y);
     const got = {};

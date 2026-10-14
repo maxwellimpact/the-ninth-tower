@@ -221,3 +221,75 @@ export function golemPlate() {
   outline(c, 'ink');
   return c;
 }
+
+// --------------------------------------------------------- Thornback Boar
+const BOAR = { B: 'dirtD', b: 'woodD', L: 'dirt', T: 'bone', E: 'redL', S: 'grassD', s: 'leafD', N: 'skinD' };
+function boarFrame(step = 0, lower = 0) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const body = [
+    '......s.s.s.........',
+    '.....sSsSsSs........',
+    '...bBBBBBBBBBb......',
+    '..bBLLLBBBBBBBb.....',
+    '.bBLLBBBBBBBBBBbb...',
+    'TbBBBBBBBBBBBBBBb...',
+    'NNEBBBBBBBBBBBBbb...',
+    'TNNBBBBBBBBBBBbb....',
+    '.bbbBBBBBBBBBbb.....',
+  ];
+  grid(ctx, body, BOAR, 6, 13 + lower);
+  const legs = step % 2 ? ['.bb...bb...bb..bb.', '.b....b.....b..b..'] : ['..bb..bb..bb...bb.', '..b....b..b.....b.'];
+  grid(ctx, legs, BOAR, 7, 22);
+  outline(c, 'ink');
+  return c;
+}
+export function buildBoar() {
+  return {
+    idle: [boarFrame(0), boarFrame(0, 0)],
+    walk: [boarFrame(0), boarFrame(1)],
+    windup: [boarFrame(0, 1), boarFrame(1, 1)],
+    attack: [boarFrame(1), boarFrame(0)],
+    hurt: [boarFrame(0)],
+  };
+}
+
+// --------------------------------------------------------------- Pond Crab
+const CRAB = { R: 'redD', r: 'red', L: 'redL', W: 'white', E: 'ink', k: 'woodD' };
+function crabFrame(step = 0, claws = 0, flipped = false) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const shell = ['....rrrrrrrr....', '..rrLLrrrrrrrr..', '.rLLrrrrrrrrrrr.', 'rrrrrrrrrrrrrrrr', 'RrrrrrrrrrrrrrrR', '.RRRRRRRRRRRRRR.'];
+  const eyes = ['....W......W....', '....E......E....'];
+  if (!flipped) grid(ctx, eyes, CRAB, 8, 13);
+  grid(ctx, flipped ? [...shell].reverse() : shell, CRAB, 8, 15);
+  const cl = claws ? ['rr..', 'rLr.', '.rr.'] : ['.rr.', 'rLr.', 'rr..'];
+  grid(ctx, cl, CRAB, 4 - claws, 14); grid(ctx, cl, CRAB, 24 + claws, 14, true);
+  const legs = step % 2 ? ['.r.r.r....r.r.r.', 'r.r.r......r.r.r'] : ['r.r.r......r.r.r', '.r.r.r....r.r.r.'];
+  grid(ctx, legs, CRAB, 8, flipped ? 13 : 21);
+  outline(c, 'ink');
+  return c;
+}
+export function buildCrab() {
+  return {
+    idle: [crabFrame(0), crabFrame(0, 1)],
+    walk: [crabFrame(0), crabFrame(1)],
+    windup: [crabFrame(0, 2), crabFrame(0, 2)],
+    attack: [crabFrame(1, 0), crabFrame(0, 1)],
+    hurt: [crabFrame(0)],
+    flipped: [crabFrame(0, 0, true), crabFrame(1, 0, true)],
+  };
+}
+
+// ---------------------------------------------------------------- Hex Wisp
+function wispFrame(f) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const bob = [0, 1, 2, 1][f];
+  shadedBlob(ctx, 16, 14 + bob, 5, 5, ['purpD', 'purp', 'curseL', 'white']);
+  px(ctx, 14, 13 + bob, 'white', 1, 2); px(ctx, 17, 13 + bob, 'white', 1, 2);
+  for (let i = 0; i < 3; i++) px(ctx, 15 + ((f + i) % 3) - 1, 20 + bob + i * 2, i ? 'purp' : 'curseL');
+  outline(c, 'ink');
+  return c;
+}
+export function buildWisp() {
+  const fr = [0, 1, 2, 3].map(wispFrame);
+  return { idle: fr, walk: fr, windup: [fr[0], fr[2]], attack: [fr[1], fr[3]], hurt: [fr[0]] };
+}

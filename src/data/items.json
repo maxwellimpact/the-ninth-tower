@@ -514,5 +514,17 @@
    "def": 2
   },
   "desc": "FORTY YEARS ON ONE HAND. +25 HP, +2 DEF."
+ },
+ "thornring": {
+  "name": "THORNRING",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@2",
+  "stats": {
+   "atk": 3
+  },
+  "trait": "thorns",
+  "desc": "SNAGTOOTH'S KNUCKLE-RING. REFLECTS 10% OF MELEE DAMAGE. +3 ATK."
  }
 }
