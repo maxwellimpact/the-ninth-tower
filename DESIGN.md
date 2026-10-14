@@ -1154,6 +1154,43 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 | **Mirelle** | Frosthelm | *Thaw:* found frozen in Isolde's spire. Freeing her is part of the dungeon, and she joins for the boss |
 | **Gizmo** | Brightwater (2 stones) | *The Water Wheel:* gather parts from any two regions to fix the town's mill |
 
+### Errands (opt-in mini quests) **[LOCKED 2026-10-14]**
+Small, self-contained jobs from ordinary people. They're never required, but they're the main reason to talk to everyone and to poke into corners of the map.
+
+**Where you get them:**
+- **Townsfolk and travellers** marked with a small "!" speech bubble.
+- **The tavern rumour board** in Brightwater (Bruno) and in each region's village once it's freed.
+- **Chance meetings** on the road: a stranded merchant, a lost child.
+
+**How they work:**
+- **Accepted, never forced:** you can turn one down and come back later.
+- **The journal** keeps an Errands tab, with an optional map pin for the current step.
+- **One errand can be tracked on the HUD at a time** (a single line under the minimap).
+- **Short:** most take 3–10 minutes, so one fits in a phone session.
+
+**Errand types** (each region gets 6–8, about 35 in total):
+
+| Type | Example |
+|---|---|
+| **Find** | "My dog Biscuit ran into the woods." Follow barks and paw prints, then fight off the wolves that cornered him |
+| **Deliver / escort** | Take Marla's goods to the Mistfen camp. Thieves ambush the cart on the road; protect it |
+| **Hunt** | Cull the giant rats in the mill cellar; bring back a named pest |
+| **Gather** | The Alchemist needs 5 Ghostcaps that glow only near shadow veils |
+| **Rescue** | A merchant is cornered by goblins on the road (timed) |
+| **Riddle / puzzle** | A ghost asks you to ring the old bells in the right order |
+| **Chain** | 2–3 small errands for one character that end in a better reward or a small story beat |
+
+**Rewards:**
+- gold, materials and XP (counted in the C1 pacing as part of the "quests" share);
+- often a Fine or Rare item;
+- some give a **bonus skill point** (§16 Q2), a recipe or a charm;
+- some rescue **cursed townsfolk**, which feeds the Brightwater rebuild.
+
+**Errands vs. the other side content:**
+- **Hero quests** (recruits and personal quests) are longer and story-driven.
+- **Bounties** are just combat.
+- **Errands** are the everyday small stories that make the world feel lived in.
+
 ### Collectibles
 | Collectible | Count | Reward |
 |---|---|---|
@@ -1165,7 +1202,7 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 | **Sealed Vaults** | 5 | Uniques (need relics from other regions) |
 
 ### Side quests
-- **About 25 quests:**
+- **About 25 hero and town quests** (plus about 35 errands, above):
   - the 5 recruit quests,
   - a 2-step personal quest per hero (8 × 2; the last step gives the relic for that hero's Legendary),
   - and about 4 town quests (Lamplighter, Alchemist, Shattered Mirror, Hexling Whack championship).
@@ -1233,7 +1270,7 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 7. Refine to +10 over three Blacksmith ranks; never fails. Re-forge (late game) can re-roll a Rare's trait or its bonus stat. **[LOCKED 2026-10-14]**
 8. **Level cap 35**; the story ends around level 28, and the post-game takes you to 35. **[LOCKED 2026-10-14]**
    - XP curve and encounter density are set together so levels arrive every 5–13 minutes early and 20–33 minutes mid-to-late. Details in C1, "Pacing math"; it gets checked with a live minutes-per-level readout in the Wave 1 playtest.
-9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. *(recommended)*
+9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED 2026-10-14]** Also added: opt-in **errands** (small side quests from townsfolk and tavern rumours; see C10).
 10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. *(recommended)*
 11. Recommended: no cuts; build in three waves, each playtested:
     - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
