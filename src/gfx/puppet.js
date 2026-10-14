@@ -236,6 +236,8 @@ export function drawPuppet(def, view, pose = {}) {
     if (o) grid(ctx, o.rows[view], o.map, headX, headY + head.length - 8 - o.oy);
   };
 
+  const back = () => !pose.tool && def.back && def.back(ctx, view, by);
+  if (view !== 'up') back();
   const leftSideR = view === 'down'; // which arm is on screen-left
   if (view === 'up') {
     // facing away: weapons and arms partly behind the body
@@ -244,6 +246,7 @@ export function drawPuppet(def, view, pose = {}) {
     arm(ctx, shR.x, shR.y, hR.x, hR.y, armC, false);
     arm(ctx, shL.x, shL.y, hL.x, hL.y, armC, true);
     torsoGrid(ctx, torso, torsoMap, torsoX, torsoY, pose.sway || 0, def.swayFrom ?? 99);
+    back();
     drawHead();
     offhand();
   } else if (view === 'down') {

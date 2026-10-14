@@ -363,12 +363,23 @@ function orbDraw() {
 
 // Wren's quiver rides on her back: arrows show over the shoulder.
 const QUIVERS = { basic: { q: 'leather', Q: 'leatherD', f: 'white', r: 'red' }, fine: { q: 'leaf', Q: 'leafD', f: 'white', r: 'gold' } };
+// Slung diagonally across the back: top at one shoulder, bottom at the
+// opposite hip, fletching poking up past the shoulder. `by` is the body bob.
 function quiverDraw(map) {
-  return (ctx, view) => {
-    const rows = ['f.r.f', 'r.f.r', 'qqqqq', 'qQqQq', 'qQqQq', 'qQqQq', 'qqqqq'];
-    if (view === 'up') grid(ctx, rows, map, 25, 15);
-    else if (view === 'side') grid(ctx, rows, map, 17, 15);
-    else { px(ctx, 21, 13, map.f); px(ctx, 23, 12, map.r); px(ctx, 25, 13, map.f); }
+  return (ctx, view, by = 0) => {
+    // [top x, top y, bottom x, bottom y] of the quiver's spine
+    const [x0, y0, x1, y1] = view === 'up' ? [28, 18, 21, 30] : view === 'side' ? [19, 18, 22, 30] : [29, 18, 23, 30];
+    const n = 12;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, x = Math.round(x0 + (x1 - x0) * t), y = Math.round(y0 + by + (y1 - y0) * t);
+      px(ctx, x - 1, y, map.Q); px(ctx, x, y, map.q); px(ctx, x + 1, y, i % 4 === 0 ? map.Q : map.q);
+    }
+    // arrows: shafts and fletching above the shoulder
+    const dx = Math.sign(x0 - x1);
+    for (let k = -1; k <= 1; k++) {
+      const ax = x0 + k + dx, ay = y0 + by - 2 - (k === 0 ? 1 : 0);
+      px(ctx, ax, ay + 1, 'wood'); px(ctx, ax, ay, k === 0 ? map.r : map.f); px(ctx, ax + dx, ay - 1, k === 0 ? map.r : map.f);
+    }
   };
 }
 
@@ -383,8 +394,8 @@ const OFFHAND = {
   parry_steel: { dagger: WEAPON.dagger_steel.style },
   parry_kris: { dagger: WEAPON.dagger_kris.style },
   parry_fang: { dagger: WEAPON.dagger_fang.style },
-  quiver_basic: { draw: quiverDraw(QUIVERS.basic), quiver: QUIVERS.basic },
-  quiver_fine: { draw: quiverDraw(QUIVERS.fine), quiver: QUIVERS.fine },
+  quiver_basic: { back: quiverDraw(QUIVERS.basic), quiver: QUIVERS.basic },
+  quiver_fine: { back: quiverDraw(QUIVERS.fine), quiver: QUIVERS.fine },
   hatchet_plain: { weaponL: { kind: 'axe', style: { len: 7 } } },
   hatchet_bearded: { weaponL: { kind: 'axe', style: { len: 7, bearded: true } } },
 };
@@ -433,7 +444,7 @@ export function getLook(slot, lookId) {
   } else if (base && slot === 'offhand') {
     if (base.dagger) out = { dagger: mapObj({ ...WEAPON_DEFAULTS.dagger, ...base.dagger }, f) };
     else if (base.weaponL) out = { weaponL: { kind: base.weaponL.kind, style: mapObj({ ...WEAPON_DEFAULTS[base.weaponL.kind], ...base.weaponL.style }, f) } };
-    else if (base.quiver) { const q = mapObj(base.quiver, f); out = { draw: quiverDraw(q), quiver: q }; }
+    else if (base.quiver) { const q = mapObj(base.quiver, f); out = { back: quiverDraw(q), quiver: q }; }
     else if (baseId.startsWith('shield')) {
       const sh = SHIELDS[baseId.split('_')[1]];
       const s2 = { ...sh, map: mapObj(sh.map, f) };
@@ -471,6 +482,7 @@ export function composeHero(heroId, equip, meta = {}) {
     weaponR: wpn ? { kind: wpn.kind, style: wpn.style } : null,
     weaponL: off && off.dagger ? { kind: 'dagger', style: off.dagger } : off?.weaponL || null,
     offhand: off && off.draw ? off.draw : null,
+    back: off?.back || null,
     idleAng: b.idleAng,
     idleAngL: b.idleAngL,
     attack: b.attack,

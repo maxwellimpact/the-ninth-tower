@@ -1373,7 +1373,10 @@
    "to": {
     "x": 288,
     "y": 55
-   }
+   },
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS DOWN"
   },
   {
    "id": "undercroftOut",
@@ -1403,7 +1406,10 @@
    "to": {
     "x": 287,
     "y": 122
-   }
+   },
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS DOWN"
   },
   {
    "id": "abbeyOut",

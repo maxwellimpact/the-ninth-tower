@@ -214,3 +214,23 @@ export function net() {
   for (let x = 2; x < 22; x += 3) for (let y = 1; y < 16; y++) px(ctx, x, y, 'dirtL');
   return c;
 }
+
+// A stairwell going down: stone rim, steps that sink into darkness.
+export function stairsDown() {
+  const [c, ctx] = makeCanvas(30, 28);
+  // rim
+  px(ctx, 1, 2, 'slate', 28, 24); px(ctx, 2, 3, 'stone', 26, 22);
+  // the shaft: each step a little lower, narrower and darker
+  const steps = ['bone', 'mist', 'stone', 'slate', 'night', 'ink', 'ink'];
+  steps.forEach((col, i) => {
+    const y = 5 + i * 3, inset = 4 + Math.floor(i / 2);
+    px(ctx, inset, y, col, 30 - inset * 2, 3);
+    if (i < 4) px(ctx, inset, y + 2, 'night', 30 - inset * 2, 1); // step edge shadow
+  });
+  // side walls of the shaft
+  for (let y = 5; y < 26; y++) { const i = Math.floor((y - 5) / 3), inset = 4 + Math.floor(i / 2); px(ctx, inset - 1, y, 'night'); px(ctx, 30 - inset, y, 'night'); }
+  // lintel stones on the rim
+  px(ctx, 1, 1, 'mist', 28, 2); px(ctx, 1, 1, 'bone', 28, 1);
+  outline(c, 'ink');
+  return c;
+}

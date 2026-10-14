@@ -239,7 +239,8 @@ export class UI extends Phaser.Scene {
     const it = items[n.id];
     const r = RARITY[it.rarity];
     this.loot.removeAll(true);
-    const W = this.W, w = 184, h = 54, x = Math.round((W - w) / 2), y = 66;
+    if (this.g.combatHold > 0) { this.smallLoot(n, it, r); return; }
+    const W = this.W, w = Math.min(184, W - 12), h = 54, x = Math.round((W - w) / 2), y = 66;
     const g = this.add.graphics();
     panel(g, x, y, w, h, C.night, r.col);
     g.fillStyle(C.ink).fillRect(x + 6, y + 9, 36, 36);
@@ -253,6 +254,21 @@ export class UI extends Phaser.Scene {
     this.loot.setVisible(true).setAlpha(0);
     this.tweens.add({ targets: this.loot, alpha: 1, duration: 200 });
     this.tweens.add({ targets: this.loot, alpha: 0, duration: 300, delay: 2300, onComplete: () => { this.loot.setVisible(false); this.nextLoot(); } });
+  }
+
+  // Mid-fight pickups: a small line on the right under the minimap, no card
+  // over the action. Stacks if several drop at once.
+  smallLoot(n, it, r) {
+    const right = this.W - 6 - (this.pad?.r || 0);
+    const y = this.mmY + this.MM.h + 26 + (this.smallLootN || 0) * 12;
+    this.smallLootN = (this.smallLootN || 0) + 1;
+    const img = this.add.image(right, y, itemTex(this, n.id)).setOrigin(1, 0.5).setScale(0.75).setDepth(40);
+    const t = this.add.bitmapText(right - 14, y - 3, 'fontPlain', fitString(`+ ${it.name}`, Math.min(130, this.W - 120))).setOrigin(1, 0).setTint(r.col).setDepth(40);
+    const objs = [img, t];
+    for (const o of objs) o.setAlpha(0);
+    this.tweens.add({ targets: objs, alpha: 1, duration: 150 });
+    this.tweens.add({ targets: objs, alpha: 0, delay: 1800, duration: 300, onComplete: () => { for (const o of objs) o.destroy(); this.smallLootN = Math.max(0, this.smallLootN - 1); } });
+    this.time.delayedCall(250, () => this.nextLoot());
   }
 
   // ---------------------------------------------------------- dialogue

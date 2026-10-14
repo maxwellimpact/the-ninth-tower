@@ -579,6 +579,13 @@ export class Game extends Phaser.Scene {
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
       const o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 16, kind: 'warp', warp: w, armed: false, interact: () => this.tryWarp(w) });
+      if (w.stairs) {
+        // a visible stairwell; you go down by tapping it, never by stumbling in
+        this.add.image(x, y + 8, 'stairsDown').setOrigin(0.5, 1).setDepth(-40);
+        o.label = this.add.bitmapText(x, y - 22, 'fontGold', w.label || 'STAIRS DOWN').setOrigin(0.5).setDepth(TOP).setAlpha(0);
+        o.labelArrow = this.add.bitmapText(x, y - 14, 'fontGold', 'V').setOrigin(0.5).setDepth(TOP).setAlpha(0);
+        this.tweens.add({ targets: o.labelArrow, y: y - 11, duration: 450, yoyo: true, repeat: -1 });
+      }
       if (w.exit && !w.door) o.needsLight = true;
     }
     // Brightwater buildings
@@ -1776,6 +1783,8 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: o.label, y: o.y - 37, duration: 500, yoyo: true, repeat: -1 });
       }
       const d = Math.hypot(L.x - o.x, L.y - o.y);
+      if (o.warp.stairs) { const a = d < 70 ? 1 : 0; o.label.setAlpha(a); o.labelArrow.setAlpha(a); }
+      if (o.warp.tap) continue; // stairs: tap to descend
       if (d > 30) o.armed = true;
       else if (d < 12 && o.armed) { o.armed = false; this.tryWarp(o.warp); return; }
     }
