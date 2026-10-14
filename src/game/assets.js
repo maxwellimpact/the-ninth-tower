@@ -2,7 +2,8 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK } from '../gfx/heroes.js';
+import * as Q from '../gfx/questart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
@@ -140,6 +141,20 @@ export const GROUPS = {
     ['light', (s) => s.textures.addCanvas('lightShaft', P.lightShaft())],
   ],
 };
+// errand townsfolk + props are small and needed across the Vale, so they ride with core
+GROUPS.core.push(
+  ...Object.entries(FOLK).map(([id, def]) => [`folk ${id}`, (s) => registerPuppet(s, id, def)]),
+  ['errand props', (s) => {
+    frames(s, 'dog', Q.dogFrames(), 4);
+    s.anims.create({ key: 'dog_sit', frames: [0, 1].map((i) => ({ key: 'dog', frame: `${i}` })), frameRate: 2, repeat: -1 });
+    s.anims.create({ key: 'dog_run', frames: [2, 3].map((i) => ({ key: 'dog', frame: `${i}` })), frameRate: 8, repeat: -1 });
+    frames(s, 'glint', Q.glintFrames(), 5);
+    s.textures.addCanvas('bell', Q.bell()); s.textures.addCanvas('bellRung', Q.bell(true));
+    frames(s, 'cart', Q.cartFrames(), 6);
+    s.textures.addCanvas('board', Q.noticeBoard());
+    s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
+  }],
+);
 
 // Yield between task slices. MessageChannel isn't clamped/throttled like
 // setTimeout, so background loading doesn't stall when the tab is hidden.

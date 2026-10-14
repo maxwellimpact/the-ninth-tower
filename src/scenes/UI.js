@@ -8,7 +8,7 @@ const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, go
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
-export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0 };
+export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0, quest: 0xffffff };
 
 export function panel(g, x, y, w, h, fill = C.night, edge = C.stone) {
   g.fillStyle(C.ink, 1).fillRect(x - 1, y - 1, w + 2, h + 2);
@@ -84,6 +84,10 @@ export class UI extends Phaser.Scene {
     this.dlg.add([this.dlgG, this.dlgPortrait, this.dlgName, this.dlgText, this.dlgMore]);
     this.tweens.add({ targets: this.dlgMore, alpha: 0.2, duration: 350, yoyo: true, repeat: -1 });
 
+    this.choiceObjs = [];
+    // errand tracker: one line under the minimap
+    this.trackTitle = this.add.bitmapText(0, 0, 'fontGold', '').setOrigin(1, 0);
+    this.trackTxt = this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(1, 0).setRightAlign();
     this.loot = this.add.container(0, 0).setVisible(false).setDepth(40);
     this.lootQueue = [];
 
@@ -188,6 +192,9 @@ export class UI extends Phaser.Scene {
     this.coin.setPosition(W - 84, 8 + T0);
     this.goldTxt.setPosition(W - 74, 9 + T0);
     this.toast.setPosition(W - 8, 72);
+    const tw = Math.max(this.MM.w + 30, Math.min(160, W - 100));
+    this.trackTitle.setPosition(W - 6, this.mmY + this.MM.h + 4);
+    this.trackTxt.setPosition(W - 6, this.mmY + this.MM.h + 13).setMaxWidth(tw);
     this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
     if (W < 360) this.hint.setVisible(false); // no room beside the combat grid on narrow phones
     this.bannerT.setPosition(W / 2, 40);
@@ -265,6 +272,8 @@ export class UI extends Phaser.Scene {
     this.dlgName.setText(L.who).setPosition(tx, y + 6);
     this.dlgText.setPosition(tx, y + 16).setMaxWidth(w - (tx - x) - 8).setText('');
     this.dlgMore.setPosition(x + w - 10, y + h - 10).setVisible(false);
+    this.clearChoices();
+    this.dlgBox = { x, y, w, h };
     this.full = L.text;
     this.shown = 0;
     this.typing = true;
@@ -283,11 +292,40 @@ export class UI extends Phaser.Scene {
     this.typing = false;
     this.typeEv?.remove();
     this.dlgText.setText(this.full);
+    const L = this.lines[this.lineI];
+    if (L.choices) { this.showChoices(L.choices); return; }
     this.dlgMore.setVisible(true);
   }
 
+  // Two-button choice under the dialogue box (accept / not now).
+  showChoices(choices) {
+    this.choosing = true;
+    const { x, y, w, h } = this.dlgBox;
+    let bx = x + w;
+    [...choices].reverse().forEach(([label, fn], i) => {
+      const bw = label.length * 5 + 12;
+      bx -= bw + 4;
+      const by = y + h + 3;
+      const g = this.add.graphics().setDepth(51);
+      panel(g, bx, by, bw, 15, i === choices.length - 1 ? 0x2f5d3a : C.night, i === choices.length - 1 ? 0x8cff8c : C.stone);
+      const t = this.add.bitmapText(bx + 6, by + 5, i === choices.length - 1 ? 'fontGold' : 'font', label).setDepth(52);
+      const z = this.add.zone(bx, by - 2, bw, 19).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(53);
+      z.on('pointerdown', () => {
+        this.tapUI();
+        this.clearChoices();
+        this.dialogOpen = false;
+        this.dlg.setVisible(false);
+        this.onDone = null;
+        fn();
+      });
+      this.choiceObjs.push(g, t, z);
+    });
+  }
+
+  clearChoices() { for (const o of this.choiceObjs) o.destroy(); this.choiceObjs = []; this.choosing = false; }
+
   advanceDialog() {
-    if (!this.dialogOpen) return;
+    if (!this.dialogOpen || this.choosing) return;
     if (this.typing) { this.finishLine(); return; }
     this.lineI++;
     if (this.lineI >= this.lines.length) {
@@ -326,6 +364,9 @@ export class UI extends Phaser.Scene {
       p.lv.setText(h.downed ? 'DOWN' : ready ? 'ULT!' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : ready ? 0xfff0a0 : 0xffffff);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
     }
+    const tq = game.quests, tid = tq?.state.tracked, tstep = tid && tq.step(tid);
+    this.trackTitle.setText(tstep ? tq.title(tid) : '');
+    this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
     const L = game.leader;
     this.skillBtns.forEach((b, i) => {
       const s = L.skills[i];
@@ -398,7 +439,14 @@ export class UI extends Phaser.Scene {
     this.mmImg.setCrop(ox, oy, tw, th).setPosition(this.mmX - ox * s, this.mmY - oy * s);
     const g = this.mmG.clear();
     for (const m of this.g.mapMarkers()) {
-      const x = (m.x - ox) * s, y = (m.y - oy) * s;
+      let x = (m.x - ox) * s, y = (m.y - oy) * s;
+      if (m.kind === 'quest') {
+        // errand pin: clamps to the minimap edge so it points the way
+        x = Phaser.Math.Clamp(x, 1, w - 3); y = Phaser.Math.Clamp(y, 1, h - 3);
+        g.fillStyle(0x1a1423).fillRect(this.mmX + x - 1, this.mmY + y - 1, 4, 4);
+        g.fillStyle(0xffffff).fillRect(this.mmX + x, this.mmY + y, 2, 2);
+        continue;
+      }
       if (x < 0 || y < 0 || x >= w - 1 || y >= h - 1) continue;
       g.fillStyle(MARK[m.kind]).fillRect(this.mmX + x, this.mmY + y, 2, 2);
     }

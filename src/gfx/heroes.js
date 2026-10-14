@@ -86,3 +86,14 @@ export const ARCHER = {
 export const KNIGHT = { ...composeHero('brann', { head: 'helm_hex', body: 'plate_hex', weapon: 'sword_dark', offhand: 'shield_hex' }), id: 'knight', name: 'Hex Knight' };
 export const MARLA = { ...composeHero('pip', { head: 'kerchief', body: 'apron_blue', weapon: 'none', offhand: null }), id: 'marla', name: 'Marla' };
 export const BRUNO = { ...composeHero('brann', { head: null, body: 'apron_brown', weapon: 'none', offhand: null }), id: 'bruno', name: 'Bruno' };
+
+// Errand townsfolk: the hero puppet bases dressed in tier-recoloured looks.
+const folk = (id, base, eq) => ({ ...composeHero(base, { weapon: 'none', offhand: null, head: null, ...eq }), id, name: id });
+export const FOLK = {
+  tam: folk('tam', 'brann', { body: 'apron_brown@3' }),
+  ada: folk('ada', 'pip', { head: 'kerchief@4', body: 'apron_blue@2' }),
+  piet: folk('piet', 'sable', { head: 'bandana_red@3', body: 'jacket_leather@2' }),
+  hobb: folk('hobb', 'brann', { body: 'apron_brown@2' }),
+  oswin: folk('oswin', 'brann', { head: 'helm_great', body: 'plate_guard', weapon: 'sword_long' }),
+  quill: folk('quill', 'pip', { head: 'hat_star@2', body: 'robe_scholar@5' }),
+};

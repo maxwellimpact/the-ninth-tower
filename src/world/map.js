@@ -4,6 +4,7 @@
 // Pure (no DOM) so the terrain worker can rebuild the identical world.
 import { hash, vnoise } from '../gfx/pixel.js';
 import W from '../data/world.json';
+import QD from '../data/quests.json';
 
 export const TILE = 16;
 export const MAP_W = W.size.w;
@@ -193,6 +194,14 @@ export function buildWorld() {
   for (const b of W.breakables || []) reserve(b.x, b.y, 3);
   for (const b of W.buildings || []) reserve(b.x, b.y + 2, 4);
   for (const w of W.warps || []) reserve(w.x, w.y, 2.5);
+  // errand NPCs, props and routes stay clear of trees
+  for (const n of QD.npcs) reserve(n.x, n.y, 2.5);
+  for (const e of Object.values(QD.errands)) for (const st of e.steps) {
+    if (st.at) reserve(st.at[0], st.at[1], 4);
+    if (st.x !== undefined) reserve(st.x, st.y, 2);
+    for (const b of st.bells || []) reserve(b[0], b[1], 2);
+    for (const pt of st.path || []) reserve(pt[0], pt[1], 2.5);
+  }
   reserve(W.start.x, W.start.y, 4); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); reserve(LANDMARKS.ward.x, LANDMARKS.ward.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);

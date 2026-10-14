@@ -1,0 +1,393 @@
+// Errands: small opt-in quests from townsfolk and the rumour board (DESIGN
+// C10). Data lives in quests.json; progress is saved as
+//   state.quests[id] = { s: stepIndex, n: counter, done }  and state.tracked.
+// Step types: talk, kill, gather, spawn (fight at a spot), find (interact with
+// something placed in the world), escort (protect a cart), bells (ring in
+// order), defend (keep an NPC alive until the attackers are gone).
+import Q from '../data/quests.json';
+import items from '../data/items.json';
+import { audio } from '../audio/synth.js';
+import { makeItem, tierForLevel } from './itemgen.js';
+import { addMats, addPotions, CRAFT } from './state.js';
+
+const TILE = 16;
+const px = (t) => t * TILE + 8;
+export const ERRANDS = Q.errands;
+
+export class QuestManager {
+  constructor(scene) {
+    this.sc = scene;
+    const st = scene.state;
+    st.quests ??= {};
+    st.tracked ??= null;
+    this.npcs = [];
+    this.live = {}; // runtime objects per active errand step
+    for (const n of Q.npcs) this.addNpc(n);
+    for (const id of Object.keys(st.quests)) if (!st.quests[id].done) this.enterStep(id);
+  }
+
+  get state() { return this.sc.state; }
+  q(id) { return this.state.quests[id]; }
+  step(id) { const q = this.q(id); return q && !q.done ? ERRANDS[id].steps[q.s] : null; }
+  active() { return Object.keys(this.state.quests).filter((id) => !this.q(id).done); }
+
+  // ------------------------------------------------------------------ NPCs
+  addNpc(n) {
+    const sc = this.sc;
+    const npc = { ...n, px: px(n.x), py: px(n.y) };
+    if (n.look === 'board') {
+      npc.s = sc.add.image(npc.px, npc.py + 6, 'board').setOrigin(0.5, 1).setDepth(npc.py);
+      sc.nav.block(n.x, n.y);
+    } else {
+      npc.s = sc.add.sprite(npc.px, npc.py, n.look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${n.look}_idle_down`).setDepth(npc.py);
+      if (n.ghost) npc.s.setTint(0x9fd8ff).setAlpha(0.65);
+      npc.shadow = sc.add.image(npc.px + 1, npc.py + 1, 'shadow').setAlpha(n.ghost ? 0.08 : 0.2).setDepth(-4);
+    }
+    npc.mark = sc.add.image(npc.px, npc.py - 30, 'markQ').setDepth(100000 - 40).setVisible(false);
+    sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', interact: () => this.talk(npc) });
+    if (n.hidden) this.setNpcVisible(npc, false);
+    this.npcs.push(npc);
+  }
+
+  npc(id) { return this.npcs.find((n) => n.id === id); }
+
+  setNpcVisible(npc, v) {
+    npc.s.setVisible(v); npc.shadow?.setVisible(v);
+    npc.o.hidden = !v;
+    npc.hiddenNow = !v;
+  }
+
+  // errand this NPC can offer right now
+  offerFor(npc) {
+    return (npc.errands || []).find((id) => {
+      const e = ERRANDS[id];
+      return !this.q(id) && (!e.requires || this.q(e.requires)?.done);
+    });
+  }
+
+  // an active step that wants to talk to this NPC
+  turnInFor(npc) { return this.active().find((id) => { const s = this.step(id); return s?.type === 'talk' && s.npc === npc.id; }); }
+
+  line(npc, text) { return { who: npc.name, voice: npc.voice, text }; }
+
+  talk(npc) {
+    const sc = this.sc;
+    const L = sc.leader;
+    L.face(npc.px - L.x, npc.py - L.y);
+    const tid = this.turnInFor(npc);
+    if (tid) { this.advance(tid, npc); return; }
+    const oid = this.offerFor(npc);
+    if (oid) { this.offer(oid, npc); return; }
+    // an errand of theirs is in progress: remind; otherwise small talk
+    const doing = (npc.errands || []).find((id) => this.q(id) && !this.q(id).done);
+    const text = doing ? `${ERRANDS[doing].title}: ${this.step(doing).text}.` : npc.lines[Math.floor(Math.random() * npc.lines.length)];
+    sc.events.emit('dialogue', [this.line(npc, text)]);
+  }
+
+  offer(id, npc) {
+    const e = ERRANDS[id];
+    const lines = e.offer.map((t) => this.line(npc, t));
+    lines[lines.length - 1].choices = [[e.accept, () => this.start(id)], ['NOT NOW', () => {}]];
+    this.sc.events.emit('dialogue', lines);
+  }
+
+  start(id) {
+    this.state.quests[id] = { s: 0, n: 0, done: false };
+    this.state.tracked = id;
+    audio.sfx('equip');
+    this.sc.events.emit('banner', 'ERRAND ACCEPTED', ERRANDS[id].title);
+    this.enterStep(id);
+    this.sc.autosave('errand');
+  }
+
+  // ---------------------------------------------------------------- steps
+  // Build whatever the current step needs in the world.
+  enterStep(id) {
+    this.clearLive(id);
+    const s = this.step(id);
+    if (!s) return;
+    const sc = this.sc;
+    const live = (this.live[id] = { objs: [] });
+    const giver = this.npc(ERRANDS[id].giver);
+    if (giver?.hiddenNow) this.setNpcVisible(giver, true);
+    if (s.prop) live.prop = this.placeProp(s.prop, live);
+    if (s.type === 'find') {
+      const prev = this.live[`${id}:prop`];
+      const spr = prev || this.placeProp({ kind: s.kind, x: s.x, y: s.y }, live);
+      live.find = sc.addInteractable({ x: px(s.x), y: px(s.y), reach: 24, standOff: 12, h: 12, kind: 'find', interact: () => {
+        sc.floatText(px(s.x), px(s.y) - 24, s.say, 'fontPlain');
+        audio.sfx(s.kind === 'dog' ? 'blip' : 'coin');
+        if (s.kind === 'dog' && spr) { spr.play('dog_run').setFlipX(true); sc.tweens.add({ targets: spr, x: spr.x + 140, alpha: 0, duration: 1600, onComplete: () => spr.destroy() }); }
+        else spr?.destroy();
+        delete this.live[`${id}:prop`];
+        this.advance(id);
+      } });
+    }
+    if (s.type === 'bells') {
+      live.rung = [];
+      live.bells = s.bells.map(([x, y, tone]) => {
+        const img = sc.add.image(px(x), px(y) + 6, 'bell').setOrigin(0.5, 1).setDepth(px(y));
+        live.objs.push(img);
+        const o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'bell', interact: () => this.ring(id, tone, img) });
+        live.objs.push({ destroy: () => sc.removeInteractable(o) });
+        return { x, y, tone, img };
+      });
+    }
+    if (s.type === 'escort') this.startEscort(id, s, live);
+    if (s.type === 'defend') this.startDefend(id, s, live);
+  }
+
+  placeProp(p, live) {
+    const sc = this.sc;
+    let spr;
+    if (p.kind === 'dog') spr = sc.add.sprite(px(p.x), px(p.y) + 4, 'dog', '0').setOrigin(0.5, 1).play('dog_sit').setDepth(px(p.y));
+    else spr = sc.add.sprite(px(p.x), px(p.y), 'glint', '0').play('glint').setDepth(px(p.y) + 2);
+    live.objs.push(spr);
+    return spr;
+  }
+
+  clearLive(id) {
+    const live = this.live[id];
+    if (!live) return;
+    // keep a placed prop alive into the next step (the dog you then call over)
+    if (live.prop?.active) { this.live[`${id}:prop`] = live.prop; live.objs = live.objs.filter((o) => o !== live.prop); }
+    for (const o of live.objs) o.destroy?.();
+    if (live.find) this.sc.removeInteractable(live.find);
+    if (live.cart) { live.cart.alive = false; this.sc.allies = this.sc.allies.filter((a) => a !== live.cart); }
+    if (live.guard) { live.guard.alive = false; this.sc.allies = this.sc.allies.filter((a) => a !== live.guard); }
+    delete this.live[id];
+  }
+
+  advance(id, npc = null) {
+    const q = this.q(id), e = ERRANDS[id], s = this.step(id);
+    if (!s) return;
+    if (s.take) {
+      if (!Object.entries(s.take).every(([k, n]) => (this.state.materials[k] || 0) >= n)) {
+        this.sc.events.emit('dialogue', [this.line(npc, `YOU'LL NEED ${Object.entries(s.take).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`).join(', ')} FIRST.`)]);
+        return;
+      }
+      for (const [k, n] of Object.entries(s.take)) this.state.materials[k] -= n;
+    }
+    q.s++; q.n = 0;
+    if (q.s >= e.steps.length) { this.complete(id, npc); return; }
+    audio.sfx('click');
+    this.enterStep(id);
+    this.sc.autosave('errand');
+  }
+
+  complete(id, npc) {
+    const e = ERRANDS[id], q = this.q(id), sc = this.sc;
+    q.done = true;
+    this.clearLive(id);
+    if (this.state.tracked === id) this.state.tracked = this.active()[0] || null;
+    const finish = () => {
+      const got = this.reward(e.reward);
+      audio.sfx('levelUp');
+      sc.events.emit('banner', 'ERRAND COMPLETE', got);
+      sc.autosave('errand');
+    };
+    const who = npc || this.npc(e.giver);
+    if (e.thanks && who) sc.events.emit('dialogue', e.thanks.map((t) => this.line(who, t)), finish);
+    else finish();
+  }
+
+  reward(r = {}) {
+    const st = this.state, sc = this.sc, out = [];
+    if (r.gold) { st.gold += r.gold; out.push(`${r.gold} GOLD`); }
+    if (r.xp) { for (const h of sc.party) if (!h.downed) h.gainXp(r.xp); out.push(`${r.xp} XP`); }
+    if (r.mats) addMats(st, r.mats);
+    if (r.potions) { addPotions(st, r.potions); out.push(Object.entries(r.potions).map(([k, n]) => `${n} ${k.toUpperCase()}${n > 1 ? 'S' : ''}`).join(' ')); }
+    if (r.sp) { for (const id of st.recruited) st.heroes[id].sp = (st.heroes[id].sp || 0) + r.sp; out.push(`+${r.sp} SKILL POINT`); }
+    const give = [];
+    if (r.item) give.push(r.item);
+    if (r.gear) {
+      const lv = Math.round(sc.party.reduce((a, h) => a + h.level, 0) / sc.party.length);
+      const hero = st.recruited[Math.floor(Math.random() * st.recruited.length)];
+      const slot = r.gear.slot || ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)];
+      give.push(makeItem(hero, slot, tierForLevel(lv), r.gear.rarity || 'fine'));
+    }
+    if (give.length) { st.inventory.push(...give); sc.events.emit('loot', { ids: give }); }
+    sc.events.emit('party');
+    return out.join('  ');
+  }
+
+  // ------------------------------------------------------------ world hooks
+  onKill(e) {
+    for (const id of this.active()) {
+      const s = this.step(id);
+      if (s?.type === 'kill' && (!s.kind || s.kind === e.kind)) { this.q(id).n++; if (this.q(id).n >= s.count) this.advance(id); }
+    }
+  }
+
+  onGather(mat, n = 1) {
+    for (const id of this.active()) {
+      const s = this.step(id);
+      if (s?.type === 'gather' && s.mat === mat) { this.q(id).n += n; if (this.q(id).n >= s.count) this.advance(id); }
+    }
+  }
+
+  ring(id, tone, img) {
+    const live = this.live[id], s = this.step(id);
+    if (!live || s?.type !== 'bells') return;
+    const pitch = { low: 0.6, mid: 0.85, high: 1.2 }[tone];
+    audio.sfx('bellTone', { pitch });
+    img.setTexture('bellRung');
+    this.sc.tweens.add({ targets: img, angle: { from: -12, to: 12 }, duration: 120, yoyo: true, repeat: 2, onComplete: () => img.setAngle(0) });
+    live.rung.push(tone);
+    const ok = s.order.slice(0, live.rung.length).every((t, i) => t === live.rung[i]);
+    if (!ok) {
+      live.rung = [];
+      this.sc.time.delayedCall(500, () => { for (const b of live.bells) b.img.setTexture('bell'); this.sc.floatText(img.x, img.y - 30, 'THE CHIME FALLS FLAT...', 'fontPlain'); });
+      return;
+    }
+    if (live.rung.length === s.order.length) this.sc.time.delayedCall(600, () => this.advance(id));
+  }
+
+  // escort: the cart rolls along its path while the party is close; goblins
+  // ambush at set points and go for the cart. If it breaks, the errand resets.
+  startEscort(id, s, live) {
+    const sc = this.sc;
+    const p0 = s.path[0];
+    const spr = sc.add.sprite(px(p0[0]), px(p0[1]), 'cart', '0').setOrigin(0.5, 0.85).setDepth(px(p0[1]));
+    live.objs.push(spr);
+    const cart = { x: px(p0[0]), y: px(p0[1]), r: 8, alive: true, team: 'party', hp: s.hp, maxHp: s.hp, ally: true, idx: 1, spr,
+      damage: (amt) => {
+        cart.hp -= amt; spr.setTintFill(0xffffff); sc.time.delayedCall(70, () => spr.clearTint());
+        sc.floatText(cart.x, cart.y - 20, `${Math.round(amt)}`, 'font', 0xff6a6a);
+        if (cart.hp <= 0 && cart.alive) this.failEscort(id);
+        return amt;
+      } };
+    live.cart = cart;
+    live.ambushed = new Set();
+    live.bar = sc.add.graphics().setDepth(100000 - 41);
+    live.objs.push(live.bar);
+    (sc.allies ??= []).push(cart);
+  }
+
+  failEscort(id) {
+    const sc = this.sc;
+    sc.events.emit('banner', 'THE CART IS WRECKED', 'TALK TO PIET TO TRY AGAIN');
+    this.q(id).s = 0;
+    for (const e of sc.enemies) if (e.alive && e.questSpawn === id) { e.alive = false; e.clearZone(); e.destroy(); }
+    sc.enemies = sc.enemies.filter((e) => e.alive);
+    this.clearLive(id);
+    delete this.state.quests[id]; // offered again from the start
+    sc.autosave('errand');
+  }
+
+  startDefend(id, s, live) {
+    const sc = this.sc;
+    const npc = this.npc(s.npc);
+    this.setNpcVisible(npc, true);
+    const guard = { x: npc.px, y: npc.py, r: 6, alive: true, team: 'party', hp: s.hp, maxHp: s.hp, ally: true,
+      damage: (amt) => {
+        guard.hp -= amt; npc.s.setTintFill(0xffffff); sc.time.delayedCall(70, () => npc.s.clearTint());
+        sc.floatText(guard.x, guard.y - 24, `${Math.round(amt)}`, 'font', 0xff6a6a);
+        if (guard.hp <= 0 && guard.alive) {
+          guard.alive = false;
+          sc.events.emit('banner', 'QUILL FLED', 'THE GOBLINS GOT THE INKWELLS');
+          this.clearLive(id);
+          delete this.state.quests[id];
+          this.setNpcVisible(npc, false);
+        }
+        return amt;
+      } };
+    live.guard = guard;
+    (sc.allies ??= []).push(guard);
+    live.units = s.units.map(([k, x, y]) => { const e = sc.spawnEnemy(k, px(x), px(y), false); e.questSpawn = id; e.setTaunt(guard, 999); return e; });
+    live.bar = sc.add.graphics().setDepth(100000 - 41);
+    live.objs.push(live.bar);
+  }
+
+  update(dt) {
+    const sc = this.sc, L = sc.leader;
+    // markers: "!" when an errand is on offer, "?" when they're waiting on you
+    for (const n of this.npcs) {
+      if (n.hiddenNow) { n.mark.setVisible(false); continue; }
+      const ready = this.turnInFor(n), offer = this.offerFor(n);
+      n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');
+      if (!n.ghost && n.s.anims) {
+        const d = Math.hypot(L.x - n.px, L.y - n.py);
+        if (d < 60) { const dx = L.x - n.px, dy = L.y - n.py; const v = Math.abs(dx) > Math.abs(dy) ? 'side' : dy > 0 ? 'down' : 'up'; const key = `${n.look}_idle_${v}`; if (n.s.anims.currentAnim?.key !== key) n.s.play(key); n.s.setFlipX(v === 'side' && dx < 0); }
+      }
+    }
+    // chance meetings
+    for (const [id, e] of Object.entries(ERRANDS)) {
+      if (!e.trigger || this.q(id) || sc.busy || sc.ui?.dialogOpen) continue;
+      const [tx, ty, r] = e.trigger;
+      if (Math.hypot(L.x - px(tx), L.y - px(ty)) < r * TILE) {
+        const npc = this.npc(e.giver);
+        this.setNpcVisible(npc, true);
+        this.start(id);
+        sc.events.emit('dialogue', e.offer.map((t) => this.line(npc, t)));
+      }
+    }
+    for (const id of this.active()) {
+      const s = this.step(id), live = this.live[id];
+      if (!s || !live) continue;
+      if (s.type === 'spawn') {
+        if (!live.spawned && Math.hypot(L.x - px(s.at[0]), L.y - px(s.at[1])) < s.r * TILE) {
+          live.spawned = s.units.map(([k, x, y]) => { const e = sc.spawnEnemy(k, px(x), px(y), true); e.questSpawn = id; return e; });
+          if (live.prop) sc.bark({ x: live.prop.x, y: live.prop.y + 6, def: { voice: { pitch: 600, wave: 'square', duty: 0.25 } } }, 'WOOF! WOOF!');
+        }
+        if (live.spawned && live.spawned.every((e) => !e.alive)) this.advance(id);
+      }
+      if (s.type === 'escort' && live.cart) {
+        const c = live.cart, wp = s.path[c.idx];
+        const near = sc.party.some((h) => !h.downed && Math.hypot(h.x - c.x, h.y - c.y) < 70);
+        const fighting = sc.enemies.some((e) => e.alive && e.questSpawn === id);
+        if (wp && near && !fighting) {
+          const tx = px(wp[0]), ty = px(wp[1]);
+          const d = Math.hypot(tx - c.x, ty - c.y), sp = 26 * dt;
+          if (d <= sp) { c.idx++; } else { c.x += ((tx - c.x) / d) * sp; c.y += ((ty - c.y) / d) * sp; c.spr.setFlipX(tx < c.x); }
+          if (!c.spr.anims.isPlaying) c.spr.play('cart');
+        } else c.spr.anims.stop();
+        c.spr.setPosition(Math.round(c.x), Math.round(c.y)).setDepth(c.y);
+        for (const a of s.ambush) {
+          if (c.idx >= a.at && !live.ambushed.has(a.at)) {
+            live.ambushed.add(a.at);
+            sc.bark(sc.leader, 'AMBUSH! PROTECT THE CART!');
+            for (const [k, x, y] of a.units) { const e = sc.spawnEnemy(k, px(x), px(y), false); e.questSpawn = id; e.setTaunt(c, 6); e.engaged = true; }
+          }
+        }
+        live.bar.clear().fillStyle(0x1a1423).fillRect(c.x - 13, c.y - 22, 26, 4).fillStyle(0x6fd3a0).fillRect(c.x - 12, c.y - 21, Math.round(24 * Math.max(0, c.hp) / c.maxHp), 2);
+        if (c.idx >= s.path.length && !fighting) { sc.floatText(c.x, c.y - 26, 'MADE IT!', 'fontGold'); this.advance(id); }
+      }
+      if (s.type === 'defend' && live.guard) {
+        const gd = live.guard;
+        live.bar.clear().fillStyle(0x1a1423).fillRect(gd.x - 13, gd.y - 30, 26, 4).fillStyle(0xf2c14e).fillRect(gd.x - 12, gd.y - 29, Math.round(24 * Math.max(0, gd.hp) / gd.maxHp), 2);
+        if (live.units.every((e) => !e.alive)) this.advance(id);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- UI
+  // Where the tracked errand wants you to go (tile coords) for map pins.
+  pin(id = this.state.tracked) {
+    const s = id && this.step(id);
+    if (!s) return null;
+    if (s.type === 'talk') { const n = this.npc(s.npc); return n ? { x: n.x, y: n.y } : null; }
+    if (s.type === 'spawn') return { x: s.at[0], y: s.at[1] };
+    if (s.type === 'find') return { x: s.x, y: s.y };
+    if (s.type === 'escort') { const c = this.live[id]?.cart; return c ? { x: Math.floor(c.x / TILE), y: Math.floor(c.y / TILE) } : { x: s.path[0][0], y: s.path[0][1] }; }
+    if (s.type === 'bells') return { x: s.bells[0][0], y: s.bells[0][1] };
+    if (s.type === 'defend') { const n = this.npc(s.npc); return { x: n.x, y: n.y }; }
+    return null;
+  }
+
+  stepText(id) {
+    const s = this.step(id);
+    if (!s) return 'COMPLETE';
+    const n = this.q(id).n;
+    return s.count ? `${s.text} (${n}/${s.count})` : s.text;
+  }
+
+  title(id) { return ERRANDS[id]?.title || ''; }
+
+  trackerText() {
+    const id = this.state.tracked;
+    if (!id || !this.step(id)) return '';
+    return `${ERRANDS[id].title}: ${this.stepText(id)}`;
+  }
+}

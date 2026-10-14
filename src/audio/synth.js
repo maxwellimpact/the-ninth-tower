@@ -275,6 +275,9 @@ export const SFX = {
     a.tone({ type: 'pulse', duty: 0.125, freq: 300, freq2: 1800, dur: 0.16, vol: 0.12 });
     a.noiseHit({ dur: 0.3, vol: 0.14, type: 'highpass', f0: 2000, f1: 6000, q: 0.8 });
   },
+  bellTone(a, { pitch = 1 } = {}) {
+    a.bell({ freq: 440 * pitch, vol: 0.18, dur: 1.6, send: 0.6 });
+  },
   zap(a) {
     // storm: crackling square burst with a jittery pitch
     for (let i = 0; i < 3; i++) a.tone({ type: 'pulse', duty: 0.5, freq: 900 * rnd(0.5), freq2: 300 * rnd(0.4), dur: 0.06, vol: 0.08, time: a.ctx.currentTime + i * 0.035 });

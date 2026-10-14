@@ -987,6 +987,7 @@ export class Enemy extends Unit {
       if (!h.alive || h.downed) continue;
       if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(dmg, this);
     }
+    for (const a of sc.allies || []) if (a.alive && Math.hypot(a.x - z.x, a.y - z.y) <= z.r + a.r) a.damage(dmg, this);
   }
 }
 

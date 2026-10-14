@@ -8,6 +8,7 @@ import tuning from '../data/tuning.json';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
+import { ERRANDS } from '../game/quests.js';
 import { GearFX } from '../game/gearfx.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, deep: 0x16121f };
@@ -118,11 +119,14 @@ export class Menu extends Phaser.Scene {
     const h = this.hero;
 
     // header: tabs
-    ['gear', 'skills', 'craft', 'bag'].forEach((tb, i) => {
-      const x = 6 + i * 38, sel = tb === this.tab;
-      panel(g, x, 4, 34, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
-      this.t(x + 17 - tb.length * 2.5, 8, tb.toUpperCase(), sel ? 'fontGold' : 'fontPlain');
-      this.btn(x, 2, 34, 18, () => { if (this.tab !== tb) { audio.sfx('click'); this.tab = tb; this.selected = null; this.render(); } });
+    const tabs = ['gear', 'skills', 'craft', 'bag', 'journal'];
+    const tw = Math.min(38, Math.floor((W - 34) / tabs.length)) - 3;
+    tabs.forEach((tb, i) => {
+      const x = 4 + i * (tw + 3), sel = tb === this.tab;
+      const label = tw < 36 && tb === 'journal' ? 'QUEST' : tb.toUpperCase();
+      panel(g, x, 4, tw, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
+      this.t(x + Math.round(tw / 2 - label.length * 2.5), 8, label, sel ? 'fontGold' : 'fontPlain');
+      this.btn(x, 2, tw, 18, () => { if (this.tab !== tb) { audio.sfx('click'); this.tab = tb; this.selected = null; this.render(); } });
     });
     panel(g, W - 26, 5, 18, 14, C.night, C.stone);
     this.t(W - 20, 9, 'X');
@@ -131,6 +135,7 @@ export class Menu extends Phaser.Scene {
     this.t(W - 32 - gold.length * 5, 9, gold, 'fontGold');
 
     if (this.tab === 'bag') { this.renderBag(W, H); return; }
+    if (this.tab === 'journal') { this.renderJournal(W, H); return; }
     // hero tabs + name
     this.g.party.forEach((p, i) => {
       const x = 8 + i * 28, y = 22;
@@ -448,6 +453,32 @@ export class Menu extends Phaser.Scene {
         if (can3) this.btn(x, y - rowH, 22, rowH - 3, () => { if (combineGems(st, gem)) audio.sfx('chest'); this.render(); });
       }
       if (!gems.length) this.t(x, y, 'NO GEMS YET. WITCHLINGS, WARLOCKS, BOSSES AND CHESTS DROP THEM.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    }
+  }
+
+  // ---------------------------------------------------------------- JOURNAL
+  // Errands: active ones first (tap to track on the HUD and map), then done.
+  renderJournal(W, H) {
+    const g = this.gfx, Qm = this.g.quests, st = this.g.state;
+    const x = 8, w = W - 16;
+    let y = 26;
+    const act = Qm.active(), done = Object.keys(st.quests).filter((id) => st.quests[id].done);
+    this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
+    if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    for (const id of act) {
+      if (y + 30 > H - 4) break;
+      const tracked = st.tracked === id;
+      panel(g, x, y, w, 27, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
+      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font');
+      this.t(x + 5, y + 15, Qm.stepText(id), 'fontPlain').setMaxWidth(w - 60);
+      this.t(x + w - 50, y + 4, tracked ? 'TRACKED' : 'TAP: TRACK', 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
+      this.btn(x, y, w, 27, () => { st.tracked = id; audio.sfx('click'); this.render(); });
+      y += 30;
+    }
+    if (done.length && y + 20 < H) {
+      y += 4;
+      this.t(x, y, 'COMPLETED', 'fontPlain'); y += 10;
+      for (const id of done) { if (y + 10 > H - 4) break; this.t(x + 4, y, ERRANDS[id].title, 'fontPlain', 0x8cff8c); y += 10; }
     }
   }
 

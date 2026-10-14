@@ -10,6 +10,7 @@ import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
 import { rollGearDrop, ensureItems } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
+import { QuestManager } from '../game/quests.js';
 import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, VALE_THEME } from '../audio/music.js';
@@ -88,7 +89,9 @@ export class Game extends Phaser.Scene {
     this.moteT = 0;
     if (!this.flags.wardBroken) this.buildCurse();
 
+    this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
+    this.quests = new QuestManager(this);
 
     // ------------------------------------------------------------ party
     const start = st.pos || { x: W.start.x * TILE, y: W.start.y * TILE };
@@ -307,6 +310,7 @@ export class Game extends Phaser.Scene {
     n.ready = false; n.t = 90;
     const amt = n.kind === 'crystal' ? 1 : 1 + (Math.random() < 0.5 ? 1 : 0);
     addMats(this.state, { [n.kind]: amt });
+    this.quests?.onGather(n.kind, amt);
     audio.sfx(n.kind === 'ore' ? 'bash' : n.kind === 'crystal' ? 'frost' : 'heal');
     audio.sfx('coin');
     this.fx.burst(n.kind === 'herb' ? 'heal' : 'gold', n.px, n.py - 6, 10);
@@ -449,7 +453,8 @@ export class Game extends Phaser.Scene {
       p.life -= dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.s.setPosition(Math.round(p.x), Math.round(p.y));
-      const hit = this.party.find((h) => h.alive && !h.downed && !h.zipping && Math.hypot(h.x - p.x, h.y - 8 - p.y) < h.r + 4);
+      const hit = this.party.find((h) => h.alive && !h.downed && !h.zipping && Math.hypot(h.x - p.x, h.y - 8 - p.y) < h.r + 4)
+        || (this.allies || []).find((a) => a.alive && Math.hypot(a.x - p.x, a.y - 8 - p.y) < a.r + 4);
       const t = this.painter.typeAt(p.x, p.y + 8);
       const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM;
       if (hit && hit.wallT > 0 && !p.reflected && p.from?.alive) {
@@ -496,6 +501,7 @@ export class Game extends Phaser.Scene {
 
   // ============================================================ landmarks
   addInteractable(o) { this.interactables.push(o); return o; }
+  removeInteractable(o) { this.interactables = this.interactables.filter((k) => k !== o); }
 
   buildLandmarks() {
     const px = (t) => t * TILE + TILE / 2;
@@ -768,9 +774,12 @@ export class Game extends Phaser.Scene {
     }
     if (this.ward && this.ward.alive) m.push({ ...tile(this.ward), kind: 'boss' });
     for (const n of this.npcs) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'npc' });
+    for (const n of this.quests.npcs) if (!n.hiddenNow) m.push({ x: n.x, y: n.y, kind: 'npc' });
+    const pin = this.quests.pin();
+    if (pin) m.push({ ...pin, kind: 'quest', always: true });
     for (const n of this.nodes) if (n.ready) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
     const a = this.areaRect();
-    return m.filter((k) => k.x >= a.x0 && k.x <= a.x1 && k.y >= a.y0 && k.y <= a.y1 && this.minimap.isExplored(k.x, k.y));
+    return m.filter((k) => k.x >= a.x0 && k.x <= a.x1 && k.y >= a.y0 && k.y <= a.y1 && (k.always || this.minimap.isExplored(k.x, k.y)));
   }
 
   closeMenu() {
@@ -1163,8 +1172,10 @@ export class Game extends Phaser.Scene {
       const n = (Math.random() < chance ? 1 : 0) + (e.elite ? 1 + (Math.random() < 0.5 ? 1 : 0) : 0);
       if (n) got[m] = n;
     }
+    this.quests?.onKill(e);
     if (Object.keys(got).length) {
       addMats(this.state, got);
+      for (const [m, n] of Object.entries(got)) this.quests?.onGather(m, n);
       this.time.delayedCall(250, () => this.floatText(e.x, e.y - 30, Object.entries(got).map(([k, n]) => `+${n} ${CRAFT.materials[k].name}`).join(' '), 'fontPlain', 0xbfe6f2));
     }
     this.events.emit('party');
@@ -1634,6 +1645,7 @@ export class Game extends Phaser.Scene {
     this.updateLoot(dt);
     this.updateBoss();
     this.updateWarps();
+    this.quests.update(dt);
     this.groupT = (this.groupT || 0) - dt;
     if (this.groupT <= 0) { this.groupT = 0.4; this.updateGroups(0.4); }
 

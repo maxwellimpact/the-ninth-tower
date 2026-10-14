@@ -502,5 +502,17 @@
    "at": "offhand"
   },
   "element": "venom"
+ },
+ "widows_band": {
+  "name": "WIDOW'S BAND",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@3",
+  "stats": {
+   "hp": 25,
+   "def": 2
+  },
+  "desc": "FORTY YEARS ON ONE HAND. +25 HP, +2 DEF."
  }
 }
