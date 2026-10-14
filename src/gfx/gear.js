@@ -7,7 +7,7 @@
 // composeHero() merges base + looks into a def for drawPuppet(). The game
 // bakes that into a sprite sheet whenever equipment changes.
 import { grid, px, makeCanvas, outline } from './pixel.js';
-import { swordAttack, daggerAttack, staffAttack, castRaise } from './poses.js';
+import { swordAttack, daggerAttack, staffAttack, castRaise, bowAttack } from './poses.js';
 import { shadedBlob } from './creatures.js';
 import { WEAPONS } from './puppet.js';
 
@@ -51,6 +51,30 @@ export const BASE = {
   },
 };
 
+BASE.wren = {
+  headMap: { ...SKIN, H: 'red', h: 'redD' },
+  head: {
+    down: ['..hHHHHh..', '.hHHHHHHh.', '.HHHHHHHHh', '.HSSSSSSH.', '.HSESSESH.', '.hSLSSLSh.', '.hHSSSSHh.', '..h....h..'],
+    side: ['..hHHHH...', '.hHHHHHH..', 'hHHHHHHHH.', 'HHHHHSSSS.', 'HHHHSSSES.', 'hHHHSSLSS.', 'hHHh.SSS..', '.hh.......'],
+    up: ['..hHHHHh..', '.hHHHHHHh.', '.HHHHHHHH.', '.HHHHHHHH.', '.HHHHHHHH.', '.hHHHHHHh.', '.hHHHHHHh.', '..hHHHHh..'],
+  },
+  idleAng: { down: 1.2, up: -1.3, side: 0.7 },
+  attack: bowAttack,
+  cast: (v) => castRaise(v),
+};
+BASE.kesh = {
+  headMap: { ...SKIN, F: 'stone', f: 'slate', E: 'goldL', N: 'ink', T: 'white' },
+  head: {
+    down: ['F.......F.', 'Ff.fFFf.fF', '.fFFFFFFf.', '.FSSSSSSF.', '.SSESSESS.', '.SLSSSSLS.', '..STSSTS..', '...SSSS...'],
+    side: ['.F........', '.Ff.fFFF..', '.fFFFFFFF.', '.FFFFSSSS.', '.FFFSSSEN.', '.FFSSSSSSS', '..FSSTSS..', '...SSSS...'],
+    up: ['F.......F.', 'Ff.fFFf.fF', '.fFFFFFFf.', '.FFFFFFFF.', '.FFFFFFFF.', '.fFFFFFFf.', '..fFFFFf..', '...ffff...'],
+  },
+  idleAng: { down: 1.9, up: 1.4, side: 1.3 },
+  idleAngL: { down: 1.3, up: 1.6, side: 1.1 },
+  attack: swordAttack,
+  cast: (v) => castRaise(v, { crouch: 1 }),
+};
+
 // ------------------------------------------------------------------ LOOKS
 const HEAD = {
   // ---- Brann
@@ -71,6 +95,27 @@ const HEAD = {
     down: ['W...gg...W', 'WW.gYYg.WW', '.WgGYYGgW.', '.gGGGGGGg.', '.gGGGGGGg.', '.gRgGGgRg.', '.g..gg..g.', '.g......g.', '.g......g.'],
     side: ['...gg.....', 'W.gYYg....', 'WWGYYGg...', '.WGGGGGg..', '.gGGGGGGg.', '.gGGGGGRg.', '.ggg..g...', '.ggg......', '.ggg......'],
     up: ['W...gg...W', 'WW.gYYg.WW', '.WgGYYGgW.', '.gGGGGGGg.', '.gGGGGGGg.', '.gGGGGGGg.', '.gGGGGGGg.', '.gGGGGGGg.', '.ggGGGGgg.', '..gggggg..'],
+  },
+  // ---- Wren
+  cap_ranger: {
+    oy: 1, map: { G: 'leaf', g: 'leafD' },
+    down: ['...gGGg...', '.gGGGGGGg.', 'gGGGGGGGGg'],
+    side: ['...gGG....', '.gGGGGGG..', 'gGGGGGGGGg'],
+    up: ['...gGGg...', '.gGGGGGGg.', 'gGGGGGGGGg', '.gGGGGGGg.'],
+  },
+  hood_ranger: { oy: 1, map: { D: 'leaf', d: 'leafD' } },
+  // ---- Kesh
+  warhelm_hide: {
+    oy: 2, map: { w: 'leatherD', W: 'leather', b: 'bone' },
+    down: ['b........b', 'bw......wb', '.wwwwwwww.', 'wWWWWWWWWw'],
+    side: ['b.........', 'bw........', '.wwwwwww..', 'wWWWWWWWW.'],
+    up: ['b........b', 'bw......wb', '.wwwwwwww.', 'wWWWWWWWWw', '.wWWWWWWw.'],
+  },
+  warhelm_horn: {
+    oy: 3, map: { B: 'bone', b: 'mist', k: 'steelD', K: 'steel' },
+    down: ['B........B', 'BB......BB', '.bBkkkkBb.', '.kKKKKKKk.', 'kKKKKKKKKk'],
+    side: ['B.........', 'BB........', '.bBkkkk...', '.kKKKKKK..', 'kKKKKKKKK.'],
+    up: ['B........B', 'BB......BB', '.bBkkkkBb.', '.kKKKKKKk.', 'kKKKKKKKKk', '.kKKKKKKk.'],
   },
   // ---- enemies / NPCs
   helm_hex: { oy: 3, map: { R: 'curse', r: 'purpD', W: 'stone', K: 'slate', k: 'night', E: 'curseL', d: 'ink' } },
@@ -120,6 +165,7 @@ const HEAD = {
   },
 };
 
+Object.assign(HEAD.hood_ranger, { down: HEAD.hood_shadow.down, side: HEAD.hood_shadow.side, up: HEAD.hood_shadow.up });
 // Hex helm reuses the greathelm shape with Malgrim's colours.
 Object.assign(HEAD.helm_hex, { down: HEAD.helm_great.down, side: HEAD.helm_great.side, up: HEAD.helm_great.up });
 
@@ -197,6 +243,36 @@ const BODY = {
     map: { R: 'stone', r: 'slate', X: 'mist', l: 'night', M: 'slate', b: 'leatherD', G: 'steelL' }, ...JACKET_GRIDS,
     legs: ['leatherD', 'night', 'night'], arms: ['slate', 'night', 'skin'],
   },
+  // ---- Wren
+  leathers_ranger: {
+    map: { G: 'leaf', g: 'leafD', L: 'leather', l: 'leatherD', b: 'woodD', B: 'gold' },
+    down: ['gGGGGGGg', 'lGLLLLGl', 'lGLLLLGl', 'lGGLLGGl', 'lbbBbbbl', '.lLLLLl.'],
+    side: ['gGGGGg', 'GlLLLl', 'GlLLLl', '.lLLLl', '.bbbBb', '.lLLLl'],
+    up: ['gGGGGGGg', 'lGGGGGGl', 'lGGlLGGl', 'lGGLlGGl', 'lbbbbbbl', '.lLLLLl.'],
+    legs: ['leatherD', 'night', 'woodD'], arms: ['leaf', 'leafD', 'skin'],
+  },
+  leathers_scout: {
+    map: { G: 'grassD', g: 'leafD', L: 'mossD', l: 'night', b: 'leatherD', B: 'steelL' },
+    down: ['gGGGGGGg', 'lGLLLLGl', 'lGLLLLGl', 'lGGLLGGl', 'lbbBbbbl', '.lLLLLl.'],
+    side: ['gGGGGg', 'GlLLLl', 'GlLLLl', '.lLLLl', '.bbbBb', '.lLLLl'],
+    up: ['gGGGGGGg', 'lGGGGGGl', 'lGGlLGGl', 'lGGLlGGl', 'lbbbbbbl', '.lLLLLl.'],
+    legs: ['night', 'night', 'leatherD'], arms: ['grassD', 'leafD', 'skin'],
+  },
+  // ---- Kesh
+  furs_hide: {
+    map: { F: 'stone', f: 'slate', L: 'leather', l: 'leatherD', b: 'woodD', T: 'bone' },
+    down: ['fFFFFFFf', 'FfLLLLfF', '.lLLLLl.', '.lLTTLl.', '.bbbbbb.', '.lLLLLl.'],
+    side: ['fFFFFf', 'FfLLLl', '.lLLLl', '.lLTLl', '.bbbbb', '.lLLLl'],
+    up: ['fFFFFFFf', 'FFFFFFFF', '.lLLLLl.', '.lLLLLl.', '.bbbbbb.', '.lLLLLl.'],
+    legs: ['leatherD', 'night', 'leatherD'], arms: ['skin', 'skinD', 'skin'],
+  },
+  furs_wolf: {
+    map: { F: 'mist', f: 'stone', L: 'redD', l: 'woodD', b: 'night', T: 'bone' },
+    down: ['fFFFFFFf', 'FfLLLLfF', 'FlLLLLlF', '.lLTTLl.', '.bbbbbb.', '.lLLLLl.'],
+    side: ['fFFFFf', 'FfLLLl', 'FlLLLl', '.lLTLl', '.bbbbb', '.lLLLl'],
+    up: ['fFFFFFFf', 'FFFFFFFF', 'FFFFFFFF', '.lLLLLl.', '.bbbbbb.', '.lLLLLl.'],
+    legs: ['woodD', 'night', 'night'], arms: ['skin', 'skinD', 'mist'],
+  },
   coat_nightsilk: {
     map: { p: 'purpD', P: 'purp', W: 'bone', w: 'mist', S: 'steelL' }, swayFrom: 6,
     down: ['wWWWWWWw', 'pWwPPPPp', 'pPWPSPPp', 'pPPPSPPp', 'pSSSSSSp', 'pPPPPPPp', 'pPP..PPp', 'pp....pp'],
@@ -218,6 +294,10 @@ const WEAPON = {
   dagger_steel: { kind: 'dagger', style: {} },
   dagger_kris: { kind: 'dagger', style: { blade: 'bone', tip: 'white', guard: 'redD', wavy: true, len: 7 } },
   dagger_fang: { kind: 'dagger', style: { blade: 'grassXL', tip: 'white', guard: 'leafD', len: 7, glow: 'grassL' } },
+  bow_hunting: { kind: 'bow', style: {} },
+  bow_long: { kind: 'bow', style: { len: 7, bend: 3, wood: 'wood', tips: 'night' } },
+  axe_hand: { kind: 'axe', style: {} },
+  axe_bearded: { kind: 'axe', style: { len: 9, bearded: true } },
 };
 
 // ---------------------------------------------------------------- offhand
@@ -281,6 +361,17 @@ function orbDraw() {
   };
 }
 
+// Wren's quiver rides on her back: arrows show over the shoulder.
+const QUIVERS = { basic: { q: 'leather', Q: 'leatherD', f: 'white', r: 'red' }, fine: { q: 'leaf', Q: 'leafD', f: 'white', r: 'gold' } };
+function quiverDraw(map) {
+  return (ctx, view) => {
+    const rows = ['f.r.f', 'r.f.r', 'qqqqq', 'qQqQq', 'qQqQq', 'qQqQq', 'qqqqq'];
+    if (view === 'up') grid(ctx, rows, map, 25, 15);
+    else if (view === 'side') grid(ctx, rows, map, 17, 15);
+    else { px(ctx, 21, 13, map.f); px(ctx, 23, 12, map.r); px(ctx, 25, 13, map.f); }
+  };
+}
+
 const OFFHAND = {
   shield_hex: { draw: shieldDraw('hex') },
   shield_round: { draw: shieldDraw('round') },
@@ -292,6 +383,10 @@ const OFFHAND = {
   parry_steel: { dagger: WEAPON.dagger_steel.style },
   parry_kris: { dagger: WEAPON.dagger_kris.style },
   parry_fang: { dagger: WEAPON.dagger_fang.style },
+  quiver_basic: { draw: quiverDraw(QUIVERS.basic), quiver: QUIVERS.basic },
+  quiver_fine: { draw: quiverDraw(QUIVERS.fine), quiver: QUIVERS.fine },
+  hatchet_plain: { weaponL: { kind: 'axe', style: { len: 7 } } },
+  hatchet_bearded: { weaponL: { kind: 'axe', style: { len: 7, bearded: true } } },
 };
 
 export const LOOKS = { head: HEAD, body: BODY, weapon: WEAPON, offhand: OFFHAND };
@@ -309,6 +404,8 @@ const RAMPS = {
   6: { steelD: 'hairBlD', steel: 'gold', steelL: 'goldL', blue: 'white', blueD: 'bone', blueL: 'white', purp: 'white', purpD: 'bone', purpL: 'white', red: 'redD', redD: 'woodD', redL: 'red', leather: 'redD', leatherD: 'woodD', wood: 'gold', woodD: 'hairBlD', gold: 'goldL' },
 };
 const WEAPON_DEFAULTS = {
+  bow: { wood: 'woodL', tips: 'woodD', string: 'bone' },
+  axe: { haft: 'wood', haftD: 'woodD', head: 'steel', edge: 'steelL' },
   sword: { blade: 'steelL', edge: 'steel', guard: 'gold', tip: 'white', grip: 'woodD' },
   staff: { shaft: ['wood', 'woodD'], rim: 'gold', core: 'goldL', glow: 'fireL' },
   dagger: { blade: 'steelL', tip: 'white', guard: 'gold' },
@@ -335,6 +432,8 @@ export function getLook(slot, lookId) {
     out = { kind: base.kind, style: mapObj({ ...WEAPON_DEFAULTS[base.kind], ...base.style }, f) };
   } else if (base && slot === 'offhand') {
     if (base.dagger) out = { dagger: mapObj({ ...WEAPON_DEFAULTS.dagger, ...base.dagger }, f) };
+    else if (base.weaponL) out = { weaponL: { kind: base.weaponL.kind, style: mapObj({ ...WEAPON_DEFAULTS[base.weaponL.kind], ...base.weaponL.style }, f) } };
+    else if (base.quiver) { const q = mapObj(base.quiver, f); out = { draw: quiverDraw(q), quiver: q }; }
     else if (baseId.startsWith('shield')) {
       const sh = SHIELDS[baseId.split('_')[1]];
       const s2 = { ...sh, map: mapObj(sh.map, f) };
@@ -350,8 +449,8 @@ export function getLook(slot, lookId) {
 
 // ---------------------------------------------------------------- compose
 // equip: { head, body, weapon, offhand } -> look ids (null = nothing equipped)
-export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather' };
-export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel' };
+export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather', wren: 'leathers_ranger', kesh: 'furs_hide' };
+export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel', wren: 'bow_hunting', kesh: 'axe_hand' };
 export function composeHero(heroId, equip, meta = {}) {
   const b = BASE[heroId];
   const body = getLook('body', equip.body) || BODY[DEFAULT_BODY[heroId]];
@@ -370,7 +469,7 @@ export function composeHero(heroId, equip, meta = {}) {
     legs: body.legs,
     arms: body.arms,
     weaponR: wpn ? { kind: wpn.kind, style: wpn.style } : null,
-    weaponL: off && off.dagger ? { kind: 'dagger', style: off.dagger } : null,
+    weaponL: off && off.dagger ? { kind: 'dagger', style: off.dagger } : off?.weaponL || null,
     offhand: off && off.draw ? off.draw : null,
     idleAng: b.idleAng,
     idleAngL: b.idleAngL,
@@ -406,11 +505,13 @@ export function itemIcon(heroId, slot, lookId) {
     px(ctx, 8 + Math.ceil(w / 2), y0 + 1, L.arms[0], 1, 3);
   } else if (slot === 'weapon') {
     const L = getLook('weapon', lookId);
-    WEAPONS[L.kind](ctx, { x: 4, y: 12 }, -0.785, L.kind === 'staff' ? 1 : 0, L.style);
+    WEAPONS[L.kind](ctx, L.kind === 'bow' ? { x: 6, y: 9 } : { x: 4, y: 12 }, L.kind === 'bow' ? 0 : -0.785, L.kind === 'staff' ? 1 : 0, L.style);
   } else {
     const L = getLook('offhand', lookId);
     const baseId = lookId.split('@')[0];
     if (L.dagger) WEAPONS.dagger(ctx, { x: 5, y: 11 }, -0.785, 0, L.dagger);
+    else if (L.weaponL) WEAPONS[L.weaponL.kind](ctx, { x: 5, y: 11 }, -0.785, 0, L.weaponL.style);
+    else if (L.quiver) grid(ctx, ['f.r.f', 'r.f.r', 'qqqqq', 'qQqQq', 'qQqQq', 'qQqQq', 'qQqQq', 'qqqqq'], L.quiver, 5, 4);
     else if (baseId.startsWith('shield')) {
       const sh = L.shield || SHIELDS[baseId.split('_')[1]];
       grid(ctx, sh.front, sh.map, 8 - Math.floor(sh.front[0].length / 2), 8 - Math.floor(sh.front.length / 2));

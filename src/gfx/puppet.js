@@ -103,18 +103,31 @@ export const WEAPONS = {
       px(ctx, Math.round(h.x + Math.cos(a) * (3 + i * 0.3)), Math.round(h.y + Math.sin(a) * (3 + i * 0.3)), i > 4 ? 'white' : 'steelL');
     }
   },
-  bow(ctx, h, ang) {
+  bow(ctx, h, ang, glow, st = {}) {
     const c = Math.cos(ang), s = Math.sin(ang);
     const cx = h.x + c * 2, cy = h.y + s * 2;
+    const half = st.len || 6, bend = st.bend || 2.5;
     let e0 = null, e1 = null;
     for (let t = -1; t <= 1.001; t += 0.125) {
-      const x = cx + -s * t * 6 + c * (1 - t * t) * 2.5, y = cy + c * t * 6 + s * (1 - t * t) * 2.5;
-      px(ctx, Math.round(x), Math.round(y), Math.abs(t) > 0.7 ? 'woodD' : 'woodL');
+      const x = cx + -s * t * half + c * (1 - t * t) * bend, y = cy + c * t * half + s * (1 - t * t) * bend;
+      px(ctx, Math.round(x), Math.round(y), Math.abs(t) > 0.7 ? st.tips || 'woodD' : st.wood || 'woodL');
       if (t <= -1) e0 = [x, y];
       e1 = [x, y];
     }
     const n = 12;
-    for (let i = 0; i <= n; i++) px(ctx, Math.round(e0[0] + (e1[0] - e0[0]) * (i / n)), Math.round(e0[1] + (e1[1] - e0[1]) * (i / n)), 'bone');
+    for (let i = 0; i <= n; i++) px(ctx, Math.round(e0[0] + (e1[0] - e0[0]) * (i / n)), Math.round(e0[1] + (e1[1] - e0[1]) * (i / n)), st.string || 'bone');
+  },
+  // hand axe / hatchet: short haft, bearded head
+  axe(ctx, h, ang, glow, st = {}) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const len = st.len || 8;
+    ray(ctx, h.x - c * 2, h.y - s * 2, ang, len + 2, st.haft || 'wood');
+    const hx = h.x + c * (len - 1), hy = h.y + s * (len - 1);
+    for (let t = -1; t <= (st.bearded ? 3 : 2); t++) {
+      const w = t === -1 || t === (st.bearded ? 3 : 2) ? 2 : 3;
+      for (let k = 0; k < w; k++) px(ctx, Math.round(hx + -s * (k + 1) + c * t * 0.6), Math.round(hy + c * (k + 1) + s * t * 0.6), k === w - 1 ? st.edge || 'steelL' : st.head || 'steel');
+    }
+    px(ctx, Math.round(hx + c), Math.round(hy + s), st.haftD || 'woodD');
   },
   spear(ctx, h, ang) {
     const c = Math.cos(ang), s = Math.sin(ang);

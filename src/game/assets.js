@@ -176,6 +176,9 @@ GROUPS.core.push(
     s.textures.addCanvas('forge', Q.forge());
     s.textures.addCanvas('shrine', Q.shrine(true)); s.textures.addCanvas('shrineUsed', Q.shrine(false));
     s.textures.addCanvas('lookout', Q.lookout());
+    frames(s, 'hawk', Q.hawkFrames(), 10);
+    s.textures.addCanvas('snare', Q.snareTrap());
+    s.textures.addCanvas('cage', Q.cage()); s.textures.addCanvas('net', Q.net());
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
 );

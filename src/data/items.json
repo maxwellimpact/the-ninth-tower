@@ -526,5 +526,95 @@
   },
   "trait": "thorns",
   "desc": "SNAGTOOTH'S KNUCKLE-RING. REFLECTS 10% OF MELEE DAMAGE. +3 ATK."
+ },
+ "ranger_cap": {
+  "name": "RANGER CAP",
+  "hero": "wren",
+  "slot": "head",
+  "rarity": "common",
+  "look": "cap_ranger",
+  "stats": {
+   "def": 1,
+   "crit": 0.01
+  },
+  "desc": ""
+ },
+ "ranger_leathers": {
+  "name": "RANGER LEATHERS",
+  "hero": "wren",
+  "slot": "body",
+  "rarity": "common",
+  "look": "leathers_ranger",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "hunting_bow": {
+  "name": "HUNTING BOW",
+  "hero": "wren",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "bow_hunting",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "plain_quiver": {
+  "name": "PLAIN QUIVER",
+  "hero": "wren",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "quiver_basic",
+  "stats": {
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "hide_warhelm": {
+  "name": "HIDE WARHELM",
+  "hero": "kesh",
+  "slot": "head",
+  "rarity": "common",
+  "look": "warhelm_hide",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "hide_furs": {
+  "name": "HIDE FURS",
+  "hero": "kesh",
+  "slot": "body",
+  "rarity": "common",
+  "look": "furs_hide",
+  "stats": {
+   "def": 3,
+   "hp": 5
+  },
+  "desc": ""
+ },
+ "hand_axe": {
+  "name": "HAND AXE",
+  "hero": "kesh",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "axe_hand",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "plain_hatchet": {
+  "name": "PLAIN HATCHET",
+  "hero": "kesh",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "hatchet_plain",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
  }
 }

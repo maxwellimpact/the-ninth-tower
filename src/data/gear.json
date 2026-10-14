@@ -302,6 +302,137 @@
      "hp"
     ]
    }
+  },
+  "wren": {
+   "weapon": {
+    "name": "BOW",
+    "mat": "wood",
+    "looks": [
+     "bow_hunting",
+     "bow_long"
+    ],
+    "split": {
+     "atk": 0.85,
+     "crit": 0.15
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "QUIVER",
+    "mat": "leather",
+    "looks": [
+     "quiver_basic",
+     "quiver_fine"
+    ],
+    "split": {
+     "crit": 0.6,
+     "atk": 0.4
+    },
+    "bonus": [
+     "crit",
+     "atk"
+    ]
+   },
+   "head": {
+    "name": "CAP",
+    "mat": "leather",
+    "looks": [
+     "cap_ranger",
+     "hood_ranger"
+    ],
+    "split": {
+     "def": 0.6,
+     "crit": 0.4
+    },
+    "bonus": [
+     "crit",
+     "def"
+    ]
+   },
+   "body": {
+    "name": "RANGER LEATHERS",
+    "mat": "leather",
+    "looks": [
+     "leathers_ranger",
+     "leathers_scout"
+    ],
+    "split": {
+     "def": 0.7,
+     "hp": 0.3
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   }
+  },
+  "kesh": {
+   "weapon": {
+    "name": "HAND AXE",
+    "mat": "metal",
+    "looks": [
+     "axe_hand",
+     "axe_bearded"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "HATCHET",
+    "mat": "metal",
+    "looks": [
+     "hatchet_plain",
+     "hatchet_bearded"
+    ],
+    "split": {
+     "atk": 0.8,
+     "hp": 0.2
+    },
+    "bonus": [
+     "atk",
+     "hp"
+    ]
+   },
+   "head": {
+    "name": "WARHELM",
+    "mat": "leather",
+    "looks": [
+     "warhelm_hide",
+     "warhelm_horn"
+    ],
+    "split": {
+     "def": 0.7,
+     "hp": 0.3
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   },
+   "body": {
+    "name": "FURS",
+    "mat": "leather",
+    "looks": [
+     "furs_hide",
+     "furs_wolf"
+    ],
+    "split": {
+     "def": 0.6,
+     "hp": 0.4
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   }
   }
  },
  "rings": {

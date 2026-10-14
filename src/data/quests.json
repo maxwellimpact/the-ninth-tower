@@ -718,6 +718,210 @@
      "silver": 3
     }
    }
+  },
+  "thePit": {
+   "title": "THE PIT",
+   "giver": "grub",
+   "region": "marsh",
+   "offer": [
+    "OI. YOU. YOU LOOK LIKE YOU HIT THINGS.",
+    "THE PIT'S GOT A BEAST IN A CAGE. WIN THREE BOUTS AND HE'S YOURS. LOSE AND... WELL. YOU WON'T NEED HIM."
+   ],
+   "accept": "I'LL FIGHT.",
+   "thanks": [
+    "GRUB: BAH! FINE! TAKE YOUR BEAST. NOBODY BETS ON THE BEAST ANYWAY."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "BOUT ONE: STEP INTO THE PIT",
+     "at": [
+      60,
+      104
+     ],
+     "r": 4,
+     "announce": "BOUT ONE!",
+     "units": [
+      [
+       "goblin",
+       57,
+       102
+      ],
+      [
+       "goblin",
+       63,
+       102
+      ],
+      [
+       "goblin",
+       60,
+       100
+      ]
+     ],
+     "prop": {
+      "kind": "cage",
+      "x": 60,
+      "y": 98
+     }
+    },
+    {
+     "type": "spawn",
+     "text": "BOUT TWO",
+     "at": [
+      60,
+      104
+     ],
+     "r": 7,
+     "delay": 2.5,
+     "announce": "BOUT TWO!",
+     "units": [
+      [
+       "goblin",
+       57,
+       101
+      ],
+      [
+       "goblin",
+       63,
+       101
+      ],
+      [
+       "archer",
+       60,
+       99
+      ],
+      [
+       "leeches",
+       60,
+       106
+      ]
+     ]
+    },
+    {
+     "type": "spawn",
+     "text": "BOUT THREE",
+     "at": [
+      60,
+      104
+     ],
+     "r": 7,
+     "delay": 2.5,
+     "announce": "FINAL BOUT!",
+     "units": [
+      [
+       "knight",
+       60,
+       100
+      ],
+      [
+       "hexling",
+       56,
+       103
+      ],
+      [
+       "hexling",
+       64,
+       103
+      ]
+     ]
+    },
+    {
+     "type": "find",
+     "text": "OPEN KESH'S CAGE",
+     "x": 60,
+     "y": 98,
+     "kind": "cage",
+     "say": "THE LOCK SNAPS. THE BEAST STEPS OUT, BLINKING."
+    }
+   ],
+   "reward": {
+    "xp": 300,
+    "gold": 60,
+    "recruit": "kesh"
+   }
+  },
+  "hawkTrail": {
+   "title": "THE HAWK'S TRAIL",
+   "giver": "kestrel",
+   "region": "vale",
+   "trigger": [
+    13,
+    40,
+    5
+   ],
+   "offer": [
+    "A HAWK CIRCLES LOW, SCREECHING. IT DIPS TOWARD THE WESTERN WOODS, THEN BACK TO YOU.",
+    "IT WANTS YOU TO FOLLOW."
+   ],
+   "accept": "FOLLOW THE HAWK.",
+   "steps": [
+    {
+     "type": "follow",
+     "text": "FOLLOW THE HAWK INTO THE WESTERN WOODS",
+     "path": [
+      [
+       11,
+       41
+      ],
+      [
+       8,
+       43
+      ],
+      [
+       6,
+       45
+      ],
+      [
+       6,
+       47
+      ]
+     ],
+     "r": 3
+    },
+    {
+     "type": "spawn",
+     "text": "DRIVE OFF THE GOBLINS",
+     "at": [
+      6,
+      47
+     ],
+     "r": 5,
+     "units": [
+      [
+       "goblin",
+       8,
+       45
+      ],
+      [
+       "archer",
+       4,
+       44
+      ],
+      [
+       "goblin",
+       9,
+       49
+      ]
+     ],
+     "prop": {
+      "kind": "net",
+      "x": 5,
+      "y": 47
+     }
+    },
+    {
+     "type": "find",
+     "text": "CUT WREN FREE",
+     "x": 5,
+     "y": 47,
+     "kind": "net",
+     "say": "THE NET PARTS. A RANGER ROLLS OUT, BOW ALREADY IN HAND."
+    }
+   ],
+   "reward": {
+    "xp": 200,
+    "recruit": "wren"
+   }
   }
  },
  "npcs": [
@@ -981,6 +1185,40 @@
    "errands": [
     "snapjaw"
    ]
+  },
+  {
+   "id": "grub",
+   "name": "GRUB THE PITBOSS",
+   "x": 60,
+   "y": 112,
+   "look": "goblin",
+   "lines": [
+    "NO BETTING ON CREDIT."
+   ],
+   "voice": {
+    "pitch": 280,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "errands": [
+    "thePit"
+   ]
+  },
+  {
+   "id": "kestrel",
+   "name": "KESTREL",
+   "x": 13,
+   "y": 40,
+   "look": "hawk",
+   "hidden": true,
+   "lines": [
+    "SKREE!"
+   ],
+   "voice": {
+    "pitch": 900,
+    "wave": "square",
+    "duty": 0.125
+   }
   }
  ]
 }

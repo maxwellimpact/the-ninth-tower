@@ -183,3 +183,34 @@ export function lookout() {
   outline(c, 'ink');
   return c;
 }
+
+// Kestrel, Wren's hawk: two wing frames, seen from above
+export function hawkFrames() {
+  return [
+    ['ss.......ss', '.sS.....Ss.', '..sSSdSSs..', '...sSKSs...', '....sSs....', '.....s.....'],
+    ['...........', 'sss.....sss', '.sSSSdSSSs.', '...sSKSs...', '....sSs....', '.....s.....'],
+  ].map((rows) => { const [c, ctx] = makeCanvas(13, 9); grid(ctx, rows, { s: 'woodD', S: 'wood', d: 'bone', K: 'goldL' }, 1, 1); outline(c, 'ink'); return c; });
+}
+
+// snare trap for Wren
+export function snareTrap() {
+  const [c, ctx] = makeCanvas(14, 9);
+  grid(ctx, ['.kkkkkkkk.', 'k.K.KK.K.k', 'kKKKKKKKKk', 'k.K.KK.K.k', '.kkkkkkkk.'], { k: 'steelD', K: 'steel' }, 2, 2);
+  outline(c, 'ink');
+  return c;
+}
+
+// iron cage (Kesh in the pit) and a hunter's net (Wren)
+export function cage() {
+  const [c, ctx] = makeCanvas(24, 30);
+  for (let x = 2; x <= 20; x += 3) px(ctx, x, 3, 'steelD', 1, 24);
+  px(ctx, 1, 2, 'steel', 21, 2); px(ctx, 1, 26, 'steel', 21, 2);
+  outline(c, 'ink');
+  return c;
+}
+export function net() {
+  const [c, ctx] = makeCanvas(24, 18);
+  for (let y = 2; y < 16; y += 3) for (let x = 1; x < 23; x++) if ((x + y) % 3) px(ctx, x, y, 'sand');
+  for (let x = 2; x < 22; x += 3) for (let y = 1; y < 16; y++) px(ctx, x, y, 'dirtL');
+  return c;
+}

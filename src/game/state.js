@@ -22,6 +22,7 @@ export function newState(leaderId) {
     version: 1,
     leader: leaderId,
     recruited: [leaderId],
+    active: [leaderId], // who travels in the party (max 3); the rest wait on the bench
     heroes,
     inventory: [],      // owned, unequipped item ids
     gold: 0,
@@ -112,6 +113,8 @@ export function loadState() {
     s.refine ??= {};
     s.flies ??= [];
     s.flyRewards ??= 0;
+    for (const h of heroData) if (!s.heroes[h.id]) s.heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip, trinket1: null, trinket2: null }, ...newSkillState(h.id) };
+    s.active ??= s.recruited.slice(0, 3);
     for (const [id, hs] of Object.entries(s.heroes)) {
       if (!hs.skills) migrateSkills(id, hs);
       hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null;
@@ -178,6 +181,7 @@ export function computeStats(id, level, equip, hs = null) {
   // equipped stat passives
   const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);
   if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
+  if (pr('eagleeye')) s.range = Math.round(s.range * 1.2);
   return s;
 }
 

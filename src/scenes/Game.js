@@ -11,6 +11,8 @@ import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
 import { rollGearDrop, ensureItems } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
+import HERO_LIST from '../data/heroes.json';
+import { newSkillState } from '../game/state.js';
 import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, VALE_THEME } from '../audio/music.js';
@@ -102,7 +104,11 @@ export class Game extends Phaser.Scene {
 
     // ------------------------------------------------------------ party
     const start = st.pos || { x: W.start.x * TILE, y: W.start.y * TILE };
-    const order = [st.leader, ...st.recruited.filter((id) => id !== st.leader)];
+    st.active ??= st.recruited.slice(0, 3);
+    if (!st.active.includes(st.leader)) st.active.unshift(st.leader);
+    st.active = st.active.slice(0, 3);
+    for (const h of HERO_LIST) if (!st.heroes[h.id]) st.heroes[h.id] = { level: 1, xp: 0, hp: null, ult: 0, equip: { ...h.equip, trinket1: null, trinket2: null }, ...newSkillState(h.id) };
+    const order = [st.leader, ...st.active.filter((id) => id !== st.leader)];
     order.forEach((id, i) => this.party.push(new Hero(this, id, st.heroes[id], start.x + i * 12, start.y + (i ? 12 : 0))));
     this.setLeader(this.party[0], true);
     this.buildRecruits();
@@ -915,7 +921,12 @@ export class Game extends Phaser.Scene {
     if (target.elementMul) amount *= target.elementMul(el);
     if (target.status?.weaken) amount *= 1.1;
     if (target.marked) amount *= target.marked.mul;
+    if (target.hawkMarked) amount *= 1.1;
     if (hero) {
+      const rage = src.passive('rage');
+      if (rage) amount *= 1 + (0.4 + 0.05 * (rage - 1)) * (1 - src.hp / src.maxHp);
+      if (src.passive('steadyaim') && src.stillT > 1) amount *= 1.2;
+      if (src.buffs?.primal) amount *= 1.5;
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
       // weapon gems: a little extra elemental damage on every hit
       for (const g of src.stats.gemElements || []) if (!g.armor) amount *= 1 + g.dmg * (target.elementMul ? target.elementMul(g.el) : 1);
@@ -948,6 +959,7 @@ export class Game extends Phaser.Scene {
     }
     src.addUlt?.(dealt * tuning.ultChargeDeal);
     if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
+    if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
     this.hitStop(crit ? 0.085 : 0.045);
@@ -957,9 +969,10 @@ export class Game extends Phaser.Scene {
   }
 
   spawnProjectile(o) {
-    const tex = o.kind === 'knife' ? 'px_white' : 'firebolt';
+    const tex = o.kind === 'knife' ? 'px_white' : o.kind === 'arrow' ? 'arrow' : 'firebolt';
     const s = this.add.sprite(o.x, o.y, tex).setDepth(TOP - 20);
     if (o.kind === 'knife') s.setScale(4, 1);
+    else if (o.kind === 'arrow') { if (o.pierce) s.setScale(1.4); if (o.element === 'frost') s.setTint(0x9fe6ff); }
     else {
       s.play('firebolt');
       if (o.kind === 'fireball') s.setScale(o.echo ? 1.2 : 1.6);
@@ -985,15 +998,29 @@ export class Game extends Phaser.Scene {
       }
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.s.setPosition(Math.round(p.x), Math.round(p.y));
-      if (p.kind !== 'knife') { p.trail -= dt; if (p.trail <= 0) { p.trail = 0.03; this.fx.burst('ember', p.x - p.vx * 0.02, p.y - p.vy * 0.02, 1); } }
+      if (p.kind !== 'knife' && p.kind !== 'arrow') { p.trail -= dt; if (p.trail <= 0) { p.trail = 0.03; this.fx.burst('ember', p.x - p.vx * 0.02, p.y - p.vy * 0.02, 1); } }
       let hit = null;
-      for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - (e.boss ? 24 : 8) - p.y) < e.r + 5) { hit = e; break; }
+      for (const e of targets) if (e.alive && !e.submerged && !p.hitSet?.has(e) && Math.hypot(e.x - p.x, e.y - (e.boss ? 24 : 8) - p.y) < e.r + 5) { hit = e; break; }
+      if (hit && p.pierce) {
+        // Power Shot: punches through everything in the line
+        (p.hitSet ??= new Set()).add(hit);
+        this.dealDamage(p.owner, hit, p.dmg, { knock: 60 });
+        hit = null;
+      }
       const t = this.painter.typeAt(p.x, p.y + 8);
       const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM;
       if (hit || p.life <= 0 || wall) {
         p.dead = true;
         p.s.destroy();
         if (p.kind === 'knife') { if (hit) this.dealDamage(p.owner, hit, p.dmg, { knock: 30 }); continue; }
+        if (p.kind === 'arrow') {
+          if (hit) {
+            const crit = Math.random() < p.owner.stats.crit + (p.critBonus || 0);
+            this.dealDamage(p.owner, hit, p.dmg * (crit ? tuning.critMult : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 25, basic: p.basic, element: p.element });
+            if (p.element === 'frost') hit.applyElement?.('frost', p.owner);
+          }
+          continue;
+        }
         if (p.kind === 'missile') { this.fx.puff(p.x, p.y, 'sparkCurse'); if (hit) this.dealDamage(p.owner, hit, p.dmg, { knock: 20, spell: true }); continue; }
         audio.sfx('fireImpact');
         this.fx.burst('ember', p.x, p.y, p.kind === 'fireball' ? 22 : 8);
@@ -1077,6 +1104,34 @@ export class Game extends Phaser.Scene {
           },
         });
         sc.floatText(h.x, h.y - 36, 'METEOR!', 'fontGold', 0xffffff, true);
+        break;
+      }
+      case 'talons': {
+        // Storm of Talons: Kestrel and a rain of arrows on every foe nearby
+        const pool = () => this.enemies.filter((e) => e.alive && !e.submerged && dist(e, h) < 180);
+        if (!pool().length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
+        sc.floatText(h.x, h.y - 36, 'STORM OF TALONS!', 'fontGold', 0xffffff, true);
+        const hawk = this.add.sprite(h.x, h.y - 60, 'hawk', '0').play('hawk').setDepth(TOP - 15).setScale(1.4);
+        for (let i = 0; i < 20; i++) this.time.delayedCall(i * 200, () => {
+          const list = pool();
+          if (!list.length) return;
+          const e = list[Math.floor(Math.random() * list.length)];
+          if (i % 3 === 0) this.tweens.add({ targets: hawk, x: e.x, y: e.y - 12, duration: 160, yoyo: true });
+          const ar = this.add.image(e.x - 12, e.y - 70, 'arrow').setRotation(1.4).setDepth(TOP - 20);
+          this.tweens.add({ targets: ar, x: e.x, y: e.y - 6, duration: 150, onComplete: () => { ar.destroy(); if (e.alive) this.dealDamage(h, e, h.stats.atk * 0.8, { knock: 15 }); } });
+          audio.sfx('swing', { pitch: 1.8 });
+        });
+        this.time.delayedCall(4200, () => this.tweens.add({ targets: hawk, y: hawk.y - 120, alpha: 0, duration: 500, onComplete: () => hawk.destroy() }));
+        break;
+      }
+      case 'primal': {
+        h.buff('primal', 1, 8);
+        sc.fx.ring(h.x, h.y - 6, 'ringRed', 7);
+        sc.shake(260, 0.01);
+        audio.sfx('roar');
+        h.sprite.setTint(0xffb0a0);
+        this.time.delayedCall(8000, () => { if (!h.flashT) h.sprite.clearTint(); });
+        sc.floatText(h.x, h.y - 36, 'PRIMAL FORM!', 'fontGold', 0xffffff, true);
         break;
       }
       case 'thousand_cuts': {
@@ -1342,6 +1397,8 @@ export class Game extends Phaser.Scene {
     this.autosave('rest');
     this.events.emit('banner', 'THE PARTY RESTS', 'HP RESTORED  -  GAME SAVED');
     this.events.emit('party');
+    // with more than three heroes, the campfire is where you choose who travels
+    if (this.state.recruited.length > 3) this.time.delayedCall(400, () => this.events.emit('dialogue', [{ who: 'CAMPFIRE', text: 'THE FIRE CRACKLES. YOUR WHOLE COMPANY IS HERE.', choices: [['CHANGE PARTY', () => this.openMenu({ tab: 'party' })], ['RESUME', () => {}]] }]));
   }
 
   openChest(c, img, h) {
@@ -1519,18 +1576,60 @@ export class Game extends Phaser.Scene {
   }
 
   recruit(npc) {
-    const st = this.state;
-    st.recruited.push(npc.id);
-    const h = new Hero(this, npc.id, st.heroes[npc.id], npc.sprite.x, npc.sprite.y);
-    this.party.push(h);
     npc.sprite.destroy(); npc.sh.destroy(); npc.mark.destroy();
     npc.o.hidden = true;
     this.interactables = this.interactables.filter((i) => i !== npc.o);
+    this.addRecruit(npc.id, npc.sprite.x, npc.sprite.y);
+  }
+
+  // A hero joins: caught up to the party's level (C3), into the party if
+  // there's room, otherwise onto the bench until the next campfire.
+  addRecruit(id, x, y) {
+    const st = this.state;
+    if (st.recruited.includes(id)) return;
+    st.recruited.push(id);
+    const hs = st.heroes[id];
+    const avg = Math.round(this.party.reduce((a, h) => a + h.level, 0) / Math.max(1, this.party.length));
+    if (hs.level < avg) {
+      const shrines = Object.keys(this.flags).filter((f) => f.startsWith('shrine_')).length;
+      hs.sp = (hs.sp || 0) + (avg - hs.level) + shrines;
+      hs.level = avg; hs.xp = 0;
+    }
     audio.sfx('levelUp');
-    this.fx.burst('gold', h.x, h.y - 10, 20);
-    this.events.emit('banner', `${h.def.name.toUpperCase()} JOINED THE PARTY!`, 'TAP A PORTRAIT TO SWITCH HEROES');
+    this.party.find((h) => h.def.id === id)?.refreshStats();
+    if (st.active.includes(id)) { this.events.emit('partyChanged'); this.autosave('recruit'); return; }
+    if (st.active.length < 3) {
+      st.active.push(id);
+      const h = new Hero(this, id, hs, x, y);
+      this.party.push(h);
+      this.fx.burst('gold', h.x, h.y - 10, 20);
+      this.events.emit('banner', `${h.def.name.toUpperCase()} JOINED THE PARTY!`, 'TAP A PORTRAIT TO SWITCH HEROES');
+    } else {
+      this.fx.burst('gold', x, y - 10, 20);
+      this.events.emit('banner', `${heroInfo(id).name.toUpperCase()} JOINED!`, 'THE PARTY IS FULL - SWAP HEROES AT ANY CAMPFIRE');
+    }
     this.events.emit('partyChanged');
     this.autosave('recruit');
+  }
+
+  // Rebuild the travelling party from state.active (campfire swaps).
+  applyParty() {
+    const st = this.state;
+    if (!st.active.length) st.active = [st.leader];
+    for (const h of [...this.party]) if (!st.active.includes(h.def.id)) {
+      this.gearFx.clear?.(h.def.id);
+      h.alive = false; h.destroy();
+      this.party = this.party.filter((p) => p !== h);
+    }
+    const L = this.leader && this.party.includes(this.leader) ? this.leader : this.party[0];
+    for (const id of st.active) if (!this.party.some((h) => h.def.id === id)) {
+      const h = new Hero(this, id, st.heroes[id], (L?.x ?? 0) + 12, (L?.y ?? 0) + 8);
+      this.party.push(h);
+      this.fx.puff(h.x, h.y, 'spark');
+    }
+    this.setLeader(this.party.includes(L) ? L : this.party[0], true);
+    this.events.emit('partyChanged');
+    this.autosave('party');
   }
 
   talkFrog() {

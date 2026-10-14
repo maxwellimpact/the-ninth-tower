@@ -347,6 +347,231 @@ export const SKILL_FX = {
     ai(h, c) { return c.target && !c.target.marked && (tough(c.target) || c.engaged.length >= 3) ? c.target : null; },
   },
 
+  // ------------------------------------------------------------------ Wren
+  powershot: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('powershot', 0.45, 'attack', {
+        hitAt: 0.25,
+        resolve: () => {
+          const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 300, vy: ny * 300, dmg: h.stats.atk * 2.2 * m, kind: 'arrow', pierce: true, life: 0.7 });
+          audio.sfx('swing', { pitch: 1.2 }); audio.sfx('dash');
+        },
+      });
+      return true;
+    },
+    ai(h, c) {
+      const t = c.target;
+      if (!t || dist(t, h) > 140) return null;
+      const [nx, ny] = norm(t.x - h.x, t.y - h.y);
+      const inLine = c.engaged.filter((e) => { const dx = e.x - h.x, dy = e.y - h.y; const a = dx * nx + dy * ny; return a > 0 && a < 160 && Math.abs(dx * ny - dy * nx) < 14; });
+      return inLine.length >= 2 || tough(t) ? t : null;
+    },
+  },
+  hawkstrike: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target) return false;
+      h.act('hawkstrike', 0.3, 'cast');
+      const hawk = sc.add.sprite(target.x - 80, target.y - 120, 'hawk', '0').play('hawk').setDepth(TOP - 15);
+      audio.sfx('zip');
+      sc.tweens.add({ targets: hawk, x: target.x, y: target.y - 10, duration: 380, ease: 'Quad.easeIn', onComplete: () => {
+        if (target.alive) {
+          sc.dealDamage(h, target, h.stats.atk * 1.2 * m, { knock: 30 });
+          target.hawkMarked = { t: 6 };
+          if (target.submerged) target.submerge?.(false);
+          sc.floatText(target.x, target.y - 34, 'MARKED', 'fontPlain', 0xffd04a);
+        }
+        sc.tweens.add({ targets: hawk, x: target.x + 90, y: target.y - 130, alpha: 0, duration: 500, onComplete: () => hawk.destroy() });
+      } });
+      return true;
+    },
+    ai(h, c) { return c.target && !c.target.hawkMarked && dist(c.target, h) < 150 ? c.target : null; },
+  },
+  volley: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target) return false;
+      const cx = target.x, cy = target.y;
+      h.face(cx - h.x, cy - h.y);
+      h.act('volley', 0.5, 'attack');
+      const g = sc.fx.telegraph(cx, cy, 30, 0.3); sc.time.delayedCall(300, () => g.destroy());
+      for (let i = 0; i < 10; i++) sc.time.delayedCall(250 + i * 180, () => {
+        const a = Math.random() * Math.PI * 2, r = Math.random() * 28;
+        const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.7;
+        const ar = sc.add.image(x - 10, y - 60, 'arrow').setRotation(1.4).setDepth(TOP - 20);
+        sc.tweens.add({ targets: ar, x, y: y - 4, duration: 160, onComplete: () => {
+          ar.destroy(); sc.fx.burst('spark', x, y, 3);
+          for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - x, e.y - y) < 14 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.5 * m, { knock: 10 });
+        } });
+      });
+      audio.sfx('swing', { pitch: 1.6 });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(t, h) < 130 && c.engaged.filter((e) => dist(e, t) < 32).length >= 2 ? t : null; },
+  },
+  snare: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const [fx, fy] = h.facingVec();
+      const x = h.x + fx * 18, y = h.y + fy * 14;
+      h.act('snare', 0.3, 'cast');
+      const img = sc.add.image(x, y, 'snare').setDepth(y - 4);
+      const trap = { x, y, img, t: 20 };
+      const check = sc.time.addEvent({ delay: 100, loop: true, callback: () => {
+        trap.t -= 0.1;
+        const e = sc.enemies.find((k) => k.alive && !k.boss && Math.hypot(k.x - x, k.y - y) < 12 + k.r);
+        if (e || trap.t <= 0) {
+          check.remove(); img.destroy();
+          if (e) { e.stunT = Math.max(e.stunT, 3 * Math.min(1.5, m)); e.clearZone(); sc.floatText(e.x, e.y - 26, 'SNARED!', 'fontGold'); audio.sfx('block'); sc.dealDamage(h, e, h.stats.atk * 0.8 * m, { knock: 0 }); }
+        }
+      } });
+      audio.sfx('equip');
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 50).length >= 1 ? true : null; },
+  },
+  disengage: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const from = target || sc.nearestEnemy(h, 80);
+      const [nx, ny] = from ? norm(h.x - from.x, h.y - from.y) : h.facingVec().map((v) => -v);
+      h.invuln = Math.max(h.invuln, 0.35);
+      h.act('disengage', 0.35, 'dodge', { tick: (a, dt) => { if (a.t < 0.25) h.moveBy(nx * 240 * dt, ny * 240 * dt); } });
+      if (from) sc.time.delayedCall(260, () => { if (!from.alive) return; const [ax, ay] = norm(from.x - h.x, from.y - (h.y - 6)); sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 8, vx: ax * 280, vy: ay * 280, dmg: h.stats.atk * 1.2 * m, kind: 'arrow', element: 'frost' }); });
+      audio.sfx('dodge');
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 32).length >= 1 ? true : null; },
+  },
+  blastarrow: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('blastarrow', 0.45, 'attack', {
+        hitAt: 0.25,
+        resolve: () => {
+          const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 240, vy: ny * 240, dmg: h.stats.atk * 2.4 * m, kind: 'fireball', aoe: 30, target, element: 'fire' });
+          audio.sfx('fireCast');
+        },
+      });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(t, h) < 140 && (c.engaged.filter((e) => dist(e, t) < 30).length >= 2 || tough(t)) ? t : null; },
+  },
+
+  // ------------------------------------------------------------------ Kesh
+  cleave: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const [nx, ny] = target ? norm(target.x - h.x, target.y - h.y) : h.facingVec();
+      h.face(nx, ny);
+      h.act('cleave', 0.32, 'attack', {
+        hitAt: 0.12,
+        resolve: () => {
+          audio.sfx('swing', { pitch: 0.7 });
+          for (const e of sc.enemies) {
+            if (!e.alive || e.submerged) continue;
+            const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy);
+            if (d < 34 + e.r && (dx * nx + dy * ny) / (d || 1) > 0.2) sc.dealDamage(h, e, h.stats.atk * 1.5 * m, { knock: 90 });
+          }
+        },
+      });
+      return true;
+    },
+    ai(h, c) { return engagedNear(h.scene, h, 36).length >= 2 || (c.target && dist(c.target, h) < 30) ? c.target || true : null; },
+  },
+  leap: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 125) return false;
+      const ox = h.x, oy = h.y, tx = target.x - (target.x - h.x) * 0.15, ty = target.y + 6;
+      h.invuln = Math.max(h.invuln, 0.5);
+      h.zipping = true;
+      h.act('leap', 0.55, 'dodge');
+      audio.sfx('dash');
+      sc.tweens.addCounter({ from: 0, to: 1, duration: 420, ease: 'Sine.easeInOut', onUpdate: (tw) => {
+        const k = tw.getValue();
+        h.x = ox + (tx - ox) * k; h.y = oy + (ty - oy) * k - Math.sin(k * Math.PI) * 26;
+      }, onComplete: () => {
+        h.zipping = false;
+        sc.fx.slam(h.x, h.y, 30); sc.shake(140, 0.008); audio.sfx('bash');
+        for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 32 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.8 * m, { knock: 120 }); if (!e.boss) e.stun?.(0.5); }
+        if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
+      } });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(t, h) > 45 && dist(t, h) < 120 && t.kind !== 'ward' ? t : null; },
+  },
+  howl: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('howl', 0.5, 'cast');
+      audio.sfx('roar');
+      sc.fx.ring(h.x, h.y - 6, 'ringRed', 5);
+      for (const e of sc.enemies) if (e.alive && !e.boss && dist(e, h) < 80) { e.fearT = 2 * Math.min(1.5, m); e.fearFrom = { x: h.x, y: h.y }; e.clearZone(); e.state = 'chase'; }
+      sc.floatText(h.x, h.y - 30, 'HOWL!', 'fontGold');
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 45).length >= 3 || (attackers(h.scene, h, 40).length >= 1 && h.hp / h.maxHp < 0.35) ? true : null; },
+  },
+  frenzy: {
+    cast(h, { m }) {
+      h.act('frenzy', 0.3, 'cast');
+      h.hp = Math.max(1, h.hp - Math.round(h.maxHp * 0.1));
+      h.buff('atkspd', 1.4 + (m - 1) * 0.5, 6);
+      h.scene.fx.ring(h.x, h.y - 6, 'ringRed', 3);
+      h.scene.floatText(h.x, h.y - 30, 'FRENZY!', 'fontGold');
+      audio.sfx('aggro');
+      return true;
+    },
+    ai(h, c) { return c.target && dist(c.target, h) < 40 && h.hp / h.maxHp > 0.4 && (c.engaged.length >= 2 || tough(c.target)) ? true : null; },
+  },
+  rend: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 40) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('rend', 0.3, 'attack', {
+        hitAt: 0.12,
+        resolve: () => {
+          if (!target.alive) return;
+          sc.dealDamage(h, target, h.stats.atk * 1.2 * m, { knock: 20 });
+          target.addBleed?.(h.stats.atk * 0.18 * m, 5);
+          audio.sfx('stab');
+        },
+      });
+      return true;
+    },
+    ai(h, c) { return c.target && dist(c.target, h) < 34 && tough(c.target) ? c.target : null; },
+  },
+  whirlwind: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('whirlwind', 3, 'attack', {
+        tick: (a, dt) => {
+          h.spinT = (h.spinT || 0) - dt;
+          h.sprite.setFlipX(Math.floor(a.t * 12) % 2 === 0);
+          if (h.spinT <= 0) {
+            h.spinT = 0.25;
+            sc.fx.ring(h.x, h.y - 6, 'ringWhite', 2.2);
+            audio.sfx('swing', { pitch: 0.9 + Math.random() * 0.3 });
+            for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 30 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.6 * m, { knock: 40 });
+          }
+          // the leader can steer the spin
+          if (h.isLeader && h.path) h.followPath(dt, 0.6);
+        },
+      });
+      return true;
+    },
+    ai(h) { return engagedNear(h.scene, h, 40).length >= 3 ? true : null; },
+  },
+
   // -------------------------------------------------------- disciplines
   mend: {
     cast(h, { m }) {
@@ -365,4 +590,4 @@ export const SKILL_FX = {
 };
 
 // Skills that need an enemy to aim at.
-export const TARGETED = new Set(['bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark']);
+export const TARGETED = new Set(['bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark', 'powershot', 'hawkstrike', 'volley', 'blastarrow', 'cleave', 'leap', 'rend']);

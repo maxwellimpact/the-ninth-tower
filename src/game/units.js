@@ -128,7 +128,8 @@ export class Hero extends Unit {
   }
 
   get name() { return this.def.name; }
-  get spd() { return this.stats.speed * this.buffMul('slow'); }
+  get spd() { return this.stats.speed * (this.buffs?.primal ? 1 : this.buffMul('slow')); }
+  get ranged() { return this.stats.role === 'caster' || this.stats.role === 'ranged'; }
   get level() { return this.hs.level; }
   get ult() { return this.hs.ult; }
   set ult(v) { this.hs.ult = Math.max(0, Math.min(100, v)); }
@@ -259,18 +260,27 @@ export class Hero extends Unit {
   startAttack(target) {
     if (this.atkT > 0 || !this.canAct()) return false;
     this.face(target.x - this.x, target.y - this.y);
-    this.atkT = this.stats.atkCd;
-    this.action = { type: 'attack', t: 0, dur: this.def.id === 'pip' ? 0.3 : 0.24, hitAt: this.stats.hitAt, target, done: false };
+    this.atkT = this.stats.atkCd / this.buffMul('atkspd');
+    this.action = { type: 'attack', t: 0, dur: this.ranged ? 0.3 : 0.24, hitAt: this.stats.hitAt, target, done: false };
     this.anim = '';
     this.play('attack');
-    if (this.def.id === 'brann') audio.sfx('swing', { pitch: 0.8 });
-    else if (this.def.id === 'sable') audio.sfx('stab');
+    const id = this.def.id;
+    if (id === 'brann' || id === 'kesh') audio.sfx('swing', { pitch: id === 'kesh' ? 0.65 : 0.8 });
+    else if (id === 'sable') audio.sfx('stab');
+    else if (id === 'wren') audio.sfx('swing', { pitch: 1.7 });
     else audio.sfx('fireCast');
     return true;
   }
 
   resolveAttack(target) {
     const sc = this.scene;
+    if (this.def.id === 'wren') {
+      // arrows: physical, so they crit and backstab like blades; Eagle Eye favours long shots
+      const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
+      const far = this.passive('eagleeye') && dist(this, target) > 70;
+      sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: far ? 0.15 : 0, life: 0.8 });
+      return;
+    }
     if (this.def.id === 'pip') {
       const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
       sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8 + ny * 6, vx: nx * 190, vy: ny * 190, dmg: this.stats.atk, kind: 'bolt', target, spell: true, basic: true });
@@ -453,6 +463,13 @@ export class Hero extends Unit {
     if (this.hiddenT > 0) { this.hiddenT -= dt; this.sprite.setAlpha(this.hiddenT > 0 ? 0.45 : 1); }
     for (const [k, b] of Object.entries(this.buffs)) { b.t -= dt; if (b.t <= 0) delete this.buffs[k]; }
     if (this.stats.regen && !this.downed) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.stats.regen * dt);
+    const hide = this.passive('thickhide');
+    if (hide && !this.downed) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * (this.scene.combatHold > 0 ? 0.003 : 0.01) * (1 + 0.2 * (hide - 1)) * dt);
+    if (this.passive('beastsense')) for (const e of this.scene.enemies) if (e.submerged && dist(e, this) < 90) e.sprite.setAlpha(0.55);
+    // Steady Aim: standing still builds focus
+    const moved = this.lastX !== undefined && Math.hypot(this.x - this.lastX, this.y - this.lastY) > 0.15;
+    this.stillT = moved ? 0 : (this.stillT || 0) + dt;
+    if (this.buffs.primal) { this.sprite.setScale(1.15); } else if (this.sprite.scaleX !== 1) this.sprite.setScale(1);
     if (this.poison && !this.downed) {
       this.poison.t -= dt; this.poison.next -= dt;
       if (this.poison.next <= 0) {
@@ -518,7 +535,7 @@ export class Hero extends Unit {
       if (!t.alive) { this.command = null; this.clearPath(); return; }
       const d = dist(this, t);
       const range = this.stats.range + t.r;
-      if (d <= range && (this.def.id !== 'pip' || sc.nav.lineClear(this.x, this.y, t.x, t.y, 1))) {
+      if (d <= range && (!this.ranged || sc.nav.lineClear(this.x, this.y, t.x, t.y, 1))) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         this.startAttack(t);
@@ -541,7 +558,7 @@ export class Hero extends Unit {
     }
     // idle: auto-retaliate against adjacent enemies attacking us
     const threat = sc.enemies.find((e) => e.alive && e.target === this && dist(e, this) < this.stats.range + 22);
-    if (threat && this.def.id !== 'pip') this.command = { type: 'attack', target: threat };
+    if (threat && !this.ranged) this.command = { type: 'attack', target: threat };
   }
 
   // ---------------------------------------------------------- companion AI
@@ -579,7 +596,7 @@ export class Hero extends Unit {
     if (t && t.alive) {
       const d = dist(this, t);
       const st = this.stats;
-      if (st.role === 'caster') {
+      if (this.ranged) {
         // kite: keep 60-100px away, fire when in range with line of sight
         if (d < 46) {
           const [nx, ny] = norm(this.x - t.x, this.y - t.y);
@@ -650,7 +667,8 @@ export class Hero extends Unit {
       const boss = near.some((e) => e.boss);
       const hurt = sc.party.some((h) => !h.downed && h.hp / h.maxHp < 0.45);
       const id = this.ultimate.id;
-      const want = (id === 'bulwark' && (hurt || near.length >= 3 || boss)) || (id === 'meteor' && (near.length >= 2 || boss)) || (id === 'thousand_cuts' && (near.length >= 2 || boss));
+      const want = (id === 'bulwark' && (hurt || near.length >= 3 || boss)) || (id === 'meteor' && (near.length >= 2 || boss)) || (id === 'thousand_cuts' && (near.length >= 2 || boss))
+        || (id === 'talons' && (near.length >= 2 || boss)) || (id === 'primal' && (near.length >= 2 || boss || this.hp / this.maxHp < 0.5));
       if (want && sc.useUltimate(this)) return;
     }
     // pick a target: what the leader engages, else what's attacking us
@@ -659,7 +677,7 @@ export class Hero extends Unit {
     const byDist = (list) => list.sort((a, b) => dist(a, this) - dist(b, this));
     let t = null;
     if (st.role === 'tank') t = byDist(engaged.filter((e) => e.target && e.target !== this))[0] || leaderT || byDist(engaged)[0]; // protect squishies first
-    else if (st.role === 'caster') t = leaderT || byDist(engaged)[0];
+    else if (this.ranged) t = leaderT || byDist(engaged)[0];
     else t = leaderT || engaged.sort((a, b) => a.hp - b.hp)[0];
 
     // skills: first ready one whose rule says it's worth it right now
@@ -826,6 +844,13 @@ export class Enemy extends Unit {
     this.statusTint();
   }
 
+  // Kesh's Rend: a physical bleed that stacks (up to 5)
+  addBleed(dps, t) {
+    this.status ??= {};
+    const n = Math.min(5, (this.status.bleed?.n || 0) + 1);
+    this.status.bleed = { t, tick: 0.5, next: this.status.bleed?.next ?? 0.5, dmg: dps * 0.5, n };
+  }
+
   get slow() { return this.status?.chill ? (this.status.chill.heavy ? 0.4 : 0.7) : 1; }
 
   statusTint() {
@@ -843,8 +868,8 @@ export class Enemy extends Unit {
         if (st.next <= 0 && this.alive) {
           st.next += st.tick;
           const d = Math.max(1, Math.round(st.dmg * (st.n || 1)));
-          sc.floatText(this.x + (Math.random() * 8 - 4), this.y - 18, `${d}`, 'font', k === 'burn' ? 0xffa060 : 0x9cff7a);
-          sc.fx.burst(k === 'burn' ? 'ember' : 'heal', this.x, this.y - 8, 3);
+          sc.floatText(this.x + (Math.random() * 8 - 4), this.y - 18, `${d}`, 'font', k === 'burn' ? 0xffa060 : k === 'bleed' ? 0xff6a6a : 0x9cff7a);
+          sc.fx.burst(k === 'burn' ? 'ember' : k === 'bleed' ? 'spark' : 'heal', this.x, this.y - 8, 3);
           this.damage(d, sc.leader, { knock: 0, dot: true });
           if (!this.alive) return;
         }
@@ -852,6 +877,7 @@ export class Enemy extends Unit {
       if (st.t <= 0) { delete this.status[k]; this.statusTint(); }
     }
     if (this.marked) { this.marked.t -= dt; if (this.marked.t <= 0) this.marked = null; }
+    if (this.hawkMarked) { this.hawkMarked.t -= dt; if (this.hawkMarked.t <= 0) this.hawkMarked = null; }
   }
 
   setTaunt(by, t) { this.taunter = by; this.tauntT = t; this.target = by; this.engaged = true; if (this.state === 'idle') this.state = 'chase'; }
@@ -958,6 +984,14 @@ export class Enemy extends Unit {
     if (s.ai === 'lurk' && this.aiLurk(dt)) { this.sync(dt); return; }
     if (s.ai === 'blink' && this.engaged) { this.blinkT = (this.blinkT ?? 4) - dt; if (this.blinkT <= 0 && this.state === 'chase') this.blinkAway(); }
     if (s.ai === 'warlock' && this.engaged) this.aiWarlock(dt);
+    if (this.fearT > 0) {
+      // Howl: run from Kesh
+      this.fearT -= dt;
+      const [nx, ny] = norm(this.x - this.fearFrom.x, this.y - this.fearFrom.y);
+      this.face(nx, ny); this.moveBy(nx * s.speed * 1.3 * dt, ny * s.speed * 1.3 * dt); this.play('walk');
+      this.sync(dt);
+      return;
+    }
     this.chargeCd = Math.max(0, (this.chargeCd || 0) - dt);
     this.tongueCd = Math.max(0, (this.tongueCd || 0) - dt);
     this.t += dt * this.slow;

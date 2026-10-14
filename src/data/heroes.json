@@ -104,5 +104,75 @@
    "RELAX. IF I WANTED YOUR PURSE I'D ALREADY HAVE IT.",
    "SABLE. I GO WHERE THE TREASURE IS, AND LATELY THE TREASURE IS WHEREVER YOU'RE GOING."
   ]
+ },
+ {
+  "id": "wren",
+  "name": "Wren",
+  "title": "Ranger",
+  "stats": {
+   "maxHp": 95,
+   "atk": 10,
+   "range": 110,
+   "atkCd": 0.8,
+   "speed": 68,
+   "crit": 0.12,
+   "role": "ranged",
+   "hitAt": 0.12
+  },
+  "skills": [
+   "powershot",
+   "hawkstrike"
+  ],
+  "ultimate": "talons",
+  "voice": {
+   "pitch": 380,
+   "wave": "triangle",
+   "speed": 1.0
+  },
+  "equip": {
+   "head": "ranger_cap",
+   "body": "ranger_leathers",
+   "weapon": "hunting_bow",
+   "offhand": "plain_quiver"
+  },
+  "recruit": [
+   "...THANK YOU. THE NET WAS ONE THING. THE GOBLINS ARGUING OVER HOW TO COOK ME WAS ANOTHER.",
+   "WREN. THAT'S KESTREL, MY HAWK. SHE LIKES YOU, WHICH IS RARE. I'LL WATCH YOUR BACKS FROM A DISTANCE."
+  ]
+ },
+ {
+  "id": "kesh",
+  "name": "Kesh",
+  "title": "Berserker",
+  "stats": {
+   "maxHp": 140,
+   "atk": 12,
+   "range": 17,
+   "atkCd": 0.6,
+   "speed": 66,
+   "crit": 0.1,
+   "role": "melee",
+   "hitAt": 0.09
+  },
+  "skills": [
+   "cleave",
+   "leap"
+  ],
+  "ultimate": "primal",
+  "voice": {
+   "pitch": 120,
+   "wave": "sawtooth",
+   "speed": 0.85
+  },
+  "equip": {
+   "head": "hide_warhelm",
+   "body": "hide_furs",
+   "weapon": "hand_axe",
+   "offhand": "plain_hatchet"
+  },
+  "recruit": [
+   "YOU... FOUGHT FOR ME. NOBODY FIGHTS FOR THE BEAST IN THE PIT.",
+   "KESH. I WAS A MILLER BEFORE THE CURSE. NOW I'M... THIS. POINT ME AT MALGRIM'S THINGS AND I'LL BE GOOD."
+  ]
  }
 ]

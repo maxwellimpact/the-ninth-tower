@@ -38,6 +38,9 @@ export class QuestManager {
     if (n.look === 'board') {
       npc.s = sc.add.image(npc.px, npc.py + 6, 'board').setOrigin(0.5, 1).setDepth(npc.py);
       sc.nav.block(n.x, n.y);
+    } else if (n.look === 'hawk') {
+      npc.s = sc.add.sprite(npc.px, npc.py - 30, 'hawk', '0').play('hawk').setDepth(100000 - 50);
+      npc.flying = true;
     } else {
       npc.s = sc.add.sprite(npc.px, npc.py, n.look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${n.look}_idle_down`).setDepth(npc.py);
       if (n.ghost) npc.s.setTint(0x9fd8ff).setAlpha(0.65);
@@ -126,6 +129,7 @@ export class QuestManager {
         sc.floatText(px(s.x), px(s.y) - 24, s.say, 'fontPlain');
         audio.sfx(s.kind === 'dog' ? 'blip' : 'coin');
         if (s.kind === 'dog' && spr) { spr.play('dog_run').setFlipX(true); sc.tweens.add({ targets: spr, x: spr.x + 140, alpha: 0, duration: 1600, onComplete: () => spr.destroy() }); }
+        else if ((s.kind === 'cage' || s.kind === 'net') && spr) { spr.over?.destroy(); sc.fx.puff(spr.x, spr.y, 'spark'); spr.destroy(); audio.sfx('block'); }
         else spr?.destroy();
         delete this.live[`${id}:prop`];
         this.advance(id);
@@ -141,6 +145,15 @@ export class QuestManager {
         return { x, y, tone, img };
       });
     }
+    if (s.announce) sc.time.delayedCall((s.delay || 0) * 900, () => sc.events.emit('banner', s.announce, ERRANDS[id].title));
+    if (s.type === 'follow') {
+      // the hawk flies ahead, waiting for you at each point
+      const hk = this.npc(ERRANDS[id].giver);
+      live.i = 0;
+      live.hawk = hk;
+      const [x0, y0] = s.path[0];
+      if (hk) { sc.tweens.add({ targets: hk, px: px(x0), py: px(y0), duration: 900 }); }
+    }
     if (s.type === 'escort') this.startEscort(id, s, live);
     if (s.type === 'defend') this.startDefend(id, s, live);
   }
@@ -148,6 +161,19 @@ export class QuestManager {
   placeProp(p, live) {
     const sc = this.sc;
     let spr;
+    if (p.kind === 'cage' || p.kind === 'net') {
+      // a caged / netted hero waiting to be freed
+      const who = p.kind === 'cage' ? 'kesh' : 'wren';
+      const x = px(p.x), y = px(p.y);
+      spr = sc.add.sprite(x, y, who, 'idle_down_0').setOrigin(0.5, 0.75).play(`${who}_${p.kind === 'cage' ? 'idle' : 'downed'}_down`).setDepth(y);
+      const over = sc.add.image(x, y + (p.kind === 'cage' ? 8 : 4), p.kind).setOrigin(0.5, 1).setDepth(y + 1);
+      live.objs.push(over);
+      spr.over = over;
+      const destroy = spr.destroy.bind(spr);
+      spr.destroy = () => { over.destroy(); destroy(); };
+      live.objs.push(spr);
+      return spr;
+    }
     if (p.kind === 'dog') spr = sc.add.sprite(px(p.x), px(p.y) + 4, 'dog', '0').setOrigin(0.5, 1).play('dog_sit').setDepth(px(p.y));
     else spr = sc.add.sprite(px(p.x), px(p.y), 'glint', '0').play('glint').setDepth(px(p.y) + 2);
     live.objs.push(spr);
@@ -210,6 +236,7 @@ export class QuestManager {
       const names = { lantern: ['LANTERN OF EMBERS ACQUIRED', 'DARK CAVES ARE NOW LIT AROUND YOU'] };
       sc.time.delayedCall(1200, () => { audio.sfx('levelUp'); sc.events.emit('banner', ...(names[r.relic] || [r.relic.toUpperCase(), ''])); });
     }
+    if (r.recruit) sc.time.delayedCall(600, () => sc.addRecruit(r.recruit, sc.leader.x + 14, sc.leader.y + 8));
     if (r.sp) { for (const id of st.recruited) st.heroes[id].sp = (st.heroes[id].sp || 0) + r.sp; out.push(`+${r.sp} SKILL POINT`); }
     const give = [];
     if (r.item) give.push(r.item);
@@ -320,7 +347,8 @@ export class QuestManager {
       if (n.hiddenNow) { n.mark.setVisible(false); continue; }
       const ready = this.turnInFor(n), offer = this.offerFor(n);
       n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');
-      if (!n.ghost && n.s.anims) {
+      if (n.flying) { n.s.y = n.py - 30 + Math.sin(Date.now() / 300) * 4; n.s.x = n.px + Math.cos(Date.now() / 700) * 10; }
+      if (!n.ghost && !n.flying && n.look !== 'board' && n.s.anims) {
         const d = Math.hypot(L.x - n.px, L.y - n.py);
         if (d < 60) { const dx = L.x - n.px, dy = L.y - n.py; const v = Math.abs(dx) > Math.abs(dy) ? 'side' : dy > 0 ? 'down' : 'up'; const key = `${n.look}_idle_${v}`; if (n.s.anims.currentAnim?.key !== key) n.s.play(key); n.s.setFlipX(v === 'side' && dx < 0); }
       }
@@ -339,7 +367,18 @@ export class QuestManager {
     for (const id of this.active()) {
       const s = this.step(id), live = this.live[id];
       if (!s || !live) continue;
+      if (s.type === 'follow') {
+        const [wx, wy] = s.path[live.i];
+        if (Math.hypot(L.x - px(wx), L.y - px(wy)) < s.r * TILE) {
+          live.i++;
+          if (live.i >= s.path.length) { if (live.hawk) this.setNpcVisible(live.hawk, false); this.advance(id); continue; }
+          const [nx, ny] = s.path[live.i];
+          if (live.hawk) sc.tweens.add({ targets: live.hawk, px: px(nx), py: px(ny), duration: 900 });
+          audio.sfx('blip', { voice: { pitch: 900, wave: 'square', duty: 0.125 } });
+        }
+      }
       if (s.type === 'spawn') {
+        if (!live.spawned && s.delay && (live.wait = (live.wait ?? s.delay) - dt) > 0) continue;
         if (!live.spawned && Math.hypot(L.x - px(s.at[0]), L.y - px(s.at[1])) < s.r * TILE) {
           live.spawned = s.units.map(([k, x, y]) => { const e = sc.spawnEnemy(k, px(x), px(y), true); e.questSpawn = id; return e; });
           if (live.prop) sc.bark({ x: live.prop.x, y: live.prop.y + 6, def: { voice: { pitch: 600, wave: 'square', duty: 0.25 } } }, 'WOOF! WOOF!');
@@ -382,6 +421,7 @@ export class QuestManager {
     if (!s) return null;
     if (s.type === 'talk') { const n = this.npc(s.npc); return n ? { x: n.x, y: n.y } : null; }
     if (s.type === 'spawn') return { x: s.at[0], y: s.at[1] };
+    if (s.type === 'follow') { const i = this.live[id]?.i || 0; const p = s.path[Math.min(i, s.path.length - 1)]; return { x: p[0], y: p[1] }; }
     if (s.type === 'find') return { x: s.x, y: s.y };
     if (s.type === 'escort') { const c = this.live[id]?.cart; return c ? { x: Math.floor(c.x / TILE), y: Math.floor(c.y / TILE) } : { x: s.path[0][0], y: s.path[0][1] }; }
     if (s.type === 'bells') return { x: s.bells[0][0], y: s.bells[0][1] };

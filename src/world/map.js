@@ -213,6 +213,12 @@ export function buildWorld() {
   wall(165, 94, 169, 94); wall(173, 94, 178, 94); wall(164, 94, 164, 100); wall(179, 94, 179, 104);
   wall(164, 104, 168, 104); wall(175, 104, 179, 104); wall(171, 96, 172, 97); // broken bell tower
   set(171, 100, T.STAIRS);
+  // Grub's fighting pit in the west fen: a ring of stakes around beaten earth
+  for (let y = 96; y <= 112; y++) for (let x = 52; x <= 68; x++) {
+    const d = Math.hypot(x - 60, (y - 104) * 1.15);
+    if (d < 7) set(x, y, T.PAVED);
+    else if (d < 8 && !(y > 109 && Math.abs(x - 60) < 2)) set(x, y, T.WALL);
+  }
   // the deep pool east of the abbey, where the bell clapper sank
   for (let y = 94; y <= 104; y++) for (let x = 181; x <= 190; x++) {
     const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;

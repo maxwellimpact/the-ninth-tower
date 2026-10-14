@@ -9,6 +9,7 @@ import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
 import { ERRANDS } from '../game/quests.js';
+import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, deep: 0x16121f };
@@ -52,6 +53,7 @@ export class Menu extends Phaser.Scene {
     audio.sfx('click');
     this.scene.stop();
     this.g.closeMenu();
+    if (this.partyDirty) this.g.applyParty();
   }
 
   rotate(d, auto = false) {
@@ -137,6 +139,7 @@ export class Menu extends Phaser.Scene {
 
     if (this.tab === 'bag') { this.renderBag(W, H); return; }
     if (this.tab === 'journal') { this.renderJournal(W, H); return; }
+    if (this.tab === 'party') { this.renderParty(W, H); return; }
     // hero tabs + name
     this.g.party.forEach((p, i) => {
       const x = 8 + i * 28, y = 22;
@@ -454,6 +457,35 @@ export class Menu extends Phaser.Scene {
         if (can3) this.btn(x, y - rowH, 22, rowH - 3, () => { if (combineGems(st, gem)) audio.sfx('chest'); this.render(); });
       }
       if (!gems.length) this.t(x, y, 'NO GEMS YET. WITCHLINGS, WARLOCKS, BOSSES AND CHESTS DROP THEM.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    }
+  }
+
+  // ------------------------------------------------------------------ PARTY
+  // Campfire only: tap heroes to bring them along (max 3) or bench them.
+  renderParty(W, H) {
+    const g = this.gfx, st = this.g.state;
+    const x = 8, w = W - 16;
+    let y = 26;
+    this.t(x, y, `CHOOSE YOUR PARTY - ${st.active.length} / 3`, 'fontGold'); y += 10;
+    this.t(x, y, 'BENCHED HEROES DO NOT EARN XP.', 'fontPlain', 0x9d93b3); y += 12;
+    for (const id of st.recruited) {
+      if (y + 28 > H - 4) break;
+      const on = st.active.includes(id), hs = st.heroes[id], info = this.g.party.find((h) => h.def.id === id);
+      panel(g, x, y, w, 26, on ? 0x2f3a52 : C.night, on ? C.gold : C.slate);
+      g.fillStyle(C.ink).fillRect(x + 3, y + 3, 20, 20);
+      const key = info ? `${info.texKey}_portrait` : `${id}_portrait`;
+      if (this.textures.exists(key)) this.dyn.push(this.add.image(x + 4, y + 4, key).setOrigin(0).setAlpha(on ? 1 : 0.6));
+      const nm = HERO_DATA.find((k) => k.id === id);
+      this.t(x + 28, y + 5, `${nm.name} THE ${nm.title}`, on ? 'fontGold' : 'font');
+      this.t(x + 28, y + 15, `LV${hs.level}  ${on ? (id === st.leader ? 'IN PARTY - LEADER' : 'IN PARTY') : 'BENCHED'}`, 'fontPlain', on ? 0x8cff8c : 0x9d93b3);
+      this.btn(x, y, w, 26, () => {
+        if (on) { if (st.active.length <= 1) { audio.sfx('click'); return; } st.active = st.active.filter((k) => k !== id); if (st.leader === id) st.leader = st.active[0]; }
+        else { if (st.active.length >= 3) { audio.sfx('click'); return; } st.active.push(id); }
+        audio.sfx('equip');
+        this.partyDirty = true;
+        this.render();
+      });
+      y += 29;
     }
   }
 
