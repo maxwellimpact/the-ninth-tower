@@ -1181,21 +1181,21 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 ### Answered in Demo 2–3 (kept for history)
 Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; combat difficulty on Normal approved. See the decision log.
 
-### Part II review — resolved 2026-10-14 (recommendations accepted)
-1. 4 visible gear slots + 2 trinkets; Feet dropped. **[LOCKED]**
-2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. **[LOCKED]**
-3. Automatic stat growth per hero; no stat points. **[LOCKED]**
-4. Cooldowns only; no mana. **[LOCKED]**
-5. Venom replaces Earth (Fire, Frost, Storm, Venom, Light, Shadow). **[LOCKED]**
-6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries; no random rolls. **[LOCKED]**
-7. Refine to +10 over three Blacksmith ranks; never fails. **[LOCKED]**
-8. Level cap 30; story ends around 25. **[LOCKED]**
-9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED]**
-10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED]**
-11. No cuts; build in three waves, each playtested:
+### Part II review — in progress (going through one by one; nothing below is decided yet)
+1. 4 visible gear slots + 2 trinkets; Feet dropped. *(recommended)*
+2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. *(recommended)*
+3. Automatic stat growth per hero; no stat points. *(recommended)*
+4. Cooldowns only; no mana. *(recommended)*
+5. Venom replaces Earth (Fire, Frost, Storm, Venom, Light, Shadow). *(recommended)*
+6. Generated Common/Fine/Rare tiers + 40 authored Uniques and Legendaries; no random rolls. *(recommended)*
+7. Refine to +10 over three Blacksmith ranks; never fails. *(recommended)*
+8. Level cap 30; story ends around 25. *(recommended)*
+9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. *(recommended)*
+10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. *(recommended)*
+11. Recommended: no cuts; build in three waves, each playtested:
     - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
     - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo.
-    - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. **[LOCKED]**
+    - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. *(recommended)*
 
 ### Build approach **[LOCKED]**
 - **The demo is the foundation, not a throwaway.** Its music, code-drawn art, puppet and gear renderer, systems and data are close to final.
@@ -1262,4 +1262,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-14 | Grapple target changed from a chasm island to a raised rock bluff in Mistfen: hook post at the foot of the cliff hauls the party up, a post on top drops them back down (posts carry a `land` tile). The chasm looked out of place. Prototype is also published as a private claude.ai Artifact for off-network playtests (`npm run build && node tools/make-artifact.mjs`, then republish `dist/artifact.html` with the hashed `assets/*.js`) |
 | 2026-10-14 | Part II drafted for review: core numbers, elements, all 8 heroes' skills, gear system (tiers, 32 uniques, 8 legendaries, trinkets), upgrades, materials, enemies by region, lieutenants, relic placement, Brightwater rebuild, full progression |
 | 2026-10-14 | Loading curtain: entering the world (Continue / New Game) and slow teleports hold the game behind a full-screen loading screen until the area's art, terrain chunks and enemy groups are in place and the frame time settles; enemies ignore the party for ~1.5s after arrival |
-| 2026-10-14 | Part II questions resolved (all recommendations accepted). Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
+| 2026-10-14 | Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
