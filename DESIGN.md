@@ -332,7 +332,7 @@ Everything is generated at runtime with WebAudio, as in Lumen. There are **no au
 
 ## 12a. Business Model — **[LOCKED]**
 
-- **Premium, pay once.** No in-app purchases, energy timers or premium currency.
+- **Premium, pay once.** No in-app purchases, energy timers or premium currency. Nothing in the game (upgrades, loot, revives, speed-ups) is ever sold for money; the user's rule is to earn money for effort, never to milk players.
   - The economy is tuned for **fun pacing, not grind**: drops and gold should feel generous.
 - **Future expansion packs** (paid DLC) are possible. To make them cheap to add later:
   - All content is **data-driven**: regions, heroes, items, enemies and quests are defined in data files, not hard-coded.
@@ -825,7 +825,7 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
   - Starmetal comes from elites, bosses and the Basin.
 - **The demo's +1 to +3 crafting refine becomes Rank 1.**
 - **Salvage:** breaking an item down returns about 40% of the materials it took to make and refine. Uniques can't be salvaged, so they can't be lost by accident.
-- **Re-forge (late game):** turns a Rare's trait into a different trait from the same pool, for gold and Starmetal.
+- **Re-forge (late game):** re-rolls a Rare's trait or its bonus stat, for gold and Starmetal.
 
 ### Enchanter: gems & sockets
 - **Sockets:** Rare and Unique items have 1, Legendaries have 2.
@@ -1196,7 +1196,7 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
    - **Naming:** the roll shows as a name prefix (Frosted, Sturdy, Keen, ...).
    - **Rolls never carry a downside.**
    - **Uniques and Legendaries** drop with fixed designed stats. In the **post-game**, re-earned boss and bounty Uniques can roll one small bonus stat.
-7. Refine to +10 over three Blacksmith ranks; never fails. *(recommended)*
+7. Refine to +10 over three Blacksmith ranks; never fails. Re-forge (late game) can re-roll a Rare's trait or its bonus stat. **[LOCKED 2026-10-14]**
 8. Level cap 30; story ends around 25. *(recommended)*
 9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. *(recommended)*
 10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. *(recommended)*
