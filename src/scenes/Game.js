@@ -540,6 +540,21 @@ export class Game extends Phaser.Scene {
       this.nav.block(p.x, p.y);
       this.addInteractable({ x, y, reach: 34, standOff: 14, h: 20, kind: 'post', id: p.id, pair: p.pair, land: p.land, interact: (h, o) => this.grapple(o) });
     }
+    // Shrines: +1 skill point for every recruited hero, once each (C10)
+    for (const k of W.shrines || []) {
+      const x = px(k.x), y = px(k.y), used = this.flags[`shrine_${k.id}`];
+      const img = this.add.image(x, y + 6, used ? 'shrineUsed' : 'shrine').setOrigin(0.5, 1).setDepth(y);
+      if (!used) { img.glow = this.add.circle(x, y - 6, 12, 0x9fe6ff, 0.18).setDepth(-50).setBlendMode(Phaser.BlendModes.ADD); this.tweens.add({ targets: img.glow, alpha: 0.06, duration: 1400, yoyo: true, repeat: -1 }); }
+      this.nav.block(k.x, k.y);
+      this.addInteractable({ x, y, reach: 24, standOff: 14, h: 22, kind: 'shrine', interact: () => this.useShrine(k, img) });
+    }
+    // Lookout towers: climb to sketch the surrounding region onto the map
+    for (const k of W.lookouts || []) {
+      const x = px(k.x), y = px(k.y);
+      this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
+      for (const dx of [-1, 0, 1]) this.nav.block(k.x + dx, k.y);
+      this.addInteractable({ x, y: y + 4, reach: 26, standOff: 16, h: 40, kind: 'lookout', interact: () => this.climbLookout(k) });
+    }
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
       const o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 16, kind: 'warp', warp: w, armed: false, interact: () => this.tryWarp(w) });
@@ -780,6 +795,7 @@ export class Game extends Phaser.Scene {
       else if (o.kind === 'warp') m.push({ ...t, kind: 'door' });
       else if (o.kind === 'frog') m.push({ ...t, kind: 'npc' });
       else if (o.kind === 'post') m.push({ ...t, kind: 'post' });
+      else if (o.kind === 'shrine' || o.kind === 'lookout') m.push({ ...t, kind: 'recruit' });
     }
     if (this.ward && this.ward.alive) m.push({ ...tile(this.ward), kind: 'boss' });
     for (const n of this.npcs) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'npc' });
@@ -1336,6 +1352,35 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(1800, () => this.bark(h, BARKS.chest[h.def.id]));
     this.autosave('chest');
     this.events.emit('party');
+  }
+
+  useShrine(k, img) {
+    const flag = `shrine_${k.id}`;
+    if (this.flags[flag]) { this.events.emit('dialogue', [{ who: 'SHRINE', text: 'THE RUNE IS DARK. ITS GIFT IS ALREADY GIVEN.' }]); return; }
+    this.flags[flag] = true;
+    img.setTexture('shrineUsed');
+    img.glow?.destroy();
+    for (const id of this.state.recruited) this.state.heroes[id].sp = (this.state.heroes[id].sp || 0) + 1;
+    for (const h of this.party) { if (h.downed) h.revive(1); h.hp = h.maxHp; this.fx.heal(h.x, h.y); }
+    audio.sfx('levelUp'); audio.sfx('heal');
+    this.fx.burst('bloom', img.x, img.y - 14, 30);
+    const n = Object.keys(this.flags).filter((f) => f.startsWith('shrine_')).length;
+    this.events.emit('banner', 'SHRINE OF INSIGHT', `+1 SKILL POINT FOR EVERY HERO  (${n} / 12 SHRINES)`);
+    this.autosave('shrine');
+  }
+
+  climbLookout(k) {
+    const L = this.leader;
+    const first = !this.flags[`lookout_${k.id}`];
+    this.flags[`lookout_${k.id}`] = true;
+    this.minimap.reveal(k.x, k.y, k.r);
+    this.minimap.flush();
+    audio.sfx('levelUp');
+    this.cameras.main.flash(200, 255, 240, 200);
+    this.events.emit('banner', k.name, first ? 'THE LAND AROUND IS SKETCHED ONTO YOUR MAP' : 'A FINE VIEW. STILL.');
+    if (first) for (const h of this.party) if (!h.downed) h.gainXp(60);
+    this.bark(L, first ? 'YOU CAN SEE HALF THE KINGDOM FROM UP HERE.' : 'SAME VIEW. STILL GOOD.');
+    this.autosave('lookout');
   }
 
   grapple(o) {

@@ -132,3 +132,54 @@ export function forge() {
   outline(c, 'ink');
   return c;
 }
+
+// Shrine: a small standing stone with a rune that glows until claimed.
+export function shrine(lit = true) {
+  const [c, ctx] = makeCanvas(18, 26);
+  grid(ctx, [
+    '....ssss....',
+    '...sSSSSs...',
+    '..sSSSSSSs..',
+    '..sSSRRSSs..',
+    '..sSRSSRSs..',
+    '..sSSRRSSs..',
+    '..sSSRSSSs..',
+    '..sSSRRSSs..',
+    '..sSSSSSSs..',
+    '.ssSSSSSSss.',
+    'sSSSSSSSSSSs',
+    'ssssssssssss',
+  ].map((r) => (lit ? r : r.replace(/R/g, 'S'))), { s: 'slate', S: 'stone', R: 'crystalL' }, 3, 10);
+  outline(c, 'ink');
+  return c;
+}
+
+// Lookout tower: a tall timber watch platform with a ladder.
+export function lookout() {
+  const [c, ctx] = makeCanvas(26, 48);
+  grid(ctx, [
+    '...rrrrrrrrrrrrrr...',
+    '..rRRRRRRRRRRRRRRr..',
+    '.rRRRRRRRRRRRRRRRRr.',
+    'dwwwwwwwwwwwwwwwwwwd',
+    'dWWWWWWWWWWWWWWWWWWd',
+    'dd.d............d.dd',
+    '.d..d..........d..d.',
+    '.d...d...ll...d...d.',
+    '.d....d..ll..d....d.',
+    '.d.....d.ll.d.....d.',
+    '.d......dlld......d.',
+    '.d.......ll.......d.',
+    '.d......dlld......d.',
+    '.d.....d.ll.d.....d.',
+    '.d....d..ll..d....d.',
+    '.d...d...ll...d...d.',
+    '.d..d....ll....d..d.',
+    '.d.d.....ll.....d.d.',
+    '.dd......ll......dd.',
+    '.d.......ll.......d.',
+    'ddd......ll......ddd',
+  ], { r: 'redD', R: 'red', d: 'woodD', w: 'woodD', W: 'wood', l: 'woodL' }, 3, 6);
+  outline(c, 'ink');
+  return c;
+}

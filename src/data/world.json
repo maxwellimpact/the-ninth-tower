@@ -1669,5 +1669,26 @@
    "gold": 300,
    "blessing": true
   }
+ ],
+ "shrines": [
+  {
+   "id": "shrineHeights",
+   "x": 76,
+   "y": 6
+  },
+  {
+   "id": "shrinePond",
+   "x": 99,
+   "y": 9
+  }
+ ],
+ "lookouts": [
+  {
+   "id": "lookoutVale",
+   "x": 120,
+   "y": 26,
+   "r": 48,
+   "name": "HIGHMEADOW LOOKOUT"
+  }
  ]
 }

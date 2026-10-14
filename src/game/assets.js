@@ -165,6 +165,8 @@ GROUPS.core.push(
     frames(s, 'cart', Q.cartFrames(), 6);
     s.textures.addCanvas('board', Q.noticeBoard());
     s.textures.addCanvas('forge', Q.forge());
+    s.textures.addCanvas('shrine', Q.shrine(true)); s.textures.addCanvas('shrineUsed', Q.shrine(false));
+    s.textures.addCanvas('lookout', Q.lookout());
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
 );

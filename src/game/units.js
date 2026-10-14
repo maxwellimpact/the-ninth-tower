@@ -1305,6 +1305,7 @@ export class WardStone extends Unit {
     if (this.scene.wardShielded()) {
       this.flash(60, 0x9fd8ff);
       if (!this.shieldMsgT || this.scene.time.now > this.shieldMsgT) { this.shieldMsgT = this.scene.time.now + 900; this.scene.floatText(this.x, this.y - 44, 'SHIELDED', 'fontPlain'); audio.sfx('block'); }
+      if (!this.scene.flags.wardHint) { this.scene.flags.wardHint = true; const pip = this.scene.party.find((h) => h.def.id === 'pip') || this.scene.leader; this.scene.bark(pip, 'THE BARRIER DRAWS ON SOMETHING BELOW THE OLD KEEP. THE RUINS - THERE WERE STAIRS!'); }
       return 0;
     }
     amount = Math.round(amount);

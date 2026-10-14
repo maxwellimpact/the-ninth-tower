@@ -215,6 +215,7 @@ export function buildWorld() {
   for (const b of W.breakables || []) reserve(b.x, b.y, 3);
   for (const b of W.buildings || []) reserve(b.x, b.y + 2, 4);
   for (const w of W.warps || []) reserve(w.x, w.y, 2.5);
+  for (const k of [...(W.shrines || []), ...(W.lookouts || [])]) reserve(k.x, k.y, 3);
   // errand NPCs, props and routes stay clear of trees
   for (const n of QD.npcs) reserve(n.x, n.y, 2.5);
   for (const e of Object.values(QD.errands)) for (const st of e.steps) {
