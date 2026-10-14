@@ -1253,7 +1253,7 @@ Small, self-contained jobs from ordinary people. They're never required, but the
 ### Answered in Demo 2–3 (kept for history)
 Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; combat difficulty on Normal approved. See the decision log.
 
-### Part II review — in progress (going through one by one; nothing below is decided yet)
+### Part II review — resolved 2026-10-14 (each question discussed and decided one by one)
 1. 4 visible gear slots + 2 trinkets; Feet dropped. **[LOCKED 2026-10-14]**
 2. 3 active skills; the combat grid's bottom row becomes DODGE + 3 skills. **[LOCKED 2026-10-14]** Skills rank up by **spending skill points**: 1 per hero level, plus bonus points from shrines and other special rewards where it fits (e.g. some quests). No automatic skill levelling.
 3. Automatic stat growth per hero; no stat points. **[LOCKED 2026-10-14]**
@@ -1272,10 +1272,10 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
    - XP curve and encounter density are set together so levels arrive every 5–13 minutes early and 20–33 minutes mid-to-late. Details in C1, "Pacing math"; it gets checked with a live minutes-per-level readout in the Wave 1 playtest.
 9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED 2026-10-14]** Also added: opt-in **errands** (small side quests from townsfolk and tavern rumours; see C10).
 10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED 2026-10-14]**
-11. Recommended: no cuts; build in three waves, each playtested:
+11. No cuts; build in three waves, each playtested:
     - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
     - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo.
-    - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. *(recommended)*
+    - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. **[LOCKED 2026-10-14]**
 
 ### Build approach **[LOCKED]**
 - **The demo is the foundation, not a throwaway.** Its music, code-drawn art, puppet and gear renderer, systems and data are close to final.
@@ -1343,3 +1343,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-14 | Part II drafted for review: core numbers, elements, all 8 heroes' skills, gear system (tiers, 32 uniques, 8 legendaries, trinkets), upgrades, materials, enemies by region, lieutenants, relic placement, Brightwater rebuild, full progression |
 | 2026-10-14 | Loading curtain: entering the world (Continue / New Game) and slow teleports hold the game behind a full-screen loading screen until the area's art, terrain chunks and enemy groups are in place and the frame time settles; enemies ignore the party for ~1.5s after arrival |
 | 2026-10-14 | Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
+| 2026-10-14 | Part II review done, one question at a time: 4+2 gear slots; 3 skills ranked with skill points (levels + shrine/quest bonuses); automatic stats; cooldowns only (+ cooldown gear); Venom replaces Earth; generated gear with light bonus-stat rolls (no downsides; Uniques roll only post-game); refine +10 never fails; level cap 35 with a new XP curve and encounter-density targets; recruit placements kept; errands added; Tower scaling kept; three build waves |
