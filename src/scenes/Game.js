@@ -143,6 +143,8 @@ export class Game extends Phaser.Scene {
 
     window.__game = this.game;
     window.__scene = this;
+    // free the terrain worker and chunk textures if the scene is ever restarted
+    this.events.once('shutdown', () => { this.streamer?.destroy(); for (const w of this.wards || []) if (w.tex) this.textures.remove(`curseOverlay_${w.def.id}`); });
   }
 
   // ============================================================ streaming

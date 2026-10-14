@@ -535,7 +535,7 @@ export const SKILL_FX = {
   rend: {
     cast(h, { target, m }) {
       const sc = h.scene;
-      if (!target || dist(h, target) > 40) return false;
+      if (!target || dist(h, target) > 50) return false;
       h.face(target.x - h.x, target.y - h.y);
       h.act('rend', 0.3, 'attack', {
         hitAt: 0.12,

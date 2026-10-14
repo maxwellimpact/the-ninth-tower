@@ -471,7 +471,7 @@ Where this part changes an earlier **[DRAFT]** section, it says so, and the earl
 ### Enemy scaling (per level above 1)
 | | HP | Damage | XP | Gold |
 |---|---|---|---|---|
-| Per level | +14% | +10% | +12% | +10% |
+| Per level | +25% | +13% | +15% | +10% |
 
 ### Region level bands
 **[REVISED]** This is a concrete version of the §8 band rule.
@@ -1344,3 +1344,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-14 | Loading curtain: entering the world (Continue / New Game) and slow teleports hold the game behind a full-screen loading screen until the area's art, terrain chunks and enemy groups are in place and the frame time settles; enemies ignore the party for ~1.5s after arrival |
 | 2026-10-14 | Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
 | 2026-10-14 | Part II review done, one question at a time: 4+2 gear slots; 3 skills ranked with skill points (levels + shrine/quest bonuses); automatic stats; cooldowns only (+ cooldown gear); Venom replaces Earth; generated gear with light bonus-stat rolls (no downsides; Uniques roll only post-game); refine +10 never fails; level cap 35 with a new XP curve and encounter-density targets; recruit placements kept; errands added; Tower scaling kept; three build waves |
+| 2026-10-14 | Wave 1 built (systems + Vale + Mistfen + Kesh/Wren). Balance retune from simulation: enemy HP +25%/level and damage +13%/level (instead of +16% / +10%), so kill times stay roughly flat as gear improves. Vale gate south is the Southwash river with a collapsed bridge (hook posts); Mistfen's lieutenant Mother Murk floods her arena (swim to reach her). Wren's recruit sits in the Vale's western woods for now (Gloamwood itself is Wave 2) |

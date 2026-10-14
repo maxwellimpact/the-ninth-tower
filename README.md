@@ -1,4 +1,4 @@
-# The Ninth Tower — Web Prototype (Demo 2)
+# The Ninth Tower — Full Build (Wave 1)
 
 An open-world action RPG prototype (see [DESIGN.md](DESIGN.md)). This build exists to answer one question:
 **can code-drawn pixel art and code-generated "8-bit plus" audio carry the game?**
@@ -23,7 +23,7 @@ npm run dev
 | Attack | Tap an enemy | — |
 | Talk / open / rest / grapple / enter | Tap the NPC, chest, sign, campfire, post or cave mouth | — |
 | Dodge roll | Swipe, or right-click | Space |
-| Skills | Skill buttons | 1, 2 |
+| Skills | Skill buttons (3 slots) | 1, 2, 3 |
 | **Ultimate** (when the meter is full) | Top-left button of the combat grid (bottom left); companions' ultimates sit beside it (they also auto-fire) | Z |
 | Switch hero | Tap their portrait (top left) | Tab (or Q / E) |
 | **Party & Gear menu** | Bag button | I |
@@ -32,7 +32,29 @@ npm run dev
 | Health potion / Elixir | Flask buttons above the skills | H / J |
 | Mute | Speaker button | M |
 
-## What's in Demo 2
+## What's in Wave 1
+
+The full game grows out of the demo (frozen copy: `../untitled-rpg-demo`, git tag `demo-3`). Wave 1 covers the Vale and Mistfen; see DESIGN.md Part II.
+
+- **Systems**
+  - Skills: 6 per hero plus 3 passives, ranked 1-5 with skill points (1 per level, plus shrines and some errands). Equip 3 skills and 2 passives in the menu's SKILLS tab.
+  - Level cap 35 with a new XP curve. The debug overlay shows a PACE line (minutes per level, kills per minute) for tuning.
+  - Six elements: Fire, Frost, Storm, Venom, Light, Shadow.
+  - Gear is generated in 6 tiers, Common / Fine / Rare, with small bonus rolls and Rare traits. Plus 2 ring slots, refining to +10 at the Blacksmith (rank-gated), salvage, and gems with sockets (Enchanter).
+  - Errands: opt-in quests from townsfolk ("!" markers) and rumour boards, with a JOURNAL tab and a tracker under the minimap.
+  - Party roster: up to 3 heroes travel; swap at campfires when you have more.
+- **Brightwater Vale**
+  - The Brightwater Undercroft dungeon: the Grapple Hook, Hollow Guards, and the Gatewarden, whose armour plates you hook off in phase 2.
+  - The Southwash river gate south, with the broken bridge and hook posts.
+  - New enemies: boars, crabs, wisps and warlocks. Snagtooth bounty, shrines, a lookout tower.
+  - Greta the smith, Old Wick and the Lantern of Embers errand.
+- **Mistfen**
+  - The Sunken Abbey: the Tide Charm (swim through deep water) and Mother Murk (she floods her nest; swim in to reach her).
+  - Fen enemies: drowned, witchlings, leeches, lurkers and croakers. Old Snapjaw bounty.
+  - The refugee camp with five errands, and the Mistfen Ward Stone.
+- **New heroes:** Kesh the Berserker (win The Pit in Mistfen) and Wren the Ranger (follow the hawk in the Vale's western woods).
+
+## What was in Demo 2
 
 **New since the first test build:**
 - **Visible gear (paper-doll).**
