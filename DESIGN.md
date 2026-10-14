@@ -1271,7 +1271,7 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 8. **Level cap 35**; the story ends around level 28, and the post-game takes you to 35. **[LOCKED 2026-10-14]**
    - XP curve and encounter density are set together so levels arrive every 5–13 minutes early and 20–33 minutes mid-to-late. Details in C1, "Pacing math"; it gets checked with a live minutes-per-level readout in the Wave 1 playtest.
 9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED 2026-10-14]** Also added: opt-in **errands** (small side quests from townsfolk and tavern rumours; see C10).
-10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. *(recommended)*
+10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED 2026-10-14]**
 11. Recommended: no cuts; build in three waves, each playtested:
     - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
     - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo.
