@@ -14,6 +14,30 @@ const TIPS = [
   'CAMPFIRES HEAL THE PARTY AND SAVE YOUR GAME.',
 ];
 
+// Rotating status lines while the world gets ready (kept short for phones).
+const QUIPS = [
+  'PAINTING THE GRASS GREEN',
+  'TEACHING TREES TO SWAY',
+  'POLISHING THE ARMOUR',
+  'SHARPENING SWORDS',
+  'WAKING THE GOBLINS',
+  'HIDING THE GOLDEN FLIES',
+  'COUNTING THE GOLD',
+  'FILLING THE LAKE',
+  'STACKING BRICKS FOR THE RUINS',
+  'TUNING THE BARD',
+  'BREWING POTIONS',
+  'SCATTERING MOONHERB',
+  'PLANTING CRACKED WALLS',
+  'BRIBING THE FROG KING',
+  'DUSTING OFF THE TREASURE',
+  'LIGHTING THE CAMPFIRES',
+  'ARGUING WITH MALGRIM',
+  'UNTANGLING THE HAWK',
+  'WARMING UP THE HEXLINGS',
+  'CURSING THE FEN (POLITELY)',
+];
+
 export class Loading extends Phaser.Scene {
   constructor() { super('Loading'); }
 
@@ -25,6 +49,10 @@ export class Loading extends Phaser.Scene {
     this.title = data.title || 'THE NINTH TOWER';
     this.label = data.label || 'PREPARING THE WORLD';
     this.tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+    this.quips = Phaser.Utils.Array.Shuffle([...QUIPS]);
+    this.quipI = 0;
+    this.label = this.quips[0];
+    this.quipT = 0;
     this.g = this.add.graphics();
     this.tTitle = this.add.bitmapText(0, 0, 'fontGold', '').setOrigin(0.5).setScale(2);
     this.tLabel = this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(0.5);
@@ -35,9 +63,9 @@ export class Loading extends Phaser.Scene {
     this.draw();
   }
 
-  setProgress(p, label) {
+  // the stage label is ignored: the status line rotates through quips instead
+  setProgress(p) {
     this.p = Math.max(this.p, Math.min(1, p));
-    if (label) this.label = label;
   }
 
   setTitle(t) { this.title = t; }
@@ -56,6 +84,8 @@ export class Loading extends Phaser.Scene {
   update(time, delta) {
     // ease the drawn bar toward the real progress so it never jumps backward
     this.shown += (this.p - this.shown) * Math.min(1, delta / 90);
+    this.quipT += delta;
+    if (!this.closing && this.quipT > 1100) { this.quipT = 0; this.quipI = (this.quipI + 1) % this.quips.length; this.label = this.quips[this.quipI]; }
     this.dots = Math.floor(time / 350) % 4;
     this.draw();
   }
