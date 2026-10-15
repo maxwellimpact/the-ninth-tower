@@ -1018,8 +1018,10 @@ export class Enemy extends Unit {
       case 'chase': {
         const t = this.target;
         if (!t) { this.state = 'return'; break; }
-        if (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) > 230) { this.state = 'return'; this.engaged = false; this.target = null; break; }
+        // give up the chase: too far from home, or the target has pulled well away for a moment
         const d = dist(this, t);
+        this.loseT = d > s.aggro * 1.4 ? (this.loseT || 0) + dt : 0;
+        if (!this.boss && (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) > 160 || this.loseT > 1.2)) { this.state = 'return'; this.engaged = false; this.target = null; this.loseT = 0; this.homeT = 0; this.clearZone(); break; }
         if (s.ranged) {
           // archers keep their distance and need a clear shot
           if (d < s.keepAway) { this.stepTo({ x: this.x * 2 - t.x, y: this.y * 2 - t.y }, dt, 0.9); break; }
@@ -1067,10 +1069,12 @@ export class Enemy extends Unit {
       case 'return': {
         this.engaged = false;
         this.hp = Math.min(this.maxHp, this.hp + dt * 20);
-        if (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) < 6) { this.state = 'idle'; break; }
+        if (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) < 6) { this.state = 'idle'; this.homeT = 0; break; }
         this.stepTo(this.spawn, dt, 1);
-        const h = sc.nearestHero(this, s.aggro * 0.6);
-        if (h) this.aggroOn(h);
+        // heading home: ignore the party for a couple of seconds so it doesn't ping-pong
+        this.homeT = (this.homeT || 0) + dt;
+        const h = this.homeT > 2 && sc.nearestHero(this, s.aggro * 0.6);
+        if (h) { this.homeT = 0; this.aggroOn(h); }
         break;
       }
     }
