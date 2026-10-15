@@ -1061,6 +1061,8 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 - **Phase 2:** armour plates close over its core. **Hook the plates off** to expose it.
 - **Phase 3:** enrages and summons hexlings (demo).
 - **Reward:** the Vale Ward Stone. The Blacksmith returns.
+- **Two-stage (playtest change):** a cursed **vine** runs from the Ward Stone down into the Undercroft. Below, you fight the **Shadow of the Gatewarden** (60% HP, no enrage; plates phase teaches the hook). Killing it withers the vine. Approaching the Ward Stone then raises the **real Gatewarden** from the rubble (full three phases, +30% HP, +15% damage, the unique drops). Walk away and he sinks back at full health. Once he falls, the stone can be broken.
+- **Boss entrances (all bosses):** the world freezes, the camera turns to the boss, the ground rumbles, and the boss assembles (stones fly in / shadow gathers / Murk heaves out of her pool). Then it roars and the fight starts.
 
 **2. Mother Murk** (Mistfen, Sunken Abbey) — a bog hag fused with a giant toad
 - **Phase 1:** tongue grabs and mire slimes.

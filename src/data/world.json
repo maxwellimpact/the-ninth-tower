@@ -1243,20 +1243,20 @@
  ],
  "boss": {
   "kind": "golem",
-  "name": "THE GATEWARDEN",
-  "sub": "GUARDIAN OF THE VALE WARD STONE",
+  "name": "SHADOW OF THE GATEWARDEN",
+  "sub": "A CURSED ECHO, ROOTED TO THE WARD STONE ABOVE",
   "arena": [
    288,
    7
   ],
   "trigger": 9,
-  "drops": [
-   "sunspire_staff",
-   "aegis_of_dawn",
-   "bulwark_of_aldermere",
-   "orb_of_echoes"
-  ],
-  "gold": 80
+  "drops": [],
+  "gold": 40,
+  "shadow": true,
+  "fall": [
+   "THE SHADOW BREAKS",
+   "THE CURSED VINE WITHERS... SOMETHING STIRS BENEATH THE WARD STONE."
+  ]
  },
  "recruits": [
   {
@@ -2099,7 +2099,82 @@
    "flag": "wardBroken",
    "guardian": "golemDefeated",
    "region": "vale",
-   "lifts": "THE CURSE LIFTS FROM THE VALE"
+   "lifts": "THE CURSE LIFTS FROM THE VALE",
+   "warden": "gatewardenDefeated",
+   "vines": [
+    [
+     [
+      82,
+      38
+     ],
+     [
+      76,
+      36.5
+     ],
+     [
+      68,
+      35
+     ],
+     [
+      61,
+      31
+     ],
+     [
+      56,
+      26
+     ],
+     [
+      53,
+      23.5
+     ],
+     [
+      49.5,
+      24
+     ],
+     [
+      47,
+      25
+     ]
+    ],
+    [
+     [
+      288,
+      56
+     ],
+     [
+      288.3,
+      50
+     ],
+     [
+      287.8,
+      45
+     ],
+     [
+      288.5,
+      40
+     ],
+     [
+      287.5,
+      34
+     ],
+     [
+      288.2,
+      28
+     ],
+     [
+      287.8,
+      22
+     ],
+     [
+      288.2,
+      17
+     ],
+     [
+      288,
+      6.2
+     ]
+    ]
+   ]
   },
   {
    "id": "marsh",
@@ -2109,7 +2184,65 @@
    "flag": "ward_marsh",
    "guardian": "murkDefeated",
    "region": "marsh",
-   "lifts": "THE CURSE LIFTS FROM MISTFEN"
+   "lifts": "THE CURSE LIFTS FROM MISTFEN",
+   "vines": [
+    [
+     [
+      160,
+      115
+     ],
+     [
+      163,
+      110
+     ],
+     [
+      167,
+      105
+     ],
+     [
+      170,
+      102
+     ],
+     [
+      171,
+      100.5
+     ]
+    ],
+    [
+     [
+      287,
+      123
+     ],
+     [
+      287.4,
+      116
+     ],
+     [
+      286.7,
+      110
+     ],
+     [
+      287.3,
+      103
+     ],
+     [
+      286.8,
+      96
+     ],
+     [
+      287.2,
+      88
+     ],
+     [
+      286.8,
+      81
+     ],
+     [
+      287,
+      74.5
+     ]
+    ]
+   ]
   }
  ],
  "murk": {
@@ -2122,6 +2255,38 @@
   "drops": [
    "wyrmfang_twin"
   ],
-  "gold": 120
- }
+  "gold": 120,
+  "fall": [
+   "MOTHER MURK FALLS",
+   "THE CURSED VINE WITHERS. THE WARD STONE LIES OPEN."
+  ]
+ },
+ "wardBosses": [
+  {
+   "id": "gatewarden",
+   "ward": "vale",
+   "flag": "gatewardenDefeated",
+   "name": "THE GATEWARDEN",
+   "sub": "GUARDIAN OF THE VALE WARD STONE",
+   "trigger": 7,
+   "leash": 20,
+   "offset": [
+    0,
+    -4
+   ],
+   "hpMul": 1.3,
+   "dmgMul": 1.15,
+   "drops": [
+    "sunspire_staff",
+    "aegis_of_dawn",
+    "bulwark_of_aldermere",
+    "orb_of_echoes"
+   ],
+   "gold": 80,
+   "fall": [
+    "THE GATEWARDEN FALLS",
+    "NOTHING GUARDS THE WARD STONE NOW. BREAK IT!"
+   ]
+  }
+ ]
 }

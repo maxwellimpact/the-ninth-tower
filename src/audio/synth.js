@@ -287,6 +287,11 @@ export const SFX = {
     a.tone({ type: 'triangle', freq: 600, freq2: 120, dur: 0.4, vol: 0.2, send: 0.5 });
     a.noiseHit({ dur: 0.45, vol: 0.12, type: 'lowpass', f0: 3000, f1: 200 });
   },
+  rumble(a) {
+    // deep grinding stone: long low noise with a slow wobble underneath
+    a.noiseHit({ dur: 1.6, vol: 0.3, type: 'lowpass', f0: 260, f1: 90, send: 0.3 });
+    a.tone({ type: 'triangle', freq: 46, freq2: 38, dur: 1.5, vol: 0.4, vibrato: 0.08 });
+  },
   roar(a) {
     const ctx = a.ctx, t = a.t;
     const o = ctx.createOscillator(); o.type = 'sawtooth';

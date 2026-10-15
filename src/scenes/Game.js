@@ -554,7 +554,12 @@ export class Game extends Phaser.Scene {
 
   wardUnits() { return this.wards.filter((w) => w.unit?.alive).map((w) => w.unit); }
 
-  wardShielded(unit) { return !this.flags[unit?.wardDef?.guardian ?? 'golemDefeated']; }
+  // shielded until its guardian below falls, and (Vale) while its Warden still stands
+  wardShielded(unit) {
+    const wd = unit?.wardDef;
+    if (!wd) return !this.flags.golemDefeated;
+    return !this.flags[wd.guardian] || (!!wd.warden && !this.flags[wd.warden]);
+  }
 
   // ============================================================ landmarks
   addInteractable(o) { this.interactables.push(o); return o; }
@@ -677,11 +682,12 @@ export class Game extends Phaser.Scene {
         w.unit.wardDef = wd;
         w.shieldFx = this.add.ellipse(w.unit.x, w.unit.y - 18, 46, 60, 0x6f93e0, 0.12).setStrokeStyle(1, 0x9fd8ff, 0.6).setDepth(w.unit.y + 3);
         this.tweens.add({ targets: w.shieldFx, alpha: 0.5, duration: 900, yoyo: true, repeat: -1 });
-        if (this.flags[wd.guardian]) w.shieldFx.setVisible(false);
+        if (!this.wardShielded(w.unit)) w.shieldFx.setVisible(false);
       } else this.add.image(px(wd.x), px(wd.y) + 6, 'wardRubble').setOrigin(0.5, 1).setDepth(px(wd.y));
       for (const dx of [-1, 0, 1]) this.nav.block(wd.x + dx, wd.y);
     }
     this.ward = this.wards[0].unit; // the Vale stone (kept for older code paths)
+    this.buildVines();
   }
 
   buildRecruits() {
@@ -1368,9 +1374,12 @@ export class Game extends Phaser.Scene {
     this.state.gold += B.cfg.gold || 0;
     for (const h of this.party) if (!h.downed) h.gainXp(b.s.xp);
     this.golem = null;
-    for (const w of this.wards) if (this.flags[w.def.guardian]) w.shieldFx?.setVisible(false);
+    for (const w of this.wards) {
+      if (w.def.guardian === B.flag) this.witherVines(w);
+      if (w.unit) w.shieldFx?.setVisible(this.wardShielded(w.unit));
+    }
     this.events.emit('boss', null);
-    this.events.emit('banner', `${B.cfg.name} FALLS`, "THE WARD STONE'S BARRIER HAS FAILED");
+    this.events.emit('banner', ...(B.cfg.fall || [`${B.cfg.name} FALLS`, "THE WARD STONE'S BARRIER HAS FAILED"]));
     this.sealArena(false);
     for (const e of this.enemies) if (e.alive && e.summoned) e.damage(999, this.leader);
     this.autosave('boss');
@@ -1819,9 +1828,192 @@ export class Game extends Phaser.Scene {
   // Lieutenant arenas: the boss wakes once the party is inside, bars close behind.
   bossDefs() {
     return [
-      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, o) },
-      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 75], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, o) },
+      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: W.boss.shadow }) },
+      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, o) },
     ];
+  }
+
+  // ------------------------------------------------------------ boss intros
+  // Big entrances: the world holds still while the camera turns to the boss,
+  // the ground rumbles and the boss assembles (stones fly in / shadow gathers
+  // / she heaves up out of her pool), roars, and only then does the fight start.
+  bossIntro(g, style, B) {
+    const cam = this.cameras.main, L = this.leader;
+    const at = (ms, fn) => this.time.delayedCall(ms, fn);
+    this.busy = true;
+    for (const h of this.party) { h.clearPath(); h.command = null; h.target = null; }
+    g.introT = 99;
+    g.sprite.setAlpha(0); g.shadow.setAlpha(0);
+    const bx = g.x, by = g.y;
+    cam.stopFollow();
+    cam.pan(bx, by - 24, 700, 'Sine.easeInOut');
+    at(250, () => audio.sfx('rumble'));
+    at(1300, () => audio.sfx('rumble'));
+    for (let i = 0; i < 9; i++) at(250 + i * 210, () => this.shake(230, 0.002 + i * 0.0011));
+    if (style === 'pool') {
+      for (let i = 0; i < 12; i++) at(350 + i * 140, () => this.fx.burst('foam', bx + (Math.random() - 0.5) * 80, by + (Math.random() - 0.5) * 34, 8));
+    } else {
+      const tint = style === 'shadow' ? 0x8a6cc4 : 0xffffff;
+      for (let i = 0; i < 18; i++) at(450 + i * 85, () => {
+        const a = Math.random() * Math.PI * 2, r = 42 + Math.random() * 50;
+        const sx = bx + Math.cos(a) * r, sy = by + Math.sin(a) * r * 0.6;
+        const rock = this.add.image(sx, sy + 4, 'boulder').setScale(0.35 + Math.random() * 0.3).setAlpha(0).setTint(tint).setDepth(sy);
+        this.fx.dust(sx, sy);
+        this.tweens.add({ targets: rock, alpha: 1, y: sy - 4, duration: 180, onComplete: () => {
+          const st = { k: 0 }, tx = bx + (Math.random() - 0.5) * 16, ty = by - 12 - Math.random() * 30;
+          this.tweens.add({ targets: st, k: 1, duration: 420, ease: 'Quad.easeIn',
+            onUpdate: () => rock.setPosition(sx + (tx - sx) * st.k, sy - 4 + (ty - sy + 4) * st.k - Math.sin(st.k * Math.PI) * 26).setRotation(st.k * 5).setDepth(TOP - 40),
+            onComplete: () => { audio.sfx('block'); rock.destroy(); } });
+        } });
+      });
+      if (style === 'shadow') for (let i = 0; i < 7; i++) at(450 + i * 230, () => this.fx.burst('curse', bx, by - 20, 10));
+    }
+    // it takes shape
+    at(2150, () => {
+      cam.flash(180, 255, style === 'shadow' ? 200 : 255, 255);
+      audio.sfx('bash'); this.shake(400, 0.012);
+      this.fx.burst('curse', bx, by - 20, 30);
+      g.sprite.setAlpha(1).setScale(1, 0.4); g.shadow.setAlpha(0.28);
+      this.tweens.add({ targets: g.sprite, scaleY: 1, duration: 450, ease: 'Back.easeOut' });
+      if (style === 'pool') { const y0 = g.sprite.y; g.sprite.y = y0 + 30; this.tweens.add({ targets: g.sprite, y: y0, duration: 500, ease: 'Back.easeOut' }); }
+    });
+    // ...and roars
+    at(2750, () => {
+      g.play('windup');
+      audio.sfx('roar');
+      this.shake(800, 0.016);
+      this.events.emit('banner', B.cfg.name, B.cfg.sub);
+      this.events.emit('boss', g);
+    });
+    at(3800, () => { g.play('idle'); cam.pan(L.x, L.y, 600, 'Sine.easeInOut'); });
+    at(4450, () => {
+      cam.startFollow(L.sprite, true, 0.12, 0.12);
+      this.busy = false;
+      g.introT = 0.4; g.introTarget = L;
+    });
+  }
+
+  // The Vale Warden: once the Shadow below is gone, walking up to the Ward
+  // Stone wakes the real Gatewarden out of the rubble around it. Run far
+  // enough away and he sinks back to wait (full health) for the next try.
+  updateWardBoss() {
+    const L = this.leader;
+    const g = this.golem;
+    if (g?.wardBoss) {
+      const w = this.wards.find((k) => k.def.id === g.wardBoss.ward);
+      if (!this.busy && Math.hypot(L.x - w.C.x, L.y - w.C.y) > g.wardBoss.leash * TILE) {
+        for (const p of g.plates || []) { p.img.destroy(); this.removeInteractable(p.o); }
+        g.alive = false; g.clearZone();
+        this.fx.burst('curse', g.x, g.y - 20, 30);
+        this.tweens.add({ targets: g.sprite, alpha: 0, y: g.sprite.y + 20, duration: 600, onComplete: () => g.destroy() });
+        this.golem = null;
+        this.events.emit('boss', null);
+        this.events.emit('banner', `${g.wardBoss.name} SINKS INTO THE EARTH`, 'IT WILL RISE AGAIN TO GUARD THE STONE');
+      }
+      return;
+    }
+    if (g || this.busy) return;
+    for (const wb of W.wardBosses || []) {
+      const w = this.wards.find((k) => k.def.id === wb.ward);
+      if (!w?.unit || this.flags[wb.flag] || this.flags[w.def.flag] || !this.flags[w.def.guardian]) continue;
+      if (Math.hypot(L.x - w.C.x, L.y - w.C.y) > wb.trigger * TILE) continue;
+      const x = (w.def.x + wb.offset[0]) * TILE + 8, y = (w.def.y + wb.offset[1]) * TILE + 8;
+      const boss = new Golem(this, x, y, { level: this.enemyLevel(x, y) + 2 });
+      boss.maxHp = Math.round(boss.maxHp * wb.hpMul); boss.hp = boss.maxHp;
+      boss.s = { ...boss.s, dmg: boss.s.dmg * wb.dmgMul };
+      const B = { id: wb.id, flag: wb.flag, cfg: wb };
+      boss.bossName = wb.name; boss.bossDef = B; boss.wardBoss = wb;
+      this.golem = boss;
+      this.enemies.push(boss);
+      this.bossIntro(boss, 'stone', B);
+      return;
+    }
+  }
+
+  // ------------------------------------------------------------------ vines
+  // A cursed vine runs from each Ward Stone to the guardian feeding it, with
+  // motes of curse flowing up it toward the stone. It withers when the
+  // guardian falls (and stays as a dead husk after).
+  buildVines() {
+    this.vines = [];
+    for (const w of this.wards) for (const pts of w.def.vines || []) {
+      const v = { ward: w, pts: this.vinePath(pts), g: this.add.graphics().setDepth(-80), dead: !!this.flags[w.def.guardian] || !!this.flags[w.def.flag] };
+      this.drawVine(v);
+      this.vines.push(v);
+    }
+  }
+
+  vinePath(pts) {
+    const P = pts.map(([x, y]) => ({ x: (x + 0.5) * TILE, y: (y + 0.5) * TILE }));
+    const cr = (a, b, c, d, t) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
+    const out = [];
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+      const n = Math.max(2, Math.ceil(Math.hypot(p2.x - p1.x, p2.y - p1.y) / 3));
+      for (let k = 0; k < n; k++) out.push({ x: cr(p0.x, p1.x, p2.x, p3.x, k / n), y: cr(p0.y, p1.y, p2.y, p3.y, k / n) });
+    }
+    out.push({ ...P[P.length - 1] });
+    // an organic wobble across the line, and running distance for thorns / motes
+    let d = 0;
+    return out.map((p, i) => {
+      if (i) d += Math.hypot(p.x - out[i - 1].x, p.y - out[i - 1].y);
+      const a = out[Math.max(0, i - 1)], b = out[Math.min(out.length - 1, i + 1)];
+      const l = Math.hypot(b.x - a.x, b.y - a.y) || 1, wob = Math.sin(d / 23) * 2.2 + Math.sin(d / 9.7) * 0.8;
+      return { x: p.x - ((b.y - a.y) / l) * wob, y: p.y + ((b.x - a.x) / l) * wob, d };
+    });
+  }
+
+  drawVine(v) {
+    const g = v.g.clear(), P = v.pts, dead = v.dead;
+    const line = (w, col, a, dy = 0) => { g.lineStyle(w, col, a).beginPath(); g.moveTo(P[0].x, P[0].y + dy); for (const p of P) g.lineTo(p.x, p.y + dy); g.strokePath(); };
+    line(5, 0x000000, 0.22, 2);
+    line(4, dead ? 0x4a4038 : 0x2a1838, dead ? 0.55 : 1);
+    line(2, dead ? 0x6b5f52 : 0x7d4fb8, dead ? 0.45 : 1);
+    let next = 8;
+    for (let i = 1; i < P.length; i++) {
+      if (P[i].d < next) continue;
+      next += 11;
+      const dx = P[i].x - P[i - 1].x, dy = P[i].y - P[i - 1].y, l = Math.hypot(dx, dy) || 1, side = i % 2 ? 1 : -1;
+      const nx = (-dy / l) * side, ny = (dx / l) * side;
+      g.fillStyle(dead ? 0x3a332c : 0x1a1423, dead ? 0.55 : 1).fillTriangle(P[i].x + nx * 1.5, P[i].y + ny * 1.5, P[i].x + nx * 5 + (dx / l) * 2, P[i].y + ny * 5 + (dy / l) * 2, P[i].x + (dx / l) * 3, P[i].y + (dy / l) * 3);
+      if (!dead && Math.round(P[i].d / 11) % 4 === 0) g.fillStyle(0xe7a6ff, 0.9).fillCircle(P[i].x - nx * 2, P[i].y - ny * 2, 1.2);
+    }
+  }
+
+  vineAt(v, d) {
+    const P = v.pts;
+    let lo = 0, hi = P.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (P[m].d < d) lo = m + 1; else hi = m; }
+    return P[lo];
+  }
+
+  updateVines(dt) {
+    const view = this.cameras.main.worldView;
+    for (const v of this.vines || []) {
+      if (v.dead) continue;
+      v.mg ??= this.add.graphics().setDepth(-79);
+      v.mg.clear();
+      v.t = (v.t || 0) + dt;
+      const len = v.pts[v.pts.length - 1].d;
+      // curse flows from the guardian's end up toward the stone
+      for (let k = 0; k < Math.ceil(len / 80); k++) {
+        const p = this.vineAt(v, len - ((v.t * 40 + k * 80) % len));
+        if (p.x < view.x - 8 || p.x > view.right + 8 || p.y < view.y - 8 || p.y > view.bottom + 8) continue;
+        v.mg.fillStyle(0xe7a6ff, 0.9).fillCircle(p.x, p.y, 1.8).fillStyle(0xffffff, 0.9).fillCircle(p.x, p.y, 0.8);
+      }
+    }
+  }
+
+  witherVines(w) {
+    for (const v of this.vines || []) {
+      if (v.ward !== w || v.dead) continue;
+      v.dead = true;
+      v.mg?.clear();
+      // crumbles from the guardian's end back toward the stone
+      const len = v.pts[v.pts.length - 1].d;
+      for (let d = len, i = 0; d > 0; d -= 40, i++) { const p = this.vineAt(v, d); this.time.delayedCall(i * 60, () => this.fx.burst('curse', p.x, p.y, 3)); }
+      this.time.delayedCall(Math.min(2400, (len / 40) * 60), () => this.drawVine(v));
+    }
   }
 
   updateBoss() {
@@ -1838,15 +2030,8 @@ export class Game extends Phaser.Scene {
       g.bossName = B.cfg.name; g.bossDef = B;
       this.golem = g; // the active lieutenant (name kept from the demo)
       this.enemies.push(g);
-      audio.sfx('roar');
-      this.shake(600, 0.01);
-      g.sprite.setAlpha(0).setY(g.y - 30);
-      this.tweens.add({ targets: g.sprite, alpha: 1, duration: 400 });
-      this.fx.burst('curse', g.x, g.y - 20, 40);
-      g.introT = 1.8; g.introTarget = L; // holds still while the party gathers and the bars drop
-      this.events.emit('banner', B.cfg.name, B.cfg.sub);
-      this.events.emit('boss', g);
       this.sealArena(true, B.gate);
+      this.bossIntro(g, B.id === 'murk' ? 'pool' : B.cfg.shadow ? 'shadow' : 'stone', B);
       return;
     }
   }
@@ -1948,6 +2133,8 @@ export class Game extends Phaser.Scene {
     this.updateBloom(dt);
     this.updateLoot(dt);
     this.updateBoss();
+    this.updateWardBoss();
+    this.updateVines(dt);
     this.updateWarps();
     this.quests.update(dt);
     this.groupT = (this.groupT || 0) - dt;

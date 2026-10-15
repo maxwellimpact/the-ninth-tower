@@ -928,7 +928,7 @@ export class Enemy extends Unit {
 
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
-    if (this.submerged) return 0;
+    if (this.submerged || this.introT > 0) return 0;
     if (this.s.ai === 'shell' && src && !dot) {
       // the shell turns blows from the front; a flipped crab takes extra
       if (this.flippedT > 0) amount *= 1.5;
@@ -1324,6 +1324,9 @@ export class Golem extends Enemy {
     this.sprite.setOrigin(0.5, 60 / 64);
     this.shadow.setAlpha(0.28);
     this.phase = 1;
+    // the Undercroft's Shadow: a weaker cursed echo that never enrages
+    this.isShadow = !!opts.shadow;
+    if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; this.sprite.setTint(0x8a6cc4); }
     this.throwT = 3.5;
     this.boss = true;
     this.sprite.play('golem_idle');
@@ -1344,7 +1347,7 @@ export class Golem extends Enemy {
     if (!this.alive) return r;
     const f = this.hp / this.maxHp;
     if (this.phase === 1 && f < 0.6) this.enterPhase(2);
-    else if (this.phase === 2 && f < 0.3) this.enterPhase(3);
+    else if (this.phase === 2 && f < 0.3 && !this.isShadow) this.enterPhase(3);
     return r;
   }
 
@@ -1364,7 +1367,7 @@ export class Golem extends Enemy {
     }
   }
 
-  restoreTint() { if (this.phase === 3) this.sprite.setTint(0xffa8a8); else this.sprite.clearTint(); }
+  restoreTint() { if (this.isShadow) this.sprite.setTint(0x8a6cc4); else if (this.phase === 3) this.sprite.setTint(0xffa8a8); else this.sprite.clearTint(); }
 
   // Phase 2: two plates shield the core (80% less damage) until hooked off.
   addPlates() {

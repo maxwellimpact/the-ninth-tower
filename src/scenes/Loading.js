@@ -85,7 +85,7 @@ export class Loading extends Phaser.Scene {
     // ease the drawn bar toward the real progress so it never jumps backward
     this.shown += (this.p - this.shown) * Math.min(1, delta / 90);
     this.quipT += delta;
-    if (!this.closing && this.quipT > 1100) { this.quipT = 0; this.quipI = (this.quipI + 1) % this.quips.length; this.label = this.quips[this.quipI]; }
+    if (!this.closing && this.quipT > 2200) { this.quipT = 0; this.quipI = (this.quipI + 1) % this.quips.length; this.label = this.quips[this.quipI]; }
     this.dots = Math.floor(time / 350) % 4;
     this.draw();
   }
