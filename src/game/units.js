@@ -250,7 +250,13 @@ export class Hero extends Unit {
     const ox = this.x, oy = this.y;
     this.moveBy((dx / d) * sp, (dy / d) * sp);
     if (Math.hypot(this.x - ox, this.y - oy) < sp * 0.2) this.stuckT = (this.stuckT || 0) + dt; else this.stuckT = 0;
-    if (this.stuckT > 0.4 && this.pathGoal) { this.stuckT = 0; const nav = this.scene.nav; nav.swimmer = this.scene.canSwim; this.path = nav.find(this.x, this.y, this.pathGoal.x, this.pathGoal.y); nav.swimmer = false; }
+    if (this.stuckT > 0.4 && this.pathGoal) {
+      this.stuckT = 0;
+      // blocked again and again (usually by a crowd): stop pushing rather than jitter in place
+      this.stuckCount = (this.stuckCount || 0) + 1;
+      if (this.stuckCount > 2) { this.stuckCount = 0; this.path = null; this.blockedT = 0.6; return false; }
+      const nav = this.scene.nav; nav.swimmer = this.scene.canSwim; this.path = nav.find(this.x, this.y, this.pathGoal.x, this.pathGoal.y); nav.swimmer = false;
+    } else if (Math.hypot(this.x - ox, this.y - oy) >= sp * 0.2) this.stuckCount = 0;
     return true;
   }
 
@@ -535,11 +541,19 @@ export class Hero extends Unit {
       if (!t.alive) { this.command = null; this.clearPath(); return; }
       const d = dist(this, t);
       const range = this.stats.range + t.r;
-      if (d <= range && (!this.ranged || sc.nav.lineClear(this.x, this.y, t.x, t.y, 1))) {
+      const slack = this.ranged ? 0 : 6; // melee: close enough counts
+      if (d <= range + slack && (!this.ranged || sc.nav.lineClear(this.x, this.y, t.x, t.y, 1))) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         this.startAttack(t);
+      } else if (!this.ranged && d < range + 36 && sc.nav.lineClear(this.x, this.y, t.x, t.y, 3)) {
+        // the last few steps: walk straight at it instead of re-pathing every frame
+        this.clearPath();
+        this.face(t.x - this.x, t.y - this.y);
+        this.moveTowards(t, dt);
       } else {
+        this.blockedT = Math.max(0, (this.blockedT || 0) - dt);
+        if (this.blockedT > 0) return;
         this.repathT -= dt;
         if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(t.x, t.y); }
         this.followPath(dt);
@@ -628,13 +642,17 @@ export class Hero extends Unit {
       // melee: approach a flank slot (opposite the leader / tank, not stacked)
       const slot = this.flankSlot(t);
       const reach = st.range + t.r;
-      if (d <= reach + 2) {
+      if (d <= reach + 6) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         if (Math.hypot(this.x - slot.x, this.y - slot.y) > 5 && d > reach - 4) this.moveTowards(slot, dt, 0.6);
         this.startAttack(t);
         return;
       }
+      // close in directly when near and unobstructed, path only from farther away
+      if (d < reach + 40 && sc.nav.lineClear(this.x, this.y, t.x, t.y, 3)) { this.clearPath(); this.face(t.x - this.x, t.y - this.y); this.moveTowards(sc.nav.solidAtPx(slot.x, slot.y) ? t : slot, dt); return; }
+      this.blockedT = Math.max(0, (this.blockedT || 0) - dt);
+      if (this.blockedT > 0) { this.moveTowards(t, dt, 0.5); return; }
       this.setGoal(slot.x, slot.y);
       this.followPath(dt);
       return;
