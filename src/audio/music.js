@@ -26,94 +26,202 @@ function seq(list, vel = 1, start = 0) {
   return ev;
 }
 
-// ---------------------------------------------------- Brightwater Vale theme
+// ------------------------------------------------------------ theme builder
+// Every region theme is written in C (so the cursed variant can be derived by
+// mapping to the parallel minor) and shifted into its own key with `key`.
+// Themes share the Vale's instruments and layering; each varies the tempo,
+// chords, melody, accompaniment patterns and instrument colour.
 const BARS = 8;
-const CHORDS = [
-  ['C3', 'E3', 'G3'], ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'],
-  ['C3', 'E3', 'G3'], ['E2', 'G2', 'B2'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'],
-].map((c) => c.map(n));
+const chordsOf = (list) => list.map((c) => c.map(n));
 
-const MELODY = seq([
-  ['E4', 4], ['G4', 4], ['C5', 6], ['B4', 2],
-  ['A4', 6], ['G4', 2], ['E4', 8],
-  ['F4', 4], ['A4', 4], ['C5', 4], ['A4', 4],
-  ['G4', 6], ['F4', 2], ['E4', 4], ['D4', 4],
-  ['E4', 4], ['G4', 4], ['C5', 4], ['E5', 4],
-  ['D5', 6], ['C5', 2], ['B4', 8],
-  ['A4', 4], ['C5', 4], ['F4', 4], ['A4', 4],
-  ['G4', 4], ['B4', 4], ['D5', 4], ['B4', 2], ['G4', 2],
-]);
-
-function arp() {
-  const ev = [];
-  CHORDS.forEach((ch, b) => {
+const ARP = {
+  // rolling eighths (the Vale)
+  roll: (ch, b, ev) => {
     const tones = [ch[0] + 24, ch[1] + 24, ch[2] + 24, ch[0] + 36];
     for (let i = 0; i < 16; i++) ev.push([b * 16 + i, tones[[0, 1, 2, 3, 2, 1, 0, 1][i % 8]], 1, i % 4 === 0 ? 0.9 : 0.6]);
-  });
-  return ev;
-}
-function bass() {
-  const ev = [];
-  CHORDS.forEach((ch, b) => {
-    const r = ch[0] + 12, f = ch[2] + 12;
-    [[0, r, 3], [4, r + 12, 2], [6, f, 2], [8, r, 3], [12, f, 2], [14, r + 12, 2]].forEach(([s, m, l]) => ev.push([b * 16 + s, m, l, 1]));
-  });
-  return ev;
-}
-const padEv = () => CHORDS.map((ch, b) => [b * 16, ch.map((m) => m + 12), 16, 1]);
-const subEv = () => CHORDS.map((ch, b) => [b * 16, ch[0], 16, 1]);
-function combatBass() {
-  const ev = [];
-  CHORDS.forEach((ch, b) => { for (let i = 0; i < 16; i += 2) ev.push([b * 16 + i, ch[0] + 12 + (i % 8 === 6 ? 7 : 0), 1, i % 4 ? 0.7 : 1]); });
-  return ev;
-}
-function drums() {
-  const ev = [];
-  for (let b = 0; b < BARS; b++) {
-    for (const s of [0, 8, 10]) ev.push([b * 16 + s, 'kick', 1, 1]);
-    for (const s of [4, 12]) ev.push([b * 16 + s, 'snare', 1, 1]);
-    for (let s = 0; s < 16; s += 2) ev.push([b * 16 + s, 'hat', 1, s % 4 ? 0.6 : 1]);
-    if (b % 4 === 3) for (const s of [13, 14, 15]) ev.push([b * 16 + s, 'snare', 1, 0.7]);
-  }
-  return ev;
-}
-const counter = () => MELODY.map(([s, m, l, v]) => [s, m + 12, l, v * 0.8]);
-
-export const VALE_THEME = {
-  name: 'Brightwater Vale',
-  bpm: 100,
-  steps: BARS * 16,
-  tracks: [
-    { inst: 'lead', layer: 'base', events: MELODY },
-    { inst: 'arp', layer: 'base', events: arp() },
-    { inst: 'bass', layer: 'base', events: bass() },
-    { inst: 'pad', layer: 'base', events: padEv() },
-    { inst: 'sub', layer: 'base', events: subEv() },
-    { inst: 'drums', layer: 'combat', events: drums() },
-    { inst: 'cbass', layer: 'combat', events: combatBass() },
-    { inst: 'counter', layer: 'combat', events: counter() },
-  ],
+  },
+  // climbing sparkle, an octave up (Highmeadow)
+  sparkle: (ch, b, ev) => {
+    const tones = [ch[0] + 36, ch[1] + 36, ch[2] + 36, ch[0] + 48];
+    for (let i = 0; i < 16; i++) ev.push([b * 16 + i, tones[[0, 1, 2, 3, 0, 2, 1, 3][i % 8]], 1, i % 4 === 0 ? 0.8 : 0.5]);
+  },
+  // slow, wide, hesitant (Mistfen)
+  drift: (ch, b, ev) => {
+    const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 36, ch[2] + 24];
+    for (let i = 0; i < 16; i += 4) ev.push([b * 16 + i, tones[i / 4], 3, i === 0 ? 0.8 : 0.5]);
+  },
+  // a single high drip or two per bar (caves and dungeons)
+  drip: (ch, b, ev) => {
+    ev.push([b * 16 + [3, 9, 5, 12][b % 4], ch[[2, 1, 0, 1][b % 4]] + 36, 1, 0.7]);
+    if (b % 2) ev.push([b * 16 + 14, ch[0] + 48, 1, 0.4]);
+  },
+  // lute strums on the beat (interiors)
+  lute: (ch, b, ev) => {
+    const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[2] + 24];
+    for (let i = 0; i < 16; i += 2) ev.push([b * 16 + i, tones[(i / 2) % 4], 2, i % 4 === 0 ? 0.9 : 0.55]);
+  },
 };
+
+const BASS = {
+  walk: [[0, 'r', 3], [4, 'r8', 2], [6, 'f', 2], [8, 'r', 3], [12, 'f', 2], [14, 'r8', 2]],
+  gallop: [[0, 'r', 2], [3, 'r', 1], [4, 'f', 2], [8, 'r', 2], [11, 'r', 1], [12, 'r8', 2], [14, 'f', 2]],
+  murk: [[0, 'r', 7], [8, 'f', 6]],
+  hollow: [[0, 'r', 12]],
+  oompah: [[0, 'r', 2], [4, 'f', 2], [8, 'r', 2], [12, 'f', 2]],
+};
+
+function buildTheme(o) {
+  const CH = chordsOf(o.chords);
+  const melody = seq(o.melody);
+  const arp = [];
+  if (o.arp) CH.forEach((ch, b) => ARP[o.arp](ch, b, arp));
+  const bass = [];
+  CH.forEach((ch, b) => {
+    const p = { r: ch[0] + 12, r8: ch[0] + 24, f: ch[2] + 12 };
+    BASS[o.bass].forEach(([s, k, l]) => bass.push([b * 16 + s, p[k], l, 1]));
+  });
+  const cbass = [];
+  CH.forEach((ch, b) => { for (let i = 0; i < 16; i += 2) cbass.push([b * 16 + i, ch[0] + 12 + (i % 8 === 6 ? 7 : 0), 1, i % 4 ? 0.7 : 1]); });
+  const drums = [];
+  for (let b = 0; b < BARS; b++) {
+    for (const s of [0, 8, 10]) drums.push([b * 16 + s, 'kick', 1, 1]);
+    for (const s of [4, 12]) drums.push([b * 16 + s, 'snare', 1, 1]);
+    for (let s = 0; s < 16; s += 2) drums.push([b * 16 + s, 'hat', 1, s % 4 ? 0.6 : 1]);
+    if (b % 4 === 3) for (const s of [13, 14, 15]) drums.push([b * 16 + s, 'snare', 1, 0.7]);
+  }
+  const x = o.inst || {};
+  const tracks = [
+    { inst: 'lead', layer: 'base', events: melody, o: x.lead },
+    o.arp && { inst: 'arp', layer: 'base', events: arp, o: x.arp },
+    { inst: 'bass', layer: 'base', events: bass, o: x.bass },
+    { inst: 'pad', layer: 'base', events: CH.map((ch, b) => [b * 16, ch.map((m) => m + 12), 16, 1]), o: x.pad },
+    { inst: 'sub', layer: 'base', events: CH.map((ch, b) => [b * 16, ch[0], 16, 1]), o: x.sub },
+    { inst: 'drums', layer: 'combat', events: drums, o: x.drums },
+    { inst: 'cbass', layer: 'combat', events: cbass },
+    { inst: 'counter', layer: 'combat', events: melody.map(([s, m, l, v]) => [s, m + 12, l, v * 0.8]) },
+  ].filter(Boolean);
+  return { name: o.name, bpm: o.bpm, key: o.key || 0, steps: BARS * 16, tracks };
+}
+
+// Brightwater Vale: the home theme — warm, walking, C major
+export const VALE_THEME = buildTheme({
+  name: 'Brightwater Vale', bpm: 100, key: 0, arp: 'roll', bass: 'walk',
+  chords: [['C3', 'E3', 'G3'], ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'],
+    ['C3', 'E3', 'G3'], ['E2', 'G2', 'B2'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3']],
+  melody: [
+    ['E4', 4], ['G4', 4], ['C5', 6], ['B4', 2],
+    ['A4', 6], ['G4', 2], ['E4', 8],
+    ['F4', 4], ['A4', 4], ['C5', 4], ['A4', 4],
+    ['G4', 6], ['F4', 2], ['E4', 4], ['D4', 4],
+    ['E4', 4], ['G4', 4], ['C5', 4], ['E5', 4],
+    ['D5', 6], ['C5', 2], ['B4', 8],
+    ['A4', 4], ['C5', 4], ['F4', 4], ['A4', 4],
+    ['G4', 4], ['B4', 4], ['D5', 4], ['B4', 2], ['G4', 2],
+  ],
+});
+
+// Highmeadow: brighter and more open — up a step, quicker, a flute-like lead
+// with leaping lines over a galloping bass
+export const MEADOW_THEME = buildTheme({
+  name: 'Highmeadow', bpm: 114, key: 2, arp: 'sparkle', bass: 'gallop',
+  chords: [['C3', 'E3', 'G3'], ['G2', 'B2', 'D3'], ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'],
+    ['C3', 'E3', 'G3'], ['G2', 'B2', 'D3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3']],
+  melody: [
+    ['G4', 4], ['C5', 4], ['E5', 4], ['D5', 2], ['C5', 2],
+    ['D5', 6], ['B4', 2], ['G4', 8],
+    ['A4', 4], ['C5', 4], ['E5', 6], ['D5', 2],
+    ['C5', 4], ['A4', 4], ['F4', 8],
+    ['G4', 2], ['A4', 2], ['C5', 4], ['E5', 4], ['G5', 4],
+    ['F5', 4], ['E5', 2], ['D5', 2], ['B4', 8],
+    ['A4', 4], ['C5', 4], ['F5', 4], ['E5', 4],
+    ['D5', 6], ['B4', 2], ['G4', 4], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.5, vibrato: 0.02, echo: 0.3 }, arp: { vol: 0.8 }, pad: { cutoff: 2200 } },
+});
+
+// Mistfen: slow and murky — down a step, minor-leaning progression, long
+// echoing lead notes, a heavy dark pad and a bass that barely moves
+export const MISTFEN_THEME = buildTheme({
+  name: 'Mistfen', bpm: 78, key: -2, arp: 'drift', bass: 'murk',
+  chords: [['A2', 'C3', 'E3'], ['E2', 'G2', 'B2'], ['F2', 'A2', 'C3'], ['C3', 'E3', 'G3'],
+    ['D2', 'F2', 'A2'], ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3']],
+  melody: [
+    ['E4', 8], ['A4', 4], ['G4', 4],
+    ['B4', 12], ['G4', 4],
+    ['A4', 6], ['G4', 2], ['F4', 8],
+    ['E4', 12], ['-', 4],
+    ['D4', 4], ['F4', 4], ['A4', 8],
+    ['C5', 6], ['B4', 2], ['A4', 8],
+    ['A4', 4], ['G4', 4], ['F4', 4], ['E4', 4],
+    ['D4', 8], ['B3', 4], ['-', 4],
+  ],
+  inst: { lead: { duty: 0.125, vibrato: 0.022, echo: 0.42, vol: 0.9 }, arp: { echo: 0.35, vol: 0.9 }, pad: { vol: 1.6, cutoff: 850 }, sub: { vol: 1.3 } },
+});
+
+// The deep places (caves, the Undercroft, the Abbey, the grotto): sparse and
+// echoing — slow, hollow bass, water-drip notes and a distant lead
+export const DEPTHS_THEME = buildTheme({
+  name: 'The Depths', bpm: 70, key: -5, arp: 'drip', bass: 'hollow',
+  chords: [['A2', 'C3', 'E3'], ['D2', 'F2', 'A2'], ['A2', 'C3', 'E3'], ['E2', 'G2', 'B2'],
+    ['F2', 'A2', 'C3'], ['D2', 'F2', 'A2'], ['E2', 'G2', 'B2'], ['A2', 'C3', 'E3']],
+  melody: [
+    ['-', 4], ['E5', 2], ['-', 2], ['A4', 8],
+    ['-', 8], ['D5', 4], ['C5', 4],
+    ['E5', 12], ['-', 4],
+    ['-', 4], ['B4', 4], ['G4', 8],
+    ['-', 4], ['A4', 2], ['C5', 2], ['F5', 8],
+    ['-', 8], ['E5', 4], ['D5', 4],
+    ['B4', 12], ['-', 4],
+    ['-', 4], ['C5', 4], ['A4', 8],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.1, echo: 0.55, vibrato: 0.006 }, arp: { echo: 0.5, vol: 1.6 }, bass: { vol: 0.8 }, pad: { vol: 1.3, cutoff: 600 } },
+});
+
+// Shops and the tavern: cosy and light — a bouncy jig over oom-pah bass and
+// lute strums, no drums until a brawl breaks out
+export const HEARTH_THEME = buildTheme({
+  name: 'Hearth', bpm: 104, key: 5, arp: 'lute', bass: 'oompah',
+  chords: [['C3', 'E3', 'G3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'], ['C3', 'E3', 'G3'],
+    ['A2', 'C3', 'E3'], ['D2', 'F2', 'A2'], ['G2', 'B2', 'D3'], ['C3', 'E3', 'G3']],
+  melody: [
+    ['E4', 2], ['G4', 2], ['C5', 2], ['G4', 2], ['E4', 2], ['G4', 2], ['C5', 4],
+    ['A4', 2], ['C5', 2], ['F5', 2], ['C5', 2], ['A4', 4], ['F4', 4],
+    ['G4', 2], ['B4', 2], ['D5', 2], ['B4', 2], ['G4', 4], ['D4', 4],
+    ['E4', 4], ['G4', 4], ['C5', 8],
+    ['C5', 2], ['B4', 2], ['A4', 2], ['E4', 2], ['A4', 4], ['C5', 4],
+    ['D5', 2], ['C5', 2], ['A4', 2], ['F4', 2], ['D4', 4], ['F4', 4],
+    ['G4', 2], ['A4', 2], ['B4', 2], ['D5', 2], ['G4', 4], ['B4', 4],
+    ['C5', 6], ['G4', 2], ['C5', 8],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.4, echo: 0.08, vibrato: 0.015 }, arp: { vol: 1.4, echo: 0.05 }, pad: { vol: 0.6, cutoff: 1000 }, sub: { vol: 0.6 } },
+});
+
+const REGION_THEMES = {
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME,
+  shop: HEARTH_THEME, tavern: HEARTH_THEME,
+};
+export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;
 
 // ------------------------------------------------------------ instruments
 // play(event, time, out, variant, stepDur)
 const INST = {
-  lead(e, t, out, v, sd) {
-    audio.tone({ type: 'pulse', duty: v === 'cursed' ? 0.125 : 0.25, freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.92, vol: 0.13 * e[3],
-      vibrato: 0.012, detune: v === 'cursed' ? 14 : 0, out, send: 0.25, echo: 0.22, decay: 0.12, sustain: 0.7, release: 0.09, slide: e[2] >= 6 ? -1 : 0 });
+  lead(e, t, out, v, sd, o = {}) {
+    audio.tone({ type: o.type || 'pulse', duty: v === 'cursed' ? 0.125 : o.duty || 0.25, freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.92, vol: 0.13 * e[3] * (o.vol ?? 1),
+      vibrato: o.vibrato ?? 0.012, detune: v === 'cursed' ? 14 : 0, out, send: 0.25, echo: o.echo ?? 0.22, decay: 0.12, sustain: 0.7, release: 0.09, slide: e[2] >= 6 ? -1 : 0 });
   },
-  arp(e, t, out, v, sd) {
+  arp(e, t, out, v, sd, o = {}) {
     if (v === 'cursed' && e[0] % 2) return; // thinner, hesitant
-    audio.tone({ type: 'pulse', duty: 0.125, freq: midiHz(e[1]), time: t, dur: sd * 0.6, vol: 0.045 * e[3], out, decay: 0.05, sustain: 0.4, release: 0.03, pan: e[0] % 4 < 2 ? -0.35 : 0.35, echo: 0.12 });
+    audio.tone({ type: 'pulse', duty: 0.125, freq: midiHz(e[1]), time: t, dur: sd * 0.6 * (e[2] > 1 ? e[2] * 0.8 : 1), vol: 0.045 * e[3] * (o.vol ?? 1), out, decay: 0.05, sustain: 0.4, release: 0.03, pan: e[0] % 4 < 2 ? -0.35 : 0.35, echo: o.echo ?? 0.12 });
   },
-  bass(e, t, out, v, sd) {
-    audio.tone({ type: 'triangle', freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.85, vol: 0.32 * e[3], out, decay: 0.1, sustain: 0.8, release: 0.04 });
+  bass(e, t, out, v, sd, o = {}) {
+    audio.tone({ type: 'triangle', freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.85, vol: 0.32 * e[3] * (o.vol ?? 1), out, decay: 0.1, sustain: 0.8, release: 0.04 });
   },
-  pad(e, t, out, v, sd) {
-    audio.pad({ freqs: e[1].map(midiHz), time: t, dur: e[2] * sd, vol: v === 'cursed' ? 0.03 : 0.04, out, cutoff: v === 'cursed' ? 800 : 1400 });
+  pad(e, t, out, v, sd, o = {}) {
+    audio.pad({ freqs: e[1].map(midiHz), time: t, dur: e[2] * sd, vol: (v === 'cursed' ? 0.03 : 0.04) * (o.vol ?? 1), out, cutoff: v === 'cursed' ? Math.min(800, o.cutoff || 800) : o.cutoff || 1400 });
   },
-  sub(e, t, out, v, sd) {
-    audio.tone({ type: 'sine', freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.95, vol: 0.12, out, attack: 0.05, decay: 0.2, sustain: 0.8, release: 0.2 });
+  sub(e, t, out, v, sd, o = {}) {
+    audio.tone({ type: 'sine', freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.95, vol: 0.12 * (o.vol ?? 1), out, attack: 0.05, decay: 0.2, sustain: 0.8, release: 0.2 });
   },
   cbass(e, t, out, v, sd) {
     audio.tone({ type: 'pulse', duty: 0.5, freq: midiHz(e[1]), time: t, dur: sd * 0.8, vol: 0.07 * e[3], out, decay: 0.05, sustain: 0.6, release: 0.02 });
@@ -138,7 +246,9 @@ export class MusicPlayer {
     this.state = { variant: 'freed', combat: 0 };
   }
 
-  start(song) {
+  start(song, fadeIn = 0.01) {
+    clearTimeout(this.swapT);
+    this.pending = null;
     const a = audio.init();
     const ctx = a.ctx;
     this.song = song;
@@ -149,25 +259,42 @@ export class MusicPlayer {
         this.nodes[layer + ':' + v] = g;
       }
     }
-    // Pre-index events by step; derive the cursed variant.
+    // Pre-index events by step; derive the cursed variant (in C), then shift
+    // both into the song's key.
     this.byStep = Array.from({ length: song.steps }, () => []);
+    const k = song.key || 0;
+    const shift = (p, f) => (Array.isArray(p) ? p.map((m) => f(m) + k) : f(p) + k);
     for (const tr of song.tracks) {
       for (const e of tr.events) {
-        this.byStep[e[0]].push({ tr, e, v: 'freed' });
-        const ce = tr.inst === 'drums' ? e : [e[0], Array.isArray(e[1]) ? e[1].map(toMinor) : toMinor(e[1]), e[2], e[3]];
-        this.byStep[e[0]].push({ tr, e: ce, v: 'cursed' });
+        const drum = tr.inst === 'drums';
+        this.byStep[e[0]].push({ tr, e: drum ? e : [e[0], shift(e[1], (m) => m), e[2], e[3]], v: 'freed' });
+        this.byStep[e[0]].push({ tr, e: drum ? e : [e[0], shift(e[1], toMinor), e[2], e[3]], v: 'cursed' });
       }
     }
     this.stepDur = 60 / song.bpm / 4;
     this.step = 0;
     this.nextTime = ctx.currentTime + 0.1;
     this.playing = true;
-    this.applyMix(0.01);
+    this.applyMix(fadeIn);
     clearInterval(this.timer);
     this.timer = setInterval(() => this.schedule(), 25);
   }
 
+  // Crossfade to another region's theme: the current song fades out, then the
+  // new one starts from its top and fades in. Variant and combat state carry over.
+  setTheme(song) {
+    if (!this.playing || !this.nodes) { this.start(song); return; }
+    if (this.pending === song || (!this.pending && this.song === song)) return;
+    clearTimeout(this.swapT);
+    this.pending = song;
+    if (this.song === song) { this.pending = null; this.applyMix(0.5); return; }
+    for (const g of Object.values(this.nodes)) g.gain.setTargetAtTime(0, audio.t, 0.3);
+    this.swapT = setTimeout(() => { if (this.pending === song) this.start(song, 0.6); }, 1100);
+  }
+
   stop() {
+    clearTimeout(this.swapT);
+    this.pending = null;
     this.playing = false;
     clearInterval(this.timer);
     if (this.nodes) for (const g of Object.values(this.nodes)) g.gain.setTargetAtTime(0, audio.t, 0.3);
@@ -181,7 +308,7 @@ export class MusicPlayer {
         const g = this.nodes[tr.layer + ':' + v];
         // skip scheduling voices that are fully silent (saves CPU)
         if (g.gain.value < 0.001 && this.targetOf(tr.layer, v) < 0.001) continue;
-        INST[tr.inst](e, this.nextTime, g, v, this.stepDur);
+        INST[tr.inst](e, this.nextTime, g, v, this.stepDur, tr.o);
       }
       this.nextTime += this.stepDur;
       this.step = (this.step + 1) % this.song.steps;
@@ -194,7 +321,7 @@ export class MusicPlayer {
   }
 
   applyMix(tc = 0.6) {
-    if (!this.nodes) return;
+    if (!this.nodes || this.pending) return; // mid-crossfade: the next song picks up the state
     for (const layer of ['base', 'combat']) for (const v of ['freed', 'cursed']) {
       this.nodes[layer + ':' + v].gain.setTargetAtTime(this.targetOf(layer, v), audio.t, tc);
     }

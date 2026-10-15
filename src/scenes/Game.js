@@ -16,7 +16,7 @@ import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
 import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
-import { music, VALE_THEME } from '../audio/music.js';
+import { music, themeFor } from '../audio/music.js';
 import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
 import W from '../data/world.json';
@@ -144,7 +144,8 @@ export class Game extends Phaser.Scene {
       this.loading = false;
       this.busy = false;
       this.calmT = 1.5; // a moment to get bearings before anything nearby notices you
-      music.start(VALE_THEME);
+      this.musicRegion = biomeAt(Math.floor(start.x / TILE), Math.floor(start.y / TILE));
+      music.start(themeFor(this.musicRegion));
       curtain.done();
       this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id]));
     });
@@ -1886,6 +1887,12 @@ export class Game extends Phaser.Scene {
       if (this.region !== null) { const r = W.regions.find((x) => x.id === region); this.events.emit('banner', r.name, r.sub); }
       else { const r = W.regions.find((x) => x.id === region); this.time.delayedCall(600, () => this.events.emit('banner', r.name, r.sub)); }
       this.region = region;
+      this.musicT = 0.8; // settle before switching themes, so walking a border doesn't flip-flop
+    }
+    // each region has its own variation of the theme
+    if (!this.loading && this.region !== this.musicRegion && (this.musicT -= dt) <= 0) {
+      this.musicRegion = this.region;
+      music.setTheme(themeFor(this.region));
     }
 
     this.swapCd = Math.max(0, this.swapCd - dt);
