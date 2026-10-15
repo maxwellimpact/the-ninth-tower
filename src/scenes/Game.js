@@ -1956,6 +1956,14 @@ export class Game extends Phaser.Scene {
     const fighting = this.golem || this.enemies.some((e) => e.alive && e.engaged && dist(e, L) < 220);
     if (fighting) this.combatHold = 2.5; else this.combatHold -= dt;
     if (this.combatHold <= 0) for (const h of this.party) h.lastStandUsed = false;
+    // out of combat the party catches its breath: after a short pause, HP
+    // refills at ~3% per second, and anyone downed gets back on their feet
+    this.calmFor = this.combatHold > 0 ? 0 : (this.calmFor || 0) + dt;
+    if (this.calmFor > 2) for (const h of this.party) {
+      if (!h.alive) continue;
+      if (h.downed) { if (this.calmFor > 4) { h.revive(0.2); } continue; }
+      if (h.hp < h.maxHp) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.03 * dt);
+    }
     music.setCombat(this.combatHold > 0);
 
     for (const b of this.breakables) {
