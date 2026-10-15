@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
@@ -26,6 +27,28 @@ import tuning from '../data/tuning.json';
 
 const TOP = 100000;
 const w_locked = (sc, o) => (o.warp.lockedBy && !sc.flags[`broke_${o.warp.lockedBy}`]) || (o.warp.requires && !sc.flags[o.warp.requires]);
+// the lead hero's thoughts at each beat of a Ward Stone's story
+const THOUGHTS = {
+  vale: {
+    stone: "THAT STONE... IT'S DRINKING SOMETHING IN. AND THERE'S A VINE COILED ROUND ITS BASE.",
+    vine: "THIS VINE IS WARM, LIKE IT'S CARRYING SOMETHING TO THE STONE. WHERE DOES IT START?",
+    below: 'IT GOES DOWN UNDER THE OLD KEEP. WHATEVER IT FEEDS ON IS DOWN HERE.',
+    source: "IT'S DRAINING THE KEEP'S OLD SHRINE. HOLY GROUND... THAT'S WHAT POWERS THE STONE.",
+    withered: "THE VINE'S WITHERING! THE SHRINE'S LIGHT IS COMING BACK. THE STONE MUST BE WEAK NOW.",
+    stir: "THE GROUND AROUND THE STONE IS TREMBLING... SOMETHING'S STILL GUARDING IT.",
+    open: "NOTHING LEFT TO PROTECT IT. LET'S BREAK THAT STONE.",
+  },
+  marsh: {
+    stone: 'ANOTHER WARD STONE... AND ANOTHER VINE, FEEDING IT FROM SOMEWHERE NORTH.',
+    vine: 'THE VINE TRAILS TOWARD THE BROKEN BELL TOWER. THE OLD ABBEY?',
+    below: 'IT RUNS ON DOWN THROUGH THE DROWNED ABBEY. WHATEVER IT DRINKS IS DEEPER IN.',
+    source: "IT'S FEEDING ON THE ABBEY'S ALTAR. THE SISTERS' BLESSING, TWISTED INTO THAT STONE.",
+    withered: 'THE VINE IS DYING! THE ALTAR SHINES AGAIN. BACK TO THE STONE, BEFORE IT RECOVERS.',
+    stir: 'THE BOG BY THE STONE IS BUBBLING... SOMETHING BIG IS WAITING IN THERE.',
+    open: "SHE'S GONE. NOTHING GUARDS THE STONE NOW. BREAK IT!",
+  },
+};
+
 const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
 const NODE_KINDS = {
@@ -1382,6 +1405,7 @@ export class Game extends Phaser.Scene {
     this.events.emit('banner', ...(B.cfg.fall || [`${B.cfg.name} FALLS`, "THE WARD STONE'S BARRIER HAS FAILED"]));
     this.sealArena(false);
     for (const e of this.enemies) if (e.alive && e.summoned) e.damage(999, this.leader);
+    if (B.cfg.ward) this.time.delayedCall(2600, () => this.think(B.cfg.ward, 'open', true));
     this.autosave('boss');
   }
 
@@ -1934,16 +1958,86 @@ export class Game extends Phaser.Scene {
   }
 
   // ------------------------------------------------------------------ vines
-  // A cursed vine runs from each Ward Stone to the guardian feeding it, with
-  // motes of curse flowing up it toward the stone. It withers when the
-  // guardian falls (and stays as a dead husk after).
+  // The curse feeds each Ward Stone through a vine that grows from a sacred
+  // place (the keep's old shrine, the abbey altar) up to the stone. It is
+  // grown, not drawn: it creeps along walls, ruins and tree roots, climbs over
+  // low obstacles, and is painted once as three braided strands with leaves,
+  // thorns, curling tendrils and glowing pods. Stolen holy light flows up it
+  // (gold at the shrine, curse-purple by the stone). When the guardian falls
+  // it withers to a grey husk and the shrine's sigil shines clean again.
   buildVines() {
     this.vines = [];
-    for (const w of this.wards) for (const pts of w.def.vines || []) {
-      const v = { ward: w, pts: this.vinePath(pts), g: this.add.graphics().setDepth(-80), dead: !!this.flags[w.def.guardian] || !!this.flags[w.def.flag] };
-      this.drawVine(v);
-      this.vines.push(v);
+    this.vineStuff = new Set();
+    for (const p of this.world.props) if (BLOCKING.has(p.type)) this.vineStuff.add(p.x + ',' + p.y);
+    for (const w of this.wards) {
+      const list = w.def.vines || [];
+      list.forEach((pts, i) => {
+        const v = { ward: w, i, n: list.length, seed: w.def.x * 31 + i * 17, dead: !!this.flags[w.def.guardian] || !!this.flags[w.def.flag] };
+        v.pts = this.vinePath(this.growVineRoute(pts));
+        v.len = v.pts[v.pts.length - 1].d;
+        v.stoneEnd = i === 0;           // starts coiled round the Ward Stone
+        v.diveEnd = i < list.length - 1; // ends plunging down a stairwell
+        v.source = i === list.length - 1; // ends draining the sacred sigil
+        this.paintVine(v);
+        this.vines.push(v);
+      });
     }
+  }
+
+  // A* over tiles between the authored waypoints. Hugging walls, ruins and
+  // trees is cheap, open ground costs more, low walls can be climbed, water and
+  // solid rock are avoided — so it reads as something that grew there.
+  growVineRoute(anchors) {
+    const at = this.world.at, stuff = this.vineStuff;
+    const hard = (t) => t === T.CAVEWALL || t === T.DWALL || t === T.IWALL;
+    const cost = (x, y) => {
+      const t = at(x, y);
+      if (hard(t)) return 40;
+      let c = t === T.WATER || t === T.BOG ? 6 : SOLID.has(t) || stuff.has(x + ',' + y) ? 2.2 : 1.2;
+      let hug = false;
+      for (let dy = -1; dy <= 1 && !hug; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const n = at(x + dx, y + dy);
+        if ((SOLID.has(n) && n !== T.WATER && n !== T.BOG) || stuff.has(x + dx + ',' + (y + dy))) { hug = true; break; }
+      }
+      if (hug) c *= 0.4;
+      return c + vnoise(x / 4, y / 4, 77) * 0.8; // a little meander
+    };
+    const out = [];
+    for (let k = 0; k < anchors.length - 1; k++) {
+      const [ax, ay] = anchors[k], [bx, by] = anchors[k + 1];
+      const sx = Math.round(ax), sy = Math.round(ay), gx = Math.round(bx), gy = Math.round(by);
+      const x0 = Math.min(sx, gx) - 8, y0 = Math.min(sy, gy) - 8, x1 = Math.max(sx, gx) + 8, y1 = Math.max(sy, gy) + 8;
+      const W = x1 - x0 + 1, key = (x, y) => (y - y0) * W + (x - x0);
+      const g = new Map(), from = new Map(), open = [[0, sx, sy]];
+      g.set(key(sx, sy), 0);
+      const hScore = (x, y) => Math.hypot(gx - x, gy - y) * 0.45;
+      let found = false;
+      while (open.length) {
+        let bi = 0;
+        for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i;
+        const [, x, y] = open[bi];
+        open[bi] = open[open.length - 1]; open.pop();
+        if (x === gx && y === gy) { found = true; break; }
+        const gc = g.get(key(x, y));
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < x0 || nx > x1 || ny < y0 || ny > y1) continue;
+          const ng = gc + cost(nx, ny) * (dx && dy ? 1.41 : 1);
+          const nk = key(nx, ny);
+          if (ng < (g.get(nk) ?? Infinity)) { g.set(nk, ng); from.set(nk, [x, y]); open.push([ng + hScore(nx, ny), nx, ny]); }
+        }
+      }
+      const seg = [];
+      if (found) { let c = [gx, gy]; while (c) { seg.push(c); c = from.get(key(c[0], c[1])); } seg.reverse(); }
+      else seg.push([sx, sy], [gx, gy]);
+      // keep every other tile (smoother), and the exact authored endpoints
+      const pts = seg.filter((_, i) => i % 2 === 0 || i === seg.length - 1).map(([x, y]) => [x, y]);
+      pts[0] = [ax, ay]; pts[pts.length - 1] = [bx, by];
+      if (k > 0) pts.shift();
+      out.push(...pts);
+    }
+    return out;
   }
 
   vinePath(pts) {
@@ -1956,31 +2050,144 @@ export class Game extends Phaser.Scene {
       for (let k = 0; k < n; k++) out.push({ x: cr(p0.x, p1.x, p2.x, p3.x, k / n), y: cr(p0.y, p1.y, p2.y, p3.y, k / n) });
     }
     out.push({ ...P[P.length - 1] });
-    // an organic wobble across the line, and running distance for thorns / motes
     let d = 0;
     return out.map((p, i) => {
       if (i) d += Math.hypot(p.x - out[i - 1].x, p.y - out[i - 1].y);
       const a = out[Math.max(0, i - 1)], b = out[Math.min(out.length - 1, i + 1)];
-      const l = Math.hypot(b.x - a.x, b.y - a.y) || 1, wob = Math.sin(d / 23) * 2.2 + Math.sin(d / 9.7) * 0.8;
-      return { x: p.x - ((b.y - a.y) / l) * wob, y: p.y + ((b.x - a.x) / l) * wob, d };
+      const l = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / l, ny = (b.x - a.x) / l;
+      const wob = Math.sin(d / 23) * 1.6 + Math.sin(d / 9.7) * 0.6;
+      return { x: p.x + nx * wob, y: p.y + ny * wob, d, nx, ny, tx: (b.x - a.x) / l, ty: (b.y - a.y) / l };
     });
   }
 
-  drawVine(v) {
-    const g = v.g.clear(), P = v.pts, dead = v.dead;
-    const line = (w, col, a, dy = 0) => { g.lineStyle(w, col, a).beginPath(); g.moveTo(P[0].x, P[0].y + dy); for (const p of P) g.lineTo(p.x, p.y + dy); g.strokePath(); };
-    line(5, 0x000000, 0.22, 2);
-    line(4, dead ? 0x4a4038 : 0x2a1838, dead ? 0.55 : 1);
-    line(2, dead ? 0x6b5f52 : 0x7d4fb8, dead ? 0.45 : 1);
-    let next = 8;
-    for (let i = 1; i < P.length; i++) {
-      if (P[i].d < next) continue;
-      next += 11;
-      const dx = P[i].x - P[i - 1].x, dy = P[i].y - P[i - 1].y, l = Math.hypot(dx, dy) || 1, side = i % 2 ? 1 : -1;
-      const nx = (-dy / l) * side, ny = (dx / l) * side;
-      g.fillStyle(dead ? 0x3a332c : 0x1a1423, dead ? 0.55 : 1).fillTriangle(P[i].x + nx * 1.5, P[i].y + ny * 1.5, P[i].x + nx * 5 + (dx / l) * 2, P[i].y + ny * 5 + (dy / l) * 2, P[i].x + (dx / l) * 3, P[i].y + (dy / l) * 3);
-      if (!dead && Math.round(P[i].d / 11) % 4 === 0) g.fillStyle(0xe7a6ff, 0.9).fillCircle(P[i].x - nx * 2, P[i].y - ny * 2, 1.2);
+  // Paint a vine once into its own texture (cheap to draw every frame).
+  paintVine(v) {
+    const P = v.pts, dead = v.dead;
+    let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+    for (const p of P) { bx0 = Math.min(bx0, p.x); by0 = Math.min(by0, p.y); bx1 = Math.max(bx1, p.x); by1 = Math.max(by1, p.y); }
+    const pad = 36, ox = Math.floor(bx0 - pad), oy = Math.floor(by0 - pad);
+    const w = Math.ceil(bx1 - bx0 + pad * 2), h = Math.ceil(by1 - by0 + pad * 2);
+    v.box = { x: ox, y: oy, w, h };
+    let s = v.seed;
+    const rnd = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    const X = (x) => x - ox, Y = (y) => y - oy;
+    const C = dead
+      ? { out: 0x2b2420, a: 0x4a4038, b: 0x5c5045, hi: 0x7a6c5c, leaf: 0x5a4e3a, leaf2: 0x4a4034, thorn: 0x3a332c }
+      : { out: 0x140a1c, a: 0x3b1f52, b: 0x5a2f7a, hi: 0xa77be0, leaf: 0x6f8f3a, leaf2: 0x9a5cc8, thorn: 0x1a1423 };
+    const strand = (amp, ph, wd, col, alpha = 1, dy = 0) => {
+      g.lineStyle(wd, col, alpha).beginPath();
+      P.forEach((p, i) => {
+        // taper the braid in toward the ends so they meet cleanly
+        const taper = Math.min(1, p.d / 20, (v.len - p.d) / 20);
+        const o = Math.sin(p.d / 7 + ph) * amp * taper;
+        const x = X(p.x + p.nx * o), y = Y(p.y + p.ny * o) + dy;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      });
+      g.strokePath();
+    };
+    // shadow, then three twisting strands, then a highlight
+    strand(0, 0, 7, 0x000000, 0.22, 2);
+    for (const [amp, ph, wd, col] of [[2.4, 0, 3, C.a], [2.0, 2.1, 2, C.b], [1.7, 4.2, 2, C.a]]) { strand(amp, ph, wd + 2, C.out, dead ? 0.6 : 1); strand(amp, ph, wd, col, dead ? 0.7 : 1); }
+    strand(2.4, 0, 1, C.hi, dead ? 0.35 : 0.55, -0.6);
+
+    // overgrowth along the way
+    v.pods = [];
+    for (let d = 6; d < v.len - 4; d += 5 + rnd() * 7) {
+      const p = this.vineAt(v, d), side = rnd() < 0.5 ? -1 : 1;
+      const px = X(p.x), py = Y(p.y);
+      const r = rnd();
+      if (r < 0.42) {
+        // leaf: a little blade off the stem (dead vines have lost most of theirs)
+        if (dead && rnd() < 0.7) continue;
+        const len = 6 + rnd() * 3, tipx = px + (p.nx * side * len) + p.tx * 3, tipy = py + (p.ny * side * len) + p.ty * 3;
+        const col = rnd() < 0.55 ? C.leaf : C.leaf2;
+        g.fillStyle(C.out, dead ? 0.5 : 0.9).fillTriangle(px - p.tx * 3.2, py - p.ty * 3.2, px + p.tx * 3.2, py + p.ty * 3.2, tipx + p.nx * side, tipy + p.ny * side);
+        g.fillStyle(col, dead ? 0.6 : 1).fillTriangle(px - p.tx * 2.4, py - p.ty * 2.4, px + p.tx * 2.4, py + p.ty * 2.4, tipx, tipy);
+        g.lineStyle(1, C.out, 0.6).lineBetween(px, py, (px + tipx) / 2, (py + tipy) / 2);
+      } else if (r < 0.7) {
+        // thorns
+        for (const k of [-1, 1]) g.fillStyle(C.thorn, dead ? 0.6 : 1).fillTriangle(px - p.tx * 1.2, py - p.ty * 1.2, px + p.tx * 1.2, py + p.ty * 1.2, px + p.nx * k * 4 + p.tx * 1.5, py + p.ny * k * 4 + p.ty * 1.5);
+      } else if (r < 0.86) {
+        // a curling tendril reaching off the stem
+        g.lineStyle(1, dead ? C.b : C.b, dead ? 0.5 : 0.9).beginPath();
+        let a = Math.atan2(p.ny * side, p.nx * side), cx = px, cy = py;
+        g.moveTo(cx, cy);
+        for (let k = 0; k < 9; k++) { a += 0.55 * side; cx += Math.cos(a) * (2.2 - k * 0.18); cy += Math.sin(a) * (2.2 - k * 0.18); g.lineTo(cx, cy); }
+        g.strokePath();
+      } else if (!dead) {
+        // a curse pod (they pulse at runtime)
+        v.pods.push({ x: p.x + p.nx * side * 3, y: p.y + p.ny * side * 3, ph: rnd() * 6 });
+        g.fillStyle(C.out).fillCircle(px + p.nx * side * 3, py + p.ny * side * 3, 3);
+        g.fillStyle(0x7d4fb8).fillCircle(px + p.nx * side * 3, py + p.ny * side * 3, 2.2);
+      } else {
+        g.fillStyle(C.thorn, 0.6).fillCircle(px + p.nx * side * 3, py + p.ny * side * 3, 1.6); // a shrivelled pod
+      }
     }
+    // side shoots: short thorny runners branching off, with a leaf or a bloom
+    for (let d = 18; d < v.len - 18; d += 22 + rnd() * 26) {
+      const p = this.vineAt(v, d), side = rnd() < 0.5 ? -1 : 1;
+      let a = Math.atan2(p.ny * side + p.ty * 0.6, p.nx * side + p.tx * 0.6), cx = X(p.x), cy = Y(p.y);
+      const n = 4 + Math.floor(rnd() * 4);
+      const pts = [[cx, cy]];
+      for (let k = 0; k < n; k++) { a += (rnd() - 0.5) * 0.9; cx += Math.cos(a) * 3; cy += Math.sin(a) * 3; pts.push([cx, cy]); }
+      for (const [wd, col] of [[3, C.out], [1.5, C.b]]) { g.lineStyle(wd, col, dead ? 0.6 : 1).beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const q of pts) g.lineTo(q[0], q[1]); g.strokePath(); }
+      const [ex, ey] = pts[pts.length - 1];
+      if (!dead && rnd() < 0.55) {
+        // a sickly curse bloom
+        for (let k = 0; k < 4; k++) { const fa = (k / 4) * Math.PI * 2; g.fillStyle(C.out).fillCircle(ex + Math.cos(fa) * 2, ey + Math.sin(fa) * 2, 2); }
+        for (let k = 0; k < 4; k++) { const fa = (k / 4) * Math.PI * 2; g.fillStyle(0xd06ad8).fillCircle(ex + Math.cos(fa) * 2, ey + Math.sin(fa) * 2, 1.4); }
+        g.fillStyle(0xffe08a).fillCircle(ex, ey, 1);
+      } else {
+        g.fillStyle(dead ? C.leaf2 : C.leaf, dead ? 0.5 : 1).fillTriangle(ex - 2, ey, ex + 2, ey, ex + Math.cos(a) * 5, ey + Math.sin(a) * 5);
+      }
+    }
+    // wraps where it grips walls and trunks
+    for (let d = 10; d < v.len - 10; d += 14) {
+      const p = this.vineAt(v, d), tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE);
+      let grip = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const t = this.world.at(tx + dx, ty + dy); if ((SOLID.has(t) && t !== T.WATER) || this.vineStuff.has(tx + dx + ',' + (ty + dy))) grip = true; }
+      if (!grip) continue;
+      for (const k of [-2, 2]) g.lineStyle(1, C.out, 0.8).lineBetween(X(p.x + p.tx * k - p.nx * 4), Y(p.y + p.ty * k - p.ny * 4), X(p.x + p.tx * (k + 1.5) + p.nx * 4), Y(p.y + p.ty * (k + 1.5) + p.ny * 4));
+    }
+    const roots = (cx, cy, n, r0, r1, a0 = 0, spread = Math.PI * 2) => {
+      for (let k = 0; k < n; k++) {
+        const a = a0 + (k / n) * spread + rnd() * 0.4, rr = r0 + rnd() * (r1 - r0);
+        g.lineStyle(2, C.out, dead ? 0.6 : 1).beginPath(); g.moveTo(X(cx), Y(cy));
+        g.lineTo(X(cx + Math.cos(a) * rr * 0.5 + rnd() * 3), Y(cy + Math.sin(a) * rr * 0.35));
+        g.lineTo(X(cx + Math.cos(a) * rr), Y(cy + Math.sin(a) * rr * 0.6)); g.strokePath();
+        g.lineStyle(1, C.a, dead ? 0.6 : 1).lineBetween(X(cx), Y(cy), X(cx + Math.cos(a) * rr * 0.8), Y(cy + Math.sin(a) * rr * 0.5));
+      }
+    };
+    // the stone end: roots splay out and coils clutch the stone's base
+    if (v.stoneEnd) {
+      const s0 = P[0];
+      roots(s0.x, s0.y + 4, 7, 14, 26);
+      for (let k = 0; k < 3; k++) g.lineStyle(2, k % 2 ? C.b : C.a, dead ? 0.55 : 1).strokeEllipse(X(s0.x), Y(s0.y + 2 - k * 5), 22 - k * 3, 9 - k);
+    }
+    // a stairwell end: the vine plunges down into the dark
+    if (v.diveEnd || (v.i > 0 && !v.source)) {
+      const e = P[P.length - 1];
+      roots(e.x, e.y, 5, 6, 12);
+      g.fillStyle(C.out, 0.8).fillEllipse(X(e.x), Y(e.y), 10, 6);
+    }
+    if (v.i > 0) { const s0 = P[0]; roots(s0.x, s0.y, 5, 6, 12); g.fillStyle(C.out, 0.8).fillEllipse(X(s0.x), Y(s0.y), 10, 6); }
+    // the source: a sacred sigil, clutched and drained (or shining clean)
+    if (v.source) {
+      const e = P[P.length - 1];
+      v.sigil = { x: e.x, y: e.y };
+      const gold = dead ? 0xffe08a : 0xc49a44, ga = dead ? 0.9 : 0.6;
+      g.lineStyle(2, gold, ga).strokeEllipse(X(e.x), Y(e.y), 40, 26);
+      g.lineStyle(1, gold, ga).strokeEllipse(X(e.x), Y(e.y), 30, 19);
+      for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; g.fillStyle(gold, ga).fillRect(Math.round(X(e.x + Math.cos(a) * 17)) - 1, Math.round(Y(e.y + Math.sin(a) * 11)) - 1, 2, 2); }
+      if (!dead) roots(e.x, e.y, 9, 16, 22);
+    }
+    const key = `vine_${v.ward.def.id}_${v.i}`;
+    if (this.textures.exists(key)) this.textures.remove(key);
+    g.generateTexture(key, w, h);
+    g.destroy();
+    v.img?.destroy();
+    v.img = this.add.image(ox, oy, key).setOrigin(0).setDepth(-80);
   }
 
   vineAt(v, d) {
@@ -1990,19 +2197,29 @@ export class Game extends Phaser.Scene {
     return P[lo];
   }
 
+  // live vines: pods throb, and stolen light flows from the shrine toward the stone
   updateVines(dt) {
     const view = this.cameras.main.worldView;
     for (const v of this.vines || []) {
-      if (v.dead) continue;
-      v.mg ??= this.add.graphics().setDepth(-79);
-      v.mg.clear();
+      v.fx ??= this.add.graphics().setDepth(-79);
+      v.fx.clear();
+      const b = v.box;
+      if (b.x > view.right || b.x + b.w < view.x || b.y > view.bottom || b.y + b.h < view.y) continue;
       v.t = (v.t || 0) + dt;
-      const len = v.pts[v.pts.length - 1].d;
-      // curse flows from the guardian's end up toward the stone
-      for (let k = 0; k < Math.ceil(len / 80); k++) {
-        const p = this.vineAt(v, len - ((v.t * 40 + k * 80) % len));
+      if (v.dead) {
+        if (v.sigil) { const a = 0.25 + Math.sin(v.t * 2) * 0.12; v.fx.fillStyle(0xfff0a0, a).fillEllipse(v.sigil.x, v.sigil.y, 34, 20); }
+        continue;
+      }
+      for (const p of v.pods) { const a = 0.35 + Math.sin(v.t * 3 + p.ph) * 0.3; v.fx.fillStyle(0xe7a6ff, a).fillCircle(p.x, p.y, 3.2).fillStyle(0xffffff, a * 0.8).fillCircle(p.x - 0.6, p.y - 0.6, 0.9); }
+      if (v.sigil) { const a = 0.18 + Math.sin(v.t * 4) * 0.1; v.fx.fillStyle(0xffd27a, a).fillEllipse(v.sigil.x, v.sigil.y, 30, 18); }
+      // motes travel toward d = 0; on the shrine vine they start gold and sour to purple
+      for (let k = 0; k < Math.ceil(v.len / 70); k++) {
+        const d = v.len - ((v.t * 34 + k * 70) % v.len);
+        const p = this.vineAt(v, d);
         if (p.x < view.x - 8 || p.x > view.right + 8 || p.y < view.y - 8 || p.y > view.bottom + 8) continue;
-        v.mg.fillStyle(0xe7a6ff, 0.9).fillCircle(p.x, p.y, 1.8).fillStyle(0xffffff, 0.9).fillCircle(p.x, p.y, 0.8);
+        const f = v.source ? d / v.len : 0;
+        const col = f > 0.6 ? 0xffe08a : f > 0.3 ? 0xf0b8e8 : 0xe7a6ff;
+        v.fx.fillStyle(col, 0.95).fillCircle(p.x, p.y, 1.8).fillStyle(0xffffff, 0.9).fillCircle(p.x, p.y, 0.8);
       }
     }
   }
@@ -2011,11 +2228,60 @@ export class Game extends Phaser.Scene {
     for (const v of this.vines || []) {
       if (v.ward !== w || v.dead) continue;
       v.dead = true;
-      v.mg?.clear();
-      // crumbles from the guardian's end back toward the stone
-      const len = v.pts[v.pts.length - 1].d;
-      for (let d = len, i = 0; d > 0; d -= 40, i++) { const p = this.vineAt(v, d); this.time.delayedCall(i * 60, () => this.fx.burst('curse', p.x, p.y, 3)); }
-      this.time.delayedCall(Math.min(2400, (len / 40) * 60), () => this.drawVine(v));
+      // crumbles back from the shrine toward the stone
+      const steps = Math.ceil(v.len / 40);
+      for (let i = 0; i < steps; i++) { const p = this.vineAt(v, v.len - i * 40); this.time.delayedCall(i * 60, () => this.fx.burst('curse', p.x, p.y, 3)); }
+      if (v.sigil) { this.fx.burst('gold', v.sigil.x, v.sigil.y, 24); this.fx.burst('bloom', v.sigil.x, v.sigil.y, 20); }
+      this.time.delayedCall(Math.min(2400, steps * 60), () => this.paintVine(v));
+    }
+    this.time.delayedCall(2600, () => this.think(w.def.id, 'withered', true));
+  }
+
+  // ------------------------------------------------------------ thoughts
+  // The lead hero thinks out loud the first time they meet each beat of a
+  // ward's story, nudging the player toward what to do next.
+  think(wardId, beat, force = false) {
+    const k = `th_${wardId}_${beat}`;
+    if (this.flags[k] || (!force && (this.combatHold > 0 || this.ui?.dialogOpen || this.busy))) return false;
+    const line = THOUGHTS[wardId]?.[beat];
+    if (!line) return false;
+    this.flags[k] = true;
+    this.bark(this.leader, line);
+    return true;
+  }
+
+  nearVine(w, L, tiles) {
+    let best = null;
+    for (const v of this.vines || []) {
+      if (v.ward !== w) continue;
+      const b = v.box;
+      if (L.x < b.x || L.x > b.x + b.w || L.y < b.y || L.y > b.y + b.h) continue;
+      for (let i = 0; i < v.pts.length; i += 3) if (Math.hypot(v.pts[i].x - L.x, v.pts[i].y - L.y) < tiles * TILE) { best = { v, p: v.pts[i] }; break; }
+      if (best) break;
+    }
+    return best;
+  }
+
+  updateThoughts(dt) {
+    this.thoughtT = (this.thoughtT || 0) - dt;
+    if (this.thoughtT > 0) return;
+    this.thoughtT = 0.5;
+    if (this.combatHold > 0 || this.busy || this.ui?.dialogOpen || this.golem) return;
+    const L = this.leader, f = this.flags;
+    for (const w of this.wards) {
+      const wd = w.def, id = wd.id;
+      if (f[wd.flag]) continue;
+      const dStone = Math.hypot(L.x - w.C.x, L.y - w.C.y) / TILE;
+      if (!f[wd.guardian]) {
+        if (dStone < 9 && this.think(id, 'stone')) return;
+        const nv = this.nearVine(w, L, 3);
+        if (!nv) continue;
+        if (nv.v.i === 0 && dStone > 11 && this.think(id, 'vine')) return;
+        if (nv.v.source && Math.hypot(nv.v.sigil.x - L.x, nv.v.sigil.y - L.y) < 11 * TILE && this.think(id, 'source')) return;
+        if (nv.v.i > 0 && this.think(id, 'below')) return;
+      } else if (wd.warden && !f[wd.warden]) {
+        if (dStone < 16 && this.think(id, 'stir')) return;
+      } else if (dStone < 12 && this.think(id, 'open')) return;
     }
   }
 
@@ -2138,6 +2404,7 @@ export class Game extends Phaser.Scene {
     this.updateBoss();
     this.updateWardBoss();
     this.updateVines(dt);
+    this.updateThoughts(dt);
     this.updateWarps();
     this.quests.update(dt);
     this.groupT = (this.groupT || 0) - dt;

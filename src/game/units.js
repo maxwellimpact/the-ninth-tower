@@ -1872,7 +1872,7 @@ export class WardStone extends Unit {
       this.flash(60, 0x9fd8ff);
       if (!this.shieldMsgT || this.scene.time.now > this.shieldMsgT) { this.shieldMsgT = this.scene.time.now + 900; this.scene.floatText(this.x, this.y - 44, 'SHIELDED', 'fontPlain'); audio.sfx('block'); }
       const hk = `wardHint_${this.wardDef?.id}`;
-      if (!this.scene.flags[hk]) { this.scene.flags[hk] = true; const pip = this.scene.party.find((h) => h.def.id === 'pip') || this.scene.leader; this.scene.bark(pip, this.wardDef?.id === 'marsh' ? 'THIS BARRIER FEEDS ON SOMETHING IN THE SUNKEN ABBEY. FOLLOW THE BELL TOWER.' : 'THE BARRIER DRAWS ON SOMETHING BELOW THE OLD KEEP. THE RUINS - THERE WERE STAIRS!'); }
+      if (!this.scene.flags[hk]) { this.scene.flags[hk] = true; const pip = this.scene.party.find((h) => h.def.id === 'pip') || this.scene.leader; this.scene.bark(pip, !this.scene.flags[this.wardDef?.guardian] ? 'SHIELDED. THAT VINE IS FEEDING IT - FIND WHERE IT STARTS AND CUT IT OFF.' : 'STILL SHIELDED... SOMETHING ELSE IS GUARDING IT.'); }
       return 0;
     }
     amount = Math.round(amount);
