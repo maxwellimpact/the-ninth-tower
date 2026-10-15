@@ -272,7 +272,10 @@ export class UI extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------- dialogue
+  // Dialogue never opens over a fight: it waits until combat ends.
   openDialog(lines, onDone) {
+    if (this.g.combatHold > 0) { this.pendingDialog = [lines, onDone]; return; }
+    this.pendingDialog = null;
     this.lines = lines;
     this.lineI = 0;
     this.onDone = onDone;
@@ -362,8 +365,27 @@ export class UI extends Phaser.Scene {
     this.showLine();
   }
 
+  // A fight starting closes the open dialogue; it comes back (from the line
+  // you were on) once things are quiet again.
+  checkDialogCombat() {
+    const fighting = this.g.combatHold > 0;
+    if (fighting && this.dialogOpen) {
+      this.pendingDialog = [this.lines.slice(this.lineI), this.onDone];
+      this.typeEv?.remove();
+      this.clearChoices();
+      this.dialogOpen = false;
+      this.dlg.setVisible(false);
+      this.onDone = null;
+    } else if (!fighting && !this.dialogOpen && this.pendingDialog && !this.g.busy) {
+      const [lines, done] = this.pendingDialog;
+      this.pendingDialog = null;
+      if (lines.length) this.openDialog(lines, done);
+    }
+  }
+
   // ---------------------------------------------------------- per frame
   update(time) {
+    this.checkDialogCombat();
     const g = this.gfx;
     const game = this.g;
     g.clear();

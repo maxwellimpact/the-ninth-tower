@@ -973,7 +973,9 @@ export class Game extends Phaser.Scene {
     if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
-    this.hitStop(crit ? 0.085 : 0.045);
+    // hit-stop sells impact, but stacked on every party hit it makes crowds feel sluggish:
+    // only the leader's hits (and crits) freeze, and never more than ~4 times a second
+    if ((src === this.leader || crit) && this.time.now - (this.lastHitStop || 0) > 250) { this.lastHitStop = this.time.now; this.hitStop(crit ? 0.07 : 0.035); }
     if (crit) { this.shake(80, 0.004); audio.sfx('crit'); }
     else if (target.kind === 'hexling' || target.kind === 'mire') audio.sfx('squish');
     else audio.sfx('hit', { pitch: target.kind === 'ward' || target.boss ? 0.6 : 1 });
@@ -1211,14 +1213,17 @@ export class Game extends Phaser.Scene {
   bark(h, text) {
     if (!h || !text) return;
     if (this.barkObj?.active) this.barkObj.destroy();
+    this.barkEv?.remove(); // the replaced bark's typing timer must stop too
     text = fitString(text, Math.min(200, this.scale.width - 16), 3); // wraps on narrow screens
     const t = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5, 1).setDepth(TOP + 6).setCenterAlign();
     this.barkObj = t;
     let i = 0;
     const ev = this.time.addEvent({ delay: 32, repeat: text.length - 1, callback: () => {
+      if (!t.active) { ev.remove(); return; }
       i++; t.setText(text.slice(0, i));
       if (i % 2 === 0 && text[i - 1] !== ' ') audio.sfx('blip', { voice: h.def?.voice || h.voice });
     } });
+    this.barkEv = ev;
     t.follow = h;
     this.time.delayedCall(text.length * 32 + 2200, () => { if (this.barkObj === t) this.barkObj = null; ev.remove(); this.tweens.add({ targets: t, alpha: 0, duration: 250, onComplete: () => t.destroy() }); });
   }
