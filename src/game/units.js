@@ -1056,12 +1056,12 @@ export class Enemy extends Unit {
         if (s.ranged) {
           // archers keep their distance and need a clear shot
           if (d < s.keepAway) { this.stepTo({ x: this.x * 2 - t.x, y: this.y * 2 - t.y }, dt, 0.9); break; }
-          if (d <= s.reach && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1)) { this.beginWindup(t); break; }
+          if (d <= s.reach && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1)) { this.beginWindup(t); break; }
           this.stepTo(t, dt, 1);
           break;
         }
-        if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach) { this.beginTongue(t); break; }
-        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2)) { this.beginCharge(t); break; }
+        if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen()) { this.beginTongue(t); break; }
+        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2)) { this.beginCharge(t); break; }
         if (d <= s.reach + t.r) { this.beginWindup(t); break; }
         this.stepTo(t, dt, 1);
         break;
@@ -1249,6 +1249,13 @@ export class Enemy extends Unit {
       for (let i = mine; i < Math.min(mine + 2, 3); i++) { const e = sc.spawnEnemy('hexling', this.x + (i ? 20 : -20), this.y + 10, true); e.summonedBy = this; e.summoned = true; }
       sc.fx.burst('curse', this.x, this.y - 10, 16);
     }
+  }
+
+  // Ranged attackers only fire once they're on screen, so nothing shoots you
+  // from somewhere you can't see (portrait phones have a narrow view).
+  onScreen(m = 10) {
+    const v = this.scene.cameras.main.worldView;
+    return this.x > v.x + m && this.x < v.right - m && this.y > v.y + m && this.y < v.bottom - m;
   }
 
   beginWindup(t) {
