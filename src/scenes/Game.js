@@ -1550,6 +1550,7 @@ export class Game extends Phaser.Scene {
   // while you look). Tap anywhere to climb back down.
   climbLookout(k) {
     if (this.busy || this.onLookout) return;
+    if (this.combatHold > 0) { this.bark(this.leader, 'NOT NOW - WE\'RE A BIT BUSY!'); return; }
     const cam = this.cameras.main, x = k.x * TILE + 8, y = k.y * TILE + 8;
     const ZOOM = 0.5, LIFT = 51, foot = { x, y: y + 12 };
     const first = !this.flags[`lookout_${k.id}`];

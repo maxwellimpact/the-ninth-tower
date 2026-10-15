@@ -247,7 +247,7 @@ Relics are **party-wide story/exploration items**, separate from gear.
 - **Hard gates:** relic required.
 - **Soft gates:** enemy level, hazard zones like cold or heat that drain HP without resistance gear.
 - **Knowledge gates:** puzzles whose solution is learned elsewhere.
-- **Lookout towers:** climb one to sketch the region outline onto your map, with fog of war over the details.
+- **Lookout towers:** climbable watchtowers, one per region (C12). The first climb sketches the surrounding land onto your map.
 - **Elevation:** 3 height levels with ledges you can only drop down, plus stairs.
 - **Curse gates:** some areas stay sealed by Malgrim's curse until that region's Ward Stone falls.
 
@@ -289,6 +289,14 @@ Everything is generated at runtime with WebAudio, as in Lumen. There are **no au
   - **Cursed vs. freed region:** the same theme in a minor key, detuned and sparse while cursed. It resolves to major with full instruments when the Ward Stone falls.
   - **Hub town grows musically:** each rescued service adds an instrument layer to the town theme.
 - **Track list (v1):** title, hub town, 5 region themes, dungeon/cave, lieutenant boss, the Ninth Tower, Malgrim, victory jingle, level-up and item-get fanfares.
+- **Region variations [BUILT]:** every region gets its own variation of the main theme, each in its own key and tempo with its own instrument colours.
+  - **Brightwater Vale:** the home theme.
+  - **Highmeadow:** brighter and quicker, with a flute-like lead.
+  - **Mistfen:** slow and minor-leaning, with a murky pad.
+  - **The Depths** (caves and dungeons): sparse and echoing.
+  - **Hearth** (shops and the tavern): a cosy jig.
+  - **Changing themes:** the music crossfades when you cross a region border, after you've been in the new region for about a second.
+  - **Future regions** each add one more variation in the same pattern data: Gloamwood (hushed, music-box), Cinderreach (low drones and anvil hits), Frosthelm (glassy bells, a slow waltz).
 
 ### Sound effects
 - Synthesized per event using envelope, pitch sweep, noise and filter.
@@ -525,7 +533,13 @@ Where this part changes an earlier **[DRAFT]** section, it says so, and the earl
 
 ### Loadout **[REVISED from §6]**
 - **3 active skills** (the demo has 2), **2 passives** and **1 ultimate** per hero.
-- **Skill ranks 1–5.** Each rank costs skill points (1 / 1 / 2 / 2 / 3) and adds about 15% to the skill's effect or shortens its cooldown.
+- **Skill ranks 1–5.** Each rank costs skill points (1 / 1 / 2 / 2 / 3) and adds **20%** to the skill's effect, so rank 5 is +80%. **[REVISED in playtest: was 15%]**
+- **Skill power budget [LOCKED in playtest]:** skills start modest and grow, so the player grows into them rather than being overpowered from the start.
+  - At rank 1, a damage skill adds roughly **25–35% of the hero's basic-attack damage per second** on a single target. Area skills deal less per target.
+  - **Cooldowns are 8–18 game seconds** (about 11–25 s real time at 0.72× speed). Big area skills sit at the long end.
+  - **Splash damage** (Fireball, Blast Arrow) hits the target in full and everything else for 45%. Only the direct hit applies the element.
+  - **Burn** ticks for 0.12× ATK. Chain Lightning loses 30% per jump.
+  - **Gear cooldown reduction is capped at 30%.** Crit-based cooldown refunds (Studious, Quick Hands) can trigger at most once per second.
 - **Cooldowns only, no mana bar.** **[REVISED from §9]** Focus is dropped: a phone HUD already shows cooldown arcs, and a second resource is one more thing to read mid-fight.
 - **New skills unlock** at levels 1 (2 skills), 4, 8, 12 and 16. The ultimate upgrades at level 20 with an **Ultimate Tome** from the Trainers' Hall.
 - **Combat grid with 3 skills:** the top row stays ULT, ALLY 1, ALLY 2. The bottom row becomes DODGE, S1, S2, S3. That's 4 columns, about 158 px, which still fits portrait. *(See question 2.)*
@@ -1056,33 +1070,49 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 ### The five lieutenants (Ward Stone bosses)
 Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 
+**Every lieutenant is fought twice [LOCKED in playtest].** See C12 for the full pattern.
+- **First, its Shadow, in the region's dungeon.** The Shadow is a cursed echo with 60% HP and its final phase removed. It sits at the sacred place the cursed vine is draining.
+- **Then the true lieutenant, at the Ward Stone.** Killing the Shadow withers the vine. Walking up to the still-shielded stone then raises the true lieutenant from the ground around it. It has all its phases, +30% HP and +15% damage, and it carries the unique drop. Walk away and it sinks back down at full health. Once it falls, the stone can be broken.
+- **Every boss gets a cinematic entrance** (C12).
+
 **1. The Gatewarden — Hex Golem** (Vale, Brightwater Undercroft; demo boss expanded)
 - **Phase 1:** slams and shockwaves (demo).
 - **Phase 2:** armour plates close over its core. **Hook the plates off** to expose it.
 - **Phase 3:** enrages and summons hexlings (demo).
 - **Reward:** the Vale Ward Stone. The Blacksmith returns.
-- **Two-stage (playtest change):** a cursed **vine** runs from the Ward Stone down into the Undercroft. Below, you fight the **Shadow of the Gatewarden** (60% HP, no enrage; plates phase teaches the hook). Killing it withers the vine. Approaching the Ward Stone then raises the **real Gatewarden** from the rubble (full three phases, +30% HP, +15% damage, the unique drops). Walk away and he sinks back at full health. Once he falls, the stone can be broken.
-- **Mistfen follows the same pattern:** the Shadow of Mother Murk in the Abbey (60% HP, no fog phase), then the real Murk rises from a bog pool beside the Mistfen Ward Stone (+30% HP, +15% damage, Wyrmfang drop).
-- **Skill balance (playtest pass):** a skill should add roughly 25–35% of the hero's basic-attack damage per second on one target at rank 1 (AoE lower per target). Ranks give +20% each, so a rank-5 skill is +80%. Burn ticks 0.12× ATK. Gear CDR is capped at 30%.
-- **Boss entrances (all bosses):** the world freezes, the camera turns to the boss, the ground rumbles, and the boss assembles (stones fly in / shadow gathers / Murk heaves out of her pool). Then it roars and the fight starts.
+- **Shadow:** in the Undercroft, standing on the keep's old shrine. Dark purple and smoky, no enrage phase. Its plates phase teaches the hook. **[BUILT]**
+- **True form:** rises out of the rubble around the Vale Ward Stone and carries the four unique drops. **[BUILT]**
+- **Entrance:** stones rise out of the ground and fly together to form it. The Shadow's stones are dark purple and gather in curse smoke. **[BUILT]**
 
-**2. Mother Murk** (Mistfen, Sunken Abbey) — a bog hag fused with a giant toad
-- **Phase 1:** tongue grabs and mire slimes.
-- **Phase 2:** floods the arena. **Dive (Tide Charm)** to dodge the shockwave and hit her from below.
-- **Phase 3:** a curse fog shrinks safe ground.
-- **Drops:** Wyrmfang Twin.
+**2. Mother Murk** (Mistfen, Sunken Abbey) — a bog hag fused with a giant toad **[BUILT, reworked in playtest]**
+- **Phase 1 (on land):**
+  - slams;
+  - belly-flop leaps onto a marked circle, landing with a shockwave;
+  - bog-spit globs that leave poison puddles for about 4 s;
+  - a tongue grab that only reaches heroes lingering 64–150 px away and pulls them to 58 px, outside her slam;
+  - at most 2 mire slimes at once.
+- **Phase 2 (from 65%):** she sinks into her pool. Shockwave rings pass harmlessly over swimmers.
+  - Every few seconds, bubbles mark a spot on the pool's edge where she erupts. She stays up for about 3.5 s, and anyone can hit her then.
+  - **Swimmers (Tide Charm)** can reach her at any time.
+- **Phase 3 (from 35%):** curse fog closes in to a 150 px safe circle. Leaps, spits and grabs come faster.
+- **Shadow:** in the Sunken Abbey nest, drinking from the abbey altar. It never reaches the fog phase.
+- **True form:** heaves up out of a bog pool just north of the Mistfen Ward Stone.
+- **Entrance:** her pool churns and foams, then she heaves up out of the water.
+- **Drops:** Wyrmfang Twin (true form).
 
 **3. The Pale Huntsman** (Gloamwood, Witchroot Hollow) — invisible stalker with spectral hounds
 - **Phase 1:** hounds plus arrows from the dark.
 - **Phase 2:** he turns invisible. **The Seer's Lens** shows him, and his footprints show in the leaves.
 - **Phase 3:** six illusions of him; only one casts a shadow.
 - **Drops:** Raven Mask.
+- **Two-stage (planned):** the Shadow waits in Witchroot Hollow, draining the heartwood of the elder tree. The true Huntsman steps out of the fog beside the Gloamwood Ward Stone. **Entrance:** hounds howl, then he fades out of the mist.
 
 **4. Forgemaster Vulk** (Cinderreach, Forge of Ash) — salamander smith with a giant hammer
 - **Phase 1:** hammer combos and molten splashes.
 - **Phase 2:** lava vents erupt. **Lift boulders with the Gauntlets** and drop them into the vents to plug them.
 - **Phase 3:** he heats his armour. Frost or water bursts are the only way to cool and break it.
 - **Drops:** Emberbrand.
+- **Two-stage (planned):** the Shadow is in the Forge of Ash, draining the dwarves' ever-burning hearthstone. The true Vulk bursts out of a lava vent by the Cinderreach Ward Stone. **Entrance:** the ground cracks and glows, then he climbs out of the magma.
 
 **5. Isolde the Rimeguard** (Frosthelm, Rimeglass Spire) — Malgrim's ice knight, once Mirelle's sister in his service
 - **Phase 1:** sword duel with a frost lance.
@@ -1090,6 +1120,7 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 - **Phase 3:** blizzard. Mirelle (if recruited) says a story line, and Isolde's guard drops.
 - **Drops:** Glacier Wand.
 - **Mirelle is freed during this dungeon** (C10), so she's in the party for the fight.
+- **Two-stage (planned):** the Shadow is in the Rimeglass Spire, draining the star-mirror the old astronomers kept. The true Isolde forms from ice shards that spiral together at the Frosthelm Ward Stone. **Entrance:** frost creeps over the ground and the shards spiral up into her.
 
 ### The Ninth Tower
 - **9 floors.** Each outer Ward Stone you destroy **seals one floor** (and removes its elites), so the full run is between 5 and 9 floors.
@@ -1139,9 +1170,9 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 |---|---|---|---|
 | 1 | **Opening:** pick a starter, wake in the ruined Brightwater, meet the Frog King. The second hero joins in the ruins | 15 min | 1–2 |
 | 2 | **Brightwater Vale:** the third hero joins on the road. Explore the lake, hamlet and ruins; first Golden Flies and shrine | 30 min | 2–5 |
-| 3 | **Brightwater Undercroft** (tutorial dungeon): get the **Grapple Hook**; fight the Gatewarden; **Vale Ward Stone** falls (first colour bloom) | 25 min | 5–6 |
+| 3 | **Brightwater Undercroft** (tutorial dungeon): follow the cursed vine down; get the **Grapple Hook**; break the **Shadow of the Gatewarden** at the shrine; back up top, the true Gatewarden rises at the stone; **Vale Ward Stone** falls (first colour bloom) | 30 min | 5–6 |
 | 4 | **Lantern quest** in Brightwater; the hook bridges out of the Vale open. The map shows four regions | 10 min | 6 |
-| 5–8 | **Four outer regions, in any order.** Each one: refugee camp → overworld (relic hints, bounties, recruit quest) → dungeon → lieutenant → **Ward Stone** → village reopens and a Brightwater service returns | ~1.5 h each | see C1 |
+| 5–8 | **Four outer regions, in any order.** Each one: refugee camp → overworld (lookout, relic hints, bounties, recruit quest; the vine leads from the stone to the dungeon) → dungeon → the lieutenant's Shadow → the true lieutenant at the **Ward Stone** → village reopens and a Brightwater service returns | ~1.5 h each | see C1 |
 | 9 | **Blight Basin:** the barrier is down to its last layer; Hexborn enemies; final shrines | 30 min | 24–26 |
 | 10 | **The Ninth Tower → Malgrim** | 45–75 min | 26–28 |
 | 11 | **Post-game** | — | up to 35 |
@@ -1202,7 +1233,7 @@ Small, self-contained jobs from ordinary people. They're never required, but the
 | **Shrines** | 12 | +1 skill point each |
 | **Cursed townsfolk** | 30 | Rebuild Brightwater: Bard, Cartographer, Ferryman, plus gold and recipes |
 | **Lore pages** | 40 | Malgrim's past, and the court-mage twist (he was Pip's master's master) |
-| **Lookout towers** | 6 | Reveal the region on the map; all six give the Wanderer's Charm |
+| **Lookout towers** | 6 | Climbable watchtowers (C12). The first climb reveals the area on the map and gives 60 XP; all six give the Wanderer's Charm. Built: Highmeadow and Fenwatch (Mistfen) |
 | **Sealed Vaults** | 5 | Uniques (need relics from other regions) |
 
 ### Side quests
@@ -1247,8 +1278,86 @@ Small, self-contained jobs from ordinary people. They're never required, but the
 | Relics | 7 | Grapple exists |
 | Skills (icons + FX) | 48 home + 12 discipline + 8 ultimates | 9 exist |
 | Tilesets | Vale (exists), Mistfen (partly), Gloamwood, Cinderreach, Frosthelm, Basin, Tower, 5 dungeon sets | Terrain is painted per pixel in code |
-| Music | Title, hub (layered), 5 regions × cursed/freed, dungeon, boss, Tower, Malgrim, jingles | Pattern data |
+| Music | Title, hub (layered), 5 regions × cursed/freed, dungeon, boss, Tower, Malgrim, jingles | Pattern data. Built: Vale, Highmeadow, Mistfen, Depths, Hearth |
+| Lookout towers | 6 placements | One shared tower sprite. Built: 2 |
+| Ward Stone vines | 2 per region (overworld + dungeon), 5 sacred sigils | Grown and painted in code from a few waypoints. Built: Vale, Mistfen |
+| Boss entrances | 1 style per lieutenant + Shadow variant | Built: stone assembly, shadow gathering, pool eruption |
 | Data files | heroes, skills, items (templates + uniques), enemies, world/regions, quests, dialogue, tuning | All JSON, shared with iOS |
+
+---
+
+## C12. Region Template & Recurring Features **[LOCKED from Wave 1 playtests]**
+Every region is built from the same kit. When a new region is added (Wave 2+), it gets each of these. Items marked [BUILT] exist in code and only need data for new regions.
+
+### 1. The Ward Stone story arc
+The curse feeds each Ward Stone by **draining a sacred place** through a cursed vine. That's the region's mystery, and the vine is the trail that solves it.
+
+| Region | Sacred place (the vine's source) | Where the Shadow waits | Where the true lieutenant rises |
+|---|---|---|---|
+| Brightwater Vale **[BUILT]** | The keep's old shrine (Undercroft) | Gatewarden arena | Rubble around the Vale stone |
+| Mistfen **[BUILT]** | The abbey altar (Sunken Abbey) | Murk's nest | The bog pool beside the stone |
+| Gloamwood | Elder-tree heartwood (Witchroot Hollow) | Hollow's heart | Out of the fog by the stone |
+| Cinderreach | The ever-burning hearthstone (Forge of Ash) | The forge floor | A lava vent by the stone |
+| Frosthelm | The astronomers' star-mirror (Rimeglass Spire) | The spire top | Ice shards spiralling up at the stone |
+
+- **The vine [BUILT]:**
+  - **Route:** two segments: overworld, stone → dungeon entrance; and dungeon, entrance → sacred place. Each is set by a handful of waypoints, and the game grows the route between them so it hugs walls, ruins and trees and climbs over low obstacles.
+  - **Look:** three braided strands with leaves, thorns, side shoots, curse blooms and pulsing pods. Roots splay out and coils clutch the stone. Stolen light flows along the vine from the sigil (gold) to the stone (curse purple).
+  - **When the Shadow dies:** the vine crumbles back toward the stone and stays as a grey husk, and the sigil shines gold again.
+  - **Performance:** each vine is painted once into a texture. Only the pods and light specks are drawn live, and only on screen.
+- **The stone's shield** stays up until the Shadow is dead *and* the true lieutenant has fallen. Hitting it while shielded gives a hint about the vine.
+- **Shadow → true lieutenant:** see C8. The true lieutenant starts its fight when the party comes within about 5–6 tiles of where it will rise, so it always appears on screen.
+
+### 2. The lead hero thinks out loud [BUILT]
+The leader speaks a one-line thought the first time the player reaches each beat of the arc, as a light nudge toward what to do next.
+- **Beats:**
+  1. sees the stone;
+  2. finds the vine;
+  3. follows it underground;
+  4. finds the sacred place;
+  5. the vine withers;
+  6. the ground stirs by the stone;
+  7. the guardian falls ("break it!").
+- **When they play:** each line plays once per save, never during combat, and waits until the fight is over.
+- **Writing:** every new region writes its own seven lines. The same system should also cover other first-time discoveries: relic gates, a region's first lookout, and the Tower door.
+
+### 3. Lookout tower [BUILT]
+One climbable watchtower per region (6 total) that overlooks the region's key landmarks. Fenwatch, for example, sees the Abbey, the vine and the bog.
+- **Climbing:** the party climbs the ladder one by one and lines up on the platform. The camera pulls back to 0.5× zoom, showing four times the area. Tap (or Esc/Space) to climb down.
+- **First climb:** reveals the area on the map and gives 60 XP. Not usable mid-combat.
+- **Performance rule:** only terrain and scenery stream in for the wider view, and loading starts during the climb. Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 120) is released on the way down.
+- **Placement rule:** on open ground with nothing within 4 tiles, outside any curse circle, and within about 12 tiles of the dungeon entrance or the stone.
+
+### 4. Boss rules [BUILT]
+- **Entrance:**
+  1. the world freezes;
+  2. the camera pans to the boss as the ground rumbles with growing shakes;
+  3. the boss assembles in its own style;
+  4. it roars, and the title banner shows;
+  5. the camera returns to the party and the fight starts.
+  - The whole sequence takes about 4.5 s.
+- **Dungeon arenas:**
+  - The fight starts only once the leader is about 1–3 tiles inside the arena. Stragglers are pulled in.
+  - **The bars drop across the corridor outside, never on arena floor**, so nobody can be trapped inside a blocked tile.
+  - Arenas are wide enough to move around the boss.
+- **Overworld bosses** (true lieutenants) have no bars. Leaving about 20 tiles away resets them.
+- **Party wipe:** you return to the campfire behind the loading curtain and lose 10% of your gold. The boss resets.
+
+### 5. Music
+Each region adds a theme variation (§11a). Its dungeon uses the Depths variation unless it gets its own.
+
+### 6. Key items, errands and enemies [BUILT]
+- **Key items (relics):** picking one up pauses the game with a card (icon, name, what it does) until it's tapped away. Anything on the game clock, like a chest's ambush, waits. Key items are listed in the Bag.
+- **Chance-meeting errands** (an NPC calling for help) always ask first ("Hold on!" / "Not now").
+  - **Failing:** a failed errand clears its spawned enemies, and you can retry by talking to the NPC.
+  - **Loading a save mid-errand:** errand fights rebuilt during loading use the saved party levels.
+- **Ranged enemies** only aim and fire while on screen (portrait phones have a narrow view). Base reach is 75–80 px.
+
+### 7. Interface conventions [BUILT]
+- **Scrolling:** every list or page that can overflow scrolls by dragging, with a thin scrollbar. Menu buttons act when your finger lifts, so a drag never triggers one.
+- **Long names:** shortened names slide sideways to show in full when tapped. The selected item's name keeps sliding.
+- **New gear:** gear you haven't looked at yet gets a NEW tag and sorts to the top. Dots on the HUD bag button, the GEAR tab, the hero and the slot lead to it.
+- **In-combat pickups:** shown as a small white outlined line, off to the right.
 
 ---
 
@@ -1349,3 +1458,9 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-14 | Demo frozen (`untitled-rpg-demo/`, git tag `demo-3`); the full build extends the demo in waves rather than rebuilding |
 | 2026-10-14 | Part II review done, one question at a time: 4+2 gear slots; 3 skills ranked with skill points (levels + shrine/quest bonuses); automatic stats; cooldowns only (+ cooldown gear); Venom replaces Earth; generated gear with light bonus-stat rolls (no downsides; Uniques roll only post-game); refine +10 never fails; level cap 35 with a new XP curve and encounter-density targets; recruit placements kept; errands added; Tower scaling kept; three build waves |
 | 2026-10-14 | Wave 1 built (systems + Vale + Mistfen + Kesh/Wren). Balance retune from simulation: enemy HP +25%/level and damage +13%/level (instead of +16% / +10%), so kill times stay roughly flat as gear improves. Vale gate south is the Southwash river with a collapsed bridge (hook posts); Mistfen's lieutenant Mother Murk floods her arena (swim to reach her). Wren's recruit sits in the Vale's western woods for now (Gloamwood itself is Wave 2) |
+| 2026-10-14 | Wave 1 playtest fixes: enemy HP bars while engaged; text fitting everywhere; dialogue waits for combat to end; out-of-combat regen; calmer companions; ranged enemies only fire on screen |
+| 2026-10-15 | Region music variations (Highmeadow, Mistfen, Depths, Hearth); Mother Murk reworked; key items pause with a card; menus scroll, long names slide, NEW gear tracking |
+| 2026-10-15 | Every lieutenant is fought twice: a Shadow in the dungeon at a sacred place, then the true form rising at the Ward Stone. A cursed vine ties stone to sacred place and withers when the Shadow dies. Cinematic boss entrances. The lead hero thinks out loud at each beat of the arc (C12) |
+| 2026-10-15 | Skill power budget: modest rank-1 skills (25–35% of basic DPS per target), +20% per rank, longer cooldowns (8–18 s), weaker splash, crit refunds rate-limited, CDR cap 30% |
+| 2026-10-15 | Lookout towers are climbable watchtowers that zoom the camera out to 0.5×; one per region (C12). Built: Highmeadow and Fenwatch |
+| 2026-10-15 | Health and ultimate values are guarded against invalid numbers (keep the last good value and report the cause) after errand fights rebuilt on load produced NaN levels |
