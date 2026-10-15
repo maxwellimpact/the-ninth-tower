@@ -8,7 +8,7 @@ import Q from '../data/quests.json';
 import items from '../data/items.json';
 import { audio } from '../audio/synth.js';
 import { makeItem, tierForLevel } from './itemgen.js';
-import { addMats, addPotions, CRAFT } from './state.js';
+import { addMats, addPotions, CRAFT, gainItems } from './state.js';
 
 const TILE = 16;
 const px = (t) => t * TILE + 8;
@@ -242,7 +242,7 @@ export class QuestManager {
       const slot = r.gear.slot || ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)];
       give.push(makeItem(hero, slot, tierForLevel(lv), r.gear.rarity || 'fine'));
     }
-    if (give.length) { st.inventory.push(...give); sc.events.emit('loot', { ids: give }); }
+    if (give.length) { gainItems(st, give); sc.events.emit('loot', { ids: give }); }
     sc.events.emit('party');
     return out.join('  ');
   }

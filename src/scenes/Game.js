@@ -14,7 +14,7 @@ import { QuestManager } from '../game/quests.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
+import { saveState, gainItems, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
@@ -1414,7 +1414,7 @@ export class Game extends Phaser.Scene {
       if (!h) continue;
       l.dead = true;
       l.s.destroy(); this.tweens.killTweensOf(l.beam); l.beam.destroy();
-      this.state.inventory.push(l.id);
+      gainItems(this.state, [l.id]);
       audio.sfx('chest');
       this.fx.burst('gold', l.x, l.y - 6, 14);
       this.events.emit('loot', { ids: [l.id] });
@@ -1476,7 +1476,7 @@ export class Game extends Phaser.Scene {
     this.fx.burst('gold', img.x, img.y - 10, 24);
     this.state.gold += c.gold || 0;
     const loot = c.items || [];
-    this.state.inventory.push(...loot);
+    gainItems(this.state, loot);
     addMats(this.state, c.mats || {});
     addPotions(this.state, c.potions || {});
     if (loot.length) this.events.emit('loot', { ids: loot, gold: c.gold });

@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
+import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
 import tuning from '../data/tuning.json';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
@@ -33,6 +33,22 @@ export class Menu extends Phaser.Scene {
     this.viewIdx = 0;
     this.selected = null;
     this.dyn = [];
+    this.regions = [];
+    this.scrollPos = {};
+    this.marquees = [];
+    // drag anywhere in a scrolling list to scroll it; a drag never counts as a tap
+    this.input.on('pointerdown', (p) => {
+      this.dragged = false;
+      const r = this.regionAt(p);
+      this.drag = r ? { r, y: p.y, from: r.cam.scrollY } : null;
+    });
+    this.input.on('pointermove', (p) => {
+      if (!p.isDown || !this.drag) return;
+      const dy = p.y - this.drag.y;
+      if (Math.abs(dy) > 5) this.dragged = true;
+      if (this.dragged) this.setScroll(this.drag.r, this.drag.from - dy);
+    });
+    this.input.on('wheel', (p, over, dx, dy) => { const r = this.regionAt(p); if (r) this.setScroll(r, r.cam.scrollY + dy * 0.5); });
     this.input.keyboard.on('keydown-ESC', () => this.close());
     this.input.keyboard.on('keydown-I', () => this.close());
     this.input.keyboard.on('keydown-LEFT', () => this.rotate(-1));
@@ -52,6 +68,7 @@ export class Menu extends Phaser.Scene {
   }
 
   close() {
+    this.markSeen();
     audio.sfx('click');
     this.scene.stop();
     this.g.closeMenu();
@@ -66,15 +83,110 @@ export class Menu extends Phaser.Scene {
 
   btn(x, y, w, h, fn) {
     const z = this.add.zone(x, y, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
-    z.on('pointerdown', fn);
+    z.on('pointerdown', () => { this.downZone = z; });
+    z.on('pointerup', () => {
+      if (this.downZone !== z || this.dragged) return;
+      this.downZone = null;
+      // any shortened name inside what was tapped scrolls to show it in full
+      const m = this.marquees.find((o) => o.active && o.x >= x - 1 && o.x < x + w && o.y >= y - 1 && o.y < y + h);
+      if (m) { this.marqueeText = m.full; this.playMarquee(m); }
+      fn();
+    });
     this.dyn.push(z);
     return z;
   }
 
+  // ------------------------------------------------------------ scrolling
+  // A scrolling region is its own camera looking at content drawn far off to
+  // the right (x + OX), clipped to the region's rectangle on screen. Drawing
+  // code just adds `ox` to its x; heights come from what was drawn.
+  region(key, x, y, w, h, draw) {
+    const OX = (this.regions.length + 1) * 5000;
+    const g = this.add.graphics();
+    this.dyn.push(g);
+    const keepG = this.gfx;
+    this.gfx = g;
+    const n0 = this.dyn.length;
+    draw(OX);
+    this.gfx = keepG;
+    let bottom = y;
+    for (const o of this.dyn.slice(n0)) {
+      if (o.type === 'Graphics' || !o.getBounds) continue;
+      bottom = Math.max(bottom, o.getBounds().bottom);
+    }
+    const cam = this.cameras.add(x, y, w, h);
+    const r = { key, x, y, w, h, cam, min: y, max: Math.max(y, bottom + 6 - h) };
+    cam.scrollX = OX + x;
+    r.bar = this.add.graphics().setDepth(100);
+    this.dyn.push(r.bar);
+    this.regions.push(r);
+    this.setScroll(r, y + (this.scrollPos[key] || 0));
+    return r;
+  }
+
+  regionAt(p) { return this.regions.find((r) => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h); }
+
+  setScroll(r, sy) {
+    r.cam.scrollY = Math.round(Math.max(r.min, Math.min(r.max, sy)));
+    this.scrollPos[r.key] = r.cam.scrollY - r.min;
+    // scrollbar on the right edge, only when there's more than fits
+    r.bar.clear();
+    const span = r.max - r.min;
+    if (span <= 0) return;
+    const th = Math.max(12, Math.round(r.h * (r.h / (r.h + span))));
+    const ty = r.y + Math.round((r.h - th) * ((r.cam.scrollY - r.min) / span));
+    // in the gutter just right of the list (or inside the right margin for full-width pages)
+    const bx = r.x + r.w + 4 <= this.scale.width ? r.x + r.w + 2 : r.x + r.w - 5;
+    r.bar.fillStyle(C.slate, 0.8).fillRect(bx, r.y, 2, r.h).fillStyle(C.gold).fillRect(bx, ty, 2, th);
+  }
+
+  clearRegions() {
+    for (const r of this.regions) this.cameras.remove(r.cam);
+    this.regions = [];
+  }
+
+  // ------------------------------------------------------------- marquee
+  // Shortened names scroll sideways to show the whole thing, then settle back.
+  playMarquee(o, loop = false) {
+    if (!o.active || o.playing) return;
+    o.playing = true;
+    const dist = o.full.length * 5 - o.maxW + 4;
+    o.setText(o.full).setSize(o.maxW, 12);
+    const st = { x: 0 };
+    this.tweens.add({
+      targets: st, x: dist, duration: Math.max(600, dist * 35), delay: 500, hold: 900,
+      onUpdate: (tw) => { if (!o.active) { tw.stop(); return; } o.scrollX = Math.round(st.x); },
+      onComplete: () => {
+        if (!o.active) return;
+        o.playing = false;
+        o.scrollX = 0;
+        if (loop) { this.time.delayedCall(400, () => o.active && this.playMarquee(o, true)); return; }
+        o.setText(o.fitted).setSize(0, 0);
+        if (this.marqueeText === o.full) this.marqueeText = null;
+      },
+    });
+  }
+
+  // NEW gear that was on screen counts as seen once you move on from it
+  markSeen() {
+    const st = this.g.state;
+    if (this.shownList?.length) st.fresh = (st.fresh || []).filter((id) => !this.shownList.includes(id));
+    this.shownList = null;
+  }
+
+  newDot(x, y) { this.gfx.fillStyle(C.ink).fillCircle(x, y, 3.5).fillStyle(C.goldL).fillCircle(x, y, 2.5); }
+
   // maxW: fit inside this width (shortened with ".."); maxLines > 1 wraps first
   t(x, y, str, font = 'font', tint, maxW = 0, maxLines = 1) {
-    const text = maxW > 0 ? fitString(str, maxW, maxLines) : String(str).toUpperCase();
-    const o = this.add.bitmapText(Math.round(x), Math.round(y), font, text);
+    const full = String(str).toUpperCase();
+    const text = maxW > 0 ? fitString(str, maxW, maxLines) : full;
+    const short = maxW > 0 && maxLines === 1 && text !== full;
+    const o = short ? this.add.dynamicBitmapText(Math.round(x), Math.round(y), font, text) : this.add.bitmapText(Math.round(x), Math.round(y), font, text);
+    if (short) {
+      Object.assign(o, { full, fitted: text, maxW });
+      this.marquees.push(o);
+      if (this.marqueeText === full) this.time.delayedCall(0, () => this.playMarquee(o));
+    }
     if (tint !== undefined) o.setTint(tint);
     this.dyn.push(o);
     return o;
@@ -113,8 +225,13 @@ export class Menu extends Phaser.Scene {
   // Three layouts: wide (3 columns), short landscape (compact 3 columns) and
   // portrait (stacked single column) so it works on any phone orientation.
   render() {
+    const ctx = `${this.tab}:${this.heroIdx}:${this.slot}`;
+    if (this.listCtx && this.listCtx !== ctx) this.markSeen();
+    this.listCtx = ctx;
+    this.clearRegions();
     for (const o of this.dyn) o.destroy();
     this.dyn = [];
+    this.marquees = [];
     this.preview?.destroy();
     this.preview = null;
     const W = this.scale.width, H = this.scale.height;
@@ -136,6 +253,7 @@ export class Menu extends Phaser.Scene {
       panel(g, x, 4, tw, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
       this.t(x + Math.round(tw / 2 - label.length * 2.5), 8, label, sel ? 'fontGold' : 'fontPlain');
       this.btn(x, 2, tw, 18, () => { if (this.tab !== tb) { audio.sfx('click'); this.tab = tb; this.selected = null; this.render(); } });
+      if (tb === 'gear' && this.g.party.some((p) => freshFor(this.g.state, p.def.id).length)) this.newDot(x + tw - 2, 5);
     });
     panel(g, W - 26, 5, 18, 14, C.night, C.stone);
     this.t(W - 20, 9, 'X');
@@ -144,22 +262,29 @@ export class Menu extends Phaser.Scene {
     if (narrow) this.t(W - 6 - gold.length * 5, 25, gold, 'fontGold');
     else this.t(W - 32 - gold.length * 5, 9, gold, 'fontGold');
 
-    if (this.tab === 'bag') { this.renderBag(W, H); return; }
-    if (this.tab === 'journal') { this.renderJournal(W, H); return; }
-    if (this.tab === 'party') { this.renderParty(W, H); return; }
+    // everything under the tab row scrolls if it doesn't fit
+    const body = (fn) => this.region(this.tab, 0, 22, W, H - 22, fn);
+    if (this.tab === 'bag') { body((ox) => this.renderBag(W, 1e6, ox)); return; }
+    if (this.tab === 'journal') { body((ox) => this.renderJournal(W, 1e6, ox)); return; }
+    if (this.tab === 'party') { body((ox) => this.renderParty(W, 1e6, ox)); return; }
     // hero tabs + name
     this.g.party.forEach((p, i) => {
       const x = 8 + i * 28, y = 22;
       panel(g, x, y, 22, 22, C.ink, i === this.heroIdx ? C.gold : C.slate);
       this.dyn.push(this.add.image(x + 3, y + 3, `${p.texKey}_portrait`).setOrigin(0));
       this.btn(x, y, 22, 22, () => { if (this.heroIdx !== i) { audio.sfx('click'); this.heroIdx = i; this.selected = null; this.render(); } });
+      if (this.tab === 'gear' && freshFor(this.g.state, p.def.id).length) this.newDot(x + 21, y + 1);
     });
     const name = `${h.def.name} THE ${h.def.title}`;
     if (mode === 'portrait') this.t(8, 48, name, 'font');
     else this.t(12 + this.g.party.length * 28, 30, name, 'font');
 
     if (this.tab === 'craft') { this.renderCraft(W, H, mode); return; }
-    if (this.tab === 'skills') { this.renderSkills(W, H, mode); return; }
+    if (this.tab === 'skills') {
+      const top = mode === 'portrait' ? 70 : 58;
+      this.region(`skills:${this.heroIdx}`, 0, top - 12, W, H - top + 12, (ox) => this.renderSkills(W, H, mode, ox));
+      return;
+    }
     if (mode === 'wide') {
       const top = 52, wL = 92, colM = 10 + wL + 8;
       const wM = Math.min(130, Math.max(110, (W - 230) * 0.45));
@@ -167,7 +292,7 @@ export class Menu extends Phaser.Scene {
       this.drawPreview(10, top, wL, 84);
       this.drawStats(10, top + 92, wL, 1);
       this.drawSlotsColumn(colM, top, wM, 28);
-      this.drawList(colR, top, wR, H - 38, 24);
+      this.listRegion(colR, top, wR, H - 38, 24);
       this.drawDesc(colM, H - 34, W - colM - 10);
     } else if (mode === 'short') {
       const top = 48, wL = 92, colM = 10 + wL + 6;
@@ -176,7 +301,7 @@ export class Menu extends Phaser.Scene {
       this.drawPreview(10, top, wL, 66);
       this.drawStats(10, top + 70, wL, 2);
       this.drawSlotsColumn(colM, top, wM, 25);
-      this.drawList(colR, top, wR, H - 34, 22);
+      this.listRegion(colR, top, wR, H - 34, 22);
       this.drawDesc(colM, H - 30, W - colM - 8);
     } else {
       const y0 = 60;
@@ -185,20 +310,20 @@ export class Menu extends Phaser.Scene {
       this.drawStats(pw + 16, y0 + 2, W - pw - 24, 1);
       const sy = y0 + 92;
       this.drawSlotsRow(8, sy, W - 16);
-      this.drawList(8, sy + 54, W - 16, H - 40, 24, false);
+      this.listRegion(8, sy + 54, W - 16, H - 40, 24, false);
       this.drawDesc(8, H - 34, W - 16);
     }
   }
 
   // Skills: spend points to learn / rank up (1-5), tap a learned skill to
   // equip or unequip it (3 active slots, 2 passive slots).
-  renderSkills(W, H, mode) {
+  renderSkills(W, H, mode, ox = 0) {
     const g = this.gfx, h = this.hero, hs = h.hs;
     const all = heroSkillIds(h.def.id).sort((a, b) => a[1].unlock - b[1].unlock);
     const act = all.filter(([, d]) => !d.passive), pas = all.filter(([, d]) => d.passive);
     const top = mode === 'portrait' ? 70 : 58;
     const spTxt = `SKILL POINTS ${hs.sp || 0}`;
-    this.t(W - 10 - spTxt.length * 5, top - 10, spTxt, hs.sp ? 'fontGold' : 'fontPlain');
+    this.t(ox + W - 10 - spTxt.length * 5, top - 10, spTxt, hs.sp ? 'fontGold' : 'fontPlain');
     const nA = hs.skills.active.filter(Boolean).length, nP = hs.skills.passive.filter(Boolean).length;
     const row = (x, y, w, rh, [sid, d]) => {
       const rank = skillRank(hs, sid), locked = hs.level < d.unlock;
@@ -237,7 +362,7 @@ export class Menu extends Phaser.Scene {
       }
     };
     if (mode === 'portrait') {
-      const rh = 24, x = 8, w = W - 16;
+      const rh = 24, x = 8 + ox, w = W - 16;
       this.t(x, top - 10, `ACTIVE ${nA}/${tuning.activeSlots}`, 'fontPlain');
       act.forEach((e, i) => row(x, top + i * rh, w, rh, e));
       const py = top + act.length * rh + 12;
@@ -246,11 +371,12 @@ export class Menu extends Phaser.Scene {
       this.drawSkillDesc(x, py + pas.length * rh + 4, w);
     } else {
       const rh = mode === 'wide' ? 24 : 21, gap = 6, cw = Math.floor((W - 16 - gap) / 2);
-      this.t(8, top - 10, `ACTIVE ${nA}/${tuning.activeSlots}`, 'fontPlain');
-      act.forEach((e, i) => row(8, top + i * rh, cw, rh, e));
-      this.t(8 + cw + gap, top - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
-      pas.forEach((e, i) => row(8 + cw + gap, top + i * rh, cw, rh, e));
-      this.drawSkillDesc(8 + cw + gap, top + pas.length * rh + 4, cw);
+      const x = 8 + ox;
+      this.t(x, top - 10, `ACTIVE ${nA}/${tuning.activeSlots}`, 'fontPlain');
+      act.forEach((e, i) => row(x, top + i * rh, cw, rh, e));
+      this.t(x + cw + gap, top - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
+      pas.forEach((e, i) => row(x + cw + gap, top + i * rh, cw, rh, e));
+      this.drawSkillDesc(x + cw + gap, top + pas.length * rh + 4, cw);
     }
   }
 
@@ -315,6 +441,7 @@ export class Menu extends Phaser.Scene {
         this.t(x + 25, yy + ph - 10, it ? itemName(id) : '-', 'font', it ? RARITY[it.rarity].col : 0x888888, w - 28);
       }
       this.btn(x, yy, w, rowH - 3, () => this.selectSlot(slot));
+      if (freshFor(this.g.state, this.hero.def.id, slotKind(slot)).length) this.newDot(x + w - 4, yy + 3);
     });
   }
 
@@ -330,10 +457,16 @@ export class Menu extends Phaser.Scene {
       const lab = { head: 'HEAD', body: 'BODY', weapon: 'WPN', offhand: 'OFF', trinket1: 'RING', trinket2: 'RING' }[slot];
       this.t(xx + Math.round(tw / 2 - lab.length * 2.5), y + 26, lab, 'fontPlain');
       this.btn(xx, y, tw, 36, () => this.selectSlot(slot));
+      if (freshFor(this.g.state, this.hero.def.id, slotKind(slot)).length) this.newDot(xx + tw - 3, y + 3);
     });
     const it = items[hs.equip[this.slot]];
     this.t(x, y + 41, `${SLOT_LABEL[this.slot]}: `, 'fontPlain');
     if (it) this.t(x + (SLOT_LABEL[this.slot].length + 2) * 5, y + 41, itemName(hs.equip[this.slot]), 'font', RARITY[it.rarity].col, w - (SLOT_LABEL[this.slot].length + 2) * 5);
+  }
+
+  listRegion(x, y, w, bottom, rowH, header = true) {
+    if (header) this.t(x, y - 8, 'TAP TO EQUIP', 'fontPlain');
+    this.region(`list:${this.heroIdx}:${this.slot}`, x, y, w, bottom - y, (ox) => this.drawList(x + ox, y, w, 1e6, rowH, false));
   }
 
   drawList(x, y, w, bottom, rowH, header = true) {
@@ -341,7 +474,10 @@ export class Menu extends Phaser.Scene {
     const equipped = hs.equip[this.slot];
     const kind = slotKind(this.slot);
     const owned = this.g.state.inventory.filter((id) => items[id].slot === kind && (kind === 'trinket' || items[id].hero === h.def.id));
-    const list = [...(equipped ? [equipped] : []), ...new Set(owned)];
+    const fresh = new Set(freshFor(this.g.state, h.def.id, kind));
+    const rest = [...new Set(owned)];
+    const list = [...(equipped ? [equipped] : []), ...rest.filter((id) => fresh.has(id)), ...rest.filter((id) => !fresh.has(id))];
+    this.shownList = [...fresh];
     const maxRows = Math.max(1, Math.floor((bottom - y) / rowH));
     if (header) this.t(x, y - 8, 'TAP TO EQUIP', 'fontPlain');
     list.slice(0, maxRows).forEach((id, i) => {
@@ -352,7 +488,9 @@ export class Menu extends Phaser.Scene {
       const iy = yy + Math.floor((rowH - 3 - 17) / 2);
       g.fillStyle(C.ink).fillRect(x + 3, iy, 17, 17);
       this.dyn.push(this.add.image(x + 3, iy, itemTex(this, id)).setOrigin(0));
-      this.t(x + 23, yy + 3, itemName(id), 'font', RARITY[it.rarity].col, w - 26);
+      const isNew = fresh.has(id);
+      this.t(x + 23, yy + 3, itemName(id), 'font', RARITY[it.rarity].col, w - 26 - (isNew ? 20 : 0));
+      if (isNew) this.t(x + w - 20, yy + 3, 'NEW', 'fontGold');
       if (isEq) this.t(x + 23, yy + rowH - 12, 'EQUIPPED', 'fontPlain', 0xf2c14e);
       else {
         const d = statDelta(h.def.id, hs.level, hs.equip, id);
@@ -377,7 +515,8 @@ export class Menu extends Phaser.Scene {
     const st = this.g.state;
     panel(this.gfx, x, y, w, 28, C.night, C.slate);
     const tags = [RARITY[it.rarity].label, it.element ? it.element.toUpperCase() : null, it.passive ? 'ECHO' : null, it.trait ? TRAITS[it.trait]?.name : null].filter(Boolean).join(' - ');
-    this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col, w - 8);
+    const title = this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col, w - 8);
+    if (title.full) this.playMarquee(title, true);
     const sockets = socketCount(id) ? `  SOCKETS: ${Array.from({ length: socketCount(id) }, (_, i) => (st.sockets[id]?.[i] ? gemName(st.sockets[id][i]) : 'EMPTY')).join(', ')}` : '';
     const line = it.desc || [statLine(it), it.trait ? TRAITS[it.trait]?.desc : null].filter(Boolean).join('  ');
     this.t(x + 4, y + 14, line + sockets, 'fontPlain', undefined, w - 8, 2);
@@ -385,10 +524,9 @@ export class Menu extends Phaser.Scene {
 
   // ------------------------------------------------------------------ CRAFT
   renderCraft(W, H, mode) {
-    const g = this.gfx, st = this.g.state, h = this.hero;
+    const g = this.gfx;
     let y = mode === 'portrait' ? 60 : 50;
-    const x = 8, w = W - 16;
-    const matStr = (needs) => Object.entries(needs).map(([k, n]) => `${n} ${CRAFT.materials[k].short}`).join(' ');
+    const x = 8;
     // sub tabs
     this.craftTab ??= 'brew';
     const subs = [['brew', 'BREW'], ['upgrade', 'UPGRADE'], ['salvage', 'SALVAGE'], ['gems', 'GEMS']];
@@ -400,9 +538,17 @@ export class Menu extends Phaser.Scene {
       this.btn(sx, y - 2, bw, 16, () => { if (this.craftTab !== k) { audio.sfx('click'); this.craftTab = k; this.render(); } });
       sx += bw + 4;
     }
-    y += 18;
+    y += 16;
+    this.region(`craft:${this.craftTab}:${this.heroIdx}`, 0, y, W, H - y, (ox) => this.renderCraftBody(W, y + 2, ox));
+  }
+
+  renderCraftBody(W, y0, ox) {
+    const g = this.gfx, st = this.g.state, h = this.hero;
+    let y = y0;
+    const x = 8 + ox, w = W - 16;
+    const matStr = (needs) => Object.entries(needs).map(([k, n]) => `${n} ${CRAFT.materials[k].short}`).join(' ');
     const rowH = 24;
-    const fits = () => y + rowH <= H - 4;
+    const fits = () => true; // the list scrolls
     const row = (icon, title, titleCol, sub, subCol, btnLabel, ok, fn) => {
       panel(g, x, y, w, rowH - 3, C.night, ok ? 0x6fd3a0 : C.slate);
       g.fillStyle(C.ink).fillRect(x + 3, y + 2, 17, 17);
@@ -470,9 +616,9 @@ export class Menu extends Phaser.Scene {
 
   // ------------------------------------------------------------------ PARTY
   // Campfire only: tap heroes to bring them along (max 3) or bench them.
-  renderParty(W, H) {
+  renderParty(W, H, ox = 0) {
     const g = this.gfx, st = this.g.state;
-    const x = 8, w = W - 16;
+    const x = 8 + ox, w = W - 16;
     let y = 26;
     this.t(x, y, `CHOOSE YOUR PARTY - ${st.active.length} / 3`, 'fontGold'); y += 10;
     this.t(x, y, 'BENCHED HEROES DO NOT EARN XP.', 'fontPlain', 0x9d93b3); y += 12;
@@ -499,9 +645,9 @@ export class Menu extends Phaser.Scene {
 
   // ---------------------------------------------------------------- JOURNAL
   // Errands: active ones first (tap to track on the HUD and map), then done.
-  renderJournal(W, H) {
+  renderJournal(W, H, ox = 0) {
     const g = this.gfx, Qm = this.g.quests, st = this.g.state;
-    const x = 8, w = W - 16;
+    const x = 8 + ox, w = W - 16;
     let y = 26;
     const act = Qm.active(), done = Object.keys(st.quests).filter((id) => st.quests[id].done);
     this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
@@ -525,9 +671,9 @@ export class Menu extends Phaser.Scene {
   }
 
   // -------------------------------------------------------------------- BAG
-  renderBag(W, H) {
+  renderBag(W, H, ox = 0) {
     const g = this.gfx, st = this.g.state;
-    const x = 8, w = W - 16;
+    const x = 8 + ox, w = W - 16;
     let y = 26;
     const cols = W > 300 ? 2 : 1;
     const cw = Math.floor((w - (cols - 1) * 6) / cols);

@@ -4,6 +4,7 @@ import items from '../data/items.json';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
 import { fitString } from './textfit.js';
+import { freshFor } from '../game/state.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
@@ -434,6 +435,12 @@ export class UI extends Phaser.Scene {
     const game = this.g;
     g.clear();
     this.arcG.clear();
+    // gold dot on the bag button while there's unseen gear
+    const b = this.bagBtn;
+    if (b?.visible && b.x != null && game.party.some((h) => freshFor(game.state, h.def.id).length)) {
+      const blink = Math.floor(time / 450) % 2;
+      this.arcG.fillStyle(0x1a1423).fillCircle(b.x + b.size - 3, b.y + 3, 4).fillStyle(blink ? 0xfff0a0 : 0xf2c14e).fillCircle(b.x + b.size - 3, b.y + 3, 3);
+    }
     for (const p of this.portraits) {
       const h = p.h;
       const lead = h === game.leader;

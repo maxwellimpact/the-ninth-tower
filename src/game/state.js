@@ -25,6 +25,7 @@ export function newState(leaderId) {
     active: [leaderId], // who travels in the party (max 3); the rest wait on the bench
     heroes,
     inventory: [],      // owned, unequipped item ids
+    fresh: [],          // item ids picked up but not yet looked at in the menu ("NEW")
     gold: 0,
     flags: {},          // chests opened, ward broken, boss defeated, ...
     relics: [],         // 'grapple'
@@ -121,10 +122,22 @@ export function loadState() {
     }
     s.gems ??= {};
     s.sockets ??= {};
+    s.fresh ??= [];
     ensureItems(s);
     s.stats ??= { kills: 0, levelUps: [] };
     return s;
   } catch { return null; }
+}
+
+// Items picked up from the world: into the bag, flagged NEW until seen in the menu.
+export function gainItems(state, ids) {
+  state.inventory.push(...ids);
+  state.fresh ??= [];
+  for (const id of ids) if (!state.fresh.includes(id)) state.fresh.push(id);
+}
+// NEW items a hero can use: their own gear plus rings
+export function freshFor(state, heroId, kind) {
+  return (state.fresh || []).filter((id) => state.inventory.includes(id) && items[id] && (!kind || (items[id].slot === kind)) && (items[id].slot === 'trinket' || items[id].hero === heroId));
 }
 
 export function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ } }
