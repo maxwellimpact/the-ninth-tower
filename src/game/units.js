@@ -853,7 +853,7 @@ export class Enemy extends Unit {
     const dur = weak * (1 + (src.passive ? src.passive('attunement') ? 0.5 + 0.1 * (src.passive('attunement') - 1) : 0 : 0));
     const base = src.stats.atk;
     const sc = this.scene;
-    if (el === 'fire') this.status.burn = { t: 3 * dur, tick: 0.5, next: 0.5, dmg: base * 0.2 };
+    if (el === 'fire') this.status.burn = { t: 3 * dur, tick: 0.5, next: 0.5, dmg: base * 0.12 };
     else if (el === 'venom') {
       const n = Math.min(5, (this.status.poison?.n || 0) + 1);
       this.status.poison = { t: 4 * dur, tick: 0.6, next: this.status.poison?.next ?? 0.6, dmg: base * 0.09, n };
@@ -1488,6 +1488,12 @@ export class Murk extends Enemy {
     this.boss = true;
     this.phase = 1;
     this.home = { x, y };
+    // where she fights (tiles) and the pool she dives into; defaults: the Abbey nest
+    this.arena = opts.arena || { x0: 266, y0: 65, x1: 308, y1: 78 };
+    this.pool = opts.pool || { rx: 5.2, ry: 3.6 };
+    // the Abbey's Shadow: a weaker cursed echo that never calls the fog
+    this.isShadow = !!opts.shadow;
+    if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; this.sprite.setTint(0x8a6cc4); }
     this.grabT = 7; this.summonT = 12; this.waveT = 2; this.fogR = 0;
     this.leapT = 5; this.spitT = 3; this.surfaceT = 3;
     this.puddles = [];
@@ -1515,9 +1521,11 @@ export class Murk extends Enemy {
     if (!this.alive) return r;
     const f = this.hp / this.maxHp;
     if (this.phase === 1 && f < 0.65) this.enterPhase(2);
-    else if (this.phase === 2 && f < 0.35) this.enterPhase(3);
+    else if (this.phase === 2 && f < 0.35 && !this.isShadow) this.enterPhase(3);
     return r;
   }
+
+  restoreTint() { if (this.isShadow) this.sprite.setTint(0x8a6cc4); else this.sprite.clearTint(); }
 
   enterPhase(n) {
     const sc = this.scene;
@@ -1532,7 +1540,8 @@ export class Murk extends Enemy {
       sc.floatText(this.x, this.y - 80, 'SHE SINKS INTO THE POOL!', 'fontGold');
       sc.tweens.add({ targets: this, x: this.home.x, y: this.home.y, duration: 700 });
       sc.fx.burst('foam', this.home.x, this.home.y, 30);
-      this.flood = sc.add.rectangle(266 * 16, 65 * 16, 43 * 16, 14 * 16, 0x3f6fae, 0).setOrigin(0).setDepth(-80);
+      const A = this.arena;
+      this.flood = sc.add.rectangle(A.x0 * 16, A.y0 * 16, (A.x1 - A.x0 + 1) * 16, (A.y1 - A.y0 + 1) * 16, 0x3f6fae, 0).setOrigin(0).setDepth(-80);
       sc.tweens.add({ targets: this.flood, fillAlpha: 0.22, duration: 1200 });
       const pip = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
       sc.time.delayedCall(800, () => sc.bark(pip, sc.canSwim ? 'INTO THE WATER! SWIMMING, THE WAVES PASS OVER US!' : 'SHE HAS TO COME UP FOR AIR - HIT HER WHEN SHE DOES!'));
@@ -1571,7 +1580,8 @@ export class Murk extends Enemy {
 
   // keep a landing point inside her nest
   clampArena(x, y) {
-    return { x: Math.max(268 * 16, Math.min(306 * 16, x)), y: Math.max(66 * 16, Math.min(77 * 16, y)) };
+    const A = this.arena;
+    return { x: Math.max((A.x0 + 2) * 16, Math.min((A.x1 - 2) * 16, x)), y: Math.max((A.y0 + 1) * 16, Math.min((A.y1 - 1) * 16, y)) };
   }
 
   update(dt) {
@@ -1738,8 +1748,9 @@ export class Murk extends Enemy {
         // bubbles mark where she'll come up: the pool's edge nearest a hero
         const h = this.heroes().filter((x) => !x.swimming).sort(() => Math.random() - 0.5)[0] || this.heroes()[0];
         if (!h) return;
-        const a = Math.atan2((h.y - this.home.y) / 3.6, (h.x - this.home.x) / 5.2);
-        const at = { x: this.home.x + Math.cos(a) * 5.2 * 16 * 0.8, y: this.home.y + Math.sin(a) * 3.6 * 16 * 0.8 };
+        const { rx, ry } = this.pool;
+        const a = Math.atan2((h.y - this.home.y) / ry, (h.x - this.home.x) / rx);
+        const at = { x: this.home.x + Math.cos(a) * rx * 16 * 0.8, y: this.home.y + Math.sin(a) * ry * 16 * 0.8 };
         this.rising = at;
         this.zoneGfx = sc.fx.telegraph(at.x, at.y, 34, 1.1);
         this.zone = { x: at.x, y: at.y, r: 34, until: 1.1 };

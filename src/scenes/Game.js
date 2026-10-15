@@ -1829,7 +1829,7 @@ export class Game extends Phaser.Scene {
   bossDefs() {
     return [
       { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: W.boss.shadow }) },
-      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, o) },
+      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, { ...o, shadow: W.murk.shadow }) },
     ];
   }
 
@@ -1851,6 +1851,7 @@ export class Game extends Phaser.Scene {
     at(1300, () => audio.sfx('rumble'));
     for (let i = 0; i < 9; i++) at(250 + i * 210, () => this.shake(230, 0.002 + i * 0.0011));
     if (style === 'pool') {
+      if (g.isShadow) for (let i = 0; i < 7; i++) at(450 + i * 230, () => this.fx.burst('curse', bx, by - 20, 10));
       for (let i = 0; i < 12; i++) at(350 + i * 140, () => this.fx.burst('foam', bx + (Math.random() - 0.5) * 80, by + (Math.random() - 0.5) * 34, 8));
     } else {
       const tint = style === 'shadow' ? 0x8a6cc4 : 0xffffff;
@@ -1908,7 +1909,7 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: g.sprite, alpha: 0, y: g.sprite.y + 20, duration: 600, onComplete: () => g.destroy() });
         this.golem = null;
         this.events.emit('boss', null);
-        this.events.emit('banner', `${g.wardBoss.name} SINKS INTO THE EARTH`, 'IT WILL RISE AGAIN TO GUARD THE STONE');
+        this.events.emit('banner', `${g.wardBoss.name} SINKS ${g.wardBoss.kind === 'murk' ? 'BACK INTO THE BOG' : 'INTO THE EARTH'}`, 'IT WILL RISE AGAIN TO GUARD THE STONE');
       }
       return;
     }
@@ -1916,16 +1917,18 @@ export class Game extends Phaser.Scene {
     for (const wb of W.wardBosses || []) {
       const w = this.wards.find((k) => k.def.id === wb.ward);
       if (!w?.unit || this.flags[wb.flag] || this.flags[w.def.flag] || !this.flags[w.def.guardian]) continue;
-      if (Math.hypot(L.x - w.C.x, L.y - w.C.y) > wb.trigger * TILE) continue;
+      // wakes when you come close to where it will rise, so it starts on screen
       const x = (w.def.x + wb.offset[0]) * TILE + 8, y = (w.def.y + wb.offset[1]) * TILE + 8;
-      const boss = new Golem(this, x, y, { level: this.enemyLevel(x, y) + 2 });
+      if (Math.hypot(L.x - x, L.y - y) > wb.trigger * TILE) continue;
+      const opts = { level: this.enemyLevel(x, y) + 2, arena: wb.arena, pool: wb.pool };
+      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : new Golem(this, x, y, opts);
       boss.maxHp = Math.round(boss.maxHp * wb.hpMul); boss.hp = boss.maxHp;
       boss.s = { ...boss.s, dmg: boss.s.dmg * wb.dmgMul };
       const B = { id: wb.id, flag: wb.flag, cfg: wb };
       boss.bossName = wb.name; boss.bossDef = B; boss.wardBoss = wb;
       this.golem = boss;
       this.enemies.push(boss);
-      this.bossIntro(boss, 'stone', B);
+      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : 'stone', B);
       return;
     }
   }

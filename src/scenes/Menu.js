@@ -383,7 +383,7 @@ export class Menu extends Phaser.Scene {
   drawSkillDesc(x, y, w) {
     const sid = this.skillSel;
     const d = sid && heroSkillIds(this.hero.def.id).find(([k]) => k === sid)?.[1];
-    if (!d) { this.t(x, y, 'TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +15%).', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    if (!d) { this.t(x, y, 'TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +20%).', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
     this.t(x, y, d.name, 'fontGold');
     this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain', undefined, w, 4);
   }

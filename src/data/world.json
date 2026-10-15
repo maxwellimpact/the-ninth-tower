@@ -1848,8 +1848,8 @@
   },
   {
    "kind": "herb",
-   "x": 160,
-   "y": 105
+   "x": 152,
+   "y": 104
   },
   {
    "kind": "herb",
@@ -2242,24 +2242,24 @@
       74.5
      ]
     ]
-   ]
+   ],
+   "warden": "murkWardenDefeated"
   }
  ],
  "murk": {
-  "name": "MOTHER MURK",
-  "sub": "GUARDIAN OF THE MISTFEN WARD STONE",
+  "name": "SHADOW OF MOTHER MURK",
+  "sub": "A CURSED ECHO, ROOTED TO THE WARD STONE ABOVE",
   "arena": [
    287,
    71
   ],
-  "drops": [
-   "wyrmfang_twin"
-  ],
-  "gold": 120,
+  "drops": [],
+  "gold": 50,
   "fall": [
-   "MOTHER MURK FALLS",
-   "THE CURSED VINE WITHERS. THE WARD STONE LIES OPEN."
-  ]
+   "THE SHADOW BREAKS",
+   "THE CURSED VINE WITHERS... SOMETHING STIRS IN THE BOG BY THE WARD STONE."
+  ],
+  "shadow": true
  },
  "wardBosses": [
   {
@@ -2268,7 +2268,7 @@
    "flag": "gatewardenDefeated",
    "name": "THE GATEWARDEN",
    "sub": "GUARDIAN OF THE VALE WARD STONE",
-   "trigger": 7,
+   "trigger": 6,
    "leash": 20,
    "offset": [
     0,
@@ -2285,6 +2285,41 @@
    "gold": 80,
    "fall": [
     "THE GATEWARDEN FALLS",
+    "NOTHING GUARDS THE WARD STONE NOW. BREAK IT!"
+   ],
+   "kind": "golem"
+  },
+  {
+   "id": "murkWarden",
+   "kind": "murk",
+   "ward": "marsh",
+   "flag": "murkWardenDefeated",
+   "name": "MOTHER MURK",
+   "sub": "GUARDIAN OF THE MISTFEN WARD STONE",
+   "trigger": 5,
+   "leash": 20,
+   "offset": [
+    0,
+    -7
+   ],
+   "hpMul": 1.3,
+   "dmgMul": 1.15,
+   "arena": {
+    "x0": 144,
+    "y0": 98,
+    "x1": 176,
+    "y1": 118
+   },
+   "pool": {
+    "rx": 4.6,
+    "ry": 2.6
+   },
+   "drops": [
+    "wyrmfang_twin"
+   ],
+   "gold": 120,
+   "fall": [
+    "MOTHER MURK FALLS",
     "NOTHING GUARDS THE WARD STONE NOW. BREAK IT!"
    ]
   }

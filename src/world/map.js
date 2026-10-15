@@ -208,6 +208,11 @@ export function buildWorld() {
   room(286, 79, 288, 83);                                            // passage north
   room(266, 65, 308, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
   for (let y = 68; y <= 75; y++) for (let x = 282; x <= 292; x++) if (Math.hypot((x - 287) / 5.2, (y - 71.5) / 3.6) < 1) set(x, y, T.WATER); // her pool
+  // Mother Murk's bog pool, just north of the Mistfen Ward Stone (she rises here)
+  for (let y = 104; y <= 112; y++) for (let x = 154; x <= 166; x++) {
+    const d = Math.hypot((x - 160) / 4.6, (y - 108) / 2.6);
+    if (d < 1) set(x, y, T.WATER); else if (d < 1.3) set(x, y, T.SHALLOW);
+  }
   // Abbey ruins in the overworld fen, steps down into the nave
   rect(165, 95, 178, 104, T.PAVED);
   wall(165, 94, 169, 94); wall(173, 94, 178, 94); wall(164, 94, 164, 100); wall(179, 94, 179, 104);

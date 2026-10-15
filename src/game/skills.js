@@ -49,7 +49,7 @@ export const SKILL_FX = {
           let hit = false;
           for (const e of sc.enemies) {
             if (!e.alive || Math.hypot(e.x - fx, e.y - fy) > 24) continue;
-            sc.dealDamage(h, e, h.stats.atk * 1.6 * m, { knock: 160 });
+            sc.dealDamage(h, e, h.stats.atk * 1.4 * m, { knock: 160 });
             e.stun?.(1.0 + 0.1 * (m - 1) / 0.15);
             hit = true;
           }
@@ -139,7 +139,7 @@ export const SKILL_FX = {
       [18, 36, 54, 72].forEach((d, i) => sc.time.delayedCall(90 + i * 90, () => {
         const x = h.x + nx * d, y = h.y + ny * d;
         sc.fx.slam(x, y, 16); sc.shake(60, 0.004); audio.sfx('bash', { pitch: 0.7 });
-        for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 18 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.4 * m, { knock: 80 }); if (!e.boss) e.stun?.(0.6); }
+        for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 18 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.2 * m, { knock: 80 }); if (!e.boss) e.stun?.(0.6); }
       }));
       return true;
     },
@@ -163,8 +163,8 @@ export const SKILL_FX = {
         hitAt: 0.2,
         resolve: () => {
           const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
-          sc.spawnProjectile({ owner: h, x: h.x + nx * 10, y: h.y - 8, vx: nx * 160, vy: ny * 160, dmg: h.stats.atk * 2.4 * m, kind: 'fireball', aoe: 28, target, element: 'fire', spell: true });
-          h.maybeEcho(target, h.stats.atk * 1.2, 'fireball');
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 10, y: h.y - 8, vx: nx * 160, vy: ny * 160, dmg: h.stats.atk * 1.5 * m, kind: 'fireball', aoe: 24, target, element: 'fire', spell: true });
+          h.maybeEcho(target, h.stats.atk * 0.8, 'fireball');
         },
       });
       return true;
@@ -184,7 +184,7 @@ export const SKILL_FX = {
       sc.fx.burst('foam', h.x, h.y - 6, 24);
       for (const e of sc.enemies) {
         if (!e.alive || dist(e, h) > 46 + e.r) continue;
-        sc.dealDamage(h, e, h.stats.atk * 1.2 * m, { knock: 90, element: 'frost', spell: true });
+        sc.dealDamage(h, e, h.stats.atk * 0.9 * m, { knock: 90, element: 'frost', spell: true });
         e.applyElement?.('frost', h); // second stack
       }
       return true;
@@ -201,7 +201,7 @@ export const SKILL_FX = {
         resolve: () => {
           audio.sfx('zap');
           const hit = new Set();
-          let from = { x: h.x, y: h.y - 10 }, cur = target, dmg = h.stats.atk * 1.6 * m;
+          let from = { x: h.x, y: h.y - 10 }, cur = target, dmg = h.stats.atk * 1.2 * m;
           for (let i = 0; i < 4 && cur; i++) {
             hit.add(cur);
             bolt(sc, from.x, from.y, cur.x, cur.y - 8);
@@ -247,7 +247,7 @@ export const SKILL_FX = {
         if (!live.length || h.downed) return;
         const t = i === 0 && target?.alive ? target : live[i % live.length];
         const a = -Math.PI / 2 + (i - 2.5) * 0.45;
-        sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 10, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, dmg: h.stats.atk * 0.8 * m, kind: 'missile', target: t, spell: true, life: 1.6 });
+        sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 10, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, dmg: h.stats.atk * 0.5 * m, kind: 'missile', target: t, spell: true, life: 1.6 });
         audio.sfx('frost', { pitch: 1.3 });
       });
       return true;
@@ -292,7 +292,7 @@ export const SKILL_FX = {
       h.act('fan', 0.3, 'cast');
       for (let k = 0; k < 8; k++) {
         const a = (k / 8) * Math.PI * 2;
-        sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 8, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, dmg: h.stats.atk * 1.4 * m, kind: 'knife', life: 0.32 });
+        sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 8, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, dmg: h.stats.atk * 1.2 * m, kind: 'knife', life: 0.32 });
       }
       audio.sfx('stab'); sc.time.delayedCall(40, () => audio.sfx('stab')); sc.time.delayedCall(80, () => audio.sfx('swing', { pitch: 1.4 }));
       return true;
@@ -357,7 +357,7 @@ export const SKILL_FX = {
         hitAt: 0.25,
         resolve: () => {
           const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
-          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 300, vy: ny * 300, dmg: h.stats.atk * 2.2 * m, kind: 'arrow', pierce: true, life: 0.7 });
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 300, vy: ny * 300, dmg: h.stats.atk * 1.6 * m, kind: 'arrow', pierce: true, life: 0.7 });
           audio.sfx('swing', { pitch: 1.2 }); audio.sfx('dash');
         },
       });
@@ -380,7 +380,7 @@ export const SKILL_FX = {
       audio.sfx('zip');
       sc.tweens.add({ targets: hawk, x: target.x, y: target.y - 10, duration: 380, ease: 'Quad.easeIn', onComplete: () => {
         if (target.alive) {
-          sc.dealDamage(h, target, h.stats.atk * 1.2 * m, { knock: 30 });
+          sc.dealDamage(h, target, h.stats.atk * 1.0 * m, { knock: 30 });
           target.hawkMarked = { t: 6 };
           if (target.submerged) target.submerge?.(false);
           sc.floatText(target.x, target.y - 34, 'MARKED', 'fontPlain', 0xffd04a);
@@ -405,7 +405,7 @@ export const SKILL_FX = {
         const ar = sc.add.image(x - 10, y - 60, 'arrow').setRotation(1.4).setDepth(TOP - 20);
         sc.tweens.add({ targets: ar, x, y: y - 4, duration: 160, onComplete: () => {
           ar.destroy(); sc.fx.burst('spark', x, y, 3);
-          for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - x, e.y - y) < 14 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.5 * m, { knock: 10 });
+          for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - x, e.y - y) < 14 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.3 * m, { knock: 10 });
         } });
       });
       audio.sfx('swing', { pitch: 1.6 });
@@ -456,7 +456,7 @@ export const SKILL_FX = {
         hitAt: 0.25,
         resolve: () => {
           const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
-          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 240, vy: ny * 240, dmg: h.stats.atk * 2.4 * m, kind: 'fireball', aoe: 30, target, element: 'fire' });
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 240, vy: ny * 240, dmg: h.stats.atk * 1.7 * m, kind: 'fireball', aoe: 28, target, element: 'fire' });
           audio.sfx('fireCast');
         },
       });
@@ -478,7 +478,7 @@ export const SKILL_FX = {
           for (const e of sc.enemies) {
             if (!e.alive || e.submerged) continue;
             const dx = e.x - h.x, dy = e.y - h.y, d = Math.hypot(dx, dy);
-            if (d < 34 + e.r && (dx * nx + dy * ny) / (d || 1) > 0.2) sc.dealDamage(h, e, h.stats.atk * 1.5 * m, { knock: 90 });
+            if (d < 34 + e.r && (dx * nx + dy * ny) / (d || 1) > 0.2) sc.dealDamage(h, e, h.stats.atk * 1.3 * m, { knock: 90 });
           }
         },
       });
@@ -501,7 +501,7 @@ export const SKILL_FX = {
       }, onComplete: () => {
         h.zipping = false;
         sc.fx.slam(h.x, h.y, 30); sc.shake(140, 0.008); audio.sfx('bash');
-        for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 32 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.8 * m, { knock: 120 }); if (!e.boss) e.stun?.(0.5); }
+        for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 32 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.5 * m, { knock: 120 }); if (!e.boss) e.stun?.(0.5); }
         if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
       } });
       return true;
@@ -561,7 +561,7 @@ export const SKILL_FX = {
             h.spinT = 0.25;
             sc.fx.ring(h.x, h.y - 6, 'ringWhite', 2.2);
             audio.sfx('swing', { pitch: 0.9 + Math.random() * 0.3 });
-            for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 30 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.6 * m, { knock: 40 });
+            for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 30 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.45 * m, { knock: 40 });
           }
           // the leader can steer the spin
           if (h.isLeader && h.path) h.followPath(dt, 0.6);

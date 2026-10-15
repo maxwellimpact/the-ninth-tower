@@ -1062,6 +1062,8 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 - **Phase 3:** enrages and summons hexlings (demo).
 - **Reward:** the Vale Ward Stone. The Blacksmith returns.
 - **Two-stage (playtest change):** a cursed **vine** runs from the Ward Stone down into the Undercroft. Below, you fight the **Shadow of the Gatewarden** (60% HP, no enrage; plates phase teaches the hook). Killing it withers the vine. Approaching the Ward Stone then raises the **real Gatewarden** from the rubble (full three phases, +30% HP, +15% damage, the unique drops). Walk away and he sinks back at full health. Once he falls, the stone can be broken.
+- **Mistfen follows the same pattern:** the Shadow of Mother Murk in the Abbey (60% HP, no fog phase), then the real Murk rises from a bog pool beside the Mistfen Ward Stone (+30% HP, +15% damage, Wyrmfang drop).
+- **Skill balance (playtest pass):** a skill should add roughly 25–35% of the hero's basic-attack damage per second on one target at rank 1 (AoE lower per target). Ranks give +20% each, so a rank-5 skill is +80%. Burn ticks 0.12× ATK. Gear CDR is capped at 30%.
 - **Boss entrances (all bosses):** the world freezes, the camera turns to the boss, the ground rumbles, and the boss assembles (stones fly in / shadow gathers / Murk heaves out of her pool). Then it roars and the fight starts.
 
 **2. Mother Murk** (Mistfen, Sunken Abbey) — a bog hag fused with a giant toad

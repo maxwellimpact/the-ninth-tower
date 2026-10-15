@@ -190,7 +190,7 @@ export function computeStats(id, level, equip, hs = null) {
   s.traits = traits;
   if (traits.includes('cdr')) s.cdr += 0.1;
   if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
-  s.cdr = Math.min(0.4, s.cdr);
+  s.cdr = Math.min(0.3, s.cdr);
   // equipped stat passives
   const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);
   if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
