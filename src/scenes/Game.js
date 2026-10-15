@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, WardStone, Breakable, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -15,10 +15,11 @@ import { QuestManager } from '../game/quests.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, gainItems, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
+import { saveState, gainItems, learnDiscipline, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
+import DISCIPLINES from '../data/disciplines.json';
 import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
 import W from '../data/world.json';
@@ -1013,6 +1014,13 @@ export class Game extends Phaser.Scene {
         const [dx, dy] = norm(src.x - target.x, src.y - target.y);
         if (f[0] * dx + f[1] * dy < -0.3) { amount *= 1.5 + 0.1 * (bs - 1); if (!target.backstabShown) { target.backstabShown = true; this.floatText(target.x, target.y - 34, 'BACKSTAB', 'fontPlain', 0xff9ad8); } }
       }
+      // Ambush (Shadow discipline): any hero hits harder from behind
+      const am = src.passive('ambush');
+      if (am && !bs && !spell && target.view) {
+        const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
+        const [dx, dy] = norm(src.x - target.x, src.y - target.y);
+        if (f[0] * dx + f[1] * dy < -0.3) amount *= 1.2 + 0.04 * (am - 1);
+      }
     }
     target.lastElement = el;
     const hpBefore = target.hp;
@@ -1275,7 +1283,7 @@ export class Game extends Phaser.Scene {
       if (e.elite) {
         g.fillStyle(0xf2c14e).fillRect(x - 1, y - 1, 1, 4).fillRect(x + w, y - 1, 1, 4);
         // a tag that stays up through the fight so it's clear why this one hits so hard
-        e.eliteTag ??= this.add.bitmapText(0, 0, 'fontGold', e.named ? e.s.name : 'ELITE').setOrigin(0.5, 1).setDepth(TOP - 34);
+        e.eliteTag ??= this.add.bitmapText(0, 0, 'fontGold', e.named ? e.s.name : e.affix ? AFFIXES[e.affix] : 'ELITE').setOrigin(0.5, 1).setDepth(TOP - 34);
         e.eliteTag.setPosition(Math.round(e.x), y - 2).setVisible(true);
       }
     }
@@ -1288,6 +1296,13 @@ export class Game extends Phaser.Scene {
       if (e.x < view.x - 20 || e.x > view.right + 20 || e.y < view.y - 20 || e.y > view.bottom + 20) continue;
       rg.lineStyle(1, 0xf2c14e, pulse + 0.3).strokeEllipse(e.x, e.y + 2, 22, 9);
       rg.fillStyle(0xf2c14e, pulse * 0.35).fillEllipse(e.x, e.y + 2, 22, 9);
+      if (e.affix === 'armored') {
+        // the guarded side: a steel arc in front of it
+        const f = e.view === 'side' ? [e.flip ? -1 : 1, 0] : [0, e.view === 'down' ? 1 : -1];
+        const a0 = Math.atan2(f[1], f[0]);
+        rg.lineStyle(2, 0xbfd0e6, 0.85).beginPath(); rg.arc(e.x, e.y - 6, 14, a0 - 0.9, a0 + 0.9); rg.strokePath();
+      }
+      if (e.affix === 'volatile' && e.hp < e.maxHp * 0.3) rg.lineStyle(1, 0xffa060, 0.5 + Math.sin(this.time.now / 90) * 0.4).strokeCircle(e.x, e.y - 8, 12);
       if (!(e.engaged || e.hp < e.maxHp)) e.eliteTag?.setVisible(false);
     }
   }
@@ -1559,6 +1574,35 @@ export class Game extends Phaser.Scene {
     const found = W.campfires.filter((c) => this.flags[`camp_${c.x}_${c.y}`]);
     const best = (found.length ? found : [W.start]).sort((a, b) => Math.hypot(a.x - fx, a.y - fy) - Math.hypot(b.x - fx, b.y - fy))[0];
     return best === W.start ? W.start : { x: best.x, y: best.y + 2 };
+  }
+
+  // ------------------------------------------------------------ trainers
+  // A trainer teaches their discipline to one party member at a time (one
+  // discipline per hero; switching refunds skill points but costs more gold).
+  trainerTalk(npc) {
+    const D = DISCIPLINES[npc.trainer];
+    const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    const intro = npc.metTrainer ? [] : npc.lines.map(line);
+    npc.metTrainer = true;
+    const opts = this.party.filter((h) => h.hs.disc !== npc.trainer);
+    if (!opts.length) { this.events.emit('dialogue', [...intro, line(`YOUR WHOLE PARTY ALREADY KNOWS THE ${D.name}. NOW PRACTISE.`)]); return; }
+    const ask = line(`${D.pitch} WHO WILL LEARN IT? ${D.cost} GOLD - MORE FOR A HERO WHO MUST FORGET ANOTHER DISCIPLINE.`);
+    ask.choices = [...opts.map((h) => [h.def.name.toUpperCase(), () => this.teachDiscipline(npc, h)]), ['NOT NOW', () => {}]];
+    this.events.emit('dialogue', [...intro, ask]);
+  }
+
+  teachDiscipline(npc, h) {
+    const disc = npc.trainer, D = DISCIPLINES[disc], cost = switchCost(h.hs, disc);
+    if (this.state.gold < cost) { this.events.emit('dialogue', [{ who: npc.name, voice: npc.voice, text: `THAT'S ${cost} GOLD. COME BACK WHEN YOUR PURSE IS HEAVIER.` }]); return; }
+    const had = h.hs.disc;
+    this.state.gold -= cost;
+    learnDiscipline(h.hs, disc);
+    h.buildSkills(); h.refreshStats();
+    audio.sfx('levelUp');
+    this.fx.burst('bloom', h.x, h.y - 10, 24);
+    this.events.emit('banner', `${h.def.name.toUpperCase()} LEARNED ${D.name}`, had ? `FORGOT ${DISCIPLINES[had].name} - SKILL POINTS REFUNDED` : 'OPEN SKILLS IN THE MENU TO EQUIP AND RANK UP');
+    this.events.emit('party');
+    this.autosave('discipline');
   }
 
   rest() {

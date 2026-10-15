@@ -587,7 +587,87 @@ export const SKILL_FX = {
     },
     ai(h) { return h.scene.party.some((p) => p.downed || (p.alive && p.hp / p.maxHp < 0.5)) ? true : null; },
   },
+
+  // ------------------------------------------------- Blade discipline
+  sweep: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('sweep', 0.34, 'attack', {
+        hitAt: 0.14,
+        resolve: () => {
+          audio.sfx('swing', { pitch: 0.8 });
+          sc.fx.ring(h.x, h.y - 6, 'ringWhite', 3.4);
+          for (const e of sc.enemies) if (e.alive && !e.submerged && dist(e, h) < 36 + e.r) sc.dealDamage(h, e, h.stats.atk * 1.1 * m, { knock: 120 });
+        },
+      });
+      return true;
+    },
+    ai(h) { return engagedNear(h.scene, h, 40).length >= 2 ? true : null; },
+  },
+  guardparry: {
+    cast(h, { m }) {
+      h.act('guardparry', 0.5, 'idle');
+      h.riposteT = 0.8;
+      h.riposteMul = m;
+      h.scene.fx.ring(h.x, h.y - 6, 'ringWhite', 1.8);
+      audio.sfx('block');
+      return true;
+    },
+    ai(h) { return h.scene.enemies.some((e) => e.alive && e.state === 'windup' && e.target === h && !e.s.ranged && dist(e, h) < 40) ? true : null; },
+  },
+  // ------------------------------------------------ Shadow discipline
+  shadedash: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 120) return false;
+      const [nx, ny] = norm(target.x - h.x, target.y - h.y);
+      const sx = h.x, sy = h.y;
+      let ex = target.x + nx * 18, ey = target.y + ny * 18;
+      if (sc.nav.solidAtPx(ex, ey)) { ex = target.x - nx * 10; ey = target.y - ny * 10; }
+      // everything along the line gets cut
+      const seg = Math.hypot(ex - sx, ey - sy) || 1;
+      for (const e of sc.enemies) {
+        if (!e.alive || e.submerged) continue;
+        const t = Math.max(0, Math.min(1, ((e.x - sx) * (ex - sx) + (e.y - sy) * (ey - sy)) / (seg * seg)));
+        if (Math.hypot(sx + (ex - sx) * t - e.x, sy + (ey - sy) * t - e.y) < 14 + e.r) sc.dealDamage(h, e, h.stats.atk * 1.2 * m, { knock: 60 });
+      }
+      for (let i = 0; i <= 4; i++) sc.fx.puff(sx + (ex - sx) * i / 4, sy + (ey - sy) * i / 4, 'sparkCurse');
+      h.x = ex; h.y = ey;
+      h.invuln = Math.max(h.invuln, 0.35);
+      h.face(target.x - h.x, target.y - h.y);
+      audio.sfx('dash');
+      h.clearPath();
+      if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(t, h) > 40 && dist(t, h) < 110 && t.kind !== 'ward' ? t : null; },
+  },
+  poisoncloud: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target) return false;
+      const x = target.x, y = target.y, r = 30;
+      h.face(x - h.x, y - h.y);
+      h.act('poisoncloud', 0.4, 'cast');
+      audio.sfx('squish');
+      const g = sc.add.graphics().setDepth(y + 20);
+      let t = 0, tick = 0;
+      const ev = sc.time.addEvent({ delay: 100, loop: true, callback: () => {
+        t += 0.1; tick -= 0.1;
+        if (!g.active) { ev.remove(); return; }
+        const a = Math.min(1, t * 3) * Math.min(1, (4 - t) * 2);
+        g.clear().fillStyle(0x6fbf4a, 0.22 * a).fillEllipse(x, y, r * 2, r * 1.3).fillStyle(0xb8ff9a, 0.15 * a).fillEllipse(x + Math.sin(t * 3) * 6, y - 2, r * 1.3, r * 0.8);
+        if (tick <= 0) {
+          tick = 0.5;
+          for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - x, (e.y - y) / 0.65) < r + e.r) { e.applyElement?.('venom', h); sc.dealDamage(h, e, h.stats.atk * 0.15 * m, { knock: 0, dot: true, noProc: true }); }
+        }
+        if (t >= 4) { ev.remove(); g.destroy(); }
+      } });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && engagedNear(h.scene, t, 40).length >= 2 ? t : null; },
+  },
 };
 
 // Skills that need an enemy to aim at.
-export const TARGETED = new Set(['bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark', 'powershot', 'hawkstrike', 'volley', 'blastarrow', 'cleave', 'leap', 'rend']);
+export const TARGETED = new Set(['shadedash', 'poisoncloud', 'bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark', 'powershot', 'hawkstrike', 'volley', 'blastarrow', 'cleave', 'leap', 'rend']);

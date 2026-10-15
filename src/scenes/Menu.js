@@ -11,6 +11,7 @@ import { fitString } from './textfit.js';
 import { TRAITS } from '../game/itemgen.js';
 import { ERRANDS } from '../game/quests.js';
 import KEY_ITEMS from '../data/relics.json';
+import DISCIPLINES from '../data/disciplines.json';
 import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
 
@@ -319,7 +320,7 @@ export class Menu extends Phaser.Scene {
   // equip or unequip it (3 active slots, 2 passive slots).
   renderSkills(W, H, mode, ox = 0) {
     const g = this.gfx, h = this.hero, hs = h.hs;
-    const all = heroSkillIds(h.def.id).sort((a, b) => a[1].unlock - b[1].unlock);
+    const all = heroSkillIds(h.def.id, hs.disc).sort((a, b) => (a[1].discipline ? 100 : 0) + a[1].unlock - ((b[1].discipline ? 100 : 0) + b[1].unlock));
     const act = all.filter(([, d]) => !d.passive), pas = all.filter(([, d]) => d.passive);
     const top = mode === 'portrait' ? 70 : 58;
     const spTxt = `SKILL POINTS ${hs.sp || 0}`;
@@ -334,7 +335,7 @@ export class Menu extends Phaser.Scene {
       const ic = this.add.image(x + 2, y + Math.floor((rh - 3 - 16) / 2), d.icon).setOrigin(0);
       if (!rank) ic.setAlpha(0.35);
       this.dyn.push(ic);
-      this.t(x + 21, y + 2, d.name, rank ? 'font' : 'fontPlain', rank ? (eq ? 0xfff0a0 : 0xffffff) : 0x9d93b3, w - 52);
+      this.t(x + 21, y + 2, d.name, rank ? 'font' : 'fontPlain', rank ? (eq ? 0xfff0a0 : d.discipline ? 0xd9b8ff : 0xffffff) : 0x9d93b3, w - 52);
       if (locked) this.t(x + 21, y + rh - 11, `UNLOCKS AT LV${d.unlock}`, 'fontPlain', 0x9d93b3);
       else {
         for (let r = 0; r < 5; r++) g.fillStyle(r < rank ? C.gold : C.slate).fillRect(x + 21 + r * 6, y + rh - 9, 4, 3);
@@ -382,8 +383,12 @@ export class Menu extends Phaser.Scene {
 
   drawSkillDesc(x, y, w) {
     const sid = this.skillSel;
-    const d = sid && heroSkillIds(this.hero.def.id).find(([k]) => k === sid)?.[1];
-    if (!d) { this.t(x, y, 'TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +20%).', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    const d = sid && heroSkillIds(this.hero.def.id, this.hero.hs.disc).find(([k]) => k === sid)?.[1];
+    if (!d) {
+      const disc = this.hero.hs.disc;
+      this.t(x, y, `TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +20%). DISCIPLINE: ${disc ? `${DISCIPLINES[disc].name} (LAVENDER SKILLS)` : 'NONE YET - TRAINERS TEACH ONE PER HERO'}.`, 'fontPlain', 0x9d93b3).setMaxWidth(w);
+      return;
+    }
     this.t(x, y, d.name, 'fontGold');
     this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain', undefined, w, 4);
   }

@@ -412,11 +412,12 @@ export class UI extends Phaser.Scene {
   showChoices(choices) {
     this.choosing = true;
     const { x, y, w, h } = this.dlgBox;
-    let bx = x + w;
+    let bx = x + w, row = 0;
     [...choices].reverse().forEach(([label, fn], i) => {
       const bw = label.length * 5 + 12;
       bx -= bw + 4;
-      const by = y + h + 3;
+      if (bx < x) { row++; bx = x + w - bw - 4; } // out of room: start another row underneath
+      const by = y + h + 3 + row * 18;
       const g = this.add.graphics().setDepth(51);
       panel(g, bx, by, bw, 15, i === choices.length - 1 ? 0x2f5d3a : C.night, i === choices.length - 1 ? 0x8cff8c : C.stone);
       const t = this.add.bitmapText(bx + 6, by + 5, i === choices.length - 1 ? 'fontGold' : 'font', label).setDepth(52);

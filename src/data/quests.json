@@ -1158,7 +1158,8 @@
    "look": "ada",
    "ghost": true,
    "lines": [
-    "THE BELLS DROWNED. I DID NOT. NOT QUITE."
+    "THE BELLS DROWNED. I DID NOT. NOT QUITE.",
+    "THEY SAY SMUGGLERS KEEP A DEN ON THE LITTLE ISLE IN THE BIG POOL WEST OF HERE. ONLY A SWIMMER COULD REACH IT."
    ],
    "voice": {
     "pitch": 300,
@@ -1215,6 +1216,41 @@
     "wave": "square",
     "duty": 0.125
    }
+  },
+  {
+   "id": "iren",
+   "name": "MASTER IREN",
+   "x": 27,
+   "y": 35,
+   "look": "iren",
+   "requires": "wardBroken",
+   "trainer": "blade",
+   "voice": {
+    "pitch": 220,
+    "wave": "square",
+    "duty": 0.25
+   },
+   "lines": [
+    "THE STONE'S DOWN, SO I CAN PRACTISE IN THE OPEN AGAIN. GOOD.",
+    "I TEACH THE BLADE: SWEEP THEM OFF THEIR FEET, TURN THEIR BLOWS, MAKE EVERY CUT COUNT."
+   ]
+  },
+  {
+   "id": "margo",
+   "name": "SLY MARGO",
+   "x": 80,
+   "y": 85,
+   "look": "margo",
+   "trainer": "shadow",
+   "voice": {
+    "pitch": 340,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "lines": [
+    "WELL WELL. NOBODY SWIMS OUT HERE UNLESS THEY MEAN TO.",
+    "WE SMUGGLERS KNOW THE SHADOW ARTS. FOR A PRICE, SO WILL YOU."
+   ]
   }
  ]
 }

@@ -488,5 +488,63 @@
   "short": "PRIMAL",
   "icon": "icon_primal",
   "desc": "FOR 8S: +50% DAMAGE, 20% LIFESTEAL, IMMUNE TO STUN AND SLOW."
+ },
+ "sweep": {
+  "discipline": "blade",
+  "unlock": 1,
+  "name": "SWEEPING STRIKE",
+  "short": "SWEEP",
+  "icon": "icon_sweep",
+  "cd": 9,
+  "range": 0,
+  "desc": "A FULL-CIRCLE SLASH THAT HITS AND KNOCKS BACK EVERY FOE AROUND YOU. (BLADE)"
+ },
+ "guardparry": {
+  "discipline": "blade",
+  "unlock": 1,
+  "name": "PARRY",
+  "short": "PARRY",
+  "icon": "icon_guardparry",
+  "cd": 11,
+  "range": 0,
+  "desc": "BRACE FOR 0.8S: THE NEXT MELEE HIT IS TURNED ASIDE AND COUNTERED. (BLADE)"
+ },
+ "keenedge": {
+  "discipline": "blade",
+  "unlock": 1,
+  "passive": true,
+  "name": "KEEN EDGE",
+  "short": "KEEN",
+  "icon": "icon_keenedge",
+  "desc": "+25% CRITICAL DAMAGE (+5% PER RANK). (BLADE)"
+ },
+ "shadedash": {
+  "discipline": "shadow",
+  "unlock": 1,
+  "name": "SHADE DASH",
+  "short": "DASH",
+  "icon": "icon_shadedash",
+  "cd": 10,
+  "range": 110,
+  "desc": "DASH THROUGH A LINE OF FOES AS A SHADOW, CUTTING EACH ONE. YOU CANNOT BE HIT MID-DASH. (SHADOW)"
+ },
+ "poisoncloud": {
+  "discipline": "shadow",
+  "unlock": 1,
+  "name": "POISON CLOUD",
+  "short": "CLOUD",
+  "icon": "icon_poisoncloud",
+  "cd": 14,
+  "range": 110,
+  "desc": "A CLOUD OF VENOM ON A FOE: POISONS EVERYTHING INSIDE FOR 4S. (SHADOW)"
+ },
+ "ambush": {
+  "discipline": "shadow",
+  "unlock": 1,
+  "passive": true,
+  "name": "AMBUSH",
+  "short": "AMBUSH",
+  "icon": "icon_ambush",
+  "desc": "+20% DAMAGE FROM BEHIND (+4% PER RANK). (SHADOW)"
  }
 }

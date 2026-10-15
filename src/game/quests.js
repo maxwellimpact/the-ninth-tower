@@ -88,6 +88,7 @@ export class QuestManager {
     if (tid) { this.advance(tid, npc); return; }
     const oid = this.offerFor(npc);
     if (oid) { this.offer(oid, npc); return; }
+    if (npc.trainer) { sc.trainerTalk(npc); return; }
     if (npc.service) {
       // Brightwater services open the matching crafting screen
       const lines = npc.lines.map((t) => this.line(npc, t));

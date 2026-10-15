@@ -99,6 +99,8 @@ export const FOLK = {
   greta: folk('greta', 'brann', { head: 'kerchief@5', body: 'apron_brown', weapon: 'sword_iron@1' }),
   wick: folk('wick', 'pip', { head: 'hat_apprentice@2', body: 'robe_apprentice@3' }),
   orla: folk('orla', 'pip', { head: 'hat_star@4', body: 'robe_scholar@4' }),
+  iren: folk('iren', 'sable', { head: 'bandana_red@5', body: 'leather_studded@4', weapon: 'sword_long@3' }),
+  margo: folk('margo', 'sable', { head: 'hood_shadow@2', body: 'jacket_leather@5', weapon: 'dagger_kris@4' }),
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.

@@ -177,6 +177,8 @@ export class Hero extends Unit {
 
   // Rank of an equipped passive (0 when not equipped).
   passive(id) { return this.hs.skills.passive.includes(id) ? skillRank(this.hs, id) : 0; }
+  // crit damage multiplier (Keen Edge adds to it)
+  critMult() { const k = this.passive('keenedge'); return critMul() + (k ? 0.25 + 0.05 * (k - 1) : 0); }
 
   // Lock into a skill action. extra: { hitAt, resolve(), tick(a, dt) }
   act(id, dur, anim, extra = {}) {
@@ -330,7 +332,7 @@ export class Hero extends Unit {
     let crit = this.nextCrit || Math.random() < this.stats.crit;
     if (this.stats.traits?.includes('opener') && !target.openedBy?.has(this)) { (target.openedBy ??= new Set()).add(this); crit = true; }
     this.nextCrit = false;
-    sc.dealDamage(this, target, this.stats.atk * (crit ? critMul() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40, basic: true });
+    sc.dealDamage(this, target, this.stats.atk * (crit ? this.critMult() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40, basic: true });
   }
 
   // Orb of Echoes: every third spell repeats as a purple echo bolt from the orb.
@@ -417,7 +419,7 @@ export class Hero extends Unit {
       audio.sfx('block');
       this.face(src.x - this.x, src.y - this.y);
       this.anim = ''; this.play('attack');
-      this.scene.dealDamage(this, src, this.stats.atk * 2 * critMul() * (this.riposteMul || 1), { crit: true, knock: 90 });
+      this.scene.dealDamage(this, src, this.stats.atk * 2 * this.critMult() * (this.riposteMul || 1), { crit: true, knock: 90 });
       return 0;
     }
     if (this.taunting > 0) amount *= 0.5;
@@ -435,6 +437,7 @@ export class Hero extends Unit {
       if (!amount) { this.scene.floatText(this.x, this.y - 28, 'BLOCK', 'fontPlain'); audio.sfx('block'); return 0; }
     }
     this.hp -= amount;
+    if (src?.affix === 'vampiric') src.vampHeal(amount, this);
     this.flash(90, 0xff5050);
     audio.sfx('hurt');
     this.scene.floatText(this.x, this.y - 26, `${amount}`, 'font', 0xff6a6a);
@@ -797,6 +800,13 @@ const ENEMY = enemyData;
 const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk' };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'drowned', 'witchling']);
 
+// Elite affixes (C7): every elite gets one, named on its tag so it's clear
+// what makes it dangerous and how to answer it.
+export const AFFIXES = {
+  swift: 'SWIFT', armored: 'ARMORED', vampiric: 'VAMPIRIC', volatile: 'VOLATILE',
+  warded: 'WARDED', splitting: 'SPLITTING', shielder: 'SHIELDER', frenzied: 'FRENZIED',
+};
+
 export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
     const base = ENEMY[kind];
@@ -812,6 +822,12 @@ export class Enemy extends Unit {
     this.puppet = PUPPETS.has(kind);
     this.level = level;
     this.elite = elite;
+    this.affix = null;
+    if (elite && !base.named && !base.boss && !base.inert) {
+      const pool = Object.keys(AFFIXES).filter((a) => !((a === 'splitting' || a === 'armored') && base.ranged));
+      this.affix = pool[Math.floor(Math.random() * pool.length)];
+      if (this.affix === 'swift') { s.speed *= 1.4; if (s.windup) s.windup *= 0.75; if (s.recover) s.recover *= 0.8; }
+    }
     this.s = s;
     this.spawn = { x, y };
     this.state = 'idle';
@@ -834,6 +850,7 @@ export class Enemy extends Unit {
   restoreTint() {
     const t = this.statusColor();
     if (t) this.sprite.setTint(t);
+    else if (this.frenzy) this.sprite.setTint(0xff8a7a);
     else if (this.elite) this.sprite.setTint(0xffd889);
     else if (this.puppet && this.cursed) this.sprite.setTint(0xd9b8ff);
     else this.sprite.clearTint();
@@ -874,6 +891,7 @@ export class Enemy extends Unit {
   // Damage multiplier for an element hitting this enemy (C2: weak x1.5, resist x0.5).
   elementMul(el) {
     if (!el) return 1;
+    if (this.affix === 'warded' && el !== 'light') return 0.5;
     if (this.s.resist === el || (this.s.hexed && el === 'shadow')) return 0.5;
     if (this.s.weak === el || (this.s.hexed && el === 'light')) return 1.5;
     return 1;
@@ -955,7 +973,7 @@ export class Enemy extends Unit {
     if (this.state === 'idle' || this.state === 'return') this.state = 'chase';
     if (!was) {
       this.scene.fx.alert(this);
-      if (this.elite) this.scene.floatText(this.x, this.y - 34, this.named ? this.s.name : `ELITE ${this.s.name}`, 'fontGold');
+      if (this.elite) this.scene.floatText(this.x, this.y - 34, this.named ? this.s.name : `${this.affix ? AFFIXES[this.affix] : 'ELITE'} ${this.s.name}`, 'fontGold');
       if (spread) for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && dist(e, this) < 70) e.aggroOn(h, false);
     }
   }
@@ -963,6 +981,15 @@ export class Enemy extends Unit {
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
     if (this.submerged || this.introT > 0) return 0;
+    // Armored: a frontal guard. Hit it from the side or behind, while it's stunned, or Shock it
+    if (this.affix === 'armored' && src && !dot && !(this.stunT > 0) && !this.status?.shock) {
+      const f = this.view === 'side' ? [this.flip ? -1 : 1, 0] : [0, this.view === 'down' ? 1 : -1];
+      const [dx, dy] = norm(src.x - this.x, src.y - this.y);
+      if (f[0] * dx + f[1] * dy > 0.3) {
+        amount *= 0.35;
+        if (!this.guardMsgT || this.scene.time.now > this.guardMsgT) { this.guardMsgT = this.scene.time.now + 1500; this.scene.floatText(this.x, this.y - 30, 'GUARDED - FLANK IT', 'fontPlain', 0xbfd0e6); audio.sfx('block'); }
+      }
+    }
     if (this.s.ai === 'shell' && src && !dot) {
       // the shell turns blows from the front; a flipped crab takes extra
       if (this.flippedT > 0) amount *= 1.5;
@@ -985,7 +1012,74 @@ export class Enemy extends Unit {
     else if (knock) this.knock(this.x - src.x, this.y - src.y, knock * 0.3);
     if (src && src.team === 'party') this.aggroOn(src);
     if (this.hp <= 0) this.die(src);
+    else if (this.elite) this.affixOnHurt();
     return amount;
+  }
+
+  // ---- elite affixes
+  affixDmg() { return this.frenzy ? 1.5 : 1; }
+
+  affixOnHurt() {
+    const sc = this.scene;
+    if (this.affix === 'frenzied' && !this.frenzy && this.hp < this.maxHp / 2) {
+      this.frenzy = true;
+      this.restoreTint();
+      sc.floatText(this.x, this.y - 34, 'FRENZY!', 'fontGold', 0xff8a7a);
+      audio.sfx('roar');
+    }
+    if (this.affix === 'splitting' && !this.splitDone && this.hp < this.maxHp / 2) {
+      this.splitDone = true;
+      sc.floatText(this.x, this.y - 34, 'SPLIT!', 'fontGold');
+      sc.fx.burst('curse', this.x, this.y - 8, 16);
+      for (const dx of [-14, 14]) {
+        const e = sc.spawnEnemy(this.kind, this.x + dx, this.y + 4, true, false);
+        e.maxHp = Math.max(1, Math.round(this.maxHp * 0.3)); e.hp = e.maxHp;
+        e.sprite.setScale(0.85);
+      }
+    }
+  }
+
+  // Vampiric: heals by the damage it deals, with a visible drain line back to it
+  vampHeal(amount, from) {
+    if (!this.alive) return;
+    const sc = this.scene, heal = Math.round(amount * 0.3);
+    this.hp = Math.min(this.maxHp, this.hp + heal);
+    sc.floatText(this.x, this.y - 30, `+${heal}`, 'font', 0xff6a8a);
+    const g = sc.add.graphics().setDepth(100000 - 19);
+    const st = { a: 1 };
+    sc.tweens.add({ targets: st, a: 0, duration: 420, onUpdate: () => { if (!g.active) return; g.clear().lineStyle(3, 0x8a1030, 0.5 * st.a).lineBetween(from.x, from.y - 10, this.x, this.y - 10).lineStyle(1, 0xff6a8a, st.a).lineBetween(from.x, from.y - 10, this.x, this.y - 10); }, onComplete: () => g.destroy() });
+  }
+
+  affixTick(dt) {
+    if (this.affix !== 'shielder' || !this.engaged) return;
+    const sc = this.scene;
+    this.shieldT = (this.shieldT ?? 2) - dt;
+    if (this.shieldT > 0) return;
+    this.shieldT = 7;
+    for (const e of sc.enemies) {
+      if (e === this || !e.alive || e.s.inert || Math.hypot(e.x - this.x, e.y - this.y) > 90) continue;
+      e.wardShield = Math.round(e.maxHp * 0.3);
+      e.wardRing?.destroy();
+      e.wardRing = sc.add.ellipse(e.x, e.y - 8, 26, 30, 0x6f93e0, 0.12).setStrokeStyle(1, 0x9fd8ff, 0.8).setDepth(e.y + 2);
+    }
+    sc.fx.ring(this.x, this.y - 6, 'ringBlue', 4);
+    sc.floatText(this.x, this.y - 30, 'SHIELDS ALLIES!', 'fontPlain', 0x9fd8ff);
+    audio.sfx('frost', { pitch: 0.9 });
+  }
+
+  // Volatile: blows up shortly after it dies (the circle shows where)
+  volatileBlast() {
+    const sc = this.scene, x = this.x, y = this.y, r = 40, t = 1.6;
+    const zone = { x, y, r, until: t };
+    sc.dangers.push(zone);
+    const g = sc.fx.telegraph(x, y, r, t);
+    sc.floatText(x, y - 30, 'IT WILL BLOW!', 'fontGold', 0xffa060);
+    const dmg = this.s.dmg * 1.4 * sc.difficulty.dmg;
+    sc.time.delayedCall(t * 1000, () => {
+      g.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone);
+      sc.fx.slam(x, y, r); sc.fx.burst('ember', x, y - 6, 24); sc.shake(260, 0.01); audio.sfx('bash');
+      for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - x, h.y - y) <= r + h.r) h.damage(dmg, { x, y });
+    });
   }
 
   destroy() { this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
@@ -998,6 +1092,7 @@ export class Enemy extends Unit {
       sc.time.delayedCall(10, () => { const p = sc.spawnEnemy('hollowpile', this.x, this.y + 2, false); p.sprite.setOrigin(0.5, 0.8); sc.floatText(this.x, this.y - 30, 'SMASH THE ARMOUR!', 'fontPlain', 0xffd04a); });
     }
     if (this.marked) { const sk = this.marked.sk; if (sk) sk.t = 0; this.scene.floatText(this.x, this.y - 40, 'MARK RESET', 'fontPlain', 0xff6a6a); }
+    if (this.affix === 'volatile') this.volatileBlast();
     this.clearZone();
     this.scene.onEnemyKilled(this, src);
     this.destroy();
@@ -1054,6 +1149,7 @@ export class Enemy extends Unit {
     if (s.ai === 'lurk' && this.aiLurk(dt)) { this.sync(dt); return; }
     if (s.ai === 'blink' && this.engaged) { this.blinkT = (this.blinkT ?? 4) - dt; if (this.blinkT <= 0 && this.state === 'chase') this.blinkAway(); }
     if (s.ai === 'warlock' && this.engaged) this.aiWarlock(dt);
+    if (this.affix) this.affixTick(dt);
     if (this.fearT > 0) {
       // Howl: run from Kesh
       this.fearT -= dt;
@@ -1332,7 +1428,7 @@ export class Enemy extends Unit {
     const sc = this.scene;
     if (this.s.ranged) {
       this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`;
-      sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg, this.s.shot);
+      sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg * this.affixDmg(), this.s.shot);
       return;
     }
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
@@ -1340,7 +1436,7 @@ export class Enemy extends Unit {
     else { this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`; audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
     if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     if (this.s.drain) for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.addPoison?.(this.s.dmg * 0.5, 3);
-    const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1);
+    const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
     for (const h of sc.party) {
       if (!h.alive || h.downed) continue;
       if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(dmg, this);

@@ -3,6 +3,7 @@
 // iOS build will share).
 import heroData from '../data/heroes.json';
 import items from '../data/items.json';
+import DISCIPLINES from '../data/disciplines.json';
 import tuning from '../data/tuning.json';
 import crafting from '../data/crafting.json';
 import world from '../data/world.json';
@@ -47,7 +48,8 @@ export function newState(leaderId) {
 
 // ------------------------------------------------------------------ skills
 // Per hero: ranks of learned skills/passives, which are equipped, unspent points.
-export const heroSkillIds = (id) => Object.entries(skills).filter(([, s]) => s.hero === id && !s.ult);
+// A hero's own tree, plus the skills of the discipline they've learned (if any)
+export const heroSkillIds = (id, disc = null) => Object.entries(skills).filter(([, s]) => (s.hero === id || (disc && s.discipline === disc)) && !s.ult);
 export const skillDef = (sid) => skills[sid];
 
 export function newSkillState(id) {
@@ -91,6 +93,30 @@ export function toggleSkill(hs, sid) {
   list[e] = sid;
   return true;
 }
+// Learn (or switch to) a discipline. Switching refunds every skill point spent
+// on the old one; the new discipline's first skill comes free at rank 1.
+export function learnDiscipline(hs, disc) {
+  const cost = (r) => { let n = 0; for (let i = 1; i <= r; i++) n += tuning.skillRankCost[i] || 0; return n; };
+  if (hs.disc) {
+    for (const [sid, d] of Object.entries(skills)) {
+      if (d.discipline !== hs.disc) continue;
+      const r = skillRank(hs, sid);
+      if (r) hs.sp += cost(r) - (sid === hs.discFree ? tuning.skillRankCost[1] : 0);
+      delete hs.skills.ranks[sid];
+      for (const list of [hs.skills.active, hs.skills.passive]) { const i = list.indexOf(sid); if (i >= 0) list[i] = null; }
+    }
+  }
+  hs.disc = disc;
+  const first = DISCIPLINES[disc]?.first;
+  hs.discFree = first;
+  if (first) {
+    hs.skills.ranks[first] = 1;
+    const list = hs.skills.active;
+    const i = list.indexOf(null);
+    if (i >= 0) list[i] = first;
+  }
+}
+export const switchCost = (hs, disc) => DISCIPLINES[disc].cost + (hs.disc ? 15 * hs.level : 0);
 // Rank multiplier: +15% per rank above 1.
 export const rankMul = (rank) => 1 + Math.max(0, rank - 1) * tuning.skillRankBonus;
 

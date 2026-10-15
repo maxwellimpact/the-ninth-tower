@@ -1,0 +1,20 @@
+{
+ "blade": {
+  "name": "BLADE",
+  "first": "sweep",
+  "cost": 120,
+  "pitch": "THE WAY OF THE BLADE: WIDE STRIKES, PARRIES AND DEADLIER CRITICAL HITS."
+ },
+ "shadow": {
+  "name": "SHADOW",
+  "first": "shadedash",
+  "cost": 160,
+  "pitch": "THE SHADOW ARTS: DASH THROUGH THEIR LINES, CHOKE THEM IN POISON, STRIKE FROM BEHIND."
+ },
+ "cleric": {
+  "name": "CLERIC",
+  "first": "mend",
+  "cost": 160,
+  "pitch": "THE CLERIC WAY: MENDING AND WARDING."
+ }
+}

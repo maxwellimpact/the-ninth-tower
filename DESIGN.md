@@ -673,6 +673,12 @@ Each discipline has **2 actives and 1 passive**. They're ranked with skill point
 | **Ranger** | Quick Shot, Snare | Fleet (+8% move speed) | Gloamwood edge camp |
 | **Cleric** | Mend, Ward | Blessed (+20% healing received) | Cinderreach monastery |
 
+- **Built (Wave 1):**
+  - **Rules:** one discipline per hero. Its 2 actives and 1 passive join the hero's own lists (shown in lavender), share the 3 active and 2 passive slots, and are ranked with skill points.
+  - **Cost:** learning costs gold (Blade 120, Shadow 160). The first active comes free at rank 1. Switching to another discipline costs extra (+15 gold per level) and refunds every skill point spent on the old one.
+  - **Blade:** taught by Master Iren in the Brightwater hamlet once the Vale stone falls. Sweeping Strike, Parry, Keen Edge.
+  - **Shadow:** taught by Sly Margo on the smugglers' isle in a Mistfen pool, reachable only by swimming. Sister Cora mentions it. Shade Dash, Poison Cloud, Ambush.
+  - **Cleric's Mend** exists in data for the Cinderreach trainer.
 - **The Trainers' Hall** in Brightwater (C9) teaches every discipline you've already unlocked. It also handles respec (gold cost, which rises with level) and sells Veteran's Tomes and Ultimate Tomes.
 
 ---
@@ -1033,7 +1039,16 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 
 ### Elite affixes
 - **Elites** are gold-named, +2 levels, have one affix and always drop something (Fine or better, or materials).
-  - **Built so far (no affixes yet):** about 1 group in 3 has one. Elites have 1.8× health and 1.15× damage on top of the +2 levels. A pulsing gold ring under their feet marks them before you engage, and an "ELITE" tag stays over their health bar during the fight. **[REVISED in playtest: was 2.2× / 1.3× with only a gold tint]**
+  - **Built:** about 1 group in 3 has one. Elites have 1.8× health and 1.15× damage on top of the +2 levels. A pulsing gold ring under their feet marks them before you engage, and **their affix name** (VAMPIRIC, ARMORED…) stays over their health bar during the fight. **[REVISED in playtest: was 2.2× / 1.3× with only a gold tint]**
+  - **All 8 affixes are built**, each with a visible cue:
+    - **Vampiric:** a red drain line and a heal number on every hit.
+    - **Armored:** a steel arc on its guarded side, and "GUARDED - FLANK IT".
+    - **Frenzied:** turns red with "FRENZY!".
+    - **Volatile:** pulses when nearly dead and leaves a blast circle.
+    - **Splitting:** "SPLIT!" and two smaller copies.
+    - **Shielder:** blue ward rings on its allies.
+    - **Swift** and **Warded** are named on the tag.
+    - Ranged elites never roll Splitting or Armored.
 - **Hard mode** gives elites two affixes.
 
 | Affix | Effect |
@@ -1473,3 +1488,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Skill power budget: modest rank-1 skills (25–35% of basic DPS per target), +20% per rank, longer cooldowns (8–18 s), weaker splash, crit refunds rate-limited, CDR cap 30% |
 | 2026-10-15 | Lookout towers are climbable watchtowers that zoom the camera out to ⅓×; one per region (C12). Built: Highmeadow and Fenwatch |
 | 2026-10-15 | Health and ultimate values are guarded against invalid numbers (keep the last good value and report the cause) after errand fights rebuilt on load produced NaN levels |
+| 2026-10-15 | Elite affixes built (all 8, each with a visible cue); disciplines built with Blade (Master Iren, Brightwater) and Shadow (Sly Margo, Mistfen smugglers' isle) trainers; switching refunds skill points |

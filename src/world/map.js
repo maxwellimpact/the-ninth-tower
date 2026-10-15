@@ -208,6 +208,11 @@ export function buildWorld() {
   room(286, 79, 288, 83);                                            // passage north
   room(266, 65, 308, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
   for (let y = 68; y <= 75; y++) for (let x = 282; x <= 292; x++) if (Math.hypot((x - 287) / 5.2, (y - 71.5) / 3.6) < 1) set(x, y, T.WATER); // her pool
+  // The smugglers' pool: an isle in the open fen, reachable only by swimming (Tide Charm)
+  for (let y = 79; y <= 91; y++) for (let x = 72; x <= 88; x++) {
+    const d = Math.hypot((x - 80) / 6.2, (y - 85) / 4.6);
+    if (d < 0.36) set(x, y, T.MARSH); else if (d < 1) set(x, y, T.WATER); else if (d < 1.25) set(x, y, T.SHALLOW);
+  }
   // Mother Murk's bog pool, just north of the Mistfen Ward Stone (she rises here)
   for (let y = 104; y <= 112; y++) for (let x = 154; x <= 166; x++) {
     const d = Math.hypot((x - 160) / 4.6, (y - 108) / 2.6);
@@ -260,7 +265,7 @@ export function buildWorld() {
     for (const b of st.bells || []) reserve(b[0], b[1], 2);
     for (const pt of st.path || []) reserve(pt[0], pt[1], 2.5);
   }
-  reserve(W.start.x, W.start.y, 4); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
+  reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
   const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH;
@@ -320,6 +325,8 @@ export function buildWorld() {
     if (at(x, y) === T.WATER) add('lily', x, y, { seed: i });
   }
 
+  // smugglers' den dressing on the isle
+  add('barrel', 79, 84); add('barrel', 82, 86);
   // ruins dressing
   add('pillar', 41, 29, { broken: false }); add('pillar', 47, 29, { broken: true });
   add('pillar', 160, 25, { broken: true }); add('pillar', 164, 25, { broken: false });
