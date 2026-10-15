@@ -799,6 +799,7 @@ export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
     const base = ENEMY[kind];
     // level scaling within the region's band, plus the elite affix
+    if (!Number.isFinite(level)) level = 1; // never let a bad level poison health and damage
     const L1 = level - 1;
     const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 2.2 : 1);
     const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.3 : 1);

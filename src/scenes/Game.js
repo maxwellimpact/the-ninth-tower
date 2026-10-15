@@ -278,7 +278,9 @@ export class Game extends Phaser.Scene {
 
   enemyLevel(x, y) {
     const r = W.regions.find((k) => k.id === biomeAt(Math.floor(x / TILE), Math.floor(y / TILE)));
-    const avg = this.party.reduce((a, h) => a + h.level, 0) / this.party.length;
+    // the party may not exist yet (errand fights rebuilt while the save loads): fall back to the saved levels
+    const lv = this.party.length ? this.party.map((h) => h.level) : (this.state.active || [this.state.leader]).map((id) => this.state.heroes[id]?.level || 1);
+    const avg = lv.reduce((a, l) => a + l, 0) / lv.length;
     const [lo, hi] = regionBand(this.state, r);
     return Phaser.Math.Clamp(Math.round(avg), lo, hi);
   }
