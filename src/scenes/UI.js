@@ -302,7 +302,8 @@ export class UI extends Phaser.Scene {
     const y = this.mmY + this.MM.h + 26 + (this.smallLootN || 0) * 12;
     this.smallLootN = (this.smallLootN || 0) + 1;
     const img = this.add.image(right, y, itemTex(this, n.id)).setOrigin(1, 0.5).setScale(0.75).setDepth(40);
-    const t = this.add.bitmapText(right - 14, y - 3, 'fontPlain', fitString(`+ ${it.name}`, Math.min(130, this.W - 120))).setOrigin(1, 0).setTint(r.col).setDepth(40);
+    // outlined white text (like the LV labels) so it reads over any ground
+    const t = this.add.bitmapText(right - 14, y - 3, 'font', fitString(`+ ${it.name}`, Math.min(130, this.W - 120))).setOrigin(1, 0).setDepth(40);
     const objs = [img, t];
     for (const o of objs) o.setAlpha(0);
     this.tweens.add({ targets: objs, alpha: 1, duration: 150 });
