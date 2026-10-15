@@ -68,6 +68,7 @@ export class FX {
     const g = this.scene.add.graphics().setDepth(-3);
     const state = { p: 0 };
     const draw = () => {
+      if (!g.active) return; // cleared early (enemy died / was interrupted)
       g.clear();
       g.fillStyle(0xc0394b, 0.18 + state.p * 0.22);
       g.fillEllipse(x, y, r * 2 * state.p, r * 1.3 * state.p);

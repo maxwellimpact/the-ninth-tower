@@ -923,7 +923,7 @@ export class Enemy extends Unit {
     return amount;
   }
 
-  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.clearCharge?.(); super.destroy(); }
+  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.clearZone(); super.destroy(); }
 
   die(src) {
     this.alive = false;
@@ -1113,6 +1113,7 @@ export class Enemy extends Unit {
 
   // Boar charge: paw the ground (telegraphed line), then rush in a straight line.
   beginCharge(t) {
+    this.clearZone(); // never leave an old warning marker behind
     this.state = 'chargeWindup';
     this.t = 0;
     this.cdir = norm(t.x - this.x, t.y - this.y);
@@ -1168,13 +1169,14 @@ export class Enemy extends Unit {
 
   // Croaker: a tongue that drags you in for a bite.
   beginTongue(t) {
+    this.clearZone(); // never leave an old warning marker behind
     this.state = 'tongueWind';
     this.t = 0;
     this.tongueTarget = t;
     this.face(t.x - this.x, t.y - this.y);
     const g = this.scene.add.graphics().setDepth(-2);
     const st = { p: 0 };
-    const draw = () => { if (!t.alive) return; g.clear().lineStyle(2, 0xec6a5e, 0.2 + st.p * 0.6).lineBetween(this.x, this.y - 6, t.x, t.y - 6); };
+    const draw = () => { if (!t.alive || !g.active) return; g.clear().lineStyle(2, 0xec6a5e, 0.2 + st.p * 0.6).lineBetween(this.x, this.y - 6, t.x, t.y - 6); };
     draw();
     this.scene.tweens.add({ targets: st, p: 1, duration: 800, onUpdate: draw });
     this.zoneGfx = g;
@@ -1219,6 +1221,7 @@ export class Enemy extends Unit {
   }
 
   beginWindup(t) {
+    this.clearZone(); // never leave an old warning marker behind
     this.state = 'windup';
     this.t = 0;
     this.face(t.x - this.x, t.y - this.y);
@@ -1230,7 +1233,7 @@ export class Enemy extends Unit {
       this.scene.dangers.push(this.zone);
       const g = this.scene.add.graphics().setDepth(-2);
       const st = { p: 0 };
-      const draw = () => { g.clear().lineStyle(1, 0xec6a5e, 0.25 + st.p * 0.6).lineBetween(this.x, this.y - 8, this.aim.x, this.aim.y); };
+      const draw = () => { if (!g.active) return; g.clear().lineStyle(1, 0xec6a5e, 0.25 + st.p * 0.6).lineBetween(this.x, this.y - 8, this.aim.x, this.aim.y); };
       draw();
       this.scene.tweens.add({ targets: st, p: 1, duration: s.windup * 1000, onUpdate: draw });
       this.zoneGfx = g;
