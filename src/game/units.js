@@ -591,14 +591,23 @@ export class Hero extends Unit {
       } else { this.setGoal(r.x, r.y); this.followPath(dt, 1.2); return; }
     }
 
-    // 3) fight
+    // 3) stay with the leader: when the leader runs (moving, not attacking) the
+    // party breaks off and follows; mid-fight nobody strays far from the leader
+    const dl0 = dist(this, L);
+    const leaderRunning = (L.command?.type === 'move' || (L.direct && (L.direct.x || L.direct.y))) && !(L.command?.type === 'attack');
+    if (leaderRunning && dl0 > 56) { this.target = null; this.runOff = 1.2; }
+    this.runOff = Math.max(0, (this.runOff || 0) - dt);
+    if (this.runOff > 0) this.target = null;
+    if (this.target && dl0 > 112) this.target = null;
+
+    // 4) fight
     const t = this.target;
     if (t && t.alive) {
       const d = dist(this, t);
       const st = this.stats;
       if (this.ranged) {
-        // kite: keep 60-100px away, fire when in range with line of sight
-        if (d < 46) {
+        // kite: step back only when something is really close, and never far from the leader
+        if (d < 34 && dl0 < 110) {
           const [nx, ny] = norm(this.x - t.x, this.y - t.y);
           this.moveBy(nx * st.speed * dt, ny * st.speed * dt);
           this.face(t.x - this.x, t.y - this.y);
@@ -611,6 +620,8 @@ export class Hero extends Unit {
           this.startAttack(t);
           return;
         }
+        // close in for a clear shot, but on a leash: past ~7 tiles from the leader, come back
+        if (dl0 > 110) { this.setGoal(L.x, L.y); this.followPath(dt, 1.2); return; }
         this.setGoal(t.x, t.y); this.followPath(dt);
         return;
       }
@@ -637,7 +648,7 @@ export class Hero extends Unit {
     if (ds > 10) {
       this.repathT -= dt;
       if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(slot.x, slot.y); }
-      this.followPath(dt, dl > 70 ? 1.25 : 1);
+      this.followPath(dt, dl > 40 ? 1.3 : 1);
     } else {
       this.clearPath();
       if (L.view) this.face(L.x - this.x + (L.view === 'side' ? (L.flip ? -40 : 40) : 0), L.y - this.y + (L.view === 'down' ? 40 : L.view === 'up' ? -40 : 0));
@@ -672,7 +683,7 @@ export class Hero extends Unit {
       if (want && sc.useUltimate(this)) return;
     }
     // pick a target: what the leader engages, else what's attacking us
-    const engaged = sc.enemies.filter((e) => e.alive && e.engaged && dist(e, L) < 170);
+    const engaged = sc.enemies.filter((e) => e.alive && e.engaged && dist(e, L) < 96);
     const leaderT = L.command && L.command.type === 'attack' && L.command.target.alive ? L.command.target : null;
     const byDist = (list) => list.sort((a, b) => dist(a, this) - dist(b, this));
     let t = null;
@@ -680,13 +691,15 @@ export class Hero extends Unit {
     else if (this.ranged) t = leaderT || byDist(engaged)[0];
     else t = leaderT || engaged.sort((a, b) => a.hp - b.hp)[0];
 
-    // skills: first ready one whose rule says it's worth it right now
+    // skills: first ready one whose rule says it's worth it right now; companions
+    // pace themselves (one skill per ~1.5s) so fights don't turn into chaos
     const ctx = { target: t, engaged, leaderT };
-    for (let i = 0; i < this.skills.length; i++) {
+    this.aiSkillT = Math.max(0, (this.aiSkillT || 0) - 0.15);
+    for (let i = 0; i < this.skills.length && this.aiSkillT <= 0; i++) {
       const sk = this.skills[i];
       if (sk.t > 0) continue;
       const want = SKILL_FX[sk.id]?.ai?.(this, ctx);
-      if (want && this.useSkill(i, want === true ? t : want)) return;
+      if (want && this.useSkill(i, want === true ? t : want)) { this.aiSkillT = 1.5; return; }
     }
     // never wander off after the ward stone unless the leader is hitting it
     if (t && (t.kind === 'ward' || t.kind === 'breakable') && leaderT !== t) t = null;
@@ -710,8 +723,8 @@ export class Hero extends Unit {
     const idx = this.scene.party.filter((h) => !h.isLeader).indexOf(this);
     const side = idx === 0 ? -1 : 1;
     // behind the leader, offset to either side
-    const bx = L.x - fx * 18 + -fy * side * 14;
-    const by = L.y - fy * 16 + fx * side * 10;
+    const bx = L.x - fx * 14 + -fy * side * 11;
+    const by = L.y - fy * 12 + fx * side * 8;
     return this.scene.nav.solidAtPx(bx, by) ? { x: L.x - fx * 10, y: L.y - fy * 10 } : { x: bx, y: by };
   }
 

@@ -113,7 +113,7 @@
    "maxHp": 95,
    "atk": 10,
    "range": 110,
-   "atkCd": 0.8,
+   "atkCd": 1.05,
    "speed": 68,
    "crit": 0.12,
    "role": "ranged",

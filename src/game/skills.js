@@ -389,7 +389,7 @@ export const SKILL_FX = {
       } });
       return true;
     },
-    ai(h, c) { return c.target && !c.target.hawkMarked && dist(c.target, h) < 150 ? c.target : null; },
+    ai(h, c) { return c.target && !c.target.hawkMarked && dist(c.target, h) < 150 && (tough(c.target) || c.engaged.length >= 2) ? c.target : null; },
   },
   volley: {
     cast(h, { target, m }) {
@@ -445,7 +445,7 @@ export const SKILL_FX = {
       audio.sfx('dodge');
       return true;
     },
-    ai(h) { return attackers(h.scene, h, 32).length >= 1 ? true : null; },
+    ai(h) { return attackers(h.scene, h, 26).length >= 1 && h.hp / h.maxHp < 0.6 ? true : null; },
   },
   blastarrow: {
     cast(h, { target, m }) {

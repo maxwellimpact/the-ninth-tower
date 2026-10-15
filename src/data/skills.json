@@ -314,7 +314,7 @@
   "name": "HAWK STRIKE",
   "short": "HAWK",
   "icon": "icon_hawkstrike",
-  "cd": 8,
+  "cd": 11,
   "range": 150,
   "desc": "KESTREL DIVES ON A FOE AND MARKS IT: +10% DAMAGE TAKEN FOR 6S. REVEALS HIDDEN FOES."
  },
