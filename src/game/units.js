@@ -93,6 +93,34 @@ export const HERO_STATS = Object.fromEntries(heroList.map((h) => [h.id, h.stats]
 export const SKILLS = Object.fromEntries(heroList.map((h) => [h.id, h.skills.map((id) => ({ id, ...skillData[id] }))]));
 const critMul = () => tuning.critMult || 1.75;
 
+// Health, max health and the ultimate meter must always be real numbers: one
+// bad value (NaN) spreads through every hit and blanks every bar. If something
+// ever tries to set one, keep the last good value and report where it came
+// from (once per field) so the cause can be found.
+const badReported = new Set();
+function reportBad(field, v, u) {
+  if (badReported.has(field)) return;
+  badReported.add(field);
+  const e = new Error(`${field} was set to ${v} on ${u.kind || u.def?.id || 'a unit'}`);
+  console.error(e);
+  (window.__errs ??= []).push(`[guard] ${e.stack?.split('\n').slice(0, 4).join(' | ')}`);
+  window.__reportBug?.(e);
+}
+function guardNumber(proto, field, fallback) {
+  const k = `_g_${field}`;
+  Object.defineProperty(proto, field, {
+    configurable: true,
+    get() { return this[k]; },
+    set(v) {
+      if (typeof v === 'number' && Number.isFinite(v)) { this[k] = v; return; }
+      if (this[k] === undefined) this[k] = fallback(this);
+      reportBad(field, v, this);
+    },
+  });
+}
+guardNumber(Unit.prototype, 'maxHp', () => 100);
+guardNumber(Unit.prototype, 'hp', (u) => u.maxHp ?? 100);
+
 export class Hero extends Unit {
   constructor(scene, id, hs, x, y) {
     const st = computeStats(id, hs.level, hs.equip, hs);
@@ -131,8 +159,11 @@ export class Hero extends Unit {
   get spd() { return this.stats.speed * (this.buffs?.primal ? 1 : this.buffMul('slow')); }
   get ranged() { return this.stats.role === 'caster' || this.stats.role === 'ranged'; }
   get level() { return this.hs.level; }
-  get ult() { return this.hs.ult; }
-  set ult(v) { this.hs.ult = Math.max(0, Math.min(100, v)); }
+  get ult() { return this.hs.ult || 0; }
+  set ult(v) {
+    if (!Number.isFinite(v)) { reportBad('ult', v, this); return; } // keep the meter as it was
+    this.hs.ult = Math.max(0, Math.min(100, v));
+  }
   addUlt(n) { if (!this.downed) this.ult = this.ult + n * (this.stats?.traits?.includes('zeal') ? 1.15 : 1); }
   hasTrait(t) { return !!this.stats.traits?.includes(t); }
 

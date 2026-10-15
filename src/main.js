@@ -56,9 +56,10 @@ function showError(e) {
     el.onclick = () => el.remove();
     document.body.appendChild(el);
   }
-  el.textContent = `Something broke (tap to hide). Please screenshot this:\n${e && e.stack ? e.stack.split('\n').slice(0, 5).join('\n') : e}`;
+  el.textContent = `Something broke (tap to hide). Please screenshot this:\n${e && e.stack ? e.stack.split('\n').slice(0, 8).join('\n') : e}`;
 }
 window.addEventListener('error', (ev) => showError(ev.error || ev.message));
+window.__reportBug = showError; // non-fatal problems the game recovered from, but we want to hear about
 
 window.addEventListener('resize', () => {
   const n = fit();
