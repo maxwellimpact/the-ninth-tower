@@ -1011,6 +1011,11 @@ export class Enemy extends Unit {
     this.updateStatus(dt);
     if (!this.alive) return;
     if (this.flippedT > 0) { this.flippedT -= dt; if (this.flippedT <= 0) this.anim = ''; this.sync(dt); return; }
+    if (this.introT > 0) {
+      this.introT -= dt; this.play('idle'); this.sync(dt);
+      if (this.introT <= 0 && this.introTarget?.alive) this.aggroOn(this.introTarget);
+      return;
+    }
     if (this.riseT > 0) { this.riseT -= dt; this.sprite.setAlpha(1 - Math.max(0, this.riseT) / 0.7); this.sync(dt); if (this.riseT > 0) this.sprite.y += this.riseT * 14; return; }
     if (s.ai === 'lurk' && this.aiLurk(dt)) { this.sync(dt); return; }
     if (s.ai === 'blink' && this.engaged) { this.blinkT = (this.blinkT ?? 4) - dt; if (this.blinkT <= 0 && this.state === 'chase') this.blinkAway(); }

@@ -1446,14 +1446,13 @@ export class Game extends Phaser.Scene {
     this.cameras.main.fadeOut(900, 10, 6, 20);
     this.time.delayedCall(1100, () => {
       this.state.gold -= Math.floor(this.state.gold * 0.1);
-      const st = W.start;
-      this.party.forEach((h, i) => { h.x = (st.x + i) * TILE; h.y = st.y * TILE; h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; h.clearPath(); h.command = null; });
+      for (const h of this.party) { h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; }
       for (const e of this.enemies) if (e.alive) { e.x = e.spawn.x; e.y = e.spawn.y; e.state = 'idle'; e.target = null; e.engaged = false; e.hp = e.maxHp; e.clearZone(); }
       if (this.golem) { for (const p of this.golem.plates || []) { p.img.destroy(); this.removeInteractable(p.o); } this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); this.sealArena(false); }
       this.setLeader(this.party[0], true);
-      this.cameras.main.centerOn(this.leader.x, this.leader.y);
-      this.waitForWorld(() => { this.cameras.main.fadeIn(700); this.busy = false; });
       this.events.emit('party');
+      // back to the campfire behind the loading curtain (it may be a different area entirely)
+      this.teleportParty({ to: W.start }, () => { this.cameras.main.fadeIn(700); this.busy = false; }, 0, true);
     });
   }
 
@@ -1560,7 +1559,7 @@ export class Game extends Phaser.Scene {
   }
 
   // Move the party to a warp's destination, wait for the area to be painted.
-  teleportParty(w, onReady, arriveOffsetY = 0) {
+  teleportParty(w, onReady, arriveOffsetY = 0, curtainNow = false) {
     const tx = w.to.x * TILE + 8, ty = w.to.y * TILE + 8;
     const dest = areaAt(w.to.x, w.to.y);
     this.enterArea(dest);
@@ -1572,6 +1571,7 @@ export class Game extends Phaser.Scene {
     // when the destination takes a while (new biome art, many chunks).
     const t0 = performance.now();
     let curtain = null;
+    if (curtainNow) { this.scene.launch('Loading', { title: this.placeName(tx, ty) }); curtain = this.scene.get('Loading'); }
     const ui = {
       setProgress: (p, label) => {
         if (!curtain && performance.now() - t0 > 250) {
@@ -1819,8 +1819,8 @@ export class Game extends Phaser.Scene {
   // Lieutenant arenas: the boss wakes once the party is inside, bars close behind.
   bossDefs() {
     return [
-      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [274, 4, 302, 15], gate: [288, 16], make: (x, y, o) => new Golem(this, x, y - 24, o) },
-      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 78], make: (x, y, o) => new Murk(this, x, y, o) },
+      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, o) },
+      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 75], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, o) },
     ];
   }
 
@@ -1843,7 +1843,7 @@ export class Game extends Phaser.Scene {
       g.sprite.setAlpha(0).setY(g.y - 30);
       this.tweens.add({ targets: g.sprite, alpha: 1, duration: 400 });
       this.fx.burst('curse', g.x, g.y - 20, 40);
-      this.time.delayedCall(500, () => g.alive && g.aggroOn(L));
+      g.introT = 1.8; g.introTarget = L; // holds still while the party gathers and the bars drop
       this.events.emit('banner', B.cfg.name, B.cfg.sub);
       this.events.emit('boss', g);
       this.sealArena(true, B.gate);

@@ -193,7 +193,7 @@ export function buildWorld() {
   // the gallery: a raised ledge above the hall (face at y 32-33), reached by hook
   room(280, 22, 296, 31);
   room(287, 17, 289, 21);                                          // corridor north
-  room(274, 4, 302, 16); set(288, 4, T.STAIRS);                    // Gatewarden's arena, back stairs
+  room(270, 3, 306, 16); set(288, 4, T.STAIRS);                    // Gatewarden's arena, back stairs
   // Sunken Abbey (Mistfen): a drowned church, explored south to north
   room(281, 116, 293, 123); set(287, 124, T.STAIRS);                // narthex, stairs up
   room(286, 113, 288, 115);                                          // passage
