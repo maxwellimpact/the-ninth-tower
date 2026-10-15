@@ -631,8 +631,9 @@ export class Game extends Phaser.Scene {
     for (const k of W.lookouts || []) {
       const x = px(k.x), y = px(k.y);
       this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
-      for (const dx of [-1, 0, 1]) this.nav.block(k.x + dx, k.y);
-      this.addInteractable({ x, y: y + 4, reach: 26, standOff: 16, h: 40, kind: 'lookout', interact: () => this.climbLookout(k) });
+      this.add.image(x, y + 8, 'lookoutFront').setOrigin(0.5, 1).setDepth(y + 30); // railing in front of anyone up top
+      for (const dx of [-1, 0, 1]) { this.nav.block(k.x + dx, k.y); this.nav.block(k.x + dx, k.y - 1); }
+      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', interact: () => this.climbLookout(k) });
     }
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
@@ -1543,18 +1544,84 @@ export class Game extends Phaser.Scene {
     this.autosave('shrine');
   }
 
+  // Lookout towers: the party climbs the ladder one by one, lines up on the
+  // platform, and the camera pulls back to take in the land around (terrain
+  // and scenery stream in for the wider view; enemy groups and AI stay asleep
+  // while you look). Tap anywhere to climb back down.
   climbLookout(k) {
-    const L = this.leader;
+    if (this.busy || this.onLookout) return;
+    const cam = this.cameras.main, x = k.x * TILE + 8, y = k.y * TILE + 8;
+    const ZOOM = 0.5, LIFT = 51, foot = { x, y: y + 12 };
     const first = !this.flags[`lookout_${k.id}`];
     this.flags[`lookout_${k.id}`] = true;
-    this.minimap.reveal(k.x, k.y, k.r);
-    this.minimap.flush();
-    audio.sfx('levelUp');
-    this.cameras.main.flash(200, 255, 240, 200);
-    this.events.emit('banner', k.name, first ? 'THE LAND AROUND IS SKETCHED ONTO YOUR MAP' : 'A FINE VIEW. STILL.');
-    if (first) for (const h of this.party) if (!h.downed) h.gainXp(60);
-    this.bark(L, first ? 'YOU CAN SEE HALF THE KINGDOM FROM UP HERE.' : 'SAME VIEW. STILL GOOD.');
-    this.autosave('lookout');
+    this.busy = true;
+    this.onLookout = true;
+    // start painting the wider view now, while the party climbs
+    this.lookoutView = { x, y: y - 40, w: this.scale.width / ZOOM, h: this.scale.height / ZOOM };
+    this.streamer.maxResident = 120;
+    const heroes = this.party.filter((h) => !h.downed);
+    const slots = [-14, 0, 14];
+    heroes.forEach((h, i) => {
+      h.clearPath(); h.command = null; h.target = null; h.action = null; h.lift = 0;
+      this.time.delayedCall(i * 550, () => {
+        // over to the ladder, up it, then along the deck to a spot at the rail
+        h.view = 'up'; h.flip = false; h.anim = ''; h.play('walk');
+        this.tweens.add({ targets: h, x: foot.x, y: foot.y, duration: Math.min(600, 120 + Math.hypot(h.x - foot.x, h.y - foot.y) * 4), onComplete: () => {
+          audio.sfx('step');
+          this.tweens.add({ targets: h, lift: LIFT, y: y + 2, duration: 750, ease: 'Sine.easeInOut', onComplete: () => {
+            h.view = slots[i] ? 'side' : 'down'; h.flip = slots[i] < 0; h.anim = ''; h.play('walk');
+            this.tweens.add({ targets: h, x: x + (slots[i] ?? 0), duration: 250, onComplete: () => { h.view = 'down'; h.anim = ''; h.play('idle'); } });
+          } });
+        } });
+      });
+    });
+    // once everyone's up: pull the camera back and take it all in
+    this.time.delayedCall((heroes.length - 1) * 550 + 1350, () => {
+      cam.stopFollow();
+      cam.pan(x, y - 40, 900, 'Sine.easeInOut');
+      cam.zoomTo(ZOOM, 1300, 'Sine.easeInOut');
+      audio.sfx('curseLift');
+      this.minimap.reveal(k.x, k.y, k.r);
+      this.minimap.flush();
+      this.events.emit('banner', k.name, first ? 'THE LAND AROUND IS SKETCHED ONTO YOUR MAP' : 'TAP ANYWHERE TO CLIMB DOWN');
+      if (first) for (const h of heroes) h.gainXp(60);
+      this.time.delayedCall(1500, () => this.bark(this.leader, first ? 'YOU CAN SEE HALF THE KINGDOM FROM UP HERE.' : 'SAME VIEW. STILL GOOD.'));
+      this.autosave('lookout');
+      // tap (or Esc / Space) to come back down
+      this.time.delayedCall(1400, () => {
+        if (this.ui) { this.ui.tweens.killTweensOf(this.ui.toast); this.ui.toast.setText('TAP TO CLIMB DOWN').setAlpha(1); }
+        const down = () => { this.input.off('pointerdown', down); this.input.keyboard?.off('keydown-ESC', down); this.input.keyboard?.off('keydown-SPACE', down); this.leaveLookout(k, heroes); };
+        this.input.on('pointerdown', down);
+        this.input.keyboard?.on('keydown-ESC', down);
+        this.input.keyboard?.on('keydown-SPACE', down);
+      });
+    });
+  }
+
+  leaveLookout(k, heroes) {
+    const cam = this.cameras.main, x = k.x * TILE + 8, y = k.y * TILE + 8;
+    if (this.ui) { this.ui.tweens.killTweensOf(this.ui.toast); this.ui.toast.setAlpha(0); }
+    cam.zoomTo(1, 900, 'Sine.easeInOut');
+    cam.pan(x, y + 20, 900, 'Sine.easeInOut');
+    audio.sfx('click');
+    const spots = [[0, 26], [-14, 32], [14, 32]];
+    heroes.forEach((h, i) => this.time.delayedCall(i * 380, () => {
+      h.view = 'up'; h.anim = ''; h.play('walk');
+      this.tweens.add({ targets: h, x, duration: 200, onComplete: () => {
+        this.tweens.add({ targets: h, lift: 0, y: y + 12, duration: 650, ease: 'Sine.easeInOut', onComplete: () => {
+          h.view = 'down'; h.anim = ''; h.play('walk');
+          this.tweens.add({ targets: h, x: x + spots[i][0], y: y + spots[i][1], duration: 280, onComplete: () => { h.anim = ''; h.play('idle'); h.lift = 0; } });
+        } });
+      } });
+    }));
+    this.time.delayedCall((heroes.length - 1) * 380 + 1250, () => {
+      for (const h of heroes) h.lift = 0;
+      cam.startFollow(this.leader.sprite, true, 0.12, 0.12);
+      this.lookoutView = null;
+      this.streamer.maxResident = 40;
+      this.onLookout = false;
+      this.busy = false;
+    });
   }
 
   grapple(o) {
@@ -2338,7 +2405,9 @@ export class Game extends Phaser.Scene {
     const dt = Math.min(0.05, deltaMs / 1000) * sp;
     const L = this.leader;
     const view = this.cameras.main.worldView;
-    this.streamer.update(L.x, L.y, view.width || this.scale.width, view.height || this.scale.height);
+    // up a lookout the view is zoomed out: stream terrain for the wider area (prefetched during the climb)
+    const lv = this.lookoutView;
+    this.streamer.update(lv ? lv.x : L.x, lv ? lv.y : L.y, lv ? lv.w : view.width || this.scale.width, lv ? lv.h : view.height || this.scale.height);
     this.state.playTime += deltaMs / 1000;
 
     // lazy biome assets: start loading before the party gets there

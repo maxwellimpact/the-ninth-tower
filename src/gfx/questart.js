@@ -1,6 +1,7 @@
 // Small props for errands: Biscuit the dog, a glint in the shallows, the
 // ruin bells, Marla's goods cart and the tavern rumour board.
 import { makeCanvas, grid, outline, px } from './pixel.js';
+import { PAL } from './palette.js';
 
 const DOG = { B: 'dirtL', b: 'dirt', d: 'dirtD', W: 'bone', E: 'ink', N: 'ink', T: 'redL' };
 export function dogFrames() {
@@ -155,31 +156,47 @@ export function shrine(lit = true) {
 }
 
 // Lookout tower: a tall timber watch platform with a ladder.
+// Lookout watchtower: four braced stilts, a ladder up the front, a platform
+// wide enough for the party, a railing and a pennant. The front railing is a
+// separate texture drawn over the heroes standing on the platform.
+const TW = 52, TH = 90;
+function towerPal() { return { d: PAL.woodD, w: PAL.wood, l: PAL.woodL, ink: PAL.ink, r: PAL.red, R: PAL.redL }; }
 export function lookout() {
-  const [c, ctx] = makeCanvas(26, 48);
-  grid(ctx, [
-    '...rrrrrrrrrrrrrr...',
-    '..rRRRRRRRRRRRRRRr..',
-    '.rRRRRRRRRRRRRRRRRr.',
-    'dwwwwwwwwwwwwwwwwwwd',
-    'dWWWWWWWWWWWWWWWWWWd',
-    'dd.d............d.dd',
-    '.d..d..........d..d.',
-    '.d...d...ll...d...d.',
-    '.d....d..ll..d....d.',
-    '.d.....d.ll.d.....d.',
-    '.d......dlld......d.',
-    '.d.......ll.......d.',
-    '.d......dlld......d.',
-    '.d.....d.ll.d.....d.',
-    '.d....d..ll..d....d.',
-    '.d...d...ll...d...d.',
-    '.d..d....ll....d..d.',
-    '.d.d.....ll.....d.d.',
-    '.dd......ll......dd.',
-    '.d.......ll.......d.',
-    'ddd......ll......ddd',
-  ], { r: 'redD', R: 'red', d: 'woodD', w: 'woodD', W: 'wood', l: 'woodL' }, 3, 6);
+  const [c, ctx] = makeCanvas(TW, TH);
+  const P = towerPal();
+  const R = (col, x, y, w, h) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
+  const line = (col, x0, y0, x1, y1) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) R(col, Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1); };
+  // back stilts (shaded) and their bracing
+  R(P.d, 10, 34, 2, 52); R(P.d, 40, 34, 2, 52);
+  line(P.d, 11, 44, 40, 64); line(P.d, 40, 44, 11, 64);
+  // pennant pole at the back corner
+  R(P.d, 46, 2, 1, 22); R(P.r, 47, 3, 6, 3); R(P.R, 47, 3, 4, 1); R(P.r, 47, 6, 3, 1);
+  // back railing
+  R(P.d, 3, 18, 46, 2); R(P.w, 3, 18, 46, 1);
+  for (const x of [3, 15, 26, 37, 48]) R(P.d, x, 18, 2, 13);
+  // platform deck (planks) with a darker front edge
+  R(P.w, 1, 30, 50, 7);
+  for (let x = 1; x < 51; x += 6) R(P.d, x, 30, 1, 7);
+  R(P.l, 1, 30, 50, 1);
+  R(P.d, 1, 36, 50, 3);
+  // front stilts with highlights
+  for (const x of [5, 45]) { R(P.d, x, 38, 3, 52); R(P.l, x, 38, 1, 52); }
+  line(P.w, 7, 50, 45, 72); line(P.w, 45, 50, 7, 72);
+  line(P.w, 7, 72, 45, 88); line(P.w, 45, 72, 7, 88);
+  // ladder up the middle, rungs every 5px
+  R(P.d, 21, 33, 2, 57); R(P.d, 30, 33, 2, 57);
+  R(P.l, 21, 33, 1, 57); R(P.l, 30, 33, 1, 57);
+  for (let y = 38; y < 90; y += 5) R(P.l, 22, y, 9, 1);
+  outline(c, 'ink');
+  return c;
+}
+export function lookoutFront() {
+  const [c, ctx] = makeCanvas(TW, TH);
+  const P = towerPal();
+  const R = (col, x, y, w, h) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
+  // front railing at the deck's lip, with a gap where the ladder comes up
+  for (const [x0, x1] of [[1, 21], [32, 51]]) { R(P.d, x0, 24, x1 - x0, 2); R(P.l, x0, 24, x1 - x0, 1); }
+  for (const x of [1, 11, 19, 32, 40, 49]) R(P.d, x, 24, 2, 12);
   outline(c, 'ink');
   return c;
 }

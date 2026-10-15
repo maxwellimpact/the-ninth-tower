@@ -72,10 +72,12 @@ export class Unit {
       this.flashT -= dt;
       if (this.flashT <= 0) this.restoreTint();
     }
-    this.sprite.setPosition(Math.round(this.x), Math.round(this.y));
+    // lift: standing up on something (a lookout platform) — drawn higher, sorted as if on the ground
+    const lift = this.lift || 0;
+    this.sprite.setPosition(Math.round(this.x), Math.round(this.y - lift));
     this.sprite.setFlipX(this.flip);
-    this.sprite.setDepth(this.y);
-    this.shadow.setPosition(Math.round(this.x) + 1, Math.round(this.y) + 1);
+    this.sprite.setDepth(this.y + (lift ? 4 : 0));
+    this.shadow.setPosition(Math.round(this.x) + 1, Math.round(this.y - lift) + 1);
   }
 
   restoreTint() { this.sprite.clearTint(); }

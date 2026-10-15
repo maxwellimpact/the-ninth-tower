@@ -249,7 +249,7 @@ export class UI extends Phaser.Scene {
     box.add([dim, g, head, icon, name, desc, tap]);
     box.setAlpha(0);
     this.tweens.add({ targets: box, alpha: 1, duration: 250 });
-    this.tweens.add({ targets: icon, scale: 3.4, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    this.tweens.add({ targets: icon, scale: 3.4, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     // swallow taps; ignore them for a moment so a tap already in flight doesn't dismiss it
     const zone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(81).setInteractive();
     let ready = false;
