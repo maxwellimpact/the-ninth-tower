@@ -52,7 +52,7 @@ export class UI extends Phaser.Scene {
     this.dbgBtn = this.makeButton('icon_bug', () => this.toggleDebug(), '`', null, 14);
 
     // minimap (2px per tile window centred on the leader); tap for the world map
-    this.MM = { w: 64, h: 44, s: 2 };
+    this.MM = { w: 72, h: 48, s: 1 }; // 1px per tile: about 3x the screen's width of land around you
     this.mmFrame = this.add.graphics();
     this.mmImg = this.add.image(0, 0, 'minimap').setOrigin(0).setScale(this.MM.s);
     this.mmG = this.add.graphics();

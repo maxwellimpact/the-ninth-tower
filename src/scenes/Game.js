@@ -2479,7 +2479,7 @@ export class Game extends Phaser.Scene {
     this.revealT = (this.revealT || 0) - deltaMs / 1000;
     if (this.revealT <= 0) {
       this.revealT = 0.25;
-      this.minimap.reveal(Math.floor(tx), Math.floor(ty), region === 'cave' ? 6 : 10);
+      this.minimap.reveal(Math.floor(tx), Math.floor(ty), region === 'cave' ? 6 : 13);
       this.minimap.flush();
     }
 
