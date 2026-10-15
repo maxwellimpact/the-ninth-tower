@@ -107,6 +107,7 @@ export class UI extends Phaser.Scene {
     game.events.on('banner', this.showBanner, this);
     game.events.on('dialogue', this.openDialog, this);
     game.events.on('loot', this.showLoot, this);
+    game.events.on('keyItem', this.showKeyItem, this);
     game.events.on('partyChanged', this.buildPortraits, this);
     game.events.on('boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }, this);
     game.events.on('saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }, this);
@@ -227,6 +228,41 @@ export class UI extends Phaser.Scene {
     this.tweens.add({ targets: this.bannerT, alpha: 1, y: by, duration: 400 });
     this.tweens.add({ targets: this.bannerS, alpha: 1, duration: 400, delay: 200 });
     this.tweens.add({ targets: [this.bannerT, this.bannerS], alpha: 0, duration: 600, delay: 3200 });
+  }
+
+  // Key item card: the game is paused behind it until it's tapped away.
+  showKeyItem(def, onClose) {
+    const W = this.W, H = this.H;
+    const w = Math.min(220, W - 16), h = 128, x = Math.round((W - w) / 2), y = Math.round(H * 0.32 - h / 2);
+    const box = this.add.container(0, 0).setDepth(80);
+    const dim = this.add.rectangle(0, 0, W, H, 0x0a0710, 0.6).setOrigin(0);
+    const g = this.add.graphics();
+    panel(g, x, y, w, h, C.night, C.gold);
+    g.fillStyle(C.ink).fillRect(Math.round(W / 2) - 26, y + 18, 52, 46);
+    const head = this.add.bitmapText(Math.round(W / 2), y + 7, 'fontPlain', 'KEY ITEM ACQUIRED').setOrigin(0.5, 0).setTint(0xf2c14e);
+    const icon = this.add.image(Math.round(W / 2), y + 41, def.icon).setScale(3);
+    const name = this.add.bitmapText(Math.round(W / 2), y + 70, 'fontGold', def.name).setOrigin(0.5, 0).setScale(2);
+    if (name.width > w - 10) name.setScale(1);
+    const desc = this.add.bitmapText(Math.round(W / 2), y + 86, 'font', fitString(def.text, w - 14, 2)).setOrigin(0.5, 0).setCenterAlign();
+    const tap = this.add.bitmapText(Math.round(W / 2), y + h - 13, 'fontPlain', 'TAP TO CONTINUE').setOrigin(0.5, 0).setTint(0x9d93b3).setAlpha(0);
+    box.add([dim, g, head, icon, name, desc, tap]);
+    box.setAlpha(0);
+    this.tweens.add({ targets: box, alpha: 1, duration: 250 });
+    this.tweens.add({ targets: icon, scale: 3.4, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    // swallow taps; ignore them for a moment so a tap already in flight doesn't dismiss it
+    const zone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(81).setInteractive();
+    let ready = false;
+    this.time.delayedCall(700, () => { ready = true; this.tweens.add({ targets: tap, alpha: 1, duration: 300, yoyo: true, repeat: -1, hold: 400 }); });
+    const close = () => {
+      if (!ready) return;
+      ready = false;
+      this.tapUI?.();
+      zone.destroy();
+      this.input.keyboard?.off('keydown', close);
+      this.tweens.add({ targets: box, alpha: 0, duration: 200, onComplete: () => { this.tweens.killTweensOf([icon, tap]); box.destroy(true); onClose?.(); } });
+    };
+    zone.on('pointerdown', close);
+    this.input.keyboard?.on('keydown', close);
   }
 
   // Loot popup: one card per item, queued.

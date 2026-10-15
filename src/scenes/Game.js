@@ -17,6 +17,7 @@ import { newSkillState } from '../game/state.js';
 import { saveState, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
+import KEY_ITEMS from '../data/relics.json';
 import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
 import W from '../data/world.json';
@@ -439,6 +440,22 @@ export class Game extends Phaser.Scene {
       if (can) ask.choices = [['PLAY (10G)', play], ['NOT NOW', () => { this.flags.metBruno = true; }]];
       this.events.emit('dialogue', [...lines.slice(this.flags.metBruno ? 1 : 0), ask], () => { this.flags.metBruno = true; });
     }
+  }
+
+  // Key items (relics) stop the game with a card that stays up until it's
+  // tapped away, so nobody misses picking one up. Anything queued on the game
+  // clock (a chest's ambush, barks) waits until play resumes.
+  acquireRelic(id, delay = 0) {
+    if (this.state.relics.includes(id)) return;
+    this.state.relics.push(id);
+    this.autosave('relic');
+    const show = () => {
+      if (this.scene.isPaused()) { this.time.delayedCall(300, show); return; }
+      this.scene.pause();
+      audio.sfx('levelUp');
+      this.events.emit('keyItem', KEY_ITEMS[id] || { name: id.toUpperCase(), icon: 'icon_bag', text: '' }, () => this.scene.resume());
+    };
+    this.time.delayedCall(delay, show);
   }
 
   openOverlay(key) {
@@ -1467,14 +1484,7 @@ export class Game extends Phaser.Scene {
       ...Object.entries(c.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`),
       ...Object.entries(c.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean);
     if (extras.length) this.time.delayedCall(loot.length ? 2600 * loot.length : 0, () => this.events.emit('banner', 'TREASURE!', extras.join(', ')));
-    const RELICS = {
-      grapple: ['GRAPPLE HOOK ACQUIRED', 'TAP A HOOK POST TO HAUL UP A LEDGE OR SWING OVER WATER'],
-      tide: ['TIDE CHARM ACQUIRED', 'THE PARTY CAN SWIM THROUGH DEEP WATER'],
-    };
-    if (c.relic && !this.state.relics.includes(c.relic)) {
-      this.state.relics.push(c.relic);
-      this.time.delayedCall(2600, () => { audio.sfx('levelUp'); this.events.emit('banner', ...(RELICS[c.relic] || [c.relic.toUpperCase(), ''])); });
-    }
+    if (c.relic) this.acquireRelic(c.relic, 450);
     // some chests are bait: hollow guards rise when the lid opens
     if (c.ambush) this.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) this.spawnEnemy(k, x * TILE + 8, y * TILE + 8, true); this.bark(h, 'THE ARMOUR IS MOVING!'); });
     this.time.delayedCall(1800, () => this.bark(h, BARKS.chest[h.def.id]));

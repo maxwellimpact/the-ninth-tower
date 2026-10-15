@@ -231,11 +231,7 @@ export class QuestManager {
     if (r.xp) { for (const h of sc.party) if (!h.downed) h.gainXp(r.xp); out.push(`${r.xp} XP`); }
     if (r.mats) addMats(st, r.mats);
     if (r.potions) { addPotions(st, r.potions); out.push(Object.entries(r.potions).map(([k, n]) => `${n} ${k.toUpperCase()}${n > 1 ? 'S' : ''}`).join(' ')); }
-    if (r.relic && !st.relics.includes(r.relic)) {
-      st.relics.push(r.relic);
-      const names = { lantern: ['LANTERN OF EMBERS ACQUIRED', 'DARK CAVES ARE NOW LIT AROUND YOU'] };
-      sc.time.delayedCall(1200, () => { audio.sfx('levelUp'); sc.events.emit('banner', ...(names[r.relic] || [r.relic.toUpperCase(), ''])); });
-    }
+    if (r.relic) sc.acquireRelic(r.relic, 900);
     if (r.recruit) sc.time.delayedCall(600, () => sc.addRecruit(r.recruit, sc.leader.x + 14, sc.leader.y + 8));
     if (r.sp) { for (const id of st.recruited) st.heroes[id].sp = (st.heroes[id].sp || 0) + r.sp; out.push(`+${r.sp} SKILL POINT`); }
     const give = [];

@@ -10,6 +10,7 @@ import { itemTex } from '../game/itemtex.js';
 import { fitString } from './textfit.js';
 import { TRAITS } from '../game/itemgen.js';
 import { ERRANDS } from '../game/quests.js';
+import KEY_ITEMS from '../data/relics.json';
 import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
 
@@ -545,8 +546,9 @@ export class Menu extends Phaser.Scene {
     y += Math.ceil(2 / cols) * 22 + 6;
     this.t(x, y, 'COLLECTION', 'fontGold'); y += 10;
     row('icon_fly', 'GOLDEN FLIES', `${st.flies.length}/10`, 0);
-    if (st.relics.includes('grapple')) row('icon_step', 'GRAPPLE HOOK', 'OWNED', 1);
-    y += 50;
+    const keys = Object.entries(KEY_ITEMS).filter(([k]) => st.relics.includes(k));
+    keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 1));
+    y += Math.ceil((keys.length + 1) / cols) * 22 + 6;
     if (y < H - 20) this.t(x, y, 'POTIONS: TAP THE FLASKS ON THE HUD (H / J). GATHER HERBS, ORE AND CRYSTALS; FOES DROP GEL AND SCRAP.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
   }
 }

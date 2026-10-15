@@ -1,0 +1,17 @@
+{
+ "grapple": {
+  "name": "GRAPPLE HOOK",
+  "icon": "icon_grapple",
+  "text": "TAP A HOOK POST TO HAUL THE PARTY UP ONTO A HIGH LEDGE."
+ },
+ "tide": {
+  "name": "TIDE CHARM",
+  "icon": "icon_tide",
+  "text": "THE PARTY CAN NOW SWIM THROUGH DEEP WATER."
+ },
+ "lantern": {
+  "name": "LANTERN OF EMBERS",
+  "icon": "icon_lantern",
+  "text": "DARK CAVES ARE NOW LIT AROUND YOU."
+ }
+}
