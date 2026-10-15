@@ -4,8 +4,6 @@
  "xpBase": 90,
  "xpPerLevel": 85,
  "fineDropChance": 0.165,
- "ultChargeDeal": 0.2,
- "ultChargeTake": 0.35,
  "difficulty": {
   "easy": 0.6,
   "normal": 1.0,
@@ -34,5 +32,9 @@
  ],
  "skillRankBonus": 0.2,
  "activeSlots": 3,
- "passiveSlots": 2
+ "passiveSlots": 2,
+ "ultPerFoe": 6,
+ "ultHitMin": 0.25,
+ "ultHitMax": 2.5,
+ "ultTakeFull": 25
 }

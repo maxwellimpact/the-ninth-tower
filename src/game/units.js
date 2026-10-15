@@ -425,7 +425,7 @@ export class Hero extends Unit {
     if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
     if (this.action?.type === 'harvest') this.scene.cancelHarvest(this);
     amount = Math.max(1, Math.round(mitigate(amount, this.stats.def * this.buffMul('def'), src?.level || 1)));
-    this.addUlt(amount * tuning.ultChargeTake);
+    this.addUlt((amount / this.maxHp) * tuning.ultTakeFull); // losing a whole health bar is worth ~25
     const ret = this.passive('retribution');
     if (ret) { const bash = this.skills.find((k) => k.id === 'bash'); if (bash) bash.t = Math.max(0, bash.t - 0.5 - 0.1 * (ret - 1)); }
     if (this.shield > 0) {

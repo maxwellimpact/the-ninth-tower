@@ -1009,6 +1009,7 @@ export class Game extends Phaser.Scene {
       }
     }
     target.lastElement = el;
+    const hpBefore = target.hp;
     const dealt = target.damage(amount, src, { crit, knock });
     if (!dealt) return;
     if (!noProc && target.applyElement) {
@@ -1030,7 +1031,12 @@ export class Game extends Phaser.Scene {
       if (crit && spell && src.passive('studious') && now > (src.stT || 0)) { src.stT = now + 1000; const k = [...src.skills].sort((a, b) => b.t - a.t)[0]; if (k) k.t = Math.max(0, k.t - 1); }
       if (src.passive('lightfingers') && !target.fingered && target.s?.gold) { target.fingered = true; if (Math.random() < 0.15 + 0.03 * (src.passive('lightfingers') - 1)) { for (let i = 0; i < 3; i++) this.dropCoin(target.x, target.y); this.floatText(target.x, target.y - 34, 'PILFERED', 'fontPlain', 0xf2c14e); } }
     }
-    src.addUlt?.(dealt * tuning.ultChargeDeal);
+    // ultimate charge: by the share of the foe's health actually taken (overkill doesn't count),
+    // so a whole regular foe is worth ~6 points and one hit is never more than a nudge
+    if (src.addUlt && target.maxHp) {
+      const share = Math.min(dealt, Math.max(0, hpBefore)) / target.maxHp;
+      src.addUlt(Math.max(tuning.ultHitMin, Math.min(tuning.ultHitMax, share * tuning.ultPerFoe)));
+    }
     if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
     if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
@@ -1058,6 +1064,15 @@ export class Game extends Phaser.Scene {
     }
     s.setRotation(Math.atan2(o.vy, o.vx));
     this.projectiles.push({ ...o, s, life: o.life ?? 1.2, trail: 0 });
+  }
+
+  // Fizzle anything in flight (before cutscenes and climbing a lookout, which freeze the
+  // world: otherwise a fireball hangs in mid-air until play resumes).
+  clearProjectiles() {
+    for (const p of this.projectiles) { this.fx.burst('spark', p.x, p.y, 3); p.s?.destroy(); }
+    for (const p of this.enemyShots || []) p.s?.destroy();
+    this.projectiles = [];
+    this.enemyShots = [];
   }
 
   updateProjectiles(dt) {
@@ -1550,16 +1565,17 @@ export class Game extends Phaser.Scene {
   // while you look). Tap anywhere to climb back down.
   climbLookout(k) {
     if (this.busy || this.onLookout) return;
-    if (this.combatHold > 0) { this.bark(this.leader, 'NOT NOW - WE\'RE A BIT BUSY!'); return; }
+    if (this.combatHold > 0 || this.enemies.some((e) => e.alive && e.engaged)) { this.bark(this.leader, 'NOT NOW - WE\'RE A BIT BUSY!'); return; }
+    this.clearProjectiles();
     const cam = this.cameras.main, x = k.x * TILE + 8, y = k.y * TILE + 8;
-    const ZOOM = 0.5, LIFT = 51, foot = { x, y: y + 12 };
+    const ZOOM = 1 / 3, LIFT = 51, foot = { x, y: y + 12 };
     const first = !this.flags[`lookout_${k.id}`];
     this.flags[`lookout_${k.id}`] = true;
     this.busy = true;
     this.onLookout = true;
     // start painting the wider view now, while the party climbs
     this.lookoutView = { x, y: y - 40, w: this.scale.width / ZOOM, h: this.scale.height / ZOOM };
-    this.streamer.maxResident = 120;
+    this.streamer.maxResident = 220; // the wide view needs ~9x the ground; released on the way down
     const heroes = this.party.filter((h) => !h.downed);
     const slots = [-14, 0, 14];
     heroes.forEach((h, i) => {
@@ -1937,6 +1953,7 @@ export class Game extends Phaser.Scene {
     const cam = this.cameras.main, L = this.leader;
     const at = (ms, fn) => this.time.delayedCall(ms, fn);
     this.busy = true;
+    this.clearProjectiles();
     for (const h of this.party) { h.clearPath(); h.command = null; h.target = null; }
     g.introT = 99;
     g.sprite.setAlpha(0); g.shadow.setAlpha(0);

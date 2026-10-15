@@ -540,6 +540,11 @@ Where this part changes an earlier **[DRAFT]** section, it says so, and the earl
   - **Splash damage** (Fireball, Blast Arrow) hits the target in full and everything else for 45%. Only the direct hit applies the element.
   - **Burn** ticks for 0.12× ATK. Chain Lightning loses 30% per jump.
   - **Gear cooldown reduction is capped at 30%.** Crit-based cooldown refunds (Studious, Quick Hands) can trigger at most once per second.
+- **Ultimate charge [REVISED in playtest]:**
+  - **Dealing damage:** charge depends on the share of the foe's health a hit actually removes (overkill doesn't count). Taking down a whole regular foe is worth about 6 of the meter's 100 points.
+  - **Per hit:** at least 0.25 (so long boss fights still charge), at most 2.5.
+  - **Taking damage:** losing a whole health bar is worth 25.
+  - **Over time:** the meter also fills by itself, about 45 s from empty.
 - **Cooldowns only, no mana bar.** **[REVISED from §9]** Focus is dropped: a phone HUD already shows cooldown arcs, and a second resource is one more thing to read mid-fight.
 - **New skills unlock** at levels 1 (2 skills), 4, 8, 12 and 16. The ultimate upgrades at level 20 with an **Ultimate Tome** from the Trainers' Hall.
 - **Combat grid with 3 skills:** the top row stays ULT, ALLY 1, ALLY 2. The bottom row becomes DODGE, S1, S2, S3. That's 4 columns, about 158 px, which still fits portrait. *(See question 2.)*
@@ -1323,9 +1328,9 @@ The leader speaks a one-line thought the first time the player reaches each beat
 
 ### 3. Lookout tower [BUILT]
 One climbable watchtower per region (6 total) that overlooks the region's key landmarks. Fenwatch, for example, sees the Abbey, the vine and the bog.
-- **Climbing:** the party climbs the ladder one by one and lines up on the platform. The camera pulls back to 0.5× zoom, showing four times the area. Tap (or Esc/Space) to climb down.
+- **Climbing:** the party climbs the ladder one by one and lines up on the platform. The camera pulls back to ⅓× zoom, showing nine times the area. Tap (or Esc/Space) to climb down. Spells in flight fizzle when the climb starts.
 - **First climb:** reveals the area on the map and gives 60 XP. Not usable mid-combat.
-- **Performance rule:** only terrain and scenery stream in for the wider view, and loading starts during the climb. Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 120) is released on the way down.
+- **Performance rule:** only terrain and scenery stream in for the wider view, and loading starts during the climb. Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 220; about 45 chunks are used) is released on the way down.
 - **Placement rule:** on open ground with nothing within 4 tiles, outside any curse circle, and within about 12 tiles of the dungeon entrance or the stone.
 
 ### 4. Boss rules [BUILT]
@@ -1462,5 +1467,5 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Region music variations (Highmeadow, Mistfen, Depths, Hearth); Mother Murk reworked; key items pause with a card; menus scroll, long names slide, NEW gear tracking |
 | 2026-10-15 | Every lieutenant is fought twice: a Shadow in the dungeon at a sacred place, then the true form rising at the Ward Stone. A cursed vine ties stone to sacred place and withers when the Shadow dies. Cinematic boss entrances. The lead hero thinks out loud at each beat of the arc (C12) |
 | 2026-10-15 | Skill power budget: modest rank-1 skills (25–35% of basic DPS per target), +20% per rank, longer cooldowns (8–18 s), weaker splash, crit refunds rate-limited, CDR cap 30% |
-| 2026-10-15 | Lookout towers are climbable watchtowers that zoom the camera out to 0.5×; one per region (C12). Built: Highmeadow and Fenwatch |
+| 2026-10-15 | Lookout towers are climbable watchtowers that zoom the camera out to ⅓×; one per region (C12). Built: Highmeadow and Fenwatch |
 | 2026-10-15 | Health and ultimate values are guarded against invalid numbers (keep the last good value and report the cause) after errand fights rebuilt on load produced NaN levels |
