@@ -208,7 +208,7 @@ export class UI extends Phaser.Scene {
     // in a grey frame. Portrait: the two-row grid in the bottom-left corner.
     const colX = (c) => 6 + L0 + c * 38;
     const rowB = H - 40, rowT = rowB - 40;
-    this.rowMode = this.W > this.H && W - L0 >= 380;
+    this.rowMode = this.W > this.H && W - L0 >= 260; // any landscape phone (the compact row needs ~230px, even with notch insets)
     this.grpG ??= this.add.graphics().setDepth(-1);
     this.grpG.clear();
     this.rowKey = null; // re-pack the landscape row on the next frame
