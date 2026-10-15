@@ -46,8 +46,10 @@ export class UI extends Phaser.Scene {
     this.bagBtn = this.makeButton('icon_bag', () => this.g.openMenu(), 'I');
     this.potBtn = this.makeButton('icon_potion', () => this.g.usePotion('potion'), 'H', null, 18);
     this.elxBtn = this.makeButton('icon_elixir', () => this.g.usePotion('elixir'), 'J', null, 18);
+    this.antBtn = this.makeButton('icon_antidote', () => this.g.usePotion('antidote'), 'K', null, 18);
     this.potTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.elxTxt = this.add.bitmapText(0, 0, 'font', '0');
+    this.antTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.muteBtn = this.makeButton('icon_soundOn', () => this.g.toggleMute(), 'M', null, 14);
     this.dbgBtn = this.makeButton('icon_bug', () => this.toggleDebug(), '`', null, 14);
 
@@ -109,6 +111,7 @@ export class UI extends Phaser.Scene {
     game.events.on('dialogue', this.openDialog, this);
     game.events.on('loot', this.showLoot, this);
     game.events.on('keyItem', this.showKeyItem, this);
+    game.events.on('lore', this.showLore, this);
     game.events.on('partyChanged', this.buildPortraits, this);
     game.events.on('boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }, this);
     game.events.on('saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }, this);
@@ -228,8 +231,10 @@ export class UI extends Phaser.Scene {
     this.muteBtn.x = W - 22; this.muteBtn.y = 6 + T0;
     this.potBtn.x = W - 54; this.potBtn.y = H - 26;
     this.elxBtn.x = W - 76; this.elxBtn.y = H - 26;
+    this.antBtn.x = W - 98; this.antBtn.y = H - 26;
     this.potTxt.setPosition(this.potBtn.x + 12, this.potBtn.y + 11);
     this.elxTxt.setPosition(this.elxBtn.x + 12, this.elxBtn.y + 11);
+    this.antTxt.setPosition(this.antBtn.x + 12, this.antBtn.y + 11);
     this.dbgBtn.x = W - 40; this.dbgBtn.y = 6 + T0;
     this.speedDown.x = 8; this.speedDown.y = H - 100;
     this.speedUp.x = 34; this.speedUp.y = H - 100;
@@ -304,6 +309,38 @@ export class UI extends Phaser.Scene {
       zone.destroy();
       this.input.keyboard?.off('keydown', close);
       this.tweens.add({ targets: box, alpha: 0, duration: 200, onComplete: () => { this.tweens.killTweensOf([icon, tap]); box.destroy(true); onClose?.(); } });
+    };
+    zone.on('pointerdown', close);
+    this.input.keyboard?.on('keydown', close);
+  }
+
+  // Lore page card: the game pauses while you read; tap to put it away.
+  showLore(page, count, onClose) {
+    const W = this.W, H = this.H;
+    const w = Math.min(260, W - 16), x = Math.round((W - w) / 2);
+    const lines = fitString(page.text, w - 16, 9).split('\n').length;
+    const h = 40 + lines * 8 + 12, y = Math.max(4, Math.round((H - h) / 2) - 6);
+    const box = this.add.container(0, 0).setDepth(80);
+    const dim = this.add.rectangle(0, 0, W, H, 0x0a0710, 0.6).setOrigin(0);
+    const g = this.add.graphics();
+    panel(g, x, y, w, h, 0x2a2238, C.gold);
+    g.fillStyle(0xe8dcc0, 0.08).fillRect(x + 3, y + 3, w - 6, h - 6);
+    const head = this.add.bitmapText(x + 8, y + 6, 'fontPlain', `LORE PAGE  ${count} / 40`).setTint(0x9d93b3);
+    const title = this.add.bitmapText(x + 8, y + 16, 'fontGold', fitString(page.title, w - 16));
+    const body = this.add.bitmapText(x + 8, y + 30, 'font', fitString(page.text, w - 16, 9)).setLineSpacing(3);
+    const tap = this.add.bitmapText(x + w - 8, y + h - 11, 'fontPlain', 'TAP TO CONTINUE').setOrigin(1, 0).setTint(0x9d93b3).setAlpha(0);
+    box.add([dim, g, head, title, body, tap]).setAlpha(0);
+    this.tweens.add({ targets: box, alpha: 1, duration: 250 });
+    const zone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(81).setInteractive();
+    let ready = false;
+    this.time.delayedCall(800, () => { ready = true; this.tweens.add({ targets: tap, alpha: 1, duration: 300 }); });
+    const close = () => {
+      if (!ready) return;
+      ready = false;
+      this.tapUI?.();
+      zone.destroy();
+      this.input.keyboard?.off('keydown', close);
+      this.tweens.add({ targets: box, alpha: 0, duration: 200, onComplete: () => { box.destroy(true); onClose?.(); } });
     };
     zone.on('pointerdown', close);
     this.input.keyboard?.on('keydown', close);
@@ -542,9 +579,10 @@ export class UI extends Phaser.Scene {
     });
     if (this.rowMode) this.packRow(L);
     this.drawBtn(g, this.bagBtn, 0);
-    this.drawBtn(g, this.potBtn, 0); this.drawBtn(g, this.elxBtn, 0);
+    this.drawBtn(g, this.potBtn, 0); this.drawBtn(g, this.elxBtn, 0); this.drawBtn(g, this.antBtn, 0);
     this.potTxt.setText(`${game.state.potions.potion || 0}`).setTint(game.state.potions.potion ? 0xffffff : 0x777777);
     this.elxTxt.setText(`${game.state.potions.elixir || 0}`).setTint(game.state.potions.elixir ? 0xffffff : 0x777777);
+    this.antTxt.setText(`${game.state.potions.antidote || 0}`).setTint(game.state.potions.antidote ? 0xffffff : 0x777777);
     this.muteBtn.icon.setTexture(audio.muted ? 'icon_soundOff' : 'icon_soundOn');
     this.drawBtn(g, this.muteBtn, 0);
     this.drawBtn(g, this.dbgBtn, 0);

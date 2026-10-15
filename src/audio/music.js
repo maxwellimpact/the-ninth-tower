@@ -99,6 +99,8 @@ function buildTheme(o) {
     { inst: 'drums', layer: 'combat', events: drums, o: x.drums },
     { inst: 'cbass', layer: 'combat', events: cbass },
     { inst: 'counter', layer: 'combat', events: melody.map(([s, m, l, v]) => [s, m + 12, l, v * 0.8]) },
+    // the Bard's harp (once 10 townsfolk are home): broken chords an octave up
+    { inst: 'harp', layer: 'bard', events: CH.flatMap((ch, b) => [0, 3, 6, 10].map((st2, k) => [b * 16 + st2, ch[k % 3] + 24 + (k === 3 ? 12 : 0), 2, k ? 0.6 : 0.9])) },
   ].filter(Boolean);
   return { name: o.name, bpm: o.bpm, key: o.key || 0, steps: BARS * 16, tracks };
 }
@@ -229,6 +231,9 @@ const INST = {
   counter(e, t, out, v, sd) {
     audio.tone({ type: 'pulse', duty: 0.5, freq: midiHz(e[1]), time: t, dur: e[2] * sd * 0.5, vol: 0.05 * e[3], out, vibrato: 0.01, echo: 0.3, pan: 0.25 });
   },
+  harp(e, t, out, v, sd) {
+    audio.tone({ type: 'triangle', freq: midiHz(e[1]), time: t, dur: sd * 3, vol: 0.06 * e[3], out, decay: 0.25, sustain: 0.15, release: 0.3, echo: 0.3, pan: (e[0] % 8) < 4 ? -0.3 : 0.3 });
+  },
   drums(e, t, out) {
     if (e[1] === 'kick') audio.tone({ type: 'triangle', freq: 160, freq2: 42, time: t, dur: 0.12, vol: 0.55 * e[3], out, decay: 0.12, sustain: 0, release: 0.02 });
     else if (e[1] === 'snare') {
@@ -254,7 +259,7 @@ export class MusicPlayer {
     this.song = song;
     if (!this.nodes) {
       this.nodes = {};
-      for (const layer of ['base', 'combat']) for (const v of ['freed', 'cursed']) {
+      for (const layer of ['base', 'combat', 'bard']) for (const v of ['freed', 'cursed']) {
         const g = ctx.createGain(); g.gain.value = 0; g.connect(a.musicBus);
         this.nodes[layer + ':' + v] = g;
       }
@@ -317,12 +322,12 @@ export class MusicPlayer {
 
   targetOf(layer, v) {
     const vg = this.state.variant === v ? 1 : 0;
-    return layer === 'base' ? vg : vg * this.state.combat;
+    return layer === 'base' ? vg : layer === 'bard' ? vg * (this.state.bard ? 1 : 0) : vg * this.state.combat;
   }
 
   applyMix(tc = 0.6) {
     if (!this.nodes || this.pending) return; // mid-crossfade: the next song picks up the state
-    for (const layer of ['base', 'combat']) for (const v of ['freed', 'cursed']) {
+    for (const layer of ['base', 'combat', 'bard']) for (const v of ['freed', 'cursed']) {
       this.nodes[layer + ':' + v].gain.setTargetAtTime(this.targetOf(layer, v), audio.t, tc);
     }
   }
@@ -331,6 +336,12 @@ export class MusicPlayer {
     if (this.state.variant === v) return;
     this.state.variant = v;
     this.applyMix(tc);
+  }
+
+  setBard(on) {
+    if (!!this.state.bard === !!on) return;
+    this.state.bard = !!on;
+    this.applyMix(2);
   }
 
   setCombat(on) {

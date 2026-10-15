@@ -1808,6 +1808,46 @@
   [
    40,
    98
+  ],
+  [
+   24,
+   8
+  ],
+  [
+   56,
+   16
+  ],
+  [
+   116,
+   60
+  ],
+  [
+   183,
+   62
+  ],
+  [
+   158,
+   63
+  ],
+  [
+   41,
+   120
+  ],
+  [
+   13,
+   79
+  ],
+  [
+   100,
+   67
+  ],
+  [
+   160,
+   79
+  ],
+  [
+   272,
+   112
   ]
  ],
  "nodes": [
@@ -2066,6 +2106,24 @@
   {
    "n": 10,
    "gold": 300,
+   "potions": {
+    "antidote": 3
+   }
+  },
+  {
+   "n": 15,
+   "gold": 400,
+   "potions": {
+    "elixir": 2
+   },
+   "mats": {
+    "silver": 3,
+    "pearl": 2
+   }
+  },
+  {
+   "n": 20,
+   "gold": 500,
    "blessing": true
   }
  ],
@@ -2321,6 +2379,146 @@
     "MOTHER MURK FALLS",
     "NOTHING GUARDS THE WARD STONE NOW. BREAK IT!"
    ]
+  }
+ ],
+ "townsfolk": [
+  {
+   "id": "percy",
+   "name": "PERCY THE MILLER",
+   "look": "tam",
+   "x": 89,
+   "y": 18,
+   "quirk": "THE HEX MADE ME HICCUP BUBBLES. *HIC* ...BLOOP. IT'S HUMILIATING.",
+   "home": "NO MORE BUBBLES. MOSTLY. *BLOOP*. THAT ONE WAS ON PURPOSE."
+  },
+  {
+   "id": "nell",
+   "name": "NELL",
+   "look": "ada",
+   "x": 71,
+   "y": 63,
+   "quirk": "!EM PLEH. ...SORRY. I'VE BEEN SPEAKING BACKWARDS FOR A MONTH. IT'S THE HEX.",
+   "home": "I CAN SAY 'THANK YOU' THE RIGHT WAY ROUND. THANK YOU!"
+  },
+  {
+   "id": "bramble",
+   "name": "OLD BRAMBLE",
+   "look": "hobb",
+   "x": 56,
+   "y": 60,
+   "quirk": "MY BEARD WON'T STOP GROWING. IT'S PAST MY KNEES AND IT HAS OPINIONS.",
+   "home": "I KEPT A LITTLE OF THE BEARD. FOR LUCK.",
+   "guard": [
+    [
+     "hexling",
+     -2,
+     1
+    ],
+    [
+     "hexling",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "toby",
+   "name": "SER TOBY",
+   "look": "piet",
+   "x": 136,
+   "y": 30,
+   "quirk": "I CAN ONLY WALK IN SQUARES. LEFT, UP, RIGHT, DOWN. I'VE BEEN CIRCLING THIS ROCK FOR DAYS.",
+   "home": "I WALKED HERE IN A STRAIGHT LINE. GLORIOUS."
+  },
+  {
+   "id": "marigold",
+   "name": "MARIGOLD",
+   "look": "ada",
+   "x": 184,
+   "y": 22,
+   "quirk": "EVERYTHING I TOUCH TURNS TO PORRIDGE. I WAS A LOCKSMITH.",
+   "home": "I MADE A KEY TODAY. A REAL ONE. I CRIED.",
+   "guard": [
+    [
+     "goblin",
+     -2,
+     1
+    ],
+    [
+     "goblin",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "fenwick",
+   "name": "FENWICK",
+   "look": "wick",
+   "x": 9,
+   "y": 117,
+   "quirk": "I'M QUITE SURE I'M A HERON NOW. I'VE EATEN FOUR FISH TODAY. RAW.",
+   "home": "I'VE GONE BACK TO COOKED FISH. MOSTLY."
+  },
+  {
+   "id": "hetty",
+   "name": "HETTY",
+   "look": "ada",
+   "x": 86,
+   "y": 71,
+   "quirk": "MY SHADOW LEFT ME. IT'S OVER THERE BEHIND THE REEDS, SULKING.",
+   "home": "MY SHADOW CAME BACK. WE'RE TALKING AGAIN.",
+   "guard": [
+    [
+     "drowned",
+     -2,
+     1
+    ],
+    [
+     "drowned",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "gruff",
+   "name": "GRUFF THE COOPER",
+   "look": "tam",
+   "x": 130,
+   "y": 120,
+   "quirk": "I FLOAT A LITTLE WHEN I'M HAPPY. I HAVEN'T FLOATED IN WEEKS.",
+   "home": "LOOK! I'M FLOATING! ...AN INCH. IT COUNTS."
+  },
+  {
+   "id": "liddy",
+   "name": "LIDDY",
+   "look": "piet",
+   "x": 172,
+   "y": 72,
+   "quirk": "~THE HEX TURNED ALL MY WORDS TO SONG~ ~AND I CAN'T EVEN SING~",
+   "home": "I CAN TALK AGAIN! ...I KIND OF MISS THE SINGING.",
+   "guard": [
+    [
+     "witchling",
+     -2,
+     1
+    ],
+    [
+     "leeches",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "barty",
+   "name": "BARTHOLOMEW",
+   "look": "hobb",
+   "x": 139,
+   "y": 67,
+   "quirk": "I SNEEZE SPARKS. I'VE SET FIRE TO THREE HATS AND A GOAT. THE GOAT WAS FINE.",
+   "home": "NOT ONE SPARK ALL WEEK. THE GOAT SENDS ITS REGARDS."
   }
  ]
 }

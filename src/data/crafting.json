@@ -48,6 +48,10 @@
    "desc": "REVIVES AND HEALS THE WHOLE PARTY.",
    "heal": 0.6,
    "revive": true
+  },
+  "antidote": {
+   "name": "ANTIDOTE",
+   "desc": "CURES POISON FOR THE WHOLE PARTY, WHO STAY IMMUNE FOR 30S."
   }
  },
  "recipes": [
@@ -66,6 +70,14 @@
     "herb": 2,
     "gel": 2,
     "crystal": 1
+   }
+  },
+  {
+   "id": "antidote",
+   "makes": "antidote",
+   "needs": {
+    "bogmoss": 1,
+    "herb": 1
    }
   }
  ],

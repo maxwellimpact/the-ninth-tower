@@ -251,3 +251,14 @@ export function stairsDown() {
   outline(c, 'ink');
   return c;
 }
+
+// A loose lore page: a curled sheet of parchment with a few lines of ink.
+export function lorePage() {
+  const [c, ctx] = makeCanvas(12, 12);
+  const R = (col, x, y, w, h) => { ctx.fillStyle = PAL[col] || col; ctx.fillRect(x, y, w, h); };
+  R('bone', 2, 2, 8, 9); R('sand', 2, 9, 8, 2); R('white', 3, 2, 6, 1);
+  for (const y of [4, 6, 8]) R('woodD', 3, y, y === 8 ? 4 : 6, 1);
+  R('redD', 8, 1, 2, 2); // a wax seal corner
+  outline(c, 'ink');
+  return c;
+}

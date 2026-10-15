@@ -3,6 +3,7 @@
 // Built from authored shapes + noise; real regions will be authored in Tiled.
 // Pure (no DOM) so the terrain worker can rebuild the identical world.
 import { hash, vnoise } from '../gfx/pixel.js';
+import LORE from '../data/lore.json';
 import W from '../data/world.json';
 import QD from '../data/quests.json';
 
@@ -252,6 +253,8 @@ export function buildWorld() {
   for (const r of W.recruits) reserve(r.x, r.y, 3);
   for (const p of W.posts) reserve(p.x, p.y, 3);
   for (const f of W.flies || []) reserve(f[0], f[1], 1.5);
+  for (const t of W.townsfolk || []) reserve(t.x, t.y, 3);
+  for (const p of LORE) reserve(p.x, p.y, 1.5);
   for (const n of W.nodes || []) reserve(n.x, n.y, 1.5);
   for (const b of W.breakables || []) reserve(b.x, b.y, 3);
   for (const b of W.buildings || []) reserve(b.x, b.y + 2, 4);

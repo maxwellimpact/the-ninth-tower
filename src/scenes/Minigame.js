@@ -1,6 +1,7 @@
 // Hexling Whack: Bruno's tavern game. 30 seconds, 3x3 holes.
 // Hexling +1, golden hexling +3, curse wisp -2. Prizes by score.
 import Phaser from 'phaser';
+import { TOTAL_FLIES } from './Game.js';
 import { audio } from '../audio/synth.js';
 import { addMats, addPotions } from '../game/state.js';
 import { panel } from './UI.js';
@@ -148,6 +149,6 @@ export class Minigame extends Phaser.Scene {
     };
     const canPlay = st.gold >= 10;
     button(x + 10, 'AGAIN (10G)', () => { st.gold -= 10; this.start(); }, canPlay);
-    button(x + w - 90, 'LEAVE', () => { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); if (fly) this.g.events.emit('banner', `GOLDEN FLY!  ${st.flies.length} / 10`, 'WON AT HEXLING WHACK'); });
+    button(x + w - 90, 'LEAVE', () => { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); if (fly) this.g.events.emit('banner', `GOLDEN FLY!  ${st.flies.length} / ${TOTAL_FLIES}`, 'WON AT HEXLING WHACK'); });
   }
 }

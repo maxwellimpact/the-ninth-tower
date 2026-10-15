@@ -12,6 +12,10 @@ import { TRAITS } from '../game/itemgen.js';
 import { ERRANDS } from '../game/quests.js';
 import KEY_ITEMS from '../data/relics.json';
 import DISCIPLINES from '../data/disciplines.json';
+import LORE from '../data/lore.json';
+import WORLD from '../data/world.json';
+import { TOTAL_FLIES } from './Game.js';
+const W_TOWNSFOLK = WORLD.townsfolk;
 import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
 
@@ -656,7 +660,7 @@ export class Menu extends Phaser.Scene {
     let y = 26;
     const act = Qm.active(), done = Object.keys(st.quests).filter((id) => st.quests[id].done);
     this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
-    if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); y += 24; }
     for (const id of act) {
       if (y + 30 > H - 4) break;
       const tracked = st.tracked === id;
@@ -672,6 +676,22 @@ export class Menu extends Phaser.Scene {
       y += 4;
       this.t(x, y, 'COMPLETED', 'fontPlain'); y += 10;
       for (const id of done) { if (y + 10 > H - 4) break; this.t(x + 4, y, ERRANDS[id].title, 'fontPlain', 0x8cff8c); y += 10; }
+    }
+    // lore pages you've found: tap a title to read it again
+    const read = LORE.filter((p) => (st.lore || []).includes(p.id));
+    y += 8;
+    this.t(x, y, `LORE PAGES - ${read.length} / 40`, 'fontGold'); y += 12;
+    if (!read.length) { this.t(x, y, 'LOOSE PAGES ARE SCATTERED ACROSS ALDERMERE. THEY GLOW FAINTLY.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    for (const p of read) {
+      const open = this.loreOpen === p.id;
+      const body = open ? fitString(p.text, w - 12, 12) : '';
+      const bh = open ? body.split('\n').length * 8 + 4 : 0;
+      panel(g, x, y, w, 15 + bh, open ? 0x3a2f52 : C.night, open ? C.gold : C.slate);
+      this.dyn.push(this.add.image(x + 3, y + 0, 'icon_lore').setOrigin(0).setScale(0.85));
+      this.t(x + 20, y + 5, p.title, open ? 'fontGold' : 'font', undefined, w - 26);
+      if (open) this.t(x + 6, y + 16, body, 'fontPlain');
+      this.btn(x, y, w, 15 + bh, () => { this.loreOpen = open ? null : p.id; audio.sfx('click'); this.render(); });
+      y += 18 + bh;
     }
   }
 
@@ -694,12 +714,14 @@ export class Menu extends Phaser.Scene {
     y += Math.ceil(Object.keys(CRAFT.materials).length / cols) * 22 + 6;
     this.t(x, y, 'POTIONS', 'fontGold'); y += 10;
     Object.entries(CRAFT.consumables).forEach(([k, c], i) => row(`icon_${k}`, c.name, st.potions[k] || 0, i));
-    y += Math.ceil(2 / cols) * 22 + 6;
+    y += Math.ceil(Object.keys(CRAFT.consumables).length / cols) * 22 + 6;
     this.t(x, y, 'COLLECTION', 'fontGold'); y += 10;
-    row('icon_fly', 'GOLDEN FLIES', `${st.flies.length}/10`, 0);
+    row('icon_fly', 'GOLDEN FLIES', `${st.flies.length}/${TOTAL_FLIES}`, 0);
+    row('icon_bag', 'TOWNSFOLK', `${W_TOWNSFOLK.filter((t) => this.g.flags[`folk_${t.id}`]).length}/30`, 1);
+    row('icon_lore', 'LORE PAGES', `${(st.lore || []).length}/40`, 2);
     const keys = Object.entries(KEY_ITEMS).filter(([k]) => st.relics.includes(k));
-    keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 1));
-    y += Math.ceil((keys.length + 1) / cols) * 22 + 6;
-    if (y < H - 20) this.t(x, y, 'POTIONS: TAP THE FLASKS ON THE HUD (H / J). GATHER HERBS, ORE AND CRYSTALS; FOES DROP GEL AND SCRAP.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 3));
+    y += Math.ceil((keys.length + 3) / cols) * 22 + 6;
+    if (y < H - 20) this.t(x, y, 'FLASKS ON THE HUD (H / J / K): POTION, ELIXIR, ANTIDOTE. GATHER HERBS, ORE, CRYSTALS AND BOGMOSS; FOES DROP GEL AND SCRAP.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
   }
 }

@@ -34,7 +34,8 @@ export function newState(leaderId) {
     pos: null,          // { x, y } world px of the leader at save time
     difficulty: 'normal',
     materials: { herb: 0, gel: 0, ore: 0, crystal: 0, scrap: 0 },
-    potions: { potion: 2, elixir: 0 },
+    potions: { potion: 2, elixir: 0, antidote: 0 },
+    lore: [],           // lore page ids read
     refine: {},         // itemId -> +N
     gems: {},           // 'ember1' -> count (kind + grade 1-4)
     sockets: {},        // itemId -> [gemKey|null, ...]
@@ -149,6 +150,8 @@ export function loadState() {
     s.gems ??= {};
     s.sockets ??= {};
     s.fresh ??= [];
+    s.lore ??= [];
+    s.potions.antidote ??= 0;
     ensureItems(s);
     s.stats ??= { kills: 0, levelUps: [] };
     return s;

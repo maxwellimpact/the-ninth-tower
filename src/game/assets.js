@@ -177,6 +177,7 @@ GROUPS.core.push(
     s.textures.addCanvas('shrine', Q.shrine(true)); s.textures.addCanvas('shrineUsed', Q.shrine(false));
     s.textures.addCanvas('lookout', Q.lookout());
     s.textures.addCanvas('lookoutFront', Q.lookoutFront());
+    s.textures.addCanvas('lorePage', Q.lorePage());
     frames(s, 'hawk', Q.hawkFrames(), 10);
     s.textures.addCanvas('snare', Q.snareTrap());
     s.textures.addCanvas('cage', Q.cage()); s.textures.addCanvas('net', Q.net());

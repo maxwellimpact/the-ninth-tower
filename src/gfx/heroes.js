@@ -100,6 +100,7 @@ export const FOLK = {
   wick: folk('wick', 'pip', { head: 'hat_apprentice@2', body: 'robe_apprentice@3' }),
   orla: folk('orla', 'pip', { head: 'hat_star@4', body: 'robe_scholar@4' }),
   iren: folk('iren', 'sable', { head: 'bandana_red@5', body: 'leather_studded@4', weapon: 'sword_long@3' }),
+  bard: folk('bard', 'pip', { head: 'hat_star@3', body: 'robe_scholar@2' }),
   margo: folk('margo', 'sable', { head: 'hood_shadow@2', body: 'jacket_leather@5', weapon: 'dagger_kris@4' }),
 };
 

@@ -20,6 +20,7 @@ import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
 import DISCIPLINES from '../data/disciplines.json';
+import LORE from '../data/lore.json';
 import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
 import W from '../data/world.json';
@@ -49,6 +50,9 @@ const THOUGHTS = {
     open: "SHE'S GONE. NOTHING GUARDS THE STONE NOW. BREAK IT!",
   },
 };
+
+// Golden Flies in the world, plus the one won at Hexling Whack
+export const TOTAL_FLIES = W.flies.length + 1;
 
 const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
@@ -177,6 +181,7 @@ export class Game extends Phaser.Scene {
       this.calmT = 1.5; // a moment to get bearings before anything nearby notices you
       this.musicRegion = biomeAt(Math.floor(start.x / TILE), Math.floor(start.y / TILE));
       music.start(themeFor(this.musicRegion));
+      music.setBard(!!this.flags.bard);
       curtain.done();
       this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id]));
     });
@@ -419,7 +424,7 @@ export class Game extends Phaser.Scene {
       this.tweens.add({ targets: f.s, y: f.s.y - 24, alpha: 0, duration: 500, onComplete: () => f.s.destroy() });
       this.fx.burst('gold', f.x, f.y - 8, 18);
       audio.sfx('coin'); audio.sfx('levelUp');
-      this.events.emit('banner', `GOLDEN FLY!  ${this.state.flies.length} / 10`, 'THE FROG KING WILL WANT TO SEE THIS');
+      this.events.emit('banner', `GOLDEN FLY!  ${this.state.flies.length} / ${TOTAL_FLIES}`, 'THE FROG KING WILL WANT TO SEE THIS');
       this.autosave('fly');
     }
   }
@@ -510,6 +515,9 @@ export class Game extends Phaser.Scene {
       L.hp = Math.min(L.maxHp, L.hp + amt);
       this.floatText(L.x, L.y - 28, `+${amt}`, 'font', 0x8cff8c);
       this.fx.heal(L.x, L.y);
+    } else if (kind === 'antidote') {
+      for (const h of this.party) { h.poison = null; h.antidoteT = 30; if (!h.downed) h.sprite.clearTint(); this.fx.heal(h.x, h.y); }
+      this.floatText(this.leader.x, this.leader.y - 28, 'CURED', 'font', 0x8cff8c);
     } else {
       for (const h of this.party) { if (h.downed) h.revive(c.heal); else h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * c.heal)); this.fx.heal(h.x, h.y); }
     }
@@ -599,6 +607,8 @@ export class Game extends Phaser.Scene {
 
   buildLandmarks() {
     const px = (t) => t * TILE + TILE / 2;
+    this.buildTownsfolk();
+    this.buildLore();
     for (const c of W.campfires) {
       const x = px(c.x), y = px(c.y);
       this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
@@ -848,6 +858,7 @@ export class Game extends Phaser.Scene {
     kb.on('keydown-N', () => this.openMap());
     kb.on('keydown-H', () => this.usePotion('potion'));
     kb.on('keydown-J', () => this.usePotion('elixir'));
+    kb.on('keydown-K', () => this.usePotion('antidote'));
     kb.on('keydown-BACKTICK', () => this.ui?.toggleDebug());
     kb.on('keydown-ENTER', () => { if (this.ui?.dialogOpen) this.ui.advanceDialog(); });
     kb.addCapture('TAB,SPACE');
@@ -1550,6 +1561,126 @@ export class Game extends Phaser.Scene {
     });
   }
 
+  // ------------------------------------------------------- cursed townsfolk
+  // Hexed townsfolk wait around the world with odd side effects. Break the hex
+  // (some are guarded) and they head home to Brightwater, where they stay. At
+  // 10 rescued the Bard returns (and the music gains a harp).
+  folkCount() { return W.townsfolk.filter((t) => this.flags[`folk_${t.id}`]).length; }
+
+  buildTownsfolk() {
+    const px = (t) => t * TILE + TILE / 2;
+    const homes = this.townsfolkHomes();
+    W.townsfolk.forEach((t, i) => {
+      const saved = !!this.flags[`folk_${t.id}`];
+      const [hx, hy] = saved ? homes[i] : [t.x, t.y];
+      const x = px(hx), y = px(hy);
+      const s = this.add.sprite(x, y, t.look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${t.look}_idle_down`).setDepth(y);
+      this.add.image(x + 1, y + 1, 'shadow').setAlpha(0.2).setDepth(-4);
+      const f = { t, s, x, y, saved };
+      if (!saved) {
+        s.setTint(0xb48ce0);
+        f.ring = this.add.graphics().setDepth(-5);
+        f.ring.lineStyle(1, 0xd9b8ff, 0.7).strokeEllipse(x, y + 2, 26, 11).lineStyle(1, 0x8a5cc4, 0.5).strokeEllipse(x, y + 2, 18, 7);
+        this.tweens.add({ targets: s, y: y - 2, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+      f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', interact: () => this.talkTownsfolk(f) });
+      this.nav.block(hx, hy);
+      (this.townsfolk ??= []).push(f);
+    });
+  }
+
+  // Free spots around the Brightwater hamlet for rescued townsfolk to live.
+  townsfolkHomes() {
+    const used = new Set([...(this.quests?.npcs || []).map((n) => `${n.x},${n.y}`)]);
+    const taken = [];
+    const out = [];
+    for (const t of W.townsfolk) {
+      let found = null;
+      for (let r = 0; r < 12 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r && !found; dx++) {
+        const x = 19 + dx, y = 39 + dy;
+        if (this.nav.isSolid(x, y) || used.has(`${x},${y}`) || taken.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5)) continue;
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        found = [x, y];
+      }
+      found ??= [19, 39];
+      taken.push(found); out.push(found);
+    }
+    return out;
+  }
+
+  talkTownsfolk(f) {
+    const t = f.t, L = this.leader;
+    L.face(f.x - L.x, f.y - L.y);
+    const me = { who: t.name, voice: { pitch: 280 + (t.id.length * 23) % 160, wave: 'square', duty: 0.25 } };
+    if (f.saved) { this.events.emit('dialogue', [{ ...me, text: t.home }]); return; }
+    const ask = { ...me, text: 'PLEASE... CAN YOU BREAK THIS HEX?' };
+    ask.choices = [['BREAK THE HEX', () => this.rescueTownsfolk(f)], ['NOT NOW', () => {}]];
+    this.events.emit('dialogue', [{ ...me, text: t.quirk }, ask]);
+  }
+
+  rescueTownsfolk(f) {
+    const t = f.t;
+    this.flags[`folk_${t.id}`] = true;
+    f.saved = true;
+    audio.sfx('curseLift');
+    this.cameras.main.flash(160, 230, 210, 255);
+    this.fx.burst('bloom', f.x, f.y - 10, 24);
+    f.ring?.destroy();
+    this.tweens.killTweensOf(f.s);
+    f.s.clearTint().setY(f.y);
+    // some hexes lash out as they break
+    if (t.guard) {
+      this.events.emit('banner', 'THE HEX LASHES OUT!', `PROTECT ${t.name}`);
+      for (const [k, dx, dy] of t.guard) this.spawnEnemy(k, f.x + dx * TILE, f.y + dy * TILE, true);
+    }
+    const n = this.folkCount();
+    this.state.gold += 25;
+    for (const h of this.party) if (!h.downed) h.gainXp(30);
+    this.time.delayedCall(t.guard ? 2400 : 400, () => {
+      this.events.emit('banner', `TOWNSFOLK RESCUED  ${n} / 30`, `${t.name} IS HEADING HOME TO BRIGHTWATER`);
+      this.bark(f.s ? { x: f.x, y: f.y, def: {} } : this.leader, 'THANK YOU! I\'LL SEE YOU IN BRIGHTWATER!');
+    });
+    this.time.delayedCall(t.guard ? 3200 : 1400, () => {
+      this.tweens.add({ targets: f.s, alpha: 0, x: f.x + 30, duration: 900, onComplete: () => f.s.setVisible(false) });
+      this.removeInteractable(f.o);
+      this.nav.unblock?.(Math.floor(f.x / TILE), Math.floor(f.y / TILE));
+    });
+    if (n >= 10 && !this.flags.bard) {
+      this.flags.bard = true;
+      this.time.delayedCall(5200, () => { this.events.emit('banner', 'THE BARD HAS COME HOME', 'TILLY PLAYS BY THE TAVERN DOOR - LISTEN FOR THE HARP'); music.setBard(true); audio.sfx('levelUp'); });
+    }
+    this.autosave('townsfolk');
+  }
+
+  // ------------------------------------------------------------ lore pages
+  buildLore() {
+    this.lorePages = [];
+    for (const p of LORE) {
+      if (this.state.lore?.includes(p.id)) continue;
+      const x = p.x * TILE + 8, y = p.y * TILE + 8;
+      const s = this.add.image(x, y, 'lorePage').setOrigin(0.5, 1).setDepth(y);
+      const glow = this.add.circle(x, y - 4, 9, 0xfff0a0, 0.15).setDepth(-6).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: s, y: y - 3, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: glow, alpha: 0.05, duration: 1100, yoyo: true, repeat: -1 });
+      const page = { p, s, glow };
+      page.o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 14, kind: 'lore', interact: () => this.readLore(page) });
+      this.lorePages.push(page);
+    }
+  }
+
+  readLore(page) {
+    const st = this.state;
+    st.lore ??= [];
+    if (!st.lore.includes(page.p.id)) st.lore.push(page.p.id);
+    this.removeInteractable(page.o);
+    this.tweens.killTweensOf([page.s, page.glow]);
+    page.s.destroy(); page.glow.destroy();
+    audio.sfx('chest');
+    this.scene.pause();
+    this.events.emit('lore', page.p, st.lore.length, () => this.scene.resume());
+    this.autosave('lore');
+  }
+
   // Campfires count as found once the party has been near one (or rested there).
   updateCampfires() {
     const L = this.leader;
@@ -1931,7 +2062,7 @@ export class Game extends Phaser.Scene {
       audio.sfx('chest');
       this.events.emit('dialogue', [
         { ...K, text: `GOLDEN FLIES! ${st.flies.length} OF THEM! OH, MY ROYAL TONGUE IS TINGLING.` },
-        { ...K, text: next.blessing ? 'ALL TEN! I GRANT YOU THE BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER. ALSO, 300 GOLD.' : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
+        { ...K, text: next.blessing ? `${st.flies.length} FLIES! I GRANT YOU THE BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER. ALSO, ${next.gold} GOLD.` : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
       ], () => this.autosave('frog'));
       this.events.emit('party');
       return;

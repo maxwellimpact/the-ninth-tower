@@ -949,7 +949,7 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 | Health Potion (demo) | Leader +50% HP | 2 herb + 1 gel | 30g |
 | Greater Potion | Leader +100% HP, regen 5s | 2 herb + 1 gel + 1 crystal | 90g (Alchemist) |
 | Elixir (demo) | Revives and heals the party 60% | 2 herb + 2 gel + 1 crystal | 200g (Alchemist) |
-| Antidote | Removes Poison and Bleed; immune for 30s | 1 bogmoss + 1 herb | 25g |
+| Antidote | Removes Poison and Bleed; immune for 30s **[BUILT: crafted, HUD flask K, Frog King reward]** | 1 bogmoss + 1 herb | 25g |
 | Ember Salve | Heat immunity for 5 min | 2 brimstone + 1 gel | 60g (Cinderreach outpost) |
 | Frost Tonic | Cold immunity for 5 min | 2 rimeglass + 1 herb | 60g (Frosthelm outpost) |
 | Spirit Tonic | Party +20% ATK for 60s | 2 ghostcap + 1 crystal | 120g |
@@ -1250,10 +1250,10 @@ Small, self-contained jobs from ordinary people. They're never required, but the
 ### Collectibles
 | Collectible | Count | Reward |
 |---|---|---|
-| **Golden Flies** (demo) | 60 | Frog King gifts every 10: Signet, Mitre, Bulwark of Aldermere, Lucky Coin upgrade, Gold Fly in Amber, and at 60 the **Royal Blessing** (+15% max HP and immunity to the frog curse) |
+| **Golden Flies** (demo) | 60 (Wave 1: 20 — 19 in the world + Hexling Whack; Frog King rewards at 3/6/10/15/20, blessing at 20 for now, moving to 60 when all regions exist) | Frog King gifts every 10: Signet, Mitre, Bulwark of Aldermere, Lucky Coin upgrade, Gold Fly in Amber, and at 60 the **Royal Blessing** (+15% max HP and immunity to the frog curse) |
 | **Shrines** | 12 | +1 skill point each |
-| **Cursed townsfolk** | 30 | Rebuild Brightwater: Bard, Cartographer, Ferryman, plus gold and recipes |
-| **Lore pages** | 40 | Malgrim's past, and the court-mage twist (he was Pip's master's master) |
+| **Cursed townsfolk** | 30 | Rebuild Brightwater: Bard, Cartographer, Ferryman, plus gold and recipes. **Built (Wave 1): 10** (Vale 3, Highmeadow 2, Mistfen 5). Each is hexed with a comic side effect (hiccups bubbles, speaks backwards, turns things to porridge...). Breaking the hex gives 25 gold and 30 XP; 4 are guarded and the hex lashes out with enemies. Rescued folk move into homes around the hamlet with a new line each. **At 10 the Bard (Tilly) returns and adds a harp layer to every theme** |
+| **Lore pages** | 40 | Malgrim's past, and the court-mage twist (he was Pip's master's master). **Built (Wave 1): 12** (Vale 2, Highmeadow 2, Undercroft 3, Mistfen 2, Abbey 3), telling the decree, the night of the curse, the Tower as a lens, Malgrim's letter, and the drained shrine and altar. Reading one pauses on a parchment card; the Journal keeps them to reread |
 | **Lookout towers** | 6 | Climbable watchtowers (C12). The first climb reveals the area on the map and gives 60 XP; all six give the Wanderer's Charm. Built: Highmeadow and Fenwatch (Mistfen) |
 | **Sealed Vaults** | 5 | Uniques (need relics from other regions) |
 
@@ -1489,3 +1489,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Lookout towers are climbable watchtowers that zoom the camera out to ⅓×; one per region (C12). Built: Highmeadow and Fenwatch |
 | 2026-10-15 | Health and ultimate values are guarded against invalid numbers (keep the last good value and report the cause) after errand fights rebuilt on load produced NaN levels |
 | 2026-10-15 | Elite affixes built (all 8, each with a visible cue); disciplines built with Blade (Master Iren, Brightwater) and Shadow (Sly Margo, Mistfen smugglers' isle) trainers; switching refunds skill points |
+| 2026-10-15 | Brightwater rebuild started: 10 cursed townsfolk (Bard at 10, harp music layer); 12 lore pages with a reading card and Journal list; Golden Flies to 20; antidotes |

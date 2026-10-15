@@ -191,7 +191,7 @@ export class Hero extends Unit {
 
   // Poison from leeches / venom: ticks down HP for a few seconds.
   addPoison(dps, t) {
-    if (this.downed) return;
+    if (this.downed || this.antidoteT > 0) return;
     this.poison = { dps: Math.max(dps, this.poison?.dps || 0), t: Math.max(t, this.poison?.t || 0), next: this.poison?.next ?? 0.6 };
     this.sprite.setTint(0xb8ff9a);
   }
@@ -512,6 +512,7 @@ export class Hero extends Unit {
     const moved = this.lastX !== undefined && Math.hypot(this.x - this.lastX, this.y - this.lastY) > 0.15;
     this.stillT = moved ? 0 : (this.stillT || 0) + dt;
     if (this.buffs.primal) { this.sprite.setScale(1.15); } else if (this.sprite.scaleX !== 1) this.sprite.setScale(1);
+    if (this.antidoteT > 0) this.antidoteT -= dt;
     if (this.poison && !this.downed) {
       this.poison.t -= dt; this.poison.next -= dt;
       if (this.poison.next <= 0) {
