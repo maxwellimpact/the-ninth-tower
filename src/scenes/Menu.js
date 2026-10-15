@@ -509,9 +509,10 @@ export class Menu extends Phaser.Scene {
       if (y + 30 > H - 4) break;
       const tracked = st.tracked === id;
       panel(g, x, y, w, 27, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
-      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font', w - 60);
+      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font', undefined, w - 64);
       this.t(x + 5, y + 15, Qm.stepText(id), 'fontPlain', undefined, w - 10);
-      this.t(x + w - 50, y + 4, tracked ? 'TRACKED' : 'TAP: TRACK', 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
+      const tag = tracked ? 'TRACKED' : 'TAP: TRACK';
+      this.t(x + w - 5 - tag.length * 5, y + 4, tag, 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
       this.btn(x, y, w, 27, () => { st.tracked = id; audio.sfx('click'); this.render(); });
       y += 30;
     }
