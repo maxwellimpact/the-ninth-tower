@@ -206,7 +206,7 @@ export function buildWorld() {
   rect(285, 84, 289, 93, T.WATER);
   for (const [px0, py0] of [[280, 86], [293, 90]]) rect(px0, py0, px0 + 1, py0 + 1, T.WATER); // font basins
   room(286, 79, 288, 83);                                            // passage north
-  room(270, 65, 304, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
+  room(266, 65, 308, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
   for (let y = 68; y <= 75; y++) for (let x = 282; x <= 292; x++) if (Math.hypot((x - 287) / 5.2, (y - 71.5) / 3.6) < 1) set(x, y, T.WATER); // her pool
   // Abbey ruins in the overworld fen, steps down into the nave
   rect(165, 95, 178, 104, T.PAVED);

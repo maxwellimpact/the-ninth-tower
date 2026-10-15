@@ -479,7 +479,7 @@
  },
  "murk": {
   "name": "MOTHER MURK",
-  "maxHp": 1700,
+  "maxHp": 1900,
   "speed": 20,
   "aggro": 160,
   "reach": 40,

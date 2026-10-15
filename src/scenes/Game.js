@@ -1810,7 +1810,7 @@ export class Game extends Phaser.Scene {
   bossDefs() {
     return [
       { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [274, 4, 302, 15], gate: [288, 16], make: (x, y, o) => new Golem(this, x, y - 24, o) },
-      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [270, 65, 304, 77], gate: [287, 78], make: (x, y, o) => new Murk(this, x, y, o) },
+      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 78], make: (x, y, o) => new Murk(this, x, y, o) },
     ];
   }
 

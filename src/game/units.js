@@ -1466,10 +1466,12 @@ export class Golem extends Enemy {
 }
 
 // ------------------------------------------------------------- Mother Murk
-// Mistfen lieutenant. (1) slams, tongue grabs and summoned slimes; (2) <60%:
-// sinks into her pool and floods the nest - shockwaves hurt anyone on land,
-// and only swimmers (Tide Charm) can reach her; (3) <35%: she surfaces and a
-// curse fog closes in from the walls.
+// Mother Murk, the Mistfen lieutenant. Three phases:
+//  1. on land: slams, belly-flop leaps, bog-spit puddles, a tongue grab
+//  2. sunk in her pool: shockwave rings, and every few seconds she erupts at
+//     the pool's edge to snap at you, open to everyone while she's up
+//     (swimmers can reach her any time)
+//  3. the curse fog closes in: everything faster and more often
 export class Murk extends Enemy {
   constructor(scene, x, y, opts = {}) {
     super(scene, 'murk', x, y, opts);
@@ -1478,7 +1480,9 @@ export class Murk extends Enemy {
     this.boss = true;
     this.phase = 1;
     this.home = { x, y };
-    this.grabT = 3; this.summonT = 9; this.waveT = 2; this.fogR = 0;
+    this.grabT = 7; this.summonT = 12; this.waveT = 2; this.fogR = 0;
+    this.leapT = 5; this.spitT = 3; this.surfaceT = 3;
+    this.puddles = [];
     this.sprite.play('murk_idle');
   }
 
@@ -1491,16 +1495,18 @@ export class Murk extends Enemy {
   stun(t) { super.stun(t * 0.3); }
   setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
 
+  get submerged() { return this.phase === 2 && !this.surfaced; }
+
   damage(amount, src, opts) {
     // submerged: only someone swimming close can reach her
-    if (this.phase === 2 && !(src?.swimming && Math.hypot(src.x - this.x, src.y - this.y) < 80)) {
+    if (this.submerged && !(src?.swimming && Math.hypot(src.x - this.x, src.y - this.y) < 80)) {
       if (Math.random() < 0.2) this.scene.floatText(this.x, this.y - 30, 'SHE\'S UNDERWATER!', 'fontPlain');
       return 0;
     }
     const r = Enemy.prototype.damage.call(this, amount, src, opts);
     if (!this.alive) return r;
     const f = this.hp / this.maxHp;
-    if (this.phase === 1 && f < 0.6) this.enterPhase(2);
+    if (this.phase === 1 && f < 0.65) this.enterPhase(2);
     else if (this.phase === 2 && f < 0.35) this.enterPhase(3);
     return r;
   }
@@ -1510,77 +1516,293 @@ export class Murk extends Enemy {
     this.phase = n;
     audio.sfx('roar');
     sc.shake(500, 0.01);
-    this.clearZone();
+    this.clearZone(); this.leapEnd();
+    this.state = 'chase'; this.t = 0;
     if (n === 2) {
+      this.surfaced = false;
+      this.surfaceT = 4;
       sc.floatText(this.x, this.y - 80, 'SHE SINKS INTO THE POOL!', 'fontGold');
       sc.tweens.add({ targets: this, x: this.home.x, y: this.home.y, duration: 700 });
-      this.sprite.setAlpha(0.35);
-      this.flood = sc.add.rectangle(270 * 16, 65 * 16, 35 * 16, 14 * 16, 0x3f6fae, 0).setOrigin(0).setDepth(-80);
+      sc.fx.burst('foam', this.home.x, this.home.y, 30);
+      this.flood = sc.add.rectangle(266 * 16, 65 * 16, 43 * 16, 14 * 16, 0x3f6fae, 0).setOrigin(0).setDepth(-80);
       sc.tweens.add({ targets: this.flood, fillAlpha: 0.22, duration: 1200 });
       const pip = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
-      sc.time.delayedCall(800, () => sc.bark(pip, sc.canSwim ? 'INTO THE WATER! SWIMMING, THE WAVES PASS OVER US!' : 'WE CAN\'T REACH HER FROM HERE!'));
+      sc.time.delayedCall(800, () => sc.bark(pip, sc.canSwim ? 'INTO THE WATER! SWIMMING, THE WAVES PASS OVER US!' : 'SHE HAS TO COME UP FOR AIR - HIT HER WHEN SHE DOES!'));
     } else {
+      this.surfaced = false;
       this.sprite.setAlpha(1).setCrop();
       this.flood?.destroy(); this.flood = null;
+      sc.tweens.add({ targets: this, x: this.home.x, y: this.home.y + 40, duration: 500 });
       sc.floatText(this.x, this.y - 80, 'THE CURSE FOG CLOSES IN!', 'fontGold');
-      this.fogR = 260;
+      this.fogR = 300;
       this.fog = sc.add.graphics().setDepth(100000 - 45);
-      this.s = { ...this.s, windup: 0.65, recover: 0.8 };
+      this.s = { ...this.s, windup: 0.7, recover: 0.8, speed: 26 };
+      this.leapT = 3; this.spitT = 2; this.grabT = 6;
     }
   }
 
   die(src) {
     this.alive = false;
-    this.clearZone();
-    this.flood?.destroy(); this.fog?.destroy();
+    this.cleanup();
     this.scene.onBossKilled(this, src);
     this.destroy();
+  }
+
+  cleanup() {
+    this.clearZone(); this.leapEnd();
+    this.flood?.destroy(); this.fog?.destroy(); this.flood = null; this.fog = null;
+    for (const p of this.puddles) this.dropPuddle(p);
+    this.puddles = [];
+    for (const g of this.globs || []) g.destroy();
+    this.globs = [];
+  }
+  destroy() { this.cleanup(); super.destroy(); }
+
+  minions() { return this.scene.enemies.filter((e) => e.alive && e.summoned).length; }
+  heroes() { return this.scene.party.filter((h) => h.alive && !h.downed); }
+
+  // keep a landing point inside her nest
+  clampArena(x, y) {
+    return { x: Math.max(268 * 16, Math.min(306 * 16, x)), y: Math.max(66 * 16, Math.min(77 * 16, y)) };
   }
 
   update(dt) {
     if (!this.alive) return;
     const sc = this.scene;
-    if (this.phase === 2) {
-      // under the pool: periodic shockwaves, the occasional slime
-      this.sync(dt);
-      this.sprite.y = Math.round(this.y) + 10;
-      this.sprite.setAlpha(0.55).setCrop(0, 0, 64, 40); // only her back and the hag show above the water
-      this.waveT -= dt;
-      if (this.waveT <= 0) { this.waveT = 3.2; sc.addShockwave(this.x, this.y, 0.25, 230, 120, { skipSwimmers: true }); audio.sfx('squish'); sc.fx.burst('foam', this.x, this.y, 20); }
-      this.summonT -= dt;
-      if (this.summonT <= 0) { this.summonT = 10; const e = sc.spawnEnemy('mire', this.x + 50, this.y + 20, true); e.summoned = true; }
-      return;
-    }
+    this.updatePuddles(dt);
+    if (this.leap) { this.updateLeap(dt); return; }
+
+    if (this.phase === 2) { this.updateSubmerged(dt); return; }
+
     if (this.phase === 3) {
-      this.fogR = Math.max(110, this.fogR - dt * 6);
+      this.fogR = Math.max(150, this.fogR - dt * 5);
       const g = this.fog.clear();
       g.lineStyle(26, 0x6b3fa0, 0.35).strokeCircle(this.home.x, this.home.y, this.fogR + 13);
       g.lineStyle(2, 0xe7a6ff, 0.6).strokeCircle(this.home.x, this.home.y, this.fogR);
       this.fogTick = (this.fogTick || 0) - dt;
       if (this.fogTick <= 0) {
         this.fogTick = 0.8;
-        for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - this.home.x, h.y - this.home.y) > this.fogR) { h.damage(h.maxHp * 0.06, null); sc.floatText(h.x, h.y - 30, 'CURSE FOG', 'fontPlain', 0xd9b8ff); }
+        for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - this.home.x, h.y - this.home.y) > this.fogR) { h.damage(h.maxHp * 0.05, null); sc.floatText(h.x, h.y - 30, 'CURSE FOG', 'fontPlain', 0xd9b8ff); }
       }
     }
-    // tongue grab: drags the farthest hero in
-    this.grabT -= dt;
-    if (this.grabT <= 0 && this.state === 'chase') {
-      this.grabT = 6;
-      const far = sc.party.filter((h) => h.alive && !h.downed).sort((a, b) => Math.hypot(b.x - this.x, b.y - this.y) - Math.hypot(a.x - this.x, a.y - this.y))[0];
-      if (far && Math.hypot(far.x - this.x, far.y - this.y) > 60) { this.s = { ...this.s, reach: 220 }; this.beginTongue(far); this.s = { ...this.s, reach: 40 }; this.sync(dt); return; }
-    }
-    if (this.phase === 1) {
-      this.summonT -= dt;
-      if (this.summonT <= 0) { this.summonT = 12; for (const dx of [-50, 50]) { const e = sc.spawnEnemy('mire', this.x + dx, this.y + 16, true); e.summoned = true; } }
+
+    // pick a move between attacks (only from the ready state, never mid-swing)
+    if (this.engaged) { this.leapT -= dt; this.spitT -= dt; this.grabT -= dt; this.summonT -= dt; }
+    if (this.state === 'chase' && this.engaged && !(this.stunT > 0)) {
+      const p3 = this.phase === 3;
+      if (this.leapT <= 0) { this.leapT = p3 ? 6.5 : 9; this.beginLeap(); return; }
+      if (this.spitT <= 0) { this.spitT = p3 ? 5.5 : 7.5; this.spit(p3 ? 5 : 3); }
+      if (this.grabT <= 0) {
+        // tongue grab: only reaches a hero lagging nearby, not one running for it
+        const far = this.heroes().map((h) => [h, Math.hypot(h.x - this.x, h.y - this.y)]).filter(([, d]) => d > 64 && d < 150).sort((a, b) => b[1] - a[1])[0];
+        if (far) { this.grabT = p3 ? 8 : 10; this.beginTongue(far[0]); this.sync(dt); return; }
+        this.grabT = 1.5;
+      }
+      if (this.phase === 1) {
+        if (this.summonT <= 0 && this.minions() < 2) { this.summonT = 14; for (const dx of [-60, 60]) { const e = sc.spawnEnemy('mire', this.x + dx, this.y + 16, true); e.summoned = true; } }
+      }
     }
     super.update(dt);
     this.sprite.setDepth(this.y);
   }
 
+  // ---- belly-flop leap: crouch, sail over, land with a shockwave
+  beginLeap() {
+    const sc = this.scene;
+    const t = this.target?.alive && !this.target.downed ? this.target : this.heroes()[0];
+    if (!t) return;
+    this.clearZone();
+    const to = this.clampArena(t.x, t.y);
+    const R = 40, crouch = this.phase === 3 ? 0.5 : 0.65, air = 0.7;
+    this.leap = { from: { x: this.x, y: this.y }, to, t: 0, crouch, air, R };
+    this.zone = { x: to.x, y: to.y, r: R, until: crouch + air };
+    sc.dangers.push(this.zone);
+    this.zoneGfx = sc.fx.telegraph(to.x, to.y, R, crouch + air);
+    this.state = 'leap';
+    this.play('windup');
+    audio.sfx('hexCharge');
+  }
+
+  updateLeap(dt) {
+    const L = this.leap, sc = this.scene;
+    L.t += dt;
+    if (L.t < L.crouch) { this.play('windup'); this.sync(dt); this.sprite.y += Math.sin(L.t * 40) * 1; return; }
+    const p = Math.min(1, (L.t - L.crouch) / L.air);
+    this.x = L.from.x + (L.to.x - L.from.x) * p;
+    this.y = L.from.y + (L.to.y - L.from.y) * p;
+    this.play('idle');
+    this.sync(dt);
+    this.sprite.y -= Math.sin(p * Math.PI) * 46;
+    this.shadow.setScale(1 - Math.sin(p * Math.PI) * 0.4);
+    this.sprite.setDepth(this.y + 40);
+    if (p < 1) return;
+    // landing
+    this.leapEnd();
+    this.state = 'recover'; this.t = 0;
+    this.play('attack');
+    sc.fx.slam(this.x, this.y, L.R);
+    sc.fx.burst('foam', this.x, this.y, 16);
+    sc.shake(320, 0.012);
+    audio.sfx('bash');
+    sc.addShockwave(this.x, this.y, 0.05, 110, 150);
+    const dmg = this.s.dmg * 1.1 * sc.difficulty.dmg;
+    for (const h of this.heroes()) if (Math.hypot(h.x - this.x, h.y - this.y) <= L.R + h.r) h.damage(dmg, this);
+  }
+
+  leapEnd() {
+    if (!this.leap) return;
+    this.leap = null;
+    this.clearZone();
+    this.shadow.setScale(1);
+  }
+
+  // ---- bog spit: lobs globs that leave poison puddles for a few seconds
+  spit(n) {
+    const sc = this.scene;
+    const hs = this.heroes();
+    if (!hs.length) return;
+    this.play('attack');
+    audio.sfx('squish');
+    this.globs = this.globs || [];
+    for (let i = 0; i < n; i++) {
+      const h = hs[i % hs.length];
+      const a = Math.random() * Math.PI * 2, off = i < hs.length ? 0 : 20 + Math.random() * 30;
+      const to = this.clampArena(h.x + Math.cos(a) * off, h.y + Math.sin(a) * off * 0.7);
+      const fly = 0.9 + i * 0.12;
+      const warn = sc.fx.telegraph(to.x, to.y, 15, fly);
+      const zone = { x: to.x, y: to.y, r: 15, until: fly };
+      sc.dangers.push(zone);
+      const glob = sc.add.graphics().setDepth(100000 - 50);
+      glob.fillStyle(0x5d8a3a).fillCircle(0, 0, 4).fillStyle(0xb8ff9a).fillCircle(-1, -1, 1.5);
+      this.globs.push(glob);
+      const from = { x: this.x, y: this.y - 30 }, st = { p: 0 };
+      sc.tweens.add({
+        targets: st, p: 1, duration: fly * 1000,
+        onUpdate: () => { if (glob.active) glob.setPosition(from.x + (to.x - from.x) * st.p, from.y + (to.y - from.y) * st.p - Math.sin(st.p * Math.PI) * 50); },
+        onComplete: () => {
+          glob.destroy(); warn.destroy();
+          sc.dangers = sc.dangers.filter((z) => z !== zone);
+          if (!this.alive) return;
+          sc.fx.burst('foam', to.x, to.y, 6);
+          this.addPuddle(to.x, to.y);
+        },
+      });
+    }
+  }
+
+  addPuddle(x, y) {
+    const sc = this.scene;
+    const g = sc.add.graphics().setDepth(-3);
+    g.fillStyle(0x4f7a2f, 0.55).fillEllipse(x, y, 32, 20).fillStyle(0x9fd06a, 0.35).fillEllipse(x - 3, y - 2, 16, 8);
+    const zone = { x, y, r: 15, until: 4 };
+    sc.dangers.push(zone);
+    this.puddles.push({ x, y, t: 4, g, zone, tick: 0 });
+  }
+  dropPuddle(p) { p.g.destroy(); this.scene.dangers = this.scene.dangers.filter((z) => z !== p.zone); }
+
+  updatePuddles(dt) {
+    for (const p of this.puddles) {
+      p.t -= dt; p.tick -= dt;
+      if (p.t < 1) p.g.setAlpha(p.t);
+      if (p.tick <= 0) {
+        p.tick = 0.5;
+        for (const h of this.heroes()) if (!h.swimming && Math.hypot(h.x - p.x, (h.y - p.y) / 0.65) < 16 + h.r) h.addPoison(this.s.dmg * 0.25, 2);
+      }
+    }
+    for (const p of this.puddles) if (p.t <= 0) this.dropPuddle(p);
+    this.puddles = this.puddles.filter((p) => p.t > 0);
+  }
+
+  // ---- phase 2: under the pool, erupting at the edge every few seconds
+  updateSubmerged(dt) {
+    const sc = this.scene;
+    this.sync(dt);
+    this.waveT -= dt;
+    if (this.waveT <= 0 && !this.surfaced) { this.waveT = 3.6; sc.addShockwave(this.x, this.y, 0.25, 230, 120, { skipSwimmers: true }); audio.sfx('squish'); sc.fx.burst('foam', this.x, this.y, 20); }
+    this.summonT -= dt;
+    if (this.summonT <= 0 && this.minions() < 2) { this.summonT = 11; const e = sc.spawnEnemy('mire', this.home.x + (Math.random() < 0.5 ? -90 : 90), this.home.y + 30, true); e.summoned = true; }
+
+    if (!this.surfaced) {
+      this.sprite.y = Math.round(this.y) + 10;
+      this.sprite.setAlpha(0.55).setCrop(0, 0, 64, 40); // only her back and the hag show above the water
+      this.surfaceT -= dt;
+      if (this.surfaceT <= 0 && !this.rising) {
+        // bubbles mark where she'll come up: the pool's edge nearest a hero
+        const h = this.heroes().filter((x) => !x.swimming).sort(() => Math.random() - 0.5)[0] || this.heroes()[0];
+        if (!h) return;
+        const a = Math.atan2((h.y - this.home.y) / 3.6, (h.x - this.home.x) / 5.2);
+        const at = { x: this.home.x + Math.cos(a) * 5.2 * 16 * 0.8, y: this.home.y + Math.sin(a) * 3.6 * 16 * 0.8 };
+        this.rising = at;
+        this.zoneGfx = sc.fx.telegraph(at.x, at.y, 34, 1.1);
+        this.zone = { x: at.x, y: at.y, r: 34, until: 1.1 };
+        sc.dangers.push(this.zone);
+        sc.fx.burst('foam', at.x, at.y, 10);
+        audio.sfx('hexCharge');
+        this.riseT2 = 1.1;
+      }
+      if (this.rising) {
+        this.riseT2 -= dt;
+        if (Math.random() < dt * 12) sc.fx.burst('foam', this.rising.x + (Math.random() - 0.5) * 30, this.rising.y + (Math.random() - 0.5) * 16, 2);
+        if (this.riseT2 <= 0) {
+          // erupt: snap at anyone standing on the bubbles, then stay up for a few seconds
+          const at = this.rising; this.rising = null;
+          this.clearZone();
+          this.x = at.x; this.y = at.y;
+          this.surfaced = true; this.upT = 3.6;
+          this.sprite.setCrop().setAlpha(1);
+          this.play('attack');
+          sc.fx.slam(at.x, at.y, 34); sc.fx.burst('foam', at.x, at.y, 24); sc.shake(260, 0.01); audio.sfx('bash');
+          const dmg = this.s.dmg * sc.difficulty.dmg;
+          for (const h of this.heroes()) if (Math.hypot(h.x - at.x, h.y - at.y) <= 34 + h.r) h.damage(dmg, this);
+          sc.floatText(at.x, at.y - 70, 'SHE SURFACES! STRIKE!', 'fontGold');
+        }
+      }
+      return;
+    }
+    // surfaced: open to attack; gulps at whoever is close, then sinks back
+    this.upT -= dt;
+    this.sprite.setDepth(this.y);
+    if (this.upT > 0.8 && this.upT < 2.4 && !this.zone) {
+      this.zone = { x: this.x, y: this.y, r: this.s.zr, until: 0.9 };
+      sc.dangers.push(this.zone);
+      this.zoneGfx = sc.fx.telegraph(this.x, this.y, this.s.zr, 0.9);
+      this.play('windup');
+      this.slamAt = this.upT - 0.9;
+    }
+    if (this.zone && this.slamAt != null && this.upT <= this.slamAt) {
+      this.slamAt = null;
+      const z = this.zone; this.clearZone();
+      this.play('attack'); sc.fx.slam(z.x, z.y, z.r); sc.shake(200, 0.008); audio.sfx('bash');
+      for (const h of this.heroes()) if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(this.s.dmg * sc.difficulty.dmg, this);
+      this.zone = { done: true }; // one gulp per surfacing
+    }
+    if (this.upT <= 0) {
+      if (this.zone && !this.zone.done) this.clearZone();
+      this.zone = null;
+      this.surfaced = false; this.slamAt = null;
+      this.surfaceT = 4.5;
+      sc.fx.burst('foam', this.x, this.y, 16);
+      sc.tweens.add({ targets: this, x: this.home.x, y: this.home.y, duration: 600 });
+    }
+  }
+
+  // tongue grab: tugs a straggler in close, but not right under her
   tongue() {
-    this.s = { ...this.s, reach: 260 };
-    super.tongue();
-    this.s = { ...this.s, reach: 40 };
+    const sc = this.scene, t = this.tongueTarget;
+    this.clearZone();
+    this.state = 'recover'; this.t = 0;
+    this.play('attack');
+    if (!t?.alive || t.downed || t.invuln > 0 || Math.hypot(t.x - this.x, t.y - this.y) > 200) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
+    audio.sfx('zip');
+    const [nx, ny] = norm(t.x - this.x, t.y - this.y);
+    let tx = this.x + nx * 58, ty = this.y + ny * 58;
+    const open = sc.nav.nearestOpen(Math.floor(tx / 16), Math.floor(ty / 16));
+    if (open && sc.nav.solidAtPx(tx, ty)) { tx = open[0] * 16 + 8; ty = open[1] * 16 + 8; }
+    sc.tweens.add({ targets: t, x: tx, y: ty, duration: 220, onComplete: () => {
+      t.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this);
+      t.invuln = Math.max(t.invuln, 0.6);
+      sc.floatText(t.x, t.y - 34, 'GULP!', 'fontPlain');
+    } });
   }
 
   strike() {
