@@ -1021,8 +1021,10 @@ export class Game extends Phaser.Scene {
       if (el === 'light' && hero) { const low = this.party.filter((p) => !p.downed).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; low?.heal(Math.round(dealt * 0.02)); }
     }
     if (hero) {
-      if (crit && src.passive('quickhands')) for (const k of src.skills) k.t = Math.max(0, k.t - 0.3 - 0.05 * (src.passive('quickhands') - 1));
-      if (crit && spell && src.passive('studious')) { const k = [...src.skills].sort((a, b) => b.t - a.t)[0]; if (k) k.t = Math.max(0, k.t - 1); }
+      // cooldown refunds from crits: at most once a second, so one big AoE crit-storm can't reset everything
+      const now = this.time.now;
+      if (crit && src.passive('quickhands') && now > (src.qhT || 0)) { src.qhT = now + 1000; for (const k of src.skills) k.t = Math.max(0, k.t - 0.3 - 0.05 * (src.passive('quickhands') - 1)); }
+      if (crit && spell && src.passive('studious') && now > (src.stT || 0)) { src.stT = now + 1000; const k = [...src.skills].sort((a, b) => b.t - a.t)[0]; if (k) k.t = Math.max(0, k.t - 1); }
       if (src.passive('lightfingers') && !target.fingered && target.s?.gold) { target.fingered = true; if (Math.random() < 0.15 + 0.03 * (src.passive('lightfingers') - 1)) { for (let i = 0; i < 3; i++) this.dropCoin(target.x, target.y); this.floatText(target.x, target.y - 34, 'PILFERED', 'fontPlain', 0xf2c14e); } }
     }
     src.addUlt?.(dealt * tuning.ultChargeDeal);
@@ -1097,7 +1099,7 @@ export class Game extends Phaser.Scene {
         if (p.aoe) {
           this.fx.ring(p.x, p.y + 6, 'ringGold', (p.aoe / 8) * 1.2);
           this.shake(90, 0.005);
-          for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.7), { knock: 90, element: p.element, spell: p.spell });
+          for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.45), { knock: e === hit ? 90 : 40, element: e === hit ? p.element : null, spell: p.spell }); // splash: weaker, and only the direct hit burns
         } else if (hit) {
           const crit = Math.random() < p.owner.stats.crit;
           this.dealDamage(p.owner, hit, p.dmg * (crit ? tuning.critMult : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 35, element: p.element, spell: p.spell, basic: p.basic });

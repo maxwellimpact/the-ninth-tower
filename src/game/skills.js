@@ -207,7 +207,7 @@ export const SKILL_FX = {
             bolt(sc, from.x, from.y, cur.x, cur.y - 8);
             sc.dealDamage(h, cur, dmg, { knock: 20, element: 'storm', spell: true });
             from = { x: cur.x, y: cur.y - 8 };
-            dmg *= 0.85;
+            dmg *= 0.7;
             const prev = cur;
             cur = sc.enemies.filter((e) => e.alive && !hit.has(e) && dist(e, prev) < 70).sort((a, b) => dist(a, prev) - dist(b, prev))[0];
           }

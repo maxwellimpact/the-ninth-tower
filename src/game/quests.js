@@ -23,6 +23,11 @@ export class QuestManager {
     this.npcs = [];
     this.live = {}; // runtime objects per active errand step
     for (const n of Q.npcs) this.addNpc(n);
+    // chance-meeting errands can also be (re)taken by talking to their giver
+    for (const [id, e] of Object.entries(ERRANDS)) {
+      const g = e.trigger && this.npcs.find((n) => n.id === e.giver);
+      if (g && !(g.errands ||= []).includes(id)) g.errands.push(id);
+    }
     for (const id of Object.keys(st.quests)) if (!st.quests[id].done) this.enterStep(id);
   }
 
@@ -320,11 +325,13 @@ export class QuestManager {
         guard.hp -= amt; npc.s.setTintFill(0xffffff); sc.time.delayedCall(70, () => npc.s.clearTint());
         sc.floatText(guard.x, guard.y - 24, `${Math.round(amt)}`, 'font', 0xff6a6a);
         if (guard.hp <= 0 && guard.alive) {
+          // failed: the raiders make off with the goods; talk to them again to retry
           guard.alive = false;
-          sc.events.emit('banner', 'QUILL FLED', 'THE GOBLINS GOT THE INKWELLS');
+          sc.events.emit('banner', `${npc.name} IS DOWN`, 'THE RAIDERS FLED WITH THE GOODS. TALK TO THEM TO TRY AGAIN.');
+          for (const e of live.units || []) if (e.alive) { e.alive = false; sc.fx.puff(e.x, e.y, 'spark'); e.destroy(); }
           this.clearLive(id);
           delete this.state.quests[id];
-          this.setNpcVisible(npc, false);
+          if (this.state.tracked === id) this.state.tracked = null;
         }
         return amt;
       } };
@@ -351,13 +358,17 @@ export class QuestManager {
     }
     // chance meetings
     for (const [id, e] of Object.entries(ERRANDS)) {
-      if (!e.trigger || this.q(id) || sc.busy || sc.ui?.dialogOpen) continue;
+      if (!e.trigger || this.q(id)) continue;
+      // already met (e.g. after a reload): they wait where you left them
+      if (sc.flags[`met_${id}`]) { const g = this.npc(e.giver); if (g?.hiddenNow) this.setNpcVisible(g, true); continue; }
+      if (sc.busy || sc.ui?.dialogOpen || sc.combatHold > 0) continue;
       const [tx, ty, r] = e.trigger;
       if (Math.hypot(L.x - px(tx), L.y - px(ty)) < r * TILE) {
+        // they call out once; you choose whether to help (after that, talk to them)
         const npc = this.npc(e.giver);
+        sc.flags[`met_${id}`] = true;
         this.setNpcVisible(npc, true);
-        this.start(id);
-        sc.events.emit('dialogue', e.offer.map((t) => this.line(npc, t)));
+        this.offer(id, npc);
       }
     }
     for (const id of this.active()) {

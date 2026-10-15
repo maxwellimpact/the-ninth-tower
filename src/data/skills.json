@@ -5,7 +5,7 @@
   "name": "SHIELD BASH",
   "short": "BASH",
   "icon": "icon_bash",
-  "cd": 7,
+  "cd": 8,
   "range": 34,
   "desc": "SLAM YOUR SHIELD INTO A FOE: DAMAGE, KNOCKBACK AND A 1S STUN."
  },
@@ -25,7 +25,7 @@
   "name": "CHARGE",
   "short": "CHARGE",
   "icon": "icon_charge",
-  "cd": 9,
+  "cd": 11,
   "range": 120,
   "desc": "DASH TO A FOE, KNOCKING ASIDE EVERYTHING IN THE WAY."
  },
@@ -55,7 +55,7 @@
   "name": "EARTHSPLITTER",
   "short": "SPLIT",
   "icon": "icon_earthsplitter",
-  "cd": 12,
+  "cd": 15,
   "range": 70,
   "desc": "SLAM A LINE OF SHOCKWAVES AHEAD THAT STAGGERS FOES."
  },
@@ -100,7 +100,7 @@
   "name": "FIREBALL",
   "short": "FIRE",
   "icon": "icon_fireball",
-  "cd": 8,
+  "cd": 12,
   "range": 115,
   "element": "fire",
   "desc": "A BOLT THAT BURSTS IN A SMALL AREA AND BURNS."
@@ -111,7 +111,7 @@
   "name": "FROST NOVA",
   "short": "NOVA",
   "icon": "icon_frostnova",
-  "cd": 11,
+  "cd": 14,
   "range": 46,
   "element": "frost",
   "desc": "A RING OF FROST AROUND PIP: DAMAGE AND 2 CHILL STACKS."
@@ -122,7 +122,7 @@
   "name": "CHAIN LIGHTNING",
   "short": "CHAIN",
   "icon": "icon_chain",
-  "cd": 10,
+  "cd": 13,
   "range": 115,
   "element": "storm",
   "desc": "LIGHTNING THAT JUMPS BETWEEN UP TO 4 FOES."
@@ -143,7 +143,7 @@
   "name": "ARCANE BARRAGE",
   "short": "BARRAGE",
   "icon": "icon_barrage",
-  "cd": 14,
+  "cd": 18,
   "range": 120,
   "desc": "SIX HOMING MISSILES SPREAD ACROSS NEARBY FOES."
  },
@@ -173,7 +173,7 @@
   "name": "STUDIOUS",
   "short": "STUDY",
   "icon": "icon_studious",
-  "desc": "SPELL CRITS CUT 1S OFF YOUR LONGEST COOLDOWN."
+  "desc": "SPELL CRITS CUT 1S OFF YOUR LONGEST COOLDOWN (ONCE A SECOND)."
  },
  "wardweave": {
   "hero": "pip",
@@ -198,7 +198,7 @@
   "name": "SHADOW STEP",
   "short": "STEP",
   "icon": "icon_step",
-  "cd": 6,
+  "cd": 8,
   "range": 110,
   "desc": "BLINK BEHIND A FOE. YOUR NEXT HIT CRITS."
  },
@@ -208,7 +208,7 @@
   "name": "FAN OF KNIVES",
   "short": "KNIVES",
   "icon": "icon_fan",
-  "cd": 7,
+  "cd": 9,
   "range": 40,
   "desc": "A RING OF THROWN BLADES AROUND SABLE."
  },
@@ -269,7 +269,7 @@
   "name": "QUICK HANDS",
   "short": "QUICK",
   "icon": "icon_quickhands",
-  "desc": "CRITS TAKE 0.3S OFF ALL COOLDOWNS."
+  "desc": "CRITS TAKE 0.3S OFF ALL COOLDOWNS (ONCE A SECOND)."
  },
  "lightfingers": {
   "hero": "sable",
@@ -304,7 +304,7 @@
   "name": "POWER SHOT",
   "short": "POWER",
   "icon": "icon_powershot",
-  "cd": 8,
+  "cd": 11,
   "range": 140,
   "desc": "A HEAVY ARROW THAT PIERCES EVERY FOE IN A LINE."
  },
@@ -314,7 +314,7 @@
   "name": "HAWK STRIKE",
   "short": "HAWK",
   "icon": "icon_hawkstrike",
-  "cd": 11,
+  "cd": 13,
   "range": 150,
   "desc": "KESTREL DIVES ON A FOE AND MARKS IT: +10% DAMAGE TAKEN FOR 6S. REVEALS HIDDEN FOES."
  },
@@ -324,7 +324,7 @@
   "name": "VOLLEY",
   "short": "VOLLEY",
   "icon": "icon_volley",
-  "cd": 12,
+  "cd": 16,
   "range": 130,
   "desc": "ARROWS RAIN ON AN AREA FOR 2S."
  },
@@ -344,7 +344,7 @@
   "name": "DISENGAGE",
   "short": "FLIP",
   "icon": "icon_disengage",
-  "cd": 9,
+  "cd": 11,
   "range": 60,
   "desc": "BACKFLIP AWAY AND LOOSE A SHOT THAT SLOWS."
  },
@@ -354,7 +354,7 @@
   "name": "BLAST ARROW",
   "short": "BLAST",
   "icon": "icon_blastarrow",
-  "cd": 13,
+  "cd": 16,
   "range": 140,
   "element": "fire",
   "desc": "A FIRE ARROW THAT EXPLODES ON IMPACT."
@@ -400,7 +400,7 @@
   "name": "CLEAVE",
   "short": "CLEAVE",
   "icon": "icon_cleave",
-  "cd": 6,
+  "cd": 8,
   "range": 30,
   "desc": "A WIDE SWING THAT HITS EVERY FOE IN FRONT."
  },
@@ -410,7 +410,7 @@
   "name": "LEAP",
   "short": "LEAP",
   "icon": "icon_leap",
-  "cd": 9,
+  "cd": 11,
   "range": 120,
   "desc": "JUMP ONTO A FOE AND SLAM THE GROUND AROUND IT."
  },
@@ -440,7 +440,7 @@
   "name": "REND",
   "short": "REND",
   "icon": "icon_rend",
-  "cd": 7,
+  "cd": 9,
   "range": 30,
   "desc": "A RAKING BLOW THAT LEAVES A STACKING BLEED."
  },
@@ -450,7 +450,7 @@
   "name": "WHIRLWIND",
   "short": "WHIRL",
   "icon": "icon_whirlwind",
-  "cd": 14,
+  "cd": 18,
   "range": 0,
   "desc": "SPIN WITH BOTH AXES FOR 3S, HITTING EVERYTHING AROUND YOU."
  },

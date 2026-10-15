@@ -342,7 +342,7 @@
      "type": "defend",
      "text": "DRIVE OFF THE GOBLINS BEFORE THEY REACH QUILL",
      "npc": "quill",
-     "hp": 90,
+     "hp": 160,
      "units": [
       [
        "goblin",
