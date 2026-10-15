@@ -38,7 +38,7 @@ export class UI extends Phaser.Scene {
     this.dodgeBtn = this.makeButton('icon_dodge', () => { const L = this.g.leader; L.dodge(...L.facingVec()); }, 'SPC', null, SZ, true);
     this.ultBtn = this.makeButton('icon_meteor', () => this.g.useUltimate(this.g.leader), 'Z', null, SZ, true);
     this.allyBtns = [0, 1].map((i) => this.makeButton('icon_meteor', () => { const a = this.allies()[i]; if (a) this.g.useUltimate(a); }, '', null, SZ, true));
-    for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl = this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(0.5, 0);
+    for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5, 0);
     this.dodgeBtn.lbl.setText('DODGE');
     this.arcG = this.add.graphics().setDepth(10); // recharge arcs drawn over the icons
     // touch devices don't need keyboard hints on the round buttons
@@ -62,12 +62,12 @@ export class UI extends Phaser.Scene {
     this.coin = this.add.sprite(0, 0, 'coin').play('coin').setOrigin(0);
     this.goldTxt = this.add.bitmapText(0, 0, 'fontGold', '0');
 
-    this.hint = this.add.bitmapText(0, 0, 'fontPlain', 'TAP: MOVE / ATTACK / TALK   YOUR PORTRAIT: GEAR   OTHER PORTRAIT: SWITCH').setAlpha(0.85);
+    this.hint = this.add.bitmapText(0, 0, 'font', 'TAP: MOVE / ATTACK / TALK   YOUR PORTRAIT: GEAR   OTHER PORTRAIT: SWITCH').setAlpha(0.85);
     this.time.delayedCall(16000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 1200 }));
 
     this.bannerT = this.add.bitmapText(0, 0, 'fontGold', '').setOrigin(0.5).setScale(2).setAlpha(0);
     this.bannerS = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5).setAlpha(0);
-    this.toast = this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(1, 0).setAlpha(0);
+    this.toast = this.add.bitmapText(0, 0, 'font', '').setOrigin(1, 0).setAlpha(0);
 
     // boss bar
     this.bossName = this.add.bitmapText(0, 0, 'fontGold', '').setOrigin(0.5).setVisible(false);
@@ -92,7 +92,7 @@ export class UI extends Phaser.Scene {
     this.choiceObjs = [];
     // errand tracker: one line under the minimap
     this.trackTitle = this.add.bitmapText(0, 0, 'fontGold', '').setOrigin(1, 0);
-    this.trackTxt = this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(1, 0).setRightAlign();
+    this.trackTxt = this.add.bitmapText(0, 0, 'font', '').setOrigin(1, 0).setRightAlign();
     this.loot = this.add.container(0, 0).setVisible(false).setDepth(40);
     this.lootQueue = [];
 
@@ -122,7 +122,7 @@ export class UI extends Phaser.Scene {
   tapUI() { this.registry.set('uiTap', true); audio.sfx('click'); }
 
   makeButton(icon, fn, key, label, size = 22, round = false) {
-    const b = { size, round, icon: icon ? this.add.image(0, 0, icon) : null, key: this.add.bitmapText(0, 0, 'fontPlain', key), label: label ? this.add.bitmapText(0, 0, 'font', label).setOrigin(0.5) : null, visible: true };
+    const b = { size, round, icon: icon ? this.add.image(0, 0, icon) : null, key: this.add.bitmapText(0, 0, 'font', key), label: label ? this.add.bitmapText(0, 0, 'font', label).setOrigin(0.5) : null, visible: true };
     b.zone = this.add.zone(0, 0, size, size).setOrigin(0).setInteractive({ useHandCursor: true });
     b.zone.on('pointerdown', () => { if (!b.visible) return; this.tapUI(); if (this.dialogOpen) { this.advanceDialog(); return; } fn(); });
     this.buttons.push(b);
@@ -143,7 +143,7 @@ export class UI extends Phaser.Scene {
       // tap the leader to open their gear menu; tap anyone else to switch to them
       hit.on('pointerdown', () => { this.tapUI(); if (h === this.g.leader) this.g.openMenu(); else if (!h.downed) this.g.setLeader(h); });
       const lv = this.add.bitmapText(0, 0, 'font', 'LV1');
-      const nm = this.add.bitmapText(0, 0, 'fontPlain', h.def.name.toUpperCase());
+      const nm = this.add.bitmapText(0, 0, 'font', h.def.name.toUpperCase());
       return { h, img, hit, lv, nm };
     });
     this.layout();
@@ -168,12 +168,30 @@ export class UI extends Phaser.Scene {
       p.nm.setPosition(x + 26, y + 1);
       p.lv.setPosition(x + 56, y + 1);
     });
-    // combat cluster, bottom left:   [ULT ] [S2]
-    //                                [DODGE] [S1]
+    // combat controls. Landscape: one row along the bottom edge — the leader's
+    // own group (ULT, DODGE, skills) framed in gold, the companions' ULTs apart
+    // in a grey frame. Portrait: the two-row grid in the bottom-left corner.
     const colX = (c) => 6 + L0 + c * 38;
     const rowB = H - 40, rowT = rowB - 40;
-    [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB], [this.skillBtns[2], 3, rowB],
-      [this.ultBtn, 0, rowT], [this.allyBtns[0], 1, rowT], [this.allyBtns[1], 2, rowT]].forEach(([b, c, y]) => { b.x = colX(c); b.y = y; });
+    this.rowMode = this.W > this.H && W - L0 >= 380;
+    this.grpG ??= this.add.graphics().setDepth(-1);
+    this.grpG.clear();
+    if (this.rowMode) {
+      const lead = [this.ultBtn, this.dodgeBtn, ...this.skillBtns], allies = this.allyBtns;
+      lead.forEach((b, i) => { b.x = colX(i); b.y = rowB; });
+      const ax = colX(lead.length) + 12, SZB = lead[0].size;
+      allies.forEach((b, i) => { b.x = ax + i * 38; b.y = rowB; });
+      const fr = (x0, x1, col) => { this.grpG.fillStyle(C.ink, 0.35).fillRoundedRect(x0 - 4, rowB - 13, x1 - x0 + 8, 13 + SZB + 13, 5); this.grpG.lineStyle(1, col, 0.8).strokeRoundedRect(x0 - 4, rowB - 13, x1 - x0 + 8, 13 + SZB + 13, 5); };
+      fr(lead[0].x, lead[lead.length - 1].x + lead[0].size, C.gold);
+      fr(allies[0].x, allies[1].x + allies[1].size, C.stone);
+      this.groupLbl ??= [this.add.bitmapText(0, 0, 'fontGold', ''), this.add.bitmapText(0, 0, 'font', 'ALLIES')];
+      this.groupLbl[0].setPosition(lead[0].x, rowB - 10).setVisible(true);
+      this.groupLbl[1].setPosition(allies[0].x, rowB - 10).setVisible(true);
+    } else {
+      [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB], [this.skillBtns[2], 3, rowB],
+        [this.ultBtn, 0, rowT], [this.allyBtns[0], 1, rowT], [this.allyBtns[1], 2, rowT]].forEach(([b, c, y]) => { b.x = colX(c); b.y = y; });
+      this.groupLbl?.forEach((t) => t.setVisible(false));
+    }
     for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl.setPosition(b.x + b.size / 2, b.y + b.size + 2);
     // utility, bottom right: bag + flasks
     this.bagBtn.x = W - 30; this.bagBtn.y = H - 30;
@@ -202,7 +220,7 @@ export class UI extends Phaser.Scene {
     this.trackTitle.setPosition(W - 6, this.mmY + this.MM.h + 4);
     this.trackTxt.setPosition(W - 6, this.mmY + this.MM.h + 13).setMaxWidth(tw);
     this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
-    if (W < 360) this.hint.setVisible(false); // no room beside the combat grid on narrow phones
+    if (W < 360 || this.rowMode) this.hint.setVisible(false); // no room beside the combat controls
     // portrait: drop banners below the hero portraits
     this.bannerY = W < 300 ? 112 + T0 : 40;
     this.bannerT.setPosition(W / 2, this.bannerY);
@@ -464,6 +482,7 @@ export class UI extends Phaser.Scene {
     this.trackTitle.setText(tstep ? tq.title(tid) : '');
     this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
     const L = game.leader;
+    if (this.rowMode && this.groupLbl) this.groupLbl[0].setText(L.def.name.toUpperCase());
     this.skillBtns.forEach((b, i) => {
       const s = L.skills[i];
       this.setButtonVisible(b, !!s);

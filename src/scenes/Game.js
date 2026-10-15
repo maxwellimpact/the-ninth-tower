@@ -165,6 +165,12 @@ export class Game extends Phaser.Scene {
     const curtain = this.scene.get('Loading');
     if (this.scene.isActive('Loading')) curtain.setTitle(place);
     this.prepareAt(start.x, start.y, curtain, 8).then(() => {
+      // a save made somewhere the party can't stand (older saves from up a lookout): step off to open ground
+      const ltx = Math.floor(this.leader.x / TILE), lty = Math.floor(this.leader.y / TILE);
+      if (this.nav.isSolid(ltx, lty)) {
+        const o = this.nav.nearestOpen(ltx, lty + 2, 8) || this.nav.nearestOpen(ltx, lty, 8);
+        if (o) this.party.forEach((h, i) => { h.x = o[0] * TILE + 8 + (i ? (i === 1 ? -10 : 10) : 0); h.y = o[1] * TILE + 8 + (i ? 8 : 0); h.lift = 0; h.sync(0); });
+      }
       this.loading = false;
       this.busy = false;
       this.calmT = 1.5; // a moment to get bearings before anything nearby notices you
@@ -633,7 +639,7 @@ export class Game extends Phaser.Scene {
       this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
       this.add.image(x, y + 8, 'lookoutFront').setOrigin(0.5, 1).setDepth(y + 30); // railing in front of anyone up top
       for (const dx of [-1, 0, 1]) { this.nav.block(k.x + dx, k.y); this.nav.block(k.x + dx, k.y - 1); }
-      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', interact: () => this.climbLookout(k) });
+      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', look: k, interact: () => this.climbLookout(k) });
     }
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
@@ -1308,7 +1314,11 @@ export class Game extends Phaser.Scene {
   autosave(reason) {
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
-    this.state.pos = { x: Math.round(L.x), y: Math.round(L.y) };
+    // never save a spot the party can't stand on (up a lookout, inside a blocked tile)
+    let px0 = L.x, py0 = L.y;
+    const tx = Math.floor(px0 / TILE), ty = Math.floor(py0 / TILE);
+    if (L.lift || this.nav.isSolid(tx, ty)) { const o = this.nav.nearestOpen(tx, ty + 2, 8) || this.nav.nearestOpen(tx, ty, 8); if (o) { px0 = o[0] * TILE + 8; py0 = o[1] * TILE + 8; } }
+    this.state.pos = { x: Math.round(px0), y: Math.round(py0) };
     for (const h of this.party) h.hs.hp = h.hp;
     if (saveState(this.state)) this.events.emit('saved', reason);
   }
@@ -1573,8 +1583,8 @@ export class Game extends Phaser.Scene {
     this.flags[`lookout_${k.id}`] = true;
     this.busy = true;
     this.onLookout = true;
-    // start painting the wider view now, while the party climbs
-    this.lookoutView = { x, y: y - 40, w: this.scale.width / ZOOM, h: this.scale.height / ZOOM };
+    // keep painting the wider view (it started as you walked over)
+    this.lookoutView = this.lookoutViewFor(k);
     this.streamer.maxResident = 220; // the wide view needs ~9x the ground; released on the way down
     const heroes = this.party.filter((h) => !h.downed);
     const slots = [-14, 0, 14];
@@ -1592,8 +1602,10 @@ export class Game extends Phaser.Scene {
         } });
       });
     });
-    // once everyone's up: pull the camera back and take it all in
-    this.time.delayedCall((heroes.length - 1) * 550 + 1350, () => {
+    // once everyone's up and the wide view is painted (or 3s at most): pull back and take it in
+    const upAt = this.time.now + (heroes.length - 1) * 550 + 1350;
+    const ready = (cb) => { if (this.time.now >= upAt && (this.streamer.wantedProgress() >= 1 || this.time.now > upAt + 3000)) cb(); else this.time.delayedCall(80, () => ready(cb)); };
+    ready(() => {
       cam.stopFollow();
       cam.pan(x, y - 40, 900, 'Sine.easeInOut');
       cam.zoomTo(ZOOM, 1300, 'Sine.easeInOut');
@@ -1603,7 +1615,6 @@ export class Game extends Phaser.Scene {
       this.events.emit('banner', k.name, first ? 'THE LAND AROUND IS SKETCHED ONTO YOUR MAP' : 'TAP ANYWHERE TO CLIMB DOWN');
       if (first) for (const h of heroes) h.gainXp(60);
       this.time.delayedCall(1500, () => this.bark(this.leader, first ? 'YOU CAN SEE HALF THE KINGDOM FROM UP HERE.' : 'SAME VIEW. STILL GOOD.'));
-      this.autosave('lookout');
       // tap (or Esc / Space) to come back down
       this.time.delayedCall(1400, () => {
         if (this.ui) { this.ui.tweens.killTweensOf(this.ui.toast); this.ui.toast.setText('TAP TO CLIMB DOWN').setAlpha(1); }
@@ -1613,6 +1624,12 @@ export class Game extends Phaser.Scene {
         this.input.keyboard?.on('keydown-SPACE', down);
       });
     });
+  }
+
+  // the area a lookout's zoomed-out view needs painted, with a margin so the edges are never caught loading
+  lookoutViewFor(k) {
+    const ZOOM = 1 / 3, M = 1.25;
+    return { x: k.x * TILE + 8, y: k.y * TILE + 8 - 40, w: (this.scale.width / ZOOM) * M, h: (this.scale.height / ZOOM) * M };
   }
 
   leaveLookout(k, heroes) {
@@ -1638,6 +1655,7 @@ export class Game extends Phaser.Scene {
       this.streamer.maxResident = 40;
       this.onLookout = false;
       this.busy = false;
+      this.autosave('lookout');
     });
   }
 
@@ -2424,6 +2442,12 @@ export class Game extends Phaser.Scene {
     const L = this.leader;
     const view = this.cameras.main.worldView;
     // up a lookout the view is zoomed out: stream terrain for the wider area (prefetched during the climb)
+    // walking over to a lookout: start painting its wide view before the climb
+    if (!this.onLookout) {
+      const c = L.command;
+      const k = c?.type === 'interact' && c.obj.kind === 'lookout' && Math.hypot(c.obj.x - L.x, c.obj.y - L.y) < 16 * TILE ? c.obj.look : null;
+      this.lookoutView = k ? this.lookoutViewFor(k) : null;
+    }
     const lv = this.lookoutView;
     this.streamer.update(lv ? lv.x : L.x, lv ? lv.y : L.y, lv ? lv.w : view.width || this.scale.width, lv ? lv.h : view.height || this.scale.height);
     this.state.playTime += deltaMs / 1000;

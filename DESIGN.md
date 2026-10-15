@@ -1330,7 +1330,7 @@ The leader speaks a one-line thought the first time the player reaches each beat
 One climbable watchtower per region (6 total) that overlooks the region's key landmarks. Fenwatch, for example, sees the Abbey, the vine and the bog.
 - **Climbing:** the party climbs the ladder one by one and lines up on the platform. The camera pulls back to ⅓× zoom, showing nine times the area. Tap (or Esc/Space) to climb down. Spells in flight fizzle when the climb starts.
 - **First climb:** reveals the area on the map and gives 60 XP. Not usable mid-combat.
-- **Performance rule:** only terrain and scenery stream in for the wider view, and loading starts during the climb. Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 220; about 45 chunks are used) is released on the way down.
+- **Performance rule:** only terrain and scenery stream in for the wider view (plus a 25% margin). Loading starts as soon as the party heads for the ladder, and the camera waits up top until it's painted (3 s at most). Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 220; about 45 chunks are used) is released on the way down.
 - **Placement rule:** on open ground with nothing within 4 tiles, outside any curse circle, and within about 12 tiles of the dungeon entrance or the stone.
 
 ### 4. Boss rules [BUILT]
@@ -1363,6 +1363,9 @@ Each region adds a theme variation (§11a). Its dungeon uses the Depths variatio
 - **Long names:** shortened names slide sideways to show in full when tapped. The selected item's name keeps sliding.
 - **New gear:** gear you haven't looked at yet gets a NEW tag and sorts to the top. Dots on the HUD bag button, the GEAR tab, the hero and the slot lead to it.
 - **In-combat pickups:** shown as a small white outlined line, off to the right.
+- **Outlined text:** any text drawn over the game world (tracker, toasts, button labels, names) uses the outlined font.
+- **Landscape is the primary orientation** (portrait still works). In landscape, all combat controls sit in one row along the bottom edge: the leader's own group (ULT, DODGE, 3 skills) is framed in gold under the leader's name, and the companions' ULTs sit apart in a grey "ALLIES" frame. The native iOS build can lock to landscape.
+- **Saves never put the party somewhere it can't stand.** Positions up a lookout or inside a blocked tile snap to the nearest open ground, both when saving and when loading.
 
 ---
 
