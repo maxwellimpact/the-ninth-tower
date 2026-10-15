@@ -83,6 +83,9 @@ export class UI extends Phaser.Scene {
     this.dlgText = this.add.bitmapText(0, 0, 'font', '').setMaxWidth(200);
     this.dlgMore = this.add.bitmapText(0, 0, 'fontGold', '>');
     this.dlg.add([this.dlgG, this.dlgPortrait, this.dlgName, this.dlgText, this.dlgMore]);
+    this.dlgCatch = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(49).setInteractive();
+    this.dlgCatch.on('pointerdown', () => { this.tapUI(); this.advanceDialog(); });
+    this.dlgCatch.disableInteractive();
     this.tweens.add({ targets: this.dlgMore, alpha: 0.2, duration: 350, yoyo: true, repeat: -1 });
 
     this.choiceObjs = [];
@@ -119,7 +122,7 @@ export class UI extends Phaser.Scene {
   makeButton(icon, fn, key, label, size = 22, round = false) {
     const b = { size, round, icon: icon ? this.add.image(0, 0, icon) : null, key: this.add.bitmapText(0, 0, 'fontPlain', key), label: label ? this.add.bitmapText(0, 0, 'font', label).setOrigin(0.5) : null, visible: true };
     b.zone = this.add.zone(0, 0, size, size).setOrigin(0).setInteractive({ useHandCursor: true });
-    b.zone.on('pointerdown', () => { if (!b.visible) return; this.tapUI(); fn(); });
+    b.zone.on('pointerdown', () => { if (!b.visible) return; this.tapUI(); if (this.dialogOpen) { this.advanceDialog(); return; } fn(); });
     this.buttons.push(b);
     return b;
   }
@@ -281,6 +284,7 @@ export class UI extends Phaser.Scene {
     this.onDone = onDone;
     this.dialogOpen = true;
     this.dlg.setVisible(true);
+    this.dlgCatch.setInteractive();
     this.showLine();
   }
 
@@ -340,6 +344,7 @@ export class UI extends Phaser.Scene {
         this.tapUI();
         this.clearChoices();
         this.dialogOpen = false;
+        this.dlgCatch?.disableInteractive();
         this.dlg.setVisible(false);
         this.onDone = null;
         fn();
@@ -356,6 +361,7 @@ export class UI extends Phaser.Scene {
     this.lineI++;
     if (this.lineI >= this.lines.length) {
       this.dialogOpen = false;
+      this.dlgCatch?.disableInteractive();
       this.dlg.setVisible(false);
       const cb = this.onDone; this.onDone = null;
       cb?.();
@@ -374,6 +380,7 @@ export class UI extends Phaser.Scene {
       this.typeEv?.remove();
       this.clearChoices();
       this.dialogOpen = false;
+      this.dlgCatch?.disableInteractive();
       this.dlg.setVisible(false);
       this.onDone = null;
     } else if (!fighting && !this.dialogOpen && this.pendingDialog && !this.g.busy) {

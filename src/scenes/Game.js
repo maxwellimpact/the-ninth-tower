@@ -756,7 +756,7 @@ export class Game extends Phaser.Scene {
     });
     this.input.on('pointerup', (p) => {
       if (this.consumeUI()) { this.down = null; return; }
-      if (this.ui?.dialogOpen) { this.ui.advanceDialog(); this.down = null; return; }
+      if (this.ui?.dialogOpen) { this.down = null; return; } // the UI's dialogue catcher advances it
       const d = this.down;
       this.down = null;
       if (!d || this.busy) return;
