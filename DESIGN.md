@@ -1033,6 +1033,7 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 
 ### Elite affixes
 - **Elites** are gold-named, +2 levels, have one affix and always drop something (Fine or better, or materials).
+  - **Built so far (no affixes yet):** about 1 group in 3 has one. Elites have 1.8× health and 1.15× damage on top of the +2 levels. A pulsing gold ring under their feet marks them before you engage, and an "ELITE" tag stays over their health bar during the fight. **[REVISED in playtest: was 2.2× / 1.3× with only a gold tint]**
 - **Hard mode** gives elites two affixes.
 
 | Affix | Effect |
@@ -1330,7 +1331,7 @@ The leader speaks a one-line thought the first time the player reaches each beat
 One climbable watchtower per region (6 total) that overlooks the region's key landmarks. Fenwatch, for example, sees the Abbey, the vine and the bog.
 - **Climbing:** the party climbs the ladder one by one and lines up on the platform. The camera pulls back to ⅓× zoom, showing nine times the area. Tap (or Esc/Space) to climb down. Spells in flight fizzle when the climb starts.
 - **First climb:** reveals the area on the map and gives 60 XP. Not usable mid-combat.
-- **Performance rule:** only terrain and scenery stream in for the wider view (plus a 25% margin). Loading starts as soon as the party heads for the ladder, and the camera waits up top until it's painted (3 s at most). Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 220; about 45 chunks are used) is released on the way down.
+- **Performance rule:** only terrain and scenery stream in for the wider view (plus a 25% margin). Loading starts as soon as the party heads for the ladder, and the camera zooms out the moment the last hero is up, without waiting for the edges. Enemy groups outside the normal view aren't spawned, and the world's AI is frozen while you're up. The extra chunk budget (40 → 220; about 45 chunks are used) is released on the way down.
 - **Placement rule:** on open ground with nothing within 4 tiles, outside any curse circle, and within about 12 tiles of the dungeon entrance or the stone.
 
 ### 4. Boss rules [BUILT]
@@ -1346,7 +1347,7 @@ One climbable watchtower per region (6 total) that overlooks the region's key la
   - **The bars drop across the corridor outside, never on arena floor**, so nobody can be trapped inside a blocked tile.
   - Arenas are wide enough to move around the boss.
 - **Overworld bosses** (true lieutenants) have no bars. Leaving about 20 tiles away resets them.
-- **Party wipe:** you return to the campfire behind the loading curtain and lose 10% of your gold. The boss resets.
+- **Party wipe:** you return to the **nearest campfire you've found** (seen within 7 tiles, or rested at) behind the loading curtain, and lose 10% of your gold. The boss resets. Inside an interior, distance is measured from its entrance.
 
 ### 5. Music
 Each region adds a theme variation (§11a). Its dungeon uses the Depths variation unless it gets its own.

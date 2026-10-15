@@ -803,8 +803,8 @@ export class Enemy extends Unit {
     // level scaling within the region's band, plus the elite affix
     if (!Number.isFinite(level)) level = 1; // never let a bad level poison health and damage
     const L1 = level - 1;
-    const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 2.2 : 1);
-    const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.3 : 1);
+    const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 1.8 : 1);
+    const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.15 : 1);
     const s = { ...base, dmg: base.dmg * dmgMul, xp: Math.round(base.xp * (1 + L1 * tuning.enemyXpGrowth) * (elite ? 2.5 : 1)), gold: base.gold.map((g) => Math.round(g * (elite ? 2 : 1) * (1 + L1 * tuning.enemyGoldGrowth))) };
     super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : base.inert ? undefined : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
     this.kind = kind;
@@ -988,7 +988,7 @@ export class Enemy extends Unit {
     return amount;
   }
 
-  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.clearZone(); super.destroy(); }
+  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
 
   die(src) {
     this.alive = false;

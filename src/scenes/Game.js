@@ -604,7 +604,7 @@ export class Game extends Phaser.Scene {
       const glow = this.add.circle(x, y, 26, 0xffb050, 0.12).setDepth(-60).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({ targets: glow, alpha: 0.06, scale: 0.9, duration: 220, yoyo: true, repeat: -1 });
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', interact: () => this.rest() });
+      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
     }
     for (const s of W.signs) {
       const x = px(s.x), y = px(s.y);
@@ -1272,7 +1272,23 @@ export class Game extends Phaser.Scene {
       g.fillStyle(0x3a2f52).fillRect(x, y, w, 2);
       g.fillStyle(f > 0.5 ? 0xec6a5e : f > 0.25 ? 0xf29a4e : 0xffd04a).fillRect(x, y, Math.max(1, Math.round(w * f)), 2);
       if (e.wardShield > 0) g.fillStyle(0xd9b8ff).fillRect(x, y - 1, Math.round(w * Math.min(1, e.wardShield / e.maxHp)), 1);
-      if (e.elite) g.fillStyle(0xf2c14e).fillRect(x - 1, y - 1, 1, 4).fillRect(x + w, y - 1, 1, 4);
+      if (e.elite) {
+        g.fillStyle(0xf2c14e).fillRect(x - 1, y - 1, 1, 4).fillRect(x + w, y - 1, 1, 4);
+        // a tag that stays up through the fight so it's clear why this one hits so hard
+        e.eliteTag ??= this.add.bitmapText(0, 0, 'fontGold', e.named ? e.s.name : 'ELITE').setOrigin(0.5, 1).setDepth(TOP - 34);
+        e.eliteTag.setPosition(Math.round(e.x), y - 2).setVisible(true);
+      }
+    }
+    // elites: a slow gold ring under their feet (always, so you can pick them out before engaging)
+    const rg = (this.eliteRings ??= this.add.graphics().setDepth(-5));
+    rg.clear();
+    const view = this.cameras.main.worldView, pulse = 0.35 + Math.sin(this.time.now / 260) * 0.2;
+    for (const e of this.enemies) {
+      if (!e.alive || !e.elite || e.boss || e.submerged) { e.eliteTag?.setVisible(false); continue; }
+      if (e.x < view.x - 20 || e.x > view.right + 20 || e.y < view.y - 20 || e.y > view.bottom + 20) continue;
+      rg.lineStyle(1, 0xf2c14e, pulse + 0.3).strokeEllipse(e.x, e.y + 2, 22, 9);
+      rg.fillStyle(0xf2c14e, pulse * 0.35).fillEllipse(e.x, e.y + 2, 22, 9);
+      if (!(e.engaged || e.hp < e.maxHp)) e.eliteTag?.setVisible(false);
     }
   }
 
@@ -1514,9 +1530,35 @@ export class Game extends Phaser.Scene {
       if (this.golem) { for (const p of this.golem.plates || []) { p.img.destroy(); this.removeInteractable(p.o); } this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); this.sealArena(false); }
       this.setLeader(this.party[0], true);
       this.events.emit('party');
-      // back to the campfire behind the loading curtain (it may be a different area entirely)
-      this.teleportParty({ to: W.start }, () => { this.cameras.main.fadeIn(700); this.busy = false; }, 0, true);
+      // back to the nearest campfire you've found, behind the loading curtain (it may be a different area entirely)
+      this.teleportParty({ to: this.respawnCamp() }, () => { this.cameras.main.fadeIn(700); this.busy = false; }, 0, true);
     });
+  }
+
+  // Campfires count as found once the party has been near one (or rested there).
+  updateCampfires() {
+    const L = this.leader;
+    for (const c of W.campfires) {
+      const k = `camp_${c.x}_${c.y}`;
+      if (!this.flags[k] && Math.hypot(L.x - (c.x * TILE + 8), L.y - (c.y * TILE + 8)) < 7 * TILE) {
+        this.flags[k] = true;
+        this.floatText(c.x * TILE + 8, c.y * TILE - 18, 'CAMPFIRE FOUND', 'fontGold');
+      }
+    }
+  }
+
+  // Where the party regroups after a wipe: the found campfire nearest to where they fell.
+  // Inside an interior, distance is measured from its entrance in the overworld.
+  respawnCamp() {
+    const L = this.leader;
+    let fx = L.x / TILE, fy = L.y / TILE;
+    if (this.area !== 'overworld') {
+      const door = W.warps.find((w) => !w.exit && areaAt(w.to.x, w.to.y) === this.area);
+      if (door) { fx = door.x; fy = door.y; }
+    }
+    const found = W.campfires.filter((c) => this.flags[`camp_${c.x}_${c.y}`]);
+    const best = (found.length ? found : [W.start]).sort((a, b) => Math.hypot(a.x - fx, a.y - fy) - Math.hypot(b.x - fx, b.y - fy))[0];
+    return best === W.start ? W.start : { x: best.x, y: best.y + 2 };
   }
 
   rest() {
@@ -1604,7 +1646,7 @@ export class Game extends Phaser.Scene {
     });
     // once everyone's up and the wide view is painted (or 3s at most): pull back and take it in
     const upAt = this.time.now + (heroes.length - 1) * 550 + 1350;
-    const ready = (cb) => { if (this.time.now >= upAt && (this.streamer.wantedProgress() >= 1 || this.time.now > upAt + 3000)) cb(); else this.time.delayedCall(80, () => ready(cb)); };
+    const ready = (cb) => { if (this.time.now >= upAt) cb(); else this.time.delayedCall(60, () => ready(cb)); };
     ready(() => {
       cam.stopFollow();
       cam.pan(x, y - 40, 900, 'Sine.easeInOut');
@@ -2517,6 +2559,7 @@ export class Game extends Phaser.Scene {
     this.updateBloom(dt);
     this.updateLoot(dt);
     this.updateBoss();
+    this.updateCampfires();
     this.updateWardBoss();
     this.updateVines(dt);
     this.updateThoughts(dt);
