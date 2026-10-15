@@ -362,6 +362,9 @@ export class Game extends Phaser.Scene {
       this.updateNodeMarker(n);
     }
     for (const n of this.npcs) {
+      // "?" when an errand is ready to hand in to them
+      n.mark ??= this.add.image(n.px, n.py - 30, 'markA').setDepth(TOP - 40).setVisible(false);
+      n.mark.setVisible(!!this.quests?.turnInFor(n)).setY(n.py - 31 + Math.sin(this.time.now / 300) * 1.5);
       if (n.s || !loaded.has('interior')) continue;
       n.s = this.add.sprite(n.px, n.py, n.id, 'idle_down_0').setOrigin(0.5, 0.75).play(`${n.id}_idle_down`).setDepth(n.py);
       this.add.image(n.px + 1, n.py + 1, 'shadow').setAlpha(0.2).setDepth(-4);
@@ -417,16 +420,17 @@ export class Game extends Phaser.Scene {
   talkNpc(npc) {
     const L = this.leader;
     L.face(npc.px - L.x, npc.py - L.y);
+    // errands handed in to Marla or Bruno come first
+    const turnIn = this.quests.turnInFor(npc);
+    if (turnIn) { this.quests.advance(turnIn, npc); return; }
     const lines = npc.lines.map((text) => ({ who: npc.name, portrait: loaded.has('interior') ? `${npc.id}_portrait` : null, voice: npc.voice, text }));
     if (npc.kind === 'merchant') this.events.emit('dialogue', lines.slice(this.flags.metMarla ? 1 : 0), () => { this.flags.metMarla = true; this.openOverlay('Shop'); });
     else {
-      const ask = { who: npc.name, portrait: `${npc.id}_portrait`, voice: npc.voice, text: this.state.gold >= 10 ? 'TEN GOLD. YOU IN? (TAP TO PLAY)' : "YOU'RE SHORT OF TEN GOLD, FRIEND. COME BACK RICHER." };
-      this.events.emit('dialogue', [...lines.slice(this.flags.metBruno ? 1 : 0), ask], () => {
-        this.flags.metBruno = true;
-        if (this.state.gold < 10) return;
-        this.state.gold -= 10;
-        this.openOverlay('Minigame');
-      });
+      const can = this.state.gold >= 10;
+      const play = () => { this.flags.metBruno = true; this.state.gold -= 10; this.openOverlay('Minigame'); };
+      const ask = { who: npc.name, portrait: `${npc.id}_portrait`, voice: npc.voice, text: can ? 'TEN GOLD A GAME. YOU IN?' : "YOU'RE SHORT OF TEN GOLD, FRIEND. COME BACK RICHER." };
+      if (can) ask.choices = [['PLAY (10G)', play], ['NOT NOW', () => { this.flags.metBruno = true; }]];
+      this.events.emit('dialogue', [...lines.slice(this.flags.metBruno ? 1 : 0), ask], () => { this.flags.metBruno = true; });
     }
   }
 
