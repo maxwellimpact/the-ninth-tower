@@ -129,6 +129,41 @@ export class UI extends Phaser.Scene {
     return b;
   }
 
+  placeButton(b) {
+    b.zone.setPosition(b.x, b.y);
+    b.icon?.setPosition(b.x + b.size / 2, b.y + b.size / 2);
+    b.key.setPosition(b.round ? b.x + b.size - 6 : b.x + 1, b.round ? b.y + b.size - 6 : b.y + b.size + 2);
+    b.label?.setPosition(b.x + b.size / 2, b.y + b.size / 2);
+  }
+
+  // Landscape: one compact row hugging the bottom edge, icons only. The
+  // leader's own buttons sit in a thin gold outline tagged with their name;
+  // the companions' ULTs sit apart in a grey one. Only visible buttons are
+  // packed and framed (re-packed when a skill unlocks or the leader changes).
+  packRow(L) {
+    const lead = [this.ultBtn, this.dodgeBtn, ...this.skillBtns].filter((b) => b.visible);
+    const allies = this.allyBtns.filter((b) => b.visible);
+    const key = `${lead.length}|${allies.length}|${L.def.id}`;
+    if (key === this.rowKey) return;
+    this.rowKey = key;
+    const step = this.ultBtn.size + 4, y = this.rowY, x0 = 8 + this.pad.l;
+    lead.forEach((b, i) => { b.x = x0 + i * step; b.y = y; this.placeButton(b); });
+    const ax = x0 + lead.length * step + 10;
+    allies.forEach((b, i) => { b.x = ax + i * step; b.y = y; this.placeButton(b); });
+    const g = this.grpG.clear();
+    const frame = (bs, col, lbl, text) => {
+      if (!bs.length) { lbl.setVisible(false); return; }
+      const fx = bs[0].x - 3, fw = bs[bs.length - 1].x + bs[0].size + 3 - fx;
+      g.lineStyle(1, col, 0.75).strokeRoundedRect(fx, y - 3, fw, bs[0].size + 6, 4);
+      lbl.setText(text).setVisible(true);
+      // the name sits on the frame's top edge
+      g.fillStyle(C.ink, 0.85).fillRect(fx + 4, y - 7, lbl.width + 4, 7);
+      lbl.setPosition(fx + 6, y - 7);
+    };
+    frame(lead, C.gold, this.groupLbl[0], L.def.name.toUpperCase());
+    frame(allies, C.stone, this.groupLbl[1], 'ALLIES');
+  }
+
   setButtonVisible(b, v) {
     b.visible = v;
     b.icon?.setVisible(v); b.key.setVisible(v && !b.hideKey); b.label?.setVisible(v);
@@ -176,23 +211,18 @@ export class UI extends Phaser.Scene {
     this.rowMode = this.W > this.H && W - L0 >= 380;
     this.grpG ??= this.add.graphics().setDepth(-1);
     this.grpG.clear();
+    this.rowKey = null; // re-pack the landscape row on the next frame
     if (this.rowMode) {
-      const lead = [this.ultBtn, this.dodgeBtn, ...this.skillBtns], allies = this.allyBtns;
-      lead.forEach((b, i) => { b.x = colX(i); b.y = rowB; });
-      const ax = colX(lead.length) + 12, SZB = lead[0].size;
-      allies.forEach((b, i) => { b.x = ax + i * 38; b.y = rowB; });
-      const fr = (x0, x1, col) => { this.grpG.fillStyle(C.ink, 0.35).fillRoundedRect(x0 - 4, rowB - 13, x1 - x0 + 8, 13 + SZB + 13, 5); this.grpG.lineStyle(1, col, 0.8).strokeRoundedRect(x0 - 4, rowB - 13, x1 - x0 + 8, 13 + SZB + 13, 5); };
-      fr(lead[0].x, lead[lead.length - 1].x + lead[0].size, C.gold);
-      fr(allies[0].x, allies[1].x + allies[1].size, C.stone);
       this.groupLbl ??= [this.add.bitmapText(0, 0, 'fontGold', ''), this.add.bitmapText(0, 0, 'font', 'ALLIES')];
-      this.groupLbl[0].setPosition(lead[0].x, rowB - 10).setVisible(true);
-      this.groupLbl[1].setPosition(allies[0].x, rowB - 10).setVisible(true);
+      this.rowY = H - this.ultBtn.size - 5;
     } else {
       [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB], [this.skillBtns[2], 3, rowB],
         [this.ultBtn, 0, rowT], [this.allyBtns[0], 1, rowT], [this.allyBtns[1], 2, rowT]].forEach(([b, c, y]) => { b.x = colX(c); b.y = y; });
       this.groupLbl?.forEach((t) => t.setVisible(false));
     }
     for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl.setPosition(b.x + b.size / 2, b.y + b.size + 2);
+    // icons only in the landscape row (keyboard hints are already hidden on touch screens)
+    for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl.setVisible(!this.rowMode);
     // utility, bottom right: bag + flasks
     this.bagBtn.x = W - 30; this.bagBtn.y = H - 30;
     this.muteBtn.x = W - 22; this.muteBtn.y = 6 + T0;
@@ -203,12 +233,7 @@ export class UI extends Phaser.Scene {
     this.dbgBtn.x = W - 40; this.dbgBtn.y = 6 + T0;
     this.speedDown.x = 8; this.speedDown.y = H - 100;
     this.speedUp.x = 34; this.speedUp.y = H - 100;
-    for (const b of this.buttons) {
-      b.zone.setPosition(b.x, b.y);
-      b.icon?.setPosition(b.x + b.size / 2, b.y + b.size / 2);
-      b.key.setPosition(b.round ? b.x + b.size - 6 : b.x + 1, b.round ? b.y + b.size - 6 : b.y + b.size + 2);
-      b.label?.setPosition(b.x + b.size / 2, b.y + b.size / 2);
-    }
+    for (const b of this.buttons) this.placeButton(b);
     this.mmX = W - this.MM.w - 6; this.mmY = 24 + T0;
     this.mmZone.setPosition(this.mmX, this.mmY);
     this.mmFrame.clear();
@@ -482,11 +507,11 @@ export class UI extends Phaser.Scene {
     this.trackTitle.setText(tstep ? tq.title(tid) : '');
     this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
     const L = game.leader;
-    if (this.rowMode && this.groupLbl) this.groupLbl[0].setText(L.def.name.toUpperCase());
+
     this.skillBtns.forEach((b, i) => {
       const s = L.skills[i];
       this.setButtonVisible(b, !!s);
-      b.lbl.setVisible(!!s);
+      b.lbl.setVisible(!!s && !this.rowMode);
       if (!s) return;
       if (this.textures.exists(s.icon)) b.icon.setTexture(s.icon);
       b.lbl.setText(s.short || s.name);
@@ -507,13 +532,14 @@ export class UI extends Phaser.Scene {
     this.allyBtns.forEach((b, i) => {
       const a = al[i];
       this.setButtonVisible(b, !!a);
-      b.lbl.setVisible(!!a);
+      b.lbl.setVisible(!!a && !this.rowMode);
       if (!a) return;
       const r = a.ult >= 100 && !a.downed;
       b.icon.setTexture(a.ultimate.icon || 'icon_meteor');
       b.lbl.setText(a.def.name.toUpperCase()).setTint(a.downed ? 0xec6a5e : r ? 0xfff0a0 : 0xffffff);
       this.drawBtn(g, b, a.downed ? 1 : 1 - a.ult / 100, r ? Phaser.Display.Color.GetColor(gold.r, gold.g, gold.b) : 0x6e6a87, 0x6fd3ff);
     });
+    if (this.rowMode) this.packRow(L);
     this.drawBtn(g, this.bagBtn, 0);
     this.drawBtn(g, this.potBtn, 0); this.drawBtn(g, this.elxBtn, 0);
     this.potTxt.setText(`${game.state.potions.potion || 0}`).setTint(game.state.potions.potion ? 0xffffff : 0x777777);
