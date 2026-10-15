@@ -40,9 +40,15 @@ const BARKS = {
   curse: { brann: 'STAY CLOSE. THE AIR TASTES WRONG.', pip: 'THAT STONE IS HUMMING. I HATE IT WHEN THEY HUM.', sable: 'PURPLE GRASS. NEVER A GOOD SIGN.' },
   ward: { brann: 'FOR THE KING. THE FROG KING. STILL COUNTS.', pip: 'ONE DOWN! MALGRIM IS GOING TO BE SO CROSS.', sable: 'THAT FELT GOOD. WHAT ELSE CAN WE BREAK?' },
   chest: { brann: 'A FINE FIND. WE TAKE IT FOR THE KING.', pip: "IS IT A SPELLBOOK? IT'S NOT A SPELLBOOK.", sable: 'FINDERS KEEPERS.' },
-  gap: { brann: "TOO SHEER TO CLIMB. EVEN FOR ME.", pip: 'IF ONLY WE HAD SOME KIND OF... HOOK.', sable: "I COULD FREE-CLIMB THAT. PROBABLY. NO." },
+  gap: { brann: "I SEEM TO BE MISSING A TOOL FOR THIS.", pip: "WE'RE MISSING SOME KIND OF TOOL FOR THIS. I'LL REMEMBER IT.", sable: "I'D NEED A TOOL TO USE THIS. COME BACK LATER?" },
   help: { brann: '', pip: 'HELP! THE PUDDLES ARE WINNING!', sable: "LITTLE HELP? THESE THINGS DON'T TAKE BRIBES." },
 };
+// Kesh and Wren lead too
+Object.assign(BARKS.start, { kesh: 'SMELLS LIKE HOME. AND GOBLINS.', wren: 'KESTREL, HIGH WATCH. I HAVE THE GROUND.' });
+Object.assign(BARKS.curse, { kesh: 'THE CURSE STINKS HERE. IT REMEMBERS ME.', wren: 'EVEN THE BIRDS WENT QUIET.' });
+Object.assign(BARKS.ward, { kesh: 'BROKEN. GOOD. ONE LESS CAGE.', wren: 'CLEAN SHOT. WELL, CLEAN-ISH.' });
+Object.assign(BARKS.chest, { kesh: 'SHINY. MINE. OURS.', wren: 'KESTREL SPOTTED IT FIRST, FOR THE RECORD.' });
+Object.assign(BARKS.gap, { kesh: 'NEED A TOOL FOR THIS. NOT A FIST.', wren: "WE DON'T HAVE WHAT THIS NEEDS. NOT YET." });
 
 export class Game extends Phaser.Scene {
   constructor() { super('Game'); }
