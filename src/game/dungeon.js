@@ -206,7 +206,7 @@ export class DungeonKit {
       const sealed = shut && d.unlocked && d.kind !== 'shutter';
       d.s.setTexture(sealed ? `dgDoor_shutter_${d.vertical ? 'v' : 'h'}` : shut ? d.tex : `${d.tex}_open`);
       for (const [x, y] of d.tiles) { if (shut) sc.nav.block(x, y); else sc.nav.unblock(x, y); }
-      if (shut) for (const h of sc.party) this.evict(h, d.tiles);
+      if (shut) { const into = [...d.rooms].find((r) => r.active); for (const u of [...sc.party, ...sc.enemies.filter((e) => e.alive)]) this.evict(u, d.tiles, into); }
       if (d.o) d.o.hidden = !shut || d.unlocked;
     }
     if (silent) return;
@@ -232,12 +232,25 @@ export class DungeonKit {
     this.emit();
   }
 
-  // push anyone standing in a tile that just became solid to the nearest open floor
-  evict(u, tiles) {
+  // anyone whose footprint is caught in tiles that just turned solid steps
+  // clear: into `room` if given (the fight that just sealed), else to the
+  // nearest open floor
+  evict(u, tiles, room = null) {
+    const r = u.r || 5;
+    const hit = (x, y) => tiles.some(([a, b]) => a === Math.floor(x / TILE) && b === Math.floor(y / TILE));
+    const caught = [[-r, -r * 0.6], [r, -r * 0.6], [-r, r * 0.6], [r, r * 0.6], [0, 0]].some(([ox, oy]) => hit(u.x + ox, u.y + oy));
     const tx = Math.floor(u.x / TILE), ty = Math.floor(u.y / TILE);
-    if (!tiles.some(([x, y]) => x === tx && y === ty) && !this.sc.nav.isSolid(tx, ty)) return;
-    const o = this.sc.nav.nearestOpen(tx, ty, 4);
-    if (o) { u.x = o[0] * TILE + 8; u.y = o[1] * TILE + 8; u.clearPath?.(); }
+    if (!caught && !this.sc.nav.isSolid(tx, ty)) return;
+    let best = null, bd = Infinity;
+    for (const [x, y] of tiles) for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (this.sc.nav.isSolid(nx, ny)) continue;
+      if (room && this.roomOf.get(key(nx, ny)) !== room.id) continue;
+      const d = Math.hypot(px(nx) - u.x, px(ny) - u.y);
+      if (d < bd) { bd = d; best = [nx, ny]; }
+    }
+    best ??= this.sc.nav.nearestOpen(tx, ty, 4);
+    if (best) { u.x = px(best[0]); u.y = px(best[1]); u.clearPath?.(); u.sync?.(0); }
   }
 
   // ------------------------------------------------------------- blocks
@@ -403,6 +416,9 @@ export class DungeonKit {
       this.roomNow = rid;
       this.enter(this.rooms[rid]);
     }
+    // a sealed fight waits until the leader is a step clear of every doorway
+    const pend = this.rooms[rid];
+    if (pend?.seal && pend.foes.length && !pend.entered && !this.nearDoor(L, pend)) this.seal(pend);
     const room = this.rooms[rid];
     if (room?.active) {
       const inRoom = (e) => this.roomOf.get(key(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) === room.id;
@@ -425,6 +441,17 @@ export class DungeonKit {
     const sc = this.sc;
     for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text)) { this.hinted.add(h.text); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
     if (room.entered || !room.foes.length) { room.entered = true; return; }
+    if (room.seal) return; // update() seals it once the leader is clear of the door
+    this.seal(room);
+  }
+
+  nearDoor(u, room) {
+    for (const d of room.doors) for (const [x, y] of d.tiles) if (Math.hypot(px(x) - u.x, px(y) - u.y) < TILE * 1.6) return true;
+    return false;
+  }
+
+  seal(room) {
+    const sc = this.sc;
     room.entered = true;
     const elite = this.def.elite || {};
     const spawn = () => room.spawned = room.foes.map(({ ch, x, y }) => {

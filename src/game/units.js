@@ -65,10 +65,15 @@ export class Unit {
   moveBy(dx, dy) {
     const nav = this.scene.nav;
     const r = this.r;
+    const clear = (x, y) => !nav.solidAtPx(x - r, y - r * 0.6) && !nav.solidAtPx(x + r, y - r * 0.6) && !nav.solidAtPx(x - r, y + r * 0.6) && !nav.solidAtPx(x + r, y + r * 0.6);
+    // already overlapping something solid (a gate or door shut on our heels, a
+    // block slid against us): let any step that keeps our centre on open floor
+    // through, so the unit can walk itself free instead of being pinned
+    const free = (x, y) => clear(x, y) || (!clear(this.x, this.y) && !nav.solidAtPx(x, y));
     const nx = this.x + dx;
-    if (!nav.solidAtPx(nx - r, this.y - r * 0.6) && !nav.solidAtPx(nx + r, this.y - r * 0.6) && !nav.solidAtPx(nx - r, this.y + r * 0.6) && !nav.solidAtPx(nx + r, this.y + r * 0.6)) this.x = nx;
+    if (free(nx, this.y)) this.x = nx;
     const ny = this.y + dy;
-    if (!nav.solidAtPx(this.x - r, ny - r * 0.6) && !nav.solidAtPx(this.x + r, ny - r * 0.6) && !nav.solidAtPx(this.x - r, ny + r * 0.6) && !nav.solidAtPx(this.x + r, ny + r * 0.6)) this.y = ny;
+    if (free(this.x, ny)) this.y = ny;
   }
 
   sync(dt) {
