@@ -38,10 +38,23 @@ export class Title extends Phaser.Scene {
     this.add.bitmapText(W / 2, H - 10, 'fontPlain', 'OPEN /LAB.HTML FOR THE SPRITE + SOUND LAB').setOrigin(0.5).setAlpha(0.6);
     // Dungeon lab: try a test dungeon with a ready-made party. Never saves,
     // so it can't touch the real game. (Also opens straight away via #dungeon.)
-    const lab = this.add.bitmapText(W - 30, 10, 'fontGold', 'DUNGEON LAB >').setOrigin(1, 0); // clear of a landscape notch / rounded corner
-    const lz = this.add.zone(lab.x - lab.width - 6, 2, lab.width + 12, 20).setOrigin(0).setInteractive({ useHandCursor: true });
+    // a framed button in the corner (the save menu adds a full-size one too),
+    // kept clear of a landscape notch / rounded corner
+    const lab = this.add.bitmapText(W - 34, 38, 'fontGold', 'DUNGEON LAB').setOrigin(1, 0).setDepth(1);
+    const bx = lab.x - lab.width - 8, bw = lab.width + 16;
+    const lg = this.add.graphics();
+    const drawLab = (hot) => lg.clear().fillStyle(0x1a1423).fillRect(bx - 1, 31, bw + 2, 22).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(bx, 32, bw, 20).fillStyle(0x2b2140).fillRect(bx + 1, 33, bw - 2, 18);
+    drawLab(false);
+    const lz = this.add.zone(bx, 31, bw, 22).setOrigin(0).setInteractive({ useHandCursor: true });
+    lz.on('pointerover', () => drawLab(true)); lz.on('pointerout', () => drawLab(false));
     lz.on('pointerdown', () => this.enterLab());
+    this.labLink = [lab, lg, lz];
+    this.showLabLink(!save); // the save menu has its own full-size button
     if (location.hash === '#dungeon') this.time.delayedCall(300, () => this.enterLab());
+  }
+
+  showLabLink(on) {
+    for (const o of this.labLink || []) { o.setVisible(on); if (o.input) o.input.enabled = on; }
   }
 
   enterLab(id = 'labUndercroft') {
@@ -86,17 +99,20 @@ export class Title extends Phaser.Scene {
     opt(112, 'NEW GAME', 'START OVER', () => {
       audio.init(); audio.sfx('click');
       for (const o of objs) o.destroy();
+      this.showLabLink(true);
       this.heroSelect();
     });
+    opt(144, 'DUNGEON LAB', 'TRY THE NEW UNDERCROFT - NOT SAVED', () => this.enterLab());
   }
 
   heroSelect() {
     const W = this.scale.width, H = this.scale.height;
     this.add.bitmapText(W / 2, 62, 'font', 'CHOOSE YOUR STARTING HERO').setOrigin(0.5);
 
-    const spacing = Math.min(100, W / 3.3);
+    // centred for however many heroes there are, so none run off the edge
+    const spacing = Math.min(100, (W - 16) / HEROES.length);
     HEROES.forEach((def, i) => {
-      const x = Math.round(W / 2 + (i - 1) * spacing), y = 128;
+      const x = Math.round(W / 2 + (i - (HEROES.length - 1) / 2) * spacing), y = 128;
       const card = this.add.graphics();
       const drawCard = (hot) => {
         card.clear();
