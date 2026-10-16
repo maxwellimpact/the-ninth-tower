@@ -31,6 +31,7 @@ function bolt(sc, x0, y0, x1, y1) {
 const engagedNear = (sc, p, r) => sc.enemies.filter((e) => e.alive && e.engaged && dist(e, p) < r);
 const attackers = (sc, h, r = 40) => sc.enemies.filter((e) => e.alive && e.target === h && dist(e, h) < r);
 const tough = (e) => e && (e.boss || e.elite || e.maxHp >= 200);
+const inDanger = (sc, x, y, pad = 0) => sc.dangers.some((z) => Math.hypot(x - z.x, y - z.y) < z.r + pad);
 
 export const SKILL_FX = {
   // ----------------------------------------------------------------- Brann
@@ -284,7 +285,13 @@ export const SKILL_FX = {
       if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
       return true;
     },
-    ai(h, c) { const t = c.target; return t && dist(t, h) > 36 && dist(t, h) < 75 && dist(t, h.scene.leader) < 60 && t.kind !== 'ward' ? t : null; }, // short hops into the leader's fight, not cross-screen blinks
+    ai(h, c) {
+      // short hops back into the leader's fight, not cross-screen blinks, and
+      // never into an attack that's about to land
+      const t = c.target;
+      if (!t || dist(t, h) <= 36 || dist(t, h) >= 75 || dist(t, h.scene.leader) >= 60 || t.kind === 'ward') return null;
+      return inDanger(h.scene, t.x, t.y, 14) ? null : t;
+    },
   },
   fan: {
     cast(h, { m }) {
@@ -297,7 +304,7 @@ export const SKILL_FX = {
       audio.sfx('stab'); sc.time.delayedCall(40, () => audio.sfx('stab')); sc.time.delayedCall(80, () => audio.sfx('swing', { pitch: 1.4 }));
       return true;
     },
-    ai(h, c) { return engagedNear(h.scene, h, 38).length >= 2 ? true : null; },
+    ai(h, c) { return engagedNear(h.scene, h, 38).length >= 2 || (tough(c.target) && dist(c.target, h) < 34) ? true : null; }, // a crowd, or point-blank on a boss / elite
   },
   envenom: {
     cast(h, { m }) {

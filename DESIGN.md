@@ -121,6 +121,7 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
 **Goal:** companions should feel like competent co-op partners. They must never be something the player has to babysit.
 
 ### Movement & positioning
+- **Skills at the right moment, never spam:** each companion skill has a "worth it now" rule, and a companion uses at most one skill about every 1.5 s on top of cooldowns. Every skill needs a sensible single-boss trigger as well as a crowd one. For example, Fan of Knives fires point-blank on a boss or elite, not only in a crowd. Gap-closers never blink into a telegraphed attack. Measured in the lab boss fight: Pip 2 Fireballs, Sable 2 Fans and 3 Steps per 30 s.
 - **Commit to dodges [LOCKED from playtest]:** a companion escaping a telegraphed zone keeps going until well clear, then waits just outside it (facing the foe, attacking if in reach) until the attack resolves. It never steps back in early. Before this, Sable flickered on a zone's edge about 12 times a second.
 - **Ranged allies keep their distance [LOCKED from playtest]:** they hold about ¾ of their range from their target. They back off when it comes inside that, with slack so they don't jitter, sliding sideways off walls. They shoot while backing off unless the foe is right on top of them, when they just run. They only close in until the target is in range, and they can hang back further from a melee leader before regrouping.
 - **Never block the leader.** Companions have *soft* collision with the leader and step aside in narrow corridors.
