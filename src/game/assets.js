@@ -188,7 +188,8 @@ GROUPS.core.push(
     for (const k of ['key', 'seal', 'map', 'compass']) s.textures.addCanvas(`dgIcon_${k}`, DG.dungeonIcon(k));
     s.textures.addCanvas('dgPlate', DG.plate(false)); s.textures.addCanvas('dgPlateDown', DG.plate(true));
     for (const col of ['blue', 'red']) { s.textures.addCanvas(`dgCrystal_${col}`, DG.crystal(col)); s.textures.addCanvas(`dgPeg_${col}_up`, DG.peg(col, true)); s.textures.addCanvas(`dgPeg_${col}_down`, DG.peg(col, false)); }
-    for (const k of ['shutter', 'key', 'boss']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
+    s.textures.addCanvas('dgCrackFace', DG.crackedWall(true)); s.textures.addCanvas('dgCrackTop', DG.crackedWall(false));
+    for (const k of ['shutter', 'key', 'boss', 'vault']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
 );

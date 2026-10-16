@@ -16,7 +16,7 @@ import DUNGEONS from '../data/dungeons.json';
 
 const TILE = 16;
 const px = (t) => t * TILE + TILE / 2;
-const DOOR = { '=': 'shutter', k: 'key', K: 'boss' };
+const DOOR = { '=': 'shutter', k: 'key', K: 'boss', V: 'vault' };
 const FOES = { h: 'hollow', R: 'rats' };
 const WALLISH = new Set(['#', ' ', '~']);
 const key = (x, y) => `${x},${y}`;
@@ -102,7 +102,12 @@ export class DungeonKit {
       else if (ch === 'P') { const p = { x, y, room, latched: false, s: sc.add.image(px(x), px(y), 'dgPlate').setDepth(-30) }; this.plates.push(p); room.plates.push(p); }
       else if (ch === 'b' || ch === 'r') { const z = this.zones[this.zoneOf.get(k)]; z.pegs.push({ x, y, color: ch === 'b' ? 'blue' : 'red', s: sc.add.image(px(x), px(y) + 6, 'dgPeg_blue_up').setOrigin(0.5, 1) }); }
       else if (ch === 'C') { const z = this.zones[this.zoneOf.get(k)]; const c = new Crystal(sc, this, x, y, z); z.crystals.push(c); this.crystals.push(c); sc.breakables.push(c); sc.nav.block(x, y); }
-      else if (ch === '%') { const b = new Breakable(sc, { id: `${this.id}_${lx}_${ly}`, kind: 'wall', x, y, hp: 60, tiles: [[x, y]] }); sc.nav.block(x, y); sc.breakables.push(b); }
+      else if (ch === '%') {
+        // cracked wall: drawn to match a wall face (floor below it) or a wall run seen from above
+        const face = !WALLISH.has(this.at(x, y + 1)) && this.at(x, y + 1) !== '%';
+        const b = new Breakable(sc, { id: `${this.id}_${lx}_${ly}`, kind: 'wall', tex: face ? 'dgCrackFace' : 'dgCrackTop', x, y, hp: 60, tiles: [[x, y]] });
+        sc.nav.block(x, y); sc.breakables.push(b);
+      }
       else if (/[1-9]/.test(ch)) this.addChest(x, y, ch, room);
       else if (this.def.posts?.[ch]) this.addPost(x, y, ch);
       else if (FOES[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
@@ -212,10 +217,12 @@ export class DungeonKit {
   tryUnlock(d) {
     const sc = this.sc, L = sc.leader;
     if (d.unlocked) return;
+    const vault = this.def.vault;
     if (d.kind === 'key' && this.keys > 0) { this.keys--; d.unlocked = true; }
     else if (d.kind === 'boss' && this.big) d.unlocked = true;
+    else if (d.kind === 'vault' && sc.state.relics.includes(vault?.relic)) { d.unlocked = true; sc.events.emit('banner', 'SEALED VAULT', vault.open || 'THE SEAL ANSWERS AND THE DOOR GRINDS OPEN'); }
     else {
-      sc.bark(L, d.kind === 'boss' ? 'A GREAT SEALED DOOR. THE LOCK IS SHAPED LIKE A WARDEN\'S CREST.' : 'LOCKED. THERE MUST BE A KEY SOMEWHERE DOWN HERE.');
+      sc.bark(L, d.kind === 'boss' ? 'A GREAT SEALED DOOR. THE LOCK IS SHAPED LIKE A WARDEN\'S CREST.' : d.kind === 'vault' ? (vault?.locked || 'A SEALED VAULT. THIS NEEDS SOMETHING WE DON\'T HAVE YET.') : 'LOCKED. THERE MUST BE A KEY SOMEWHERE DOWN HERE.');
       audio.sfx('block');
       return;
     }

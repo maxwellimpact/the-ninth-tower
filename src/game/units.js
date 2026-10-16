@@ -2039,7 +2039,7 @@ export class Murk extends Enemy {
 export class Breakable extends Unit {
   constructor(scene, def) {
     const x = def.x * 16 + 8, y = def.y * 16 + 8;
-    super(scene, x, y, { key: def.kind === 'boulder' ? 'boulder_cracked' : 'wall_cracked', maxHp: def.hp, team: 'enemy', r: def.kind === 'boulder' ? 14 : 8, shadow: 'shadowL' });
+    super(scene, x, y, { key: def.tex || (def.kind === 'boulder' ? 'boulder_cracked' : 'wall_cracked'), maxHp: def.hp, team: 'enemy', r: def.kind === 'boulder' ? 14 : 8, shadow: 'shadowL' });
     this.def = def;
     this.kind = 'breakable';
     this.engaged = false;

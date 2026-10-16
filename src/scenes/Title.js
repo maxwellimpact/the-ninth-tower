@@ -52,6 +52,7 @@ export class Title extends Phaser.Scene {
     st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
     for (const h of st.recruited) { st.heroes[h].level = 5; st.heroes[h].sp = (st.heroes[h].sp || 0) + 4; }
     st.potions.potion = 4;
+    st.relics = ['tide']; // carried from Mistfen, so the Sealed Vault can be tried (normally a return visit)
     st.lab = id;
     const p = dungeonStart(id);
     st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };

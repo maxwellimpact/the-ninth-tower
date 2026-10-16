@@ -6,7 +6,7 @@
    322,
    2
   ],
-  "legend": "# wall, . floor, ~ chasm, @ start, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, % cracked wall, 1-9 chest, t-y hook posts, h hollow, H hollow captain, R rats, ! sealed fight room, G boss, g arena gate",
+  "legend": "# wall, . floor, ~ chasm, W water (swim), @ start, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, V sealed vault door, % cracked wall, 1-9 chest, t-y hook posts, h hollow, H hollow captain, R rats, ! sealed fight room, G boss, g arena gate",
   "chests": {
    "1": {
     "key": "small",
@@ -49,6 +49,11 @@
    "7": {
     "key": "compass",
     "say": "THE COMPASS. CHESTS AND THE BOSS SHOW ON YOUR MAP."
+   },
+   "8": {
+    "items": [
+     "sunspire_staff"
+    ]
    }
   },
   "posts": {
@@ -163,13 +168,13 @@
    "###.........R.........#.............................#........#",
    "###...................#.............................#rrrrrrrr#",
    "####################################===##############........#",
-   "#############################.................#######........#",
-   "#############################.................#....##........#",
-   "#############################.............P...#....##........#",
-   "#############################.................%..6.##...2....#",
-   "#############################.................#....##........#",
-   "#############################...........B.....#....##........#",
-   "#############################.................################",
+   "######################..8...#.................#######........#",
+   "######################......#.................#....##........#",
+   "######################WWWWWW#.............P...#....##........#",
+   "######################WWWWW.V.................%..6.##...2....#",
+   "######################WWWWW.V.................#....##........#",
+   "######################WWWWW.V...........B.....#....##........#",
+   "######################WWWWWW#.................################",
    "#############################...F....@........################",
    "#############################.................################",
    "##############################################################"
@@ -211,7 +216,19 @@
     ],
     "delay": 3000,
     "text": "THE VINE RUNS UNDER THAT GREAT DOOR."
+   },
+   {
+    "at": [
+     25,
+     53
+    ],
+    "text": "FLOODED. LUCKY WE CAN SWIM NOW."
    }
-  ]
+  ],
+  "vault": {
+   "relic": "tide",
+   "locked": "A SEALED VAULT. THERE'S A WAVE CARVED ON THE DOOR... SOMETHING FROM THE FEN.",
+   "open": "THE TIDE CHARM HUMS AND THE SEAL GIVES WAY"
+  }
  }
 }

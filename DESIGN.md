@@ -1106,6 +1106,8 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   - Crystal switches that swap raised red and blue pegs. Any hit flips one (blade, arrow, spell, knife, hook). Shots fly over pegs. A switch only works the pegs in its own zone.
   - Sealed fight rooms: the doors slam until the room is clear, sometimes revealing a chest.
   - Hook posts across chasms, cracked walls, and the map and compass.
+  - **Sealed Vault:** a vault door that only another region's relic opens. In the lab it's the Tide Charm, behind which is a flooded chamber you swim across to reach the Sunspire Staff. The lab party carries the Charm so the vault can be tried; in the real game it's a return visit. The final design names the Gale Cloak for the Undercroft vault; swap it in once the Cloak exists.
+- **Music:** dungeons get their own theme. The Undercroft's is "The Undercroft", a stately minor march over a ticking clockwork ostinato. It plays in the lab only until the redesign is approved.
 - **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
 - **Party use:** some switches want a ranged hero (swap leader). After the relic, the hook hits switches nobody can walk to.
 - **Variation per dungeon:** each region's dungeon leans on its own relic (Lantern braziers, Tide Charm water levels, Lens false walls, Gauntlet boulders, Gale Cloak wind) and recombines the kit, so no two feel the same.

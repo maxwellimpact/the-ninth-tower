@@ -242,7 +242,7 @@ export function buildWorld() {
   // Lab dungeons: authored as text grids (src/data/dungeons.json)
   for (const d of Object.values(DUNGEONS)) {
     const [ox, oy] = d.origin;
-    d.rows.forEach((row, y) => [...row].forEach((ch, x) => set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : T.DFLOOR)));
+    d.rows.forEach((row, y) => [...row].forEach((ch, x) => set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : ch === 'W' ? T.WATER : T.DFLOOR)));
   }
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)
   const shell = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);

@@ -55,6 +55,10 @@ const ARP = {
     ev.push([b * 16 + [3, 9, 5, 12][b % 4], ch[[2, 1, 0, 1][b % 4]] + 36, 1, 0.7]);
     if (b % 2) ev.push([b * 16 + 14, ch[0] + 48, 1, 0.4]);
   },
+  // quiet ticking eighths, root and fifth up high: clockwork, a puzzle being worked (dungeons)
+  clock: (ch, b, ev) => {
+    for (let i = 0; i < 16; i += 2) ev.push([b * 16 + i, (i % 4 ? ch[2] : ch[0]) + 36, 1, i % 8 === 0 ? 0.75 : 0.4]);
+  },
   // lute strums on the beat (interiors)
   lute: (ch, b, ev) => {
     const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[2] + 24];
@@ -68,6 +72,7 @@ const BASS = {
   murk: [[0, 'r', 7], [8, 'f', 6]],
   hollow: [[0, 'r', 12]],
   oompah: [[0, 'r', 2], [4, 'f', 2], [8, 'r', 2], [12, 'f', 2]],
+  march: [[0, 'r', 3], [6, 'r', 1], [8, 'f', 3], [14, 'r', 1]],
 };
 
 function buildTheme(o) {
@@ -179,6 +184,25 @@ export const DEPTHS_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 1.1, echo: 0.55, vibrato: 0.006 }, arp: { echo: 0.5, vol: 1.6 }, bass: { vol: 0.8 }, pad: { vol: 1.3, cutoff: 600 } },
 });
 
+// Dungeons (the Undercroft first): a stately minor march with a ticking
+// clockwork ostinato under it, for rooms that are puzzles as much as fights
+export const UNDERCROFT_THEME = buildTheme({
+  name: 'The Undercroft', bpm: 88, key: -4, arp: 'clock', bass: 'march',
+  chords: [['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'], ['E2', 'G#2', 'B2'],
+    ['A2', 'C3', 'E3'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2'], ['A2', 'C3', 'E3']],
+  melody: [
+    ['A4', 4], ['E4', 2], ['A4', 2], ['C5', 6], ['B4', 2],
+    ['A4', 4], ['F4', 4], ['C5', 8],
+    ['B4', 4], ['G4', 2], ['B4', 2], ['D5', 6], ['C5', 2],
+    ['B4', 6], ['G#4', 2], ['E4', 8],
+    ['A4', 4], ['C5', 2], ['E5', 2], ['A5', 6], ['G5', 2],
+    ['F5', 4], ['D5', 4], ['A4', 8],
+    ['G#4', 4], ['B4', 4], ['E5', 4], ['D5', 2], ['B4', 2],
+    ['A4', 12], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.2, echo: 0.4, vibrato: 0.01 }, arp: { vol: 0.7, echo: 0.3 }, bass: { vol: 1.0 }, pad: { vol: 1.1, cutoff: 700 } },
+});
+
 // Shops and the tavern: cosy and light — a bouncy jig over oom-pah bass and
 // lute strums, no drums until a brawl breaks out
 export const HEARTH_THEME = buildTheme({
@@ -200,7 +224,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME, lab: DEPTHS_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME, lab: UNDERCROFT_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;
