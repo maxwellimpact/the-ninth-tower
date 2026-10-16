@@ -185,6 +185,7 @@ GROUPS.core.push(
     s.textures.addCanvas('stairsDown', Q.stairsDown());
     // dungeon kit pieces
     s.textures.addCanvas('dgBlock', DG.pushBlock());
+    s.textures.addCanvas('dgWater', DG.waterTile()); s.textures.addCanvas('dgLever_A', DG.lever('A')); s.textures.addCanvas('dgLever_B', DG.lever('B'));
     for (const k of ['key', 'seal', 'map', 'compass']) s.textures.addCanvas(`dgIcon_${k}`, DG.dungeonIcon(k));
     s.textures.addCanvas('dgPlate', DG.plate(false)); s.textures.addCanvas('dgPlateDown', DG.plate(true));
     for (const col of ['blue', 'red']) { s.textures.addCanvas(`dgCrystal_${col}`, DG.crystal(col)); s.textures.addCanvas(`dgPeg_${col}_up`, DG.peg(col, true)); s.textures.addCanvas(`dgPeg_${col}_down`, DG.peg(col, false)); }

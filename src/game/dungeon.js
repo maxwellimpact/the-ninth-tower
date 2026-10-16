@@ -9,16 +9,23 @@
 //
 // Rooms are found by flood-filling the floor between doors, so a layout only
 // marks what is where; which door a plate opens or a fight seals follows from
-// which room they share. Nothing here is saved yet: it's the dungeon lab.
-import { Unit, Breakable } from './units.js';
+// which room they share. Progress is saved in state.flags (dg_<id>); the
+// Dungeon Lab runs the same dungeons with a test party and never saves.
+//
+// Sluices (the Abbey): a lever swaps the water between two basins ('w' / 'v'),
+// like red and blue pegs. Drained basin floor is walkable; flooded needs the
+// Tide Charm to swim.
+import { Unit, Breakable, Golem, Murk } from './units.js';
 import { audio } from '../audio/synth.js';
 import DUNGEONS from '../data/dungeons.json';
 
 const TILE = 16;
 const px = (t) => t * TILE + TILE / 2;
 const DOOR = { '=': 'shutter', k: 'key', K: 'boss', V: 'vault' };
-const FOES = { h: 'hollow', R: 'rats' };
+const FOES = { h: 'hollow', R: 'rats' }; // defaults; a dungeon can list its own (def.foes)
 const WALLISH = new Set(['#', ' ', '~']);
+const BASIN = { w: 'A', v: 'B' };
+const T_WATER = 3; // map.js T.WATER
 const key = (x, y) => `${x},${y}`;
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -47,32 +54,99 @@ export class DungeonKit {
     this.sc = scene;
     this.id = id;
     this.def = DUNGEONS[id];
-    const [ox, oy] = this.def.origin;
-    this.ox = ox; this.oy = oy;
     this.keys = 0; this.big = false; this.map = false; this.compass = false;
     this.cells = new Map();
-    this.def.rows.forEach((row, y) => [...row].forEach((ch, x) => this.cells.set(key(ox + x, oy + y), ch)));
+    if (this.def.rows) {
+      const [ox, oy] = this.def.origin;
+      this.ox = ox; this.oy = oy;
+      this.def.rows.forEach((row, y) => [...row].forEach((ch, x) => this.cells.set(key(ox + x, oy + y), ch)));
+    } else {
+      // overlay mode: an existing (noise-built) cave read from the world, with
+      // puzzle pieces placed on top at absolute tiles
+      const r = this.def.rect, w = scene.world;
+      this.ox = r[0]; this.oy = r[1];
+      for (let y = r[1]; y <= r[3]; y++) for (let x = r[0]; x <= r[2]; x++) {
+        const t = w.at(x, y);
+        this.cells.set(key(x, y), t === T_WATER ? 'W' : scene.nav.isSolid(x, y) ? '#' : '.');
+      }
+      for (const [ch, x, y] of this.def.entities || []) this.cells.set(key(x, y), ch);
+    }
     this.at = (x, y) => this.cells.get(key(x, y)) ?? '#';
     this.hinted = new Set();
+    this.foeKinds = { ...FOES, ...(this.def.foes || {}) };
+    this.lab = scene.state.lab === id;
     this.findRooms();
     this.build();
-    if (this.def.startAt === 'boss') this.skipToBoss();
+    if (this.lab && scene.state.labStart === 'boss') this.skipToBoss();
+    else this.load();
     this.refreshDoors(true);
     this.buildVine();
-    this.emit();
+    if (scene.area === this.def.area) this.emit();
+  }
+
+  // ------------------------------------------------------------- saving
+  get saveKey() { return `dg_${this.id}`; }
+
+  save(autosave = true) {
+    if (this.lab) return;
+    this.sc.flags[this.saveKey] = {
+      k: this.keys, b: this.big, m: this.map, c: this.compass,
+      d: this.doors.map((d, i) => (d.unlocked && d.kind !== 'shutter' ? i : -1)).filter((i) => i >= 0),
+      p: this.plates.map((p, i) => (p.latched ? i : -1)).filter((i) => i >= 0),
+      r: this.rooms.map((r, i) => (r.cleared ? i : -1)).filter((i) => i >= 0),
+      z: this.zones.map((z) => [z.raised, z.flood]),
+      h: [...this.hinted],
+    };
+    if (autosave) this.sc.autosave('dungeon');
+  }
+
+  load() {
+    const f = this.sc.flags, s = f[this.saveKey];
+    if (s) {
+      this.keys = s.k || 0; this.big = !!s.b; this.map = !!s.m; this.compass = !!s.c;
+      for (const i of s.d || []) if (this.doors[i]) this.doors[i].unlocked = true;
+      for (const i of s.p || []) { const p = this.plates[i]; if (p) { p.latched = true; p.s.setTexture('dgPlateDown'); } }
+      for (const i of s.r || []) { const r = this.rooms[i]; if (r) { r.cleared = true; r.entered = true; } }
+      (s.z || []).forEach(([raised, flood], i) => { const z = this.zones[i]; if (z) { z.raised = raised; z.flood = flood; this.applyPegs(z, true); this.applyWater(z, true); } });
+      for (const h of s.h || []) this.hinted.add(h);
+    } else this.migrate();
+    for (const c of this.chests) {
+      if (f[`chest_${c.id}`]) { c.opened = true; c.img?.setTexture('chestOpen'); }
+      if (c.reveal && !c.placed && c.room.cleared) this.placeChest(c); // a fight already won: its prize is there
+    }
+  }
+
+  // A save from before this dungeon was rebuilt: carry its progress over. Its
+  // relic already found -> that room is done; its boss already beaten ->
+  // everything is open.
+  migrate() {
+    const sc = this.sc, f = sc.flags, d = this.def;
+    // only saves from before the rebuild: the old dungeon's relic chest was opened
+    const relicChest = d.relicChest && this.chests.find((c) => c.ch === d.relicChest);
+    if (relicChest && d.oldRelicChest && f[`chest_${d.oldRelicChest}`]) {
+      f[`chest_${relicChest.id}`] = true;
+      const r = relicChest.room; r.cleared = true; r.entered = true;
+      for (const door of r.doors) if (door.kind === 'key') door.unlocked = true;
+    }
+    if (d.boss?.flag && f[d.boss.flag]) {
+      this.big = true;
+      for (const door of this.doors) if (door.kind === 'key' || door.kind === 'boss') door.unlocked = true;
+      for (const p of this.plates) { p.latched = true; p.s.setTexture('dgPlateDown'); }
+      for (const r of this.rooms) if (r.seal) { r.cleared = true; r.entered = true; }
+    }
   }
 
   // Boss test: everything up to the great door is done (Grapple, Seal, door
   // open), and a wipe puts you back in the corridor for another go.
   skipToBoss() {
     const st = this.sc.state;
-    for (const r of ['grapple']) if (!st.relics.includes(r)) st.relics.push(r);
+    for (const r of this.def.bossRelics || ['grapple']) if (!st.relics.includes(r)) st.relics.push(r);
     this.big = true;
     for (const d of this.doors) if (d.kind === 'boss') d.unlocked = true;
     // and the rooms before it count as solved, so you can walk back out
     for (const p of this.plates) { p.latched = true; p.s.setTexture('dgPlateDown'); }
     for (const r of this.rooms) if (r.seal) { r.entered = true; r.cleared = true; }
-    const s = dungeonStart(this.id);
+    const s = dungeonStart(this.id, 'boss');
     this.respawn = { x: s.x, y: s.y };
     this.restock = { ...st.potions }; // every retry starts with the same supplies
     for (const h of this.hints) this.hinted.add(h.text); // no tutorial hints on a boss rerun
@@ -117,11 +191,11 @@ export class DungeonKit {
     };
     // rooms: floor between walls, chasms and doors
     this.roomOf = new Map();
-    this.rooms = fill((ch) => WALLISH.has(ch) || DOOR[ch], this.roomOf).map((tiles, id) => ({ id, tiles, foes: [], plates: [], blocks: [], doors: new Set(), seal: false, cleared: false, active: false, entered: false }));
+    this.rooms = fill((ch) => WALLISH.has(ch) || DOOR[ch] || ch === 'Y', this.roomOf).map((tiles, id) => ({ id, tiles, foes: [], plates: [], blocks: [], doors: new Set(), seal: false, cleared: false, active: false, entered: false }));
     // crystal zones: like rooms, but chasms don't divide them (a switch on a
     // pillar works the pegs on the ledge you shoot it from)
     this.zoneOf = new Map();
-    this.zones = fill((ch) => ch === '#' || ch === ' ' || DOOR[ch], this.zoneOf).map(() => ({ raised: 'blue', pegs: [], crystals: [] }));
+    this.zones = fill((ch) => ch === '#' || ch === ' ' || DOOR[ch] || ch === 'Y', this.zoneOf).map(() => ({ raised: 'blue', flood: 'A', pegs: [], crystals: [], basins: [], levers: [] }));
   }
 
   build() {
@@ -138,22 +212,29 @@ export class DungeonKit {
       else if (ch === 'B') { const b = { x, y, x0: x, y0: y, room, s: sc.add.image(px(x), px(y) + 8, 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', interact: (h) => this.pushFrom(b, h) }); }
       else if (ch === 'P') { const p = { x, y, room, latched: false, s: sc.add.image(px(x), px(y), 'dgPlate').setDepth(-30) }; this.plates.push(p); room.plates.push(p); }
       else if (ch === 'b' || ch === 'r') { const z = this.zones[this.zoneOf.get(k)]; z.pegs.push({ x, y, color: ch === 'b' ? 'blue' : 'red', s: sc.add.image(px(x), px(y) + 6, 'dgPeg_blue_up').setOrigin(0.5, 1) }); }
+      else if (this.def.posts?.[ch]) this.addPost(x, y, ch); // a dungeon's own post letters win over shared ones
+      else if (BASIN[ch]) { const z = this.zones[this.zoneOf.get(k)]; z.basins.push({ x, y, side: BASIN[ch], s: sc.add.image(px(x), px(y), 'dgWater').setDepth(-29) }); }
+      else if (ch === 'L') { const z = this.zones[this.zoneOf.get(k)]; const l = { x, y, z, s: sc.add.image(px(x), px(y) + 6, 'dgLever_A').setOrigin(0.5, 1).setDepth(px(y)) }; sc.nav.block(x, y); z.levers.push(l); l.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'lever', interact: (h) => this.pull(l, h) }); }
       else if (ch === 'C') { const z = this.zones[this.zoneOf.get(k)]; const c = new Crystal(sc, this, x, y, z); z.crystals.push(c); this.crystals.push(c); sc.breakables.push(c); sc.nav.block(x, y); }
       else if (ch === '%') {
         // cracked wall: drawn to match a wall face (floor below it) or a wall run seen from above
         const face = !WALLISH.has(this.at(x, y + 1)) && this.at(x, y + 1) !== '%';
-        const b = new Breakable(sc, { id: `${this.id}_${lx}_${ly}`, kind: 'wall', tex: face ? 'dgCrackFace' : 'dgCrackTop', x, y, hp: 60, tiles: [[x, y]] });
-        sc.nav.block(x, y); sc.breakables.push(b);
+        const bid = `${this.id}_${lx}_${ly}`;
+        if (!sc.flags[`broke_${bid}`]) {
+          const b = new Breakable(sc, { id: bid, kind: 'wall', tex: face ? 'dgCrackFace' : 'dgCrackTop', x, y, hp: 60, tiles: [[x, y]] });
+          sc.nav.block(x, y); sc.breakables.push(b);
+        }
       }
       else if (/[1-9]/.test(ch)) this.addChest(x, y, ch, room);
-      else if (this.def.posts?.[ch]) this.addPost(x, y, ch);
-      else if (FOES[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
+      else if (this.foeKinds[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
       else if (ch === '!') room.seal = true;
       else if (ch === 'G') this.bossAt = { x, y };
       else if (ch === 'g') this.gateAt = { x, y };
     }
     this.pegAt = new Set(this.zones.flatMap((z) => z.pegs.map((p) => key(p.x, p.y))));
     for (const z of this.zones) this.applyPegs(z, true);
+    this.waterAt = new Set(this.zones.flatMap((z) => z.basins.map((b) => key(b.x, b.y))));
+    for (const z of this.zones) this.applyWater(z, true);
     // which doors each room touches
     for (const d of this.doors) for (const [x, y] of d.tiles) for (const [dx, dy] of DIRS) {
       const r = this.roomOf.get(key(x + dx, y + dy));
@@ -190,7 +271,7 @@ export class DungeonKit {
     this.camp = { x, y };
     sc.add.sprite(px(x), px(y) + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(px(y));
     sc.nav.block(x, y);
-    sc.addInteractable({ x: px(x), y: px(y), reach: 26, h: 20, kind: 'campfire', interact: () => sc.rest() });
+    sc.addInteractable({ x: px(x), y: px(y), reach: 26, h: 20, kind: 'campfire', interact: () => { sc.flags[`camp_${x}_${y}`] = true; sc.rest(); } });
   }
 
   addChest(x, y, ch, room) {
@@ -203,7 +284,7 @@ export class DungeonKit {
 
   placeChest(c) {
     const sc = this.sc;
-    c.img = sc.add.image(px(c.x), px(c.y) + 4, 'chest').setOrigin(0.5, 1).setDepth(px(c.y));
+    c.img = sc.add.image(px(c.x), px(c.y) + 4, c.opened ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(px(c.y));
     sc.nav.block(c.x, c.y);
     c.o = sc.addInteractable({ x: px(c.x), y: px(c.y), reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, h) });
     c.placed = true;
@@ -259,7 +340,7 @@ export class DungeonKit {
     else if (d.kind === 'boss' && this.big) d.unlocked = true;
     else if (d.kind === 'vault' && sc.state.relics.includes(vault?.relic)) { d.unlocked = true; sc.events.emit('banner', 'SEALED VAULT', vault.open || 'THE SEAL ANSWERS AND THE DOOR GRINDS OPEN'); }
     else {
-      sc.bark(L, d.kind === 'boss' ? 'A GREAT SEALED DOOR. THE LOCK IS SHAPED LIKE A WARDEN\'S CREST.' : d.kind === 'vault' ? (vault?.locked || 'A SEALED VAULT. THIS NEEDS SOMETHING WE DON\'T HAVE YET.') : 'LOCKED. THERE MUST BE A KEY SOMEWHERE DOWN HERE.');
+      sc.bark(L, d.kind === 'boss' ? (this.def.bossLock || 'A GREAT SEALED DOOR. THE LOCK IS SHAPED LIKE A WARDEN\'S CREST.') : d.kind === 'vault' ? (vault?.locked || 'A SEALED VAULT. THIS NEEDS SOMETHING WE DON\'T HAVE YET.') : 'LOCKED. THERE MUST BE A KEY SOMEWHERE DOWN HERE.');
       audio.sfx('block');
       return;
     }
@@ -267,6 +348,7 @@ export class DungeonKit {
     sc.fx.burst('gold', d.cx, d.cy, 16);
     this.refreshDoors();
     this.emit();
+    this.save();
   }
 
   // anyone whose footprint is caught in tiles that just turned solid steps
@@ -298,7 +380,7 @@ export class DungeonKit {
 
   push(b, dx, dy, h) {
     const sc = this.sc;
-    if (b.moving) return false;
+    if (b.moving) { b.queued = { dx, dy, h }; return true; } // a quick second tap waits for the slide, never lost
     const nx = b.x + dx, ny = b.y + dy;
     const occupied = sc.enemies.some((e) => e.alive && Math.floor(e.x / TILE) === nx && Math.floor(e.y / TILE) === ny);
     if (sc.nav.isSolid(nx, ny) || occupied || this.roomOf.get(key(nx, ny)) !== b.room.id) {
@@ -311,11 +393,12 @@ export class DungeonKit {
     b.x = nx; b.y = ny;
     audio.sfx('push');
     sc.fx.dust(b.s.x, b.s.y);
-    sc.tweens.add({ targets: b.s, x: px(nx), y: px(ny) + 8, duration: 200, ease: 'Sine.easeOut', onUpdate: () => b.s.setDepth(b.s.y - 6), onComplete: () => {
+    sc.tweens.add({ targets: b.s, x: px(nx), y: px(ny) + 8, duration: 160, ease: 'Sine.easeOut', onUpdate: () => b.s.setDepth(b.s.y - 6), onComplete: () => {
       b.moving = false;
       b.o.x = px(nx); b.o.y = px(ny);
       for (const u of sc.party) this.evict(u, [[nx, ny]]);
       this.checkPlates();
+      if (b.queued) { const q = b.queued; b.queued = null; this.push(b, q.dx, q.dy, q.h); }
     } });
     if (h) { h.face(dx, dy); h.anim = ''; h.play('attack'); }
     return true;
@@ -347,6 +430,7 @@ export class DungeonKit {
       this.sc.fx.burst('gold', px(p.x), px(p.y), 8);
       const left = p.room.plates.filter((q) => !q.latched).length;
       if (left) this.sc.floatText(px(p.x), px(p.y) - 14, `${left} MORE`, 'fontPlain');
+      this.save(!left);
     }
     this.refreshDoors();
   }
@@ -357,6 +441,7 @@ export class DungeonKit {
     audio.sfx('frost', { pitch: 1.5 }); audio.sfx('block', { pitch: 1.4 });
     if (c) this.sc.fx.burst('spark', c.x, c.y - 12, 10);
     this.applyPegs(z);
+    this.save(false);
   }
 
   applyPegs(z, silent = false) {
@@ -371,8 +456,34 @@ export class DungeonKit {
     }
   }
 
-  // raised pegs are low posts: shots and the hook pass over them
-  lowAt(x, y) { return this.pegAt.has(key(Math.floor(x / TILE), Math.floor(y / TILE))); }
+  // raised pegs are low posts and flooded basins are water: shots pass over both
+  lowAt(x, y) { const k = key(Math.floor(x / TILE), Math.floor(y / TILE)); return this.pegAt.has(k) || this.waterAt.has(k); }
+
+  // ------------------------------------------------------------- sluices
+  pull(l, h) {
+    const z = l.z, sc = this.sc;
+    z.flood = z.flood === 'A' ? 'B' : 'A';
+    if (h) { h.face(l.x * TILE + 8 - h.x, l.y * TILE + 8 - h.y); h.anim = ''; h.play('attack'); }
+    audio.sfx('rumble'); audio.sfx('doorOpen');
+    sc.shake(200, 0.004);
+    this.applyWater(z);
+    if (!this.hinted.has('sluice')) { this.hinted.add('sluice'); sc.bark(h || sc.leader, 'THE WATER SHIFTED TO THE OTHER BASIN!'); }
+    this.save(false);
+  }
+
+  applyWater(z, silent = false) {
+    const sc = this.sc;
+    for (const l of z.levers) l.s.setTexture(`dgLever_${z.flood}`);
+    for (const b of z.basins) {
+      const wet = b.side === z.flood;
+      b.s.setVisible(wet);
+      if (wet) {
+        sc.nav.block(b.x, b.y, 2); // water: open to swimmers only
+        for (const u of [...sc.party.filter((h) => !sc.canSwim), ...sc.enemies.filter((e) => e.alive && !e.boss && !e.s.swim)]) this.evict(u, [[b.x, b.y]]);
+      } else sc.nav.unblock(b.x, b.y);
+      if (!silent && wet) sc.fx.burst('foam', px(b.x), px(b.y), 2);
+    }
+  }
 
   // The Grapple reaches switches nobody can walk to.
   hook(c) {
@@ -389,27 +500,29 @@ export class DungeonKit {
   // ------------------------------------------------------------- chests
   openChest(c, h) {
     const sc = this.sc;
-    if (c.opened) return;
+    if (c.opened) { sc.events.emit('dialogue', [{ who: 'CHEST', text: "IT'S EMPTY. YOU ALREADY LOOTED IT." }]); return; }
     c.opened = true;
     if (!c.key) {
       // ordinary loot (and the relic) through the game's own chest code
       sc.openChest({ id: c.id, gold: c.gold, items: c.items, potions: c.potions, mats: c.mats, relic: c.relic, ambush: c.ambush }, c.img, h);
       return;
     }
+    sc.flags[`chest_${c.id}`] = true;
     c.img.setTexture('chestOpen');
     audio.sfx('chest');
     sc.fx.burst('gold', c.img.x, c.img.y - 10, 24);
     if (c.key === 'small') { this.keys++; audio.sfx('levelUp'); sc.events.emit('banner', 'SMALL KEY', c.say || 'IT OPENS ONE LOCKED DOOR'); }
     else {
-      const card = { big: ['WARDEN\'S SEAL', 'seal'], map: ['DUNGEON MAP', 'map'], compass: ['COMPASS', 'compass'] }[c.key];
+      const card = { big: [this.def.bigKey || 'WARDEN\'S SEAL', 'seal'], map: ['DUNGEON MAP', 'map'], compass: ['COMPASS', 'compass'] }[c.key];
       if (c.key === 'big') this.big = true;
       if (c.key === 'map') { this.map = true; this.revealMap(); }
       if (c.key === 'compass') this.compass = true;
       sc.scene.pause(); audio.sfx('levelUp');
       sc.events.emit('keyItem', { name: card[0], icon: `dgIcon_${card[1]}`, text: c.say || '' }, () => sc.scene.resume());
     }
-    if (c.ambush) sc.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) sc.spawnEnemy(k, px(x), px(y), true); sc.bark(h, 'THE ARMOUR IS MOVING!'); });
+    if (c.ambush) sc.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) sc.spawnEnemy(k, px(x), px(y), true); sc.bark(h, this.def.ambushLine || 'THE ARMOUR IS MOVING!'); });
     this.emit();
+    this.save();
   }
 
   revealMap() {
@@ -428,15 +541,24 @@ export class DungeonKit {
   emit() { this.sc.events.emit('dungeon', { keys: this.keys, big: this.big, map: this.map, compass: this.compass }); }
 
   // ------------------------------------------------------------- boss
-  get bossFlag() { return `${this.id}_boss`; }
+  get bossFlag() { return this.def.boss?.flag || `${this.id}_boss`; }
 
-  bossDef(W, make) {
-    if (!this.bossAt || !this.gateAt) return null;
-    const room = this.rooms[this.roomOf.get(key(this.bossAt.x, this.bossAt.y))];
+  // The dungeon's boss (its lieutenant's Shadow) for Game.updateBoss: base
+  // config from world.json (def.boss.cfg), the arena from the layout.
+  bossDef(W) {
+    if (this._bossDef !== undefined) return this._bossDef;
+    if (!this.bossAt || !this.gateAt) return (this._bossDef = null);
+    const sc = this.sc, room = this.rooms[this.roomOf.get(key(this.bossAt.x, this.bossAt.y))];
     const pts = room.tiles.map((k) => k.split(',').map(Number)).filter(([, y]) => y < this.gateAt.y);
     const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
     const b = this.def.boss || {};
-    return { id: this.id, flag: this.bossFlag, cfg: { ...W.boss, ...b, arena: [this.bossAt.x, this.bossAt.y], shadow: true, ward: null, drops: [] }, rect: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys) - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
+    const cfg = { ...(W[b.cfg || 'boss'] || W.boss), ...b, arena: [this.bossAt.x, this.bossAt.y], shadow: true, ward: null, drops: [] };
+    if (this.lab && sc.state.labStart === 'boss' && b.labLevelBonus !== undefined) cfg.levelBonus = b.labLevelBonus;
+    const arena = { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+    const make = b.kind === 'murk'
+      ? (x, y, o) => new Murk(sc, x, y, { ...o, shadow: true, arena, pool: b.pool })
+      : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
+    return this._bossDef = { id: this.id, flag: this.bossFlag, style: b.style || 'shadow', cfg, rect: [arena.x0, arena.y0, arena.x1, arena.y1 - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
   }
 
   // ------------------------------------------------------------- update
@@ -482,7 +604,7 @@ export class DungeonKit {
 
   enter(room) {
     const sc = this.sc;
-    for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text)) { this.hinted.add(h.text); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
+    for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text)) { this.hinted.add(h.text); this.save(false); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
     if (room.entered || !room.foes.length) { room.entered = true; return; }
     if (room.seal) return; // update() seals it once the leader is clear of the door
     this.seal(room);
@@ -499,7 +621,7 @@ export class DungeonKit {
     const elite = this.def.elite || {};
     const spawn = () => room.spawned = room.foes.map(({ ch, x, y }) => {
       const e = elite[ch];
-      const u = sc.spawnEnemy(e ? e.kind : FOES[ch], px(x), px(y), room.seal, !!e);
+      const u = sc.spawnEnemy(e ? e.kind : this.foeKinds[ch], px(x), px(y), room.seal, !!e);
       if (e?.name) { u.named = true; u.s = { ...u.s, name: e.name }; }
       if (room.seal) u.noLeash = true; // a sealed fight is fought to the end
       return u;
@@ -534,6 +656,7 @@ export class DungeonKit {
     if (!room.spawned) return; // foes still on their way in
     room.active = false; room.cleared = true;
     this.refreshDoors();
+    this.save();
     audio.sfx('levelUp');
     for (const c of this.chests) if (c.reveal && !c.placed && c.room === room) {
       this.placeChest(c);
@@ -546,11 +669,11 @@ export class DungeonKit {
 }
 
 export { DUNGEONS };
-// Where a lab run starts: the entrance ('@'), or with `startAt: 'boss'` the
+// Where a dungeon starts: its entrance ('@'), or for a lab boss test the
 // corridor four tiles below the arena gate ('g').
-export const dungeonStart = (id) => {
+export const dungeonStart = (id, at = null) => {
   const d = DUNGEONS[id];
   const find = (ch) => { for (let y = 0; y < d.rows.length; y++) { const x = d.rows[y].indexOf(ch); if (x >= 0) return { x: d.origin[0] + x, y: d.origin[1] + y }; } return null; };
-  if (d.startAt === 'boss') { const g = find('g'); if (g) return { x: g.x, y: g.y + 4 }; }
+  if (at === 'boss') { const g = find('g'); if (g) return { x: g.x, y: g.y + 4 }; }
   return find('@') || { x: d.origin[0], y: d.origin[1] };
 };

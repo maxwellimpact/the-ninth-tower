@@ -31,11 +31,10 @@ export const AREAS = {
   shop: { x0: 236, y0: 2, x1: 248, y1: 11, interior: true },
   tavern: { x0: 236, y0: 16, x1: 250, y1: 27, interior: true },
   grotto: { x0: 236, y0: 32, x1: 248, y1: 43, interior: true, dark: true },
-  undercroft: { x0: 256, y0: 2, x1: 318, y1: 60, interior: true },
-  abbey: { x0: 256, y0: 63, x1: 318, y1: 126, interior: true },
-  // Dungeon lab: test dungeons built off to the side, reachable only from the
-  // title screen's test entry (never from the real world)
-  lab: { x0: 322, y0: 0, x1: 415, y1: 80, interior: true }, // wide wall margins so the camera can centre any room
+  // hand-built dungeons (layouts in dungeons.json), each inside wide wall
+  // margins so the camera can centre any room clear of the HUD (C12 rule 1)
+  undercroft: { x0: 322, y0: 0, x1: 415, y1: 80, interior: true },
+  abbey: { x0: 418, y0: 0, x1: 511, y1: 90, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -93,7 +92,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'lab' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
@@ -189,30 +188,6 @@ export function buildWorld() {
     if (d < 1) set(x, y, Math.hypot(x - 244.5, y - 35.5) < 1.6 ? T.WATER : T.CAVEFLOOR);
   }
   rect(241, 41, 242, 42, T.CAVEFLOOR);
-  // Brightwater Undercroft: cellars beneath the keep, explored south to north
-  const room = (x0, y0, x1, y1) => rect(x0, y0, x1, y1, T.DFLOOR);
-  room(282, 48, 294, 56); rect(288, 57, 288, 57, T.STAIRS);      // entry, stairs up
-  room(287, 44, 289, 47);                                          // corridor
-  room(278, 34, 298, 43);                                          // guard hall
-  room(270, 38, 277, 40); room(260, 33, 269, 44);                  // west passage + relic room
-  // the gallery: a raised ledge above the hall (face at y 32-33), reached by hook
-  room(280, 22, 296, 31);
-  room(287, 17, 289, 21);                                          // corridor north
-  room(270, 3, 306, 16); set(288, 4, T.STAIRS);                    // Gatewarden's arena, back stairs
-  // Sunken Abbey (Mistfen): a drowned church, explored south to north
-  room(281, 116, 293, 123); set(287, 124, T.STAIRS);                // narthex, stairs up
-  room(286, 113, 288, 115);                                          // passage
-  room(272, 96, 302, 112);                                           // flooded nave
-  rect(284, 96, 290, 110, T.WATER);                                  // the drowned aisle (dry crossing at the south end)
-  room(270, 103, 271, 105); room(260, 100, 269, 108);                // west chapel (Tide Charm)
-  room(303, 103, 304, 105); room(305, 100, 314, 108);                // east chapel
-  rect(286, 94, 288, 95, T.WATER);                                   // the aisle runs on under the choir wall
-  room(278, 84, 296, 93);                                            // choir
-  rect(285, 84, 289, 93, T.WATER);
-  for (const [px0, py0] of [[280, 86], [293, 90]]) rect(px0, py0, px0 + 1, py0 + 1, T.WATER); // font basins
-  room(286, 79, 288, 83);                                            // passage north
-  room(266, 65, 308, 78); set(287, 64, T.STAIRS);                    // Mother Murk's nest, back stairs
-  for (let y = 68; y <= 75; y++) for (let x = 282; x <= 292; x++) if (Math.hypot((x - 287) / 5.2, (y - 71.5) / 3.6) < 1) set(x, y, T.WATER); // her pool
   // The smugglers' pool: an isle in the open fen, reachable only by swimming (Tide Charm)
   for (let y = 79; y <= 91; y++) for (let x = 72; x <= 88; x++) {
     const d = Math.hypot((x - 80) / 6.2, (y - 85) / 4.6);
@@ -241,8 +216,15 @@ export function buildWorld() {
   }
   // Lab dungeons: authored as text grids (src/data/dungeons.json)
   for (const d of Object.values(DUNGEONS)) {
+    if (!d.rows) continue; // overlay dungeons (caves) keep their own terrain
     const [ox, oy] = d.origin;
-    d.rows.forEach((row, y) => [...row].forEach((ch, x) => set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : ch === 'W' ? T.WATER : T.DFLOOR)));
+    const cell = (x, y) => d.rows[y]?.[x] ?? '#';
+    const water = (c) => c === 'W' || c === 'Y';
+    d.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      // a boss marked inside a pool (Murk) stands in water too
+      const pooled = ch === 'G' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => water(cell(x + dx, y + dy)));
+      set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : water(ch) || pooled ? T.WATER : ch === '^' ? T.STAIRS : T.DFLOOR);
+    }));
   }
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)
   const shell = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);

@@ -203,6 +203,25 @@ export const UNDERCROFT_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 1.2, echo: 0.4, vibrato: 0.01 }, arp: { vol: 0.7, echo: 0.3 }, bass: { vol: 1.0 }, pad: { vol: 1.1, cutoff: 700 } },
 });
 
+// The Sunken Abbey: a drowned hymn - slow and wide, a hollow organ-like pad
+// under drifting water notes, the melody rising like a half-remembered psalm
+export const ABBEY_THEME = buildTheme({
+  name: 'The Sunken Abbey', bpm: 64, key: -3, arp: 'drift', bass: 'hollow',
+  chords: [['D2', 'F2', 'A2'], ['A2', 'C3', 'E3'], ['B2', 'D3', 'F3'], ['F2', 'A2', 'C3'],
+    ['G2', 'B2', 'D3'], ['D2', 'F2', 'A2'], ['A2', 'C#3', 'E3'], ['D2', 'F2', 'A2']],
+  melody: [
+    ['D4', 6], ['E4', 2], ['F4', 8],
+    ['E4', 4], ['C4', 4], ['A3', 8],
+    ['B3', 4], ['D4', 4], ['F4', 6], ['E4', 2],
+    ['C4', 12], ['-', 4],
+    ['D4', 4], ['G4', 4], ['F4', 4], ['E4', 4],
+    ['F4', 6], ['D4', 2], ['A3', 8],
+    ['C#4', 4], ['E4', 4], ['A4', 6], ['G4', 2],
+    ['F4', 4], ['E4', 4], ['D4', 8],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.15, echo: 0.6, vibrato: 0.008 }, arp: { vol: 1.2, echo: 0.55 }, bass: { vol: 0.85 }, pad: { vol: 1.6, cutoff: 650 } },
+});
+
 // Shops and the tavern: cosy and light — a bouncy jig over oom-pah bass and
 // lute strums, no drums until a brawl breaks out
 export const HEARTH_THEME = buildTheme({
@@ -224,7 +243,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME, lab: UNDERCROFT_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

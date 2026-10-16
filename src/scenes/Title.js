@@ -58,7 +58,9 @@ export class Title extends Phaser.Scene {
     for (const o of this.labLink || []) { o.setVisible(on); if (o.input) o.input.enabled = on; }
   }
 
-  enterLab(id = 'labUndercroft') {
+  // the Dungeon Lab: the real Undercroft with a ready-made party, starting at
+  // its boss (and never saved)
+  enterLab(id = 'undercroft') {
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
@@ -73,8 +75,8 @@ export class Title extends Phaser.Scene {
     }
     st.potions.potion = 6; st.potions.elixir = 3;
     st.relics = ['tide']; // carried from Mistfen, so the Sealed Vault can be tried (normally a return visit)
-    st.lab = id;
-    const p = dungeonStart(id);
+    st.lab = id; st.labStart = 'boss';
+    const p = dungeonStart(id, 'boss');
     st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };
     this.cameras.main.fadeOut(400, 10, 6, 20);
     this.time.delayedCall(420, () => this.enterWorld(st));

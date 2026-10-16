@@ -1,12 +1,12 @@
 {
- "labUndercroft": {
-  "name": "THE UNDERCROFT (TEST)",
-  "sub": "DUNGEON LAB - NOTHING HERE IS SAVED",
+ "undercroft": {
+  "name": "BRIGHTWATER UNDERCROFT",
+  "area": "undercroft",
   "origin": [
    338,
    8
   ],
-  "legend": "# wall, . floor, ~ chasm, W water (swim), @ start, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, V sealed vault door, % cracked wall, 1-9 chest, t-y hook posts, h hollow, H hollow captain, R rats, ! sealed fight room, G boss, g arena gate",
+  "legend": "# wall, . floor, ~ chasm, W deep water (swim), Y deep water that splits rooms, w/v sluice basins A/B, L sluice lever, ^ stairs, @ entrance, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, V sealed vault door, % cracked wall, 1-9 chest, t-y hook posts (undercroft), letters in foes/elite: enemies, ! sealed fight room, G boss, g arena gate",
   "chests": {
    "1": {
     "key": "small",
@@ -107,14 +107,68 @@
    }
   },
   "boss": {
-   "name": "SHADOW OF THE GATEWARDEN",
-   "sub": "A CURSED ECHO, ROOTED TO THE WARD STONE ABOVE",
-   "fall": [
-    "THE SHADOW BREAKS",
-    "TEST DUNGEON CLEARED - TELL CLAUDE WHAT YOU THOUGHT"
-   ],
-   "levelBonus": 2
+   "flag": "golemDefeated",
+   "cfg": "boss",
+   "kind": "golem",
+   "style": "shadow",
+   "labLevelBonus": 2
   },
+  "relicChest": "3",
+  "bigKey": "WARDEN'S SEAL",
+  "bossRelics": [
+   "grapple"
+  ],
+  "vault": {
+   "relic": "tide",
+   "locked": "A SEALED VAULT. THERE'S A WAVE CARVED ON THE DOOR... SOMETHING FROM THE FEN.",
+   "open": "THE TIDE CHARM HUMS AND THE SEAL GIVES WAY"
+  },
+  "hints": [
+   {
+    "at": [
+     37,
+     60
+    ],
+    "delay": 9000,
+    "text": "THAT SLAB FITS THE PLATE. TAP IT TO SHOVE IT."
+   },
+   {
+    "at": [
+     56,
+     45
+    ],
+    "text": "A SWITCH BEHIND THE PEGS. A RANGED HERO COULD HIT IT."
+   },
+   {
+    "at": [
+     6,
+     33
+    ],
+    "text": "A SWITCH ON A PILLAR. THE HOOK COULD REACH IT."
+   },
+   {
+    "at": [
+     12,
+     13
+    ],
+    "text": "TWO PLATES, TWO BLOCKS. MIND THE CORNERS."
+   },
+   {
+    "at": [
+     37,
+     40
+    ],
+    "delay": 3000,
+    "text": "THE VINE RUNS UNDER THAT GREAT DOOR."
+   },
+   {
+    "at": [
+     25,
+     53
+    ],
+    "text": "FLOODED. LUCKY WE CAN SWIM NOW."
+   }
+  ],
   "rows": [
    "##############################################################",
    "##############################################################",
@@ -127,7 +181,7 @@
    "###.....#.......#.....########################################",
    "###...................########################################",
    "###...#...........#...########################################",
-   "###...................########################################",
+   "###...................###############^########################",
    "###.....B.......B.....#.............................##########",
    "###...................#.............................##########",
    "###...................#.............................##########",
@@ -178,89 +232,324 @@
    "######################WWWWWW#.................################",
    "#############################...F....@........################",
    "#############################.................################",
-   "##############################################################"
+   "#####################################^########################"
   ],
+  "oldRelicChest": "undercroftRelic"
+ },
+ "abbey": {
+  "name": "THE SUNKEN ABBEY",
+  "area": "abbey",
+  "origin": [
+   434,
+   8
+  ],
+  "legend": "# wall, . floor, ~ chasm, W deep water (swim), Y deep water that splits rooms, w/v sluice basins A/B, L sluice lever, ^ stairs, @ entrance, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, V sealed vault door, % cracked wall, 1-9 chest, t-y hook posts (undercroft), letters in foes/elite: enemies, ! sealed fight room, G boss, g arena gate",
+  "foes": {
+   "d": "drowned",
+   "l": "leeches",
+   "i": "witchling"
+  },
+  "elite": {
+   "H": {
+    "kind": "drowned",
+    "name": "DROWNED PRIOR"
+   }
+  },
+  "chests": {
+   "1": {
+    "key": "small",
+    "say": "A SMALL KEY, GREEN WITH AGE."
+   },
+   "2": {
+    "key": "map",
+    "say": "THE ABBEY'S FLOOR PLAN. EVERY ROOM IS ON THE MINIMAP NOW."
+   },
+   "3": {
+    "relic": "tide",
+    "reveal": true
+   },
+   "4": {
+    "key": "small",
+    "say": "ANOTHER SMALL KEY. THE BELL TOWER'S, MAYBE."
+   },
+   "5": {
+    "key": "big",
+    "say": "THE SANCTUM KEY. IT OPENS THE DOOR BENEATH THE WATER.",
+    "ambush": [
+     [
+      "drowned",
+      54,
+      8
+     ],
+     [
+      "drowned",
+      58,
+      8
+     ]
+    ]
+   },
+   "6": {
+    "gold": 40,
+    "mats": {
+     "silver": 2,
+     "pearl": 1
+    }
+   },
+   "7": {
+    "key": "compass",
+    "say": "THE COMPASS. CHESTS AND THE BOSS SHOW ON YOUR MAP."
+   },
+   "8": {
+    "gold": 150,
+    "potions": {
+     "elixir": 2
+    }
+   }
+  },
+  "boss": {
+   "flag": "murkDefeated",
+   "cfg": "murk",
+   "kind": "murk",
+   "style": "pool",
+   "pool": {
+    "rx": 5.2,
+    "ry": 3.4
+   }
+  },
+  "relicChest": "3",
+  "bigKey": "SANCTUM KEY",
+  "bossRelics": [
+   "grapple",
+   "tide"
+  ],
+  "bossLock": "A GREAT DOOR UNDER THE WATER. ITS LOCK IS SHAPED LIKE A BELL.",
+  "ambushLine": "THE DROWNED ARE RISING!",
+  "vault": {
+   "relic": "lens",
+   "locked": "A SEALED VAULT. AN EYE IS CARVED ON THE DOOR... WE NEED A WAY TO SEE WHAT'S HIDDEN.",
+   "open": "THE LENS SEES THROUGH THE SEAL"
+  },
   "hints": [
    {
     "at": [
      37,
-     60
+     58
     ],
-    "delay": 9000,
-    "text": "THAT SLAB FITS THE PLATE. TAP IT TO SHOVE IT."
+    "delay": 2600,
+    "text": "THE WAY IN IS FLOODED. THAT LEVER MIGHT MOVE THE WATER."
+   },
+   {
+    "at": [
+     58,
+     38
+    ],
+    "text": "BASINS AND LEVERS. EACH PULL SENDS THE WATER TO THE OTHER BASIN."
+   },
+   {
+    "at": [
+     10,
+     22
+    ],
+    "text": "THE PLATE'S UNDER WATER. DRAIN IT FIRST."
    },
    {
     "at": [
      56,
-     45
+     27
     ],
-    "text": "A SWITCH BEHIND THE PEGS. A RANGED HERO COULD HIT IT."
+    "text": "PEGS ALL THE WAY UP. A SWITCH ON EVERY LANDING."
    },
    {
     "at": [
-     6,
-     33
-    ],
-    "text": "A SWITCH ON A PILLAR. THE HOOK COULD REACH IT."
-   },
-   {
-    "at": [
-     12,
-     13
-    ],
-    "text": "TWO PLATES, TWO BLOCKS. MIND THE CORNERS."
-   },
-   {
-    "at": [
-     37,
+     28,
      40
     ],
     "delay": 3000,
-    "text": "THE VINE RUNS UNDER THAT GREAT DOOR."
-   },
-   {
-    "at": [
-     25,
-     53
-    ],
-    "text": "FLOODED. LUCKY WE CAN SWIM NOW."
+    "text": "THE VINE RUNS UP THE DROWNED AISLE, UNDER THAT GREAT DOOR."
    }
   ],
-  "vault": {
-   "relic": "tide",
-   "locked": "A SEALED VAULT. THERE'S A WAVE CARVED ON THE DOOR... SOMETHING FROM THE FEN.",
-   "open": "THE TIDE CHARM HUMS AND THE SEAL GIVES WAY"
-  },
-  "vine": [
+  "rows": [
+   "##############################################################",
+   "##############################################################",
+   "####################################^#########################",
+   "######################.............................#.........#",
+   "#########.4.##########.............................#.........#",
+   "#########...##########.............................#....5....#",
+   "#########...##########.............................#.........#",
+   "#########===##########.............................#.........#",
+   "###................###.............................#.........#",
+   "###................###............WWWWW............#......C..#",
+   "###................###..........WWWWWWWWW..........#.........#",
+   "###................###..........WWWWWWWWW..........#.........#",
+   "###..wwwwwPwwwwww..###.........WWWWWGWWWWW.........#bbbbbbbbb#",
+   "###..wwwwwwwwwwww..###..........WWWWWWWWW..........#.........#",
+   "###................###..........WWWWWWWWW..........#.........#",
+   "###................###............WWWWW............#...C.....#",
+   "###................###.............................#.........#",
+   "###................###.............................#.........#",
+   "###...B............###.............................#rrrrrrrrr#",
+   "###................###.............................#.........#",
+   "###................###.............................#.........#",
+   "###................###.............................#......C..#",
+   "###..l.........L...###.............................#.........#",
+   "###................################.g.##############.........#",
+   "###................################...##############bbbbbbbbb#",
+   "###...........l....################...##############.........#",
+   "###................################...##############...C.....#",
+   "###......WWWW......################...##############.........#",
+   "###.7....WWWW......################...##############.........#",
+   "###......WWWW......################KKK###################kkk##",
+   "###......WWWW......#...............WWW.................#.....#",
+   "#########YYYY#######.6.............WWW.................#.....#",
+   "#########YYYY#######...............WWW.................#.....#",
+   "#########YYYY#######...............WWW..d..............#.....#",
+   "#########YYYY#######...............WWW.................#WWWWW#",
+   "#########YYYY#######........!......WWW.................#WWWWW#",
+   "###................#...............WWW.................#.....#",
+   "###................#...............WWW.................=....L#",
+   "###.......!........#......d........WWW........d........=.....#",
+   "###................#...............WWW.................=.....#",
+   "###................#...............WWW.................#vvvvv#",
+   "###.......3........k...............WWW.................#vvvvv#",
+   "###................k...............WWW.................#.....#",
+   "###................k...............WWW.................#....L#",
+   "###.......H........#...............WWW.................#..2..#",
+   "###................#...................................#.....#",
+   "###................#..........l.............l..........#wwwww#",
+   "###...i........i...#...................................#wwwww#",
+   "###................#...................................#.....#",
+   "###.......d........#...................................#.....#",
+   "###................#...................................#L....#",
+   "###################################===##################.....#",
+   "###########################......wwwwwwwww......########...d.#",
+   "######################....#......wwwwwwwww......#......#.i...#",
+   "######################....#.....................#...8..#.....#",
+   "######################....%.....................V......#.....#",
+   "######################....#..L.............vvvv.V......#..1..#",
+   "######################....#................vvvv.V......#.....#",
+   "######################....#....F.....@.....vvvv.#......#.....#",
+   "###########################.....................#......#######",
+   "###########################.....................#......#######",
+   "#####################################^########################",
+   "##############################################################"
+  ],
+  "oldRelicChest": "abbeyTide"
+ },
+ "cave": {
+  "name": "DROWNED HOLLOW",
+  "area": "cave",
+  "rect": [
+   202,
+   2,
+   230,
+   54
+  ],
+  "legend": "overlay: the cave's own tunnels; entities at absolute tiles",
+  "entities": [
    [
-    37,
-    60.4
+    "b",
+    216,
+    14
    ],
    [
-    37,
-    52
+    "b",
+    217,
+    14
    ],
    [
-    33,
-    47
+    "b",
+    218,
+    14
    ],
    [
-    41,
-    41
+    "b",
+    219,
+    14
    ],
    [
-    37,
-    36
+    "b",
+    220,
+    14
    ],
    [
-    37,
-    29
+    "b",
+    221,
+    14
    ],
    [
-    37,
-    14.6
+    "b",
+    222,
+    14
+   ],
+   [
+    "b",
+    223,
+    14
+   ],
+   [
+    "b",
+    224,
+    14
+   ],
+   [
+    "b",
+    225,
+    14
+   ],
+   [
+    "b",
+    226,
+    14
+   ],
+   [
+    "b",
+    227,
+    14
+   ],
+   [
+    "r",
+    213,
+    26
+   ],
+   [
+    "r",
+    214,
+    26
+   ],
+   [
+    "r",
+    215,
+    26
+   ],
+   [
+    "r",
+    216,
+    26
+   ],
+   [
+    "r",
+    217,
+    26
+   ],
+   [
+    "r",
+    218,
+    26
+   ],
+   [
+    "C",
+    214,
+    22
    ]
   ],
-  "startAt": "boss"
+  "hints": [
+   {
+    "at": [
+     11,
+     22
+    ],
+    "text": "A CRYSTAL SWITCH... AND PEGS ABOVE AND BELOW. ONE OPENS AS THE OTHER CLOSES."
+   }
+  ]
  }
 }

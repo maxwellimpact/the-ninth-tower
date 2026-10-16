@@ -1103,8 +1103,17 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 - **Every outer region and its dungeon can be finished with only the Grapple Hook, the Lantern and the region's own relics.** That keeps the four outer regions in any order.
 - **Each dungeon also has a Sealed Vault** that needs a different region's relic. The vaults hold Uniques, which gives a reason to return. Overworld secrets use the same cross-relic idea.
 
-### Dungeon kit and structure **[PROTOTYPE in the Dungeon Lab, awaiting playtest]**
-Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeons need Zelda-style mechanics, progression and puzzles. A redesigned Undercroft is being dialled in off to the side in the **Dungeon Lab** (title screen > DUNGEON LAB, or `#dungeon`): same engine, its own area, never saved, so the real game is untouched until it's approved.
+### Dungeon kit and structure **[BUILT: Undercroft and Sunken Abbey rebuilt, Drowned Hollow upgraded]**
+Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeons need Zelda-style mechanics, progression and puzzles. The redesign was dialled in off to the side in the **Dungeon Lab**, then moved into the real game (2026-10-16).
+- **Live dungeons:**
+  - **Brightwater Undercroft:** the lab design.
+  - **Sunken Abbey:** rebuilt on the same pattern with water.
+  - **Drowned Hollow:** a peg-and-crystal gate on its treasure, added in overlay mode.
+- **Dungeon Lab:** still on the title screen (DUNGEON LAB, or `#dungeon`). It runs the real Undercroft with a level-5 test party, starts at the boss with a +2 boss level for fight tuning, respawns there with supplies restocked, and never saves.
+- **Saving:** progress lives in `state.flags.dg_<id>`: keys, big key, map, compass, unlocked doors, pressed plates, cleared rooms, crystal and sluice states, and hints already shown. Chests use `chest_<id>_<n>`.
+- **Old saves:** they migrate. A save standing in an old dungeon moves to its new entrance. The old relic chest opened means that room counts as done. The boss beaten means everything is open, except the Sealed Vault.
+- **Placement:** each dungeon sits in its own area, with the camera margins of C12 rule 1 (Undercroft x 322-415, Abbey x 418-511).
+- **Tests:** `tools/dungeon-walk.js` plays each dungeon start to finish, plus save/reload, old-save migration and the cave. Run it after any dungeon change.
 
 - **Structure every dungeon follows:**
   1. An entry puzzle that teaches the dungeon's language.
@@ -1121,6 +1130,9 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   - Crystal switches that swap raised red and blue pegs. Any hit flips one (blade, arrow, spell, knife, hook). Shots fly over pegs. A switch only works the pegs in its own zone.
   - Sealed fight rooms: the doors slam until the room is clear, sometimes revealing a chest.
   - Hook posts across chasms, cracked walls, and the map and compass.
+  - **Sluices** (new with the Abbey): a lever swaps the water between two basins (`w` and `v`), like red and blue pegs but with water. Drained floor is walkable; flooded floor needs the Tide Charm to swim. Shots fly over water. A plate can sit under a basin, so drain it first, then push the block on.
+  - **Deep water:** `W` needs the Tide Charm. `Y` is deep water that also splits rooms, so a swim channel doesn't merge a sealed fight room with the room beyond.
+  - **Overlay mode:** an existing noise-built cave keeps its tunnels, and the kit reads its walls from the world and adds pieces at listed tiles.
   - **Sealed Vault:** a vault door that only another region's relic opens. In the lab it's the Tide Charm, behind which is a flooded chamber you swim across to reach the Sunspire Staff. The lab party carries the Charm so the vault can be tried; in the real game it's a return visit. The final design names the Gale Cloak for the Undercroft vault; swap it in once the Cloak exists.
 - **Music:** dungeons get their own theme. The Undercroft's is "The Undercroft", a stately minor march over a ticking clockwork ostinato. It plays in the lab only until the redesign is approved.
 - **Vine life cycle:**
@@ -1128,6 +1140,16 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   2. When the Shadow breaks, a wave of decay crawls from the shrine back toward the stone while the vine greys out, slowly enough to watch (about 6–10 s).
   3. The dead vine stays until the region's Ward Stone is destroyed, then crumbles away entirely and is never rebuilt.
 - **The cursed vine runs through it** (C12 §1): from the entrance, through the hub and under the great door to the sacred place where the Shadow stands. The lead hero's vine thoughts play along it, and it withers when the Shadow breaks. Authored as a `vine` waypoint list in the dungeon's data; the route is grown along walls automatically.
+- **The Sunken Abbey** (Mistfen, the Tide Charm):
+  1. **Narthex:** the flooded threshold and its sluice teach the levers.
+  2. **Nave:** the hub, with a sealed fight. A deep channel, the drowned aisle, runs up to the boss door, so the boss needs both the Charm and the Sanctum Key.
+  3. **East chapel:** three basins and levers to sequence, for the map and the first key.
+  4. **West chapel:** locked. The Drowned Prior's sealed fight reveals the Tide Charm.
+  5. **Flooded crypt:** reached by swimming out of the West Chapel. Drain it, push a block onto the plate that was underwater, and get the second key and the compass.
+  6. **Bell tower:** behind deep water, so only after the Charm (this keeps the first key from being spent there). A four-crystal peg climb leads to the Sanctum Key and an ambush.
+  7. **Boss:** Mother Murk's Shadow in her pool.
+  - **Extras:** a Seer's Lens vault (Wave 2: the Dawnhammer), a cracked-wall secret with a lore page and a Golden Fly, and the abbey's own theme.
+- **Key safety:** every key door must be checked against the order you can get keys in. The first Abbey layout let key 1 be spent on the tower door before the Charm, a softlock.
 - **Must meet C12's never-again rules:** a camera margin around every room, wipes that reset fights, and doors that never pin anyone.
 - **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
 - **Party use:** some switches want a ranged hero (swap leader). After the relic, the hook hits switches nobody can walk to.
@@ -1569,3 +1591,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-16 | Never-again rules added to C12 after playtest bugs: rooms keep camera margins so nothing important sits under the HUD; a wipe returns fights, seals and arenas to a retryable state; doors never pin a unit; saves record map width so resizing the world never breaks them |
 | 2026-10-16 | The leader can always cancel a swing (never-again rule 5). Vines wither slowly when the Shadow breaks and vanish when the stone falls. Lab boss tuned between the two tested strengths (normal level, 92% health and damage) |
 | 2026-10-16 | Enemy AI rules (C7): attack tokens, surround slots, sticky targets, smarter ranged foes, dungeon leash, group roles, elites reading telegraphs, unsticking. Each measured with the new fight benchmark, old vs new over 7 fights × 2 seeds |
+| 2026-10-16 | Redesigned dungeons moved into the real game: the Undercroft (from the lab), the Sunken Abbey rebuilt with sluices and the Tide Charm, the Drowned Hollow given a crystal/peg gate. Progress saved per dungeon; old saves migrate. The Sunspire Staff moves from the Gatewarden's drops to the Undercroft vault (Tide Charm) per the uniques table |

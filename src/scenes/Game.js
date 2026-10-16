@@ -12,7 +12,7 @@ import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
 import { rollGearDrop, ensureItems } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
-import { DungeonKit } from '../game/dungeon.js';
+import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
@@ -51,7 +51,6 @@ const THOUGHTS = {
     open: "SHE'S GONE. NOTHING GUARDS THE STONE NOW. BREAK IT!",
   },
 };
-THOUGHTS.labUndercroft = THOUGHTS.vale; // the Dungeon Lab's Undercroft tells the Vale's vine story
 
 // Golden Flies in the world, plus the ones won at the minigames
 export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
@@ -139,11 +138,19 @@ export class Game extends Phaser.Scene {
 
     this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
-    // dungeon lab: a test dungeon off to the side (never saved)
-    this.dungeon = st.lab ? new DungeonKit(this, st.lab) : null;
+    // hand-built dungeons (C8): one kit each; this.dungeon is the one you're in
+    this.dungeons = {};
+    for (const id of Object.keys(DUNGEONS)) { const k = new DungeonKit(this, id); this.dungeons[k.def.area] = k; }
     this.quests = new QuestManager(this);
 
     // ------------------------------------------------------------ party
+    // a save from inside the old (pre-rebuild) Undercroft or Abbey: those tiles
+    // are gone, so start at the new dungeon's entrance instead
+    const OLD = { undercroft: [256, 2, 318, 60], abbey: [256, 63, 318, 126] };
+    if (st.pos && !st.lab) for (const [id, [x0, y0, x1, y1]] of Object.entries(OLD)) {
+      const tx = Math.floor(st.pos.x / TILE), ty = Math.floor(st.pos.y / TILE);
+      if (tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1) { const p = dungeonStart(id); st.pos = { x: p.x * TILE + 8, y: p.y * TILE + 8 }; }
+    }
     const start = st.pos || { x: W.start.x * TILE, y: W.start.y * TILE };
     st.active ??= st.recruited.slice(0, 3);
     if (!st.active.includes(st.leader)) st.active.unshift(st.leader);
@@ -609,6 +616,8 @@ export class Game extends Phaser.Scene {
   addInteractable(o) { this.interactables.push(o); return o; }
   removeInteractable(o) { this.interactables = this.interactables.filter((k) => k !== o); }
 
+  get dungeon() { return this.dungeons?.[this.area] || null; }
+
   buildLandmarks() {
     const px = (t) => t * TILE + TILE / 2;
     this.buildTownsfolk();
@@ -957,7 +966,7 @@ export class Game extends Phaser.Scene {
       // them from across a chasm or a row of pegs
       const d = Math.hypot(best.x - L.x, best.y - L.y);
       if (L.ranged && d < L.stats.range + 12) { L.command = null; L.clearPath(); L.face(best.x - L.x, best.y - L.y); L.startAttack(best); audio.sfx('click'); return; }
-      if (!L.ranged && d > L.stats.range + 14 && d < 150 && this.state.relics.includes('grapple')) { L.command = null; L.clearPath(); this.dungeon?.hook(best); return; }
+      if (!L.ranged && d > L.stats.range + 14 && d < 150 && this.state.relics.includes('grapple')) { L.command = null; L.clearPath(); best.kit.hook(best); return; }
     }
     if (best) {
       L.command = { type: 'attack', target: best };
@@ -1496,7 +1505,7 @@ export class Game extends Phaser.Scene {
     this.state.gold += B.cfg.gold || 0;
     for (const h of this.party) if (!h.downed) h.gainXp(b.s.xp);
     this.golem = null;
-    if (this.dungeon && B.id === this.dungeon.id) this.dungeon.witherVine();
+    Object.values(this.dungeons || {}).find((k) => k.id === B.id)?.witherVine();
     for (const w of this.wards) {
       if (w.def.guardian === B.flag) this.witherVines(w);
       if (w.unit) w.shieldFx?.setVisible(this.wardShielded(w.unit));
@@ -1725,8 +1734,9 @@ export class Game extends Phaser.Scene {
   // Where the party regroups after a wipe: the found campfire nearest to where they fell.
   // Inside an interior, distance is measured from its entrance in the overworld.
   respawnCamp() {
-    if (this.dungeon?.respawn) return this.dungeon.respawn;
-    if (this.dungeon?.camp) return { x: this.dungeon.camp.x + 2, y: this.dungeon.camp.y };
+    const dk = this.dungeon;
+    if (dk?.respawn) return dk.respawn; // lab boss test
+    if (dk?.camp && (dk.lab || this.flags[`camp_${dk.camp.x}_${dk.camp.y}`])) return { x: dk.camp.x + 2, y: dk.camp.y }; // this dungeon's own fire, once found
     const L = this.leader;
     let fx = L.x / TILE, fy = L.y / TILE;
     if (this.area !== 'overworld') {
@@ -2207,9 +2217,8 @@ export class Game extends Phaser.Scene {
   // Lieutenant arenas: the boss wakes once the party is inside, bars close behind.
   bossDefs() {
     return [
-      { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: W.boss.shadow }) },
-      { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, { ...o, shadow: W.murk.shadow }) },
-      this.dungeon?.bossDef(W, (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: true })),
+      // each dungeon's lieutenant Shadow, placed from its layout
+      ...Object.values(this.dungeons || {}).map((k) => k.bossDef(W)),
     ].filter(Boolean);
   }
 
@@ -2681,7 +2690,7 @@ export class Game extends Phaser.Scene {
       this.golem = g; // the active lieutenant (name kept from the demo)
       this.enemies.push(g);
       this.sealArena(true, B.gate);
-      this.bossIntro(g, B.id === 'murk' ? 'pool' : B.cfg.shadow ? 'shadow' : 'stone', B);
+      this.bossIntro(g, B.style || (B.cfg.shadow ? 'shadow' : 'stone'), B);
       return;
     }
   }

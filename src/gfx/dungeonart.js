@@ -143,3 +143,27 @@ export function crackedWall(face) {
   px(ctx, 3, H - 2, 'stone', 2, 1); px(ctx, 11, H - 2, 'stone', 2, 1); px(ctx, 7, H - 1, 'slate', 2, 1);
   return c;
 }
+
+// A flooded basin tile: deep blue water with a lighter ripple, drawn over the
+// floor while its side of the sluice is full.
+export function waterTile() {
+  const [c, ctx] = makeCanvas(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const n = hash(x, y, 31);
+    px(ctx, x, y, n > 0.92 ? 'waterL' : n > 0.55 ? 'water' : 'waterD');
+  }
+  for (const [x, y, w] of [[2, 4, 4], [9, 9, 5], [4, 13, 3]]) px(ctx, x, y, 'foam', w, 1);
+  return c;
+}
+
+// A sluice lever on a stone post; its handle leans toward the side that's full.
+export function lever(side) {
+  const [c, ctx] = makeCanvas(12, 18);
+  px(ctx, 3, 9, 'slate', 6, 8); px(ctx, 4, 10, 'stone', 4, 6); px(ctx, 2, 15, 'night', 8, 2); // post
+  const lean = side === 'A' ? -1 : 1;
+  for (let i = 0; i < 7; i++) px(ctx, 6 + Math.round(lean * i * 0.6) - 1, 9 - i, 'woodD', 2, 1);
+  px(ctx, 6 + Math.round(lean * 4) - 2, 1, 'redL', 3, 3); px(ctx, 6 + Math.round(lean * 4) - 2, 1, 'red', 3, 1); // knob
+  px(ctx, 4, 12, side === 'A' ? 'waterL' : 'blueL', 4, 2); // a little dial showing which basin
+  outline(c, 'ink');
+  return c;
+}
