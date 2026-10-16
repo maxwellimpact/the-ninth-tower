@@ -1088,6 +1088,28 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 - **Every outer region and its dungeon can be finished with only the Grapple Hook, the Lantern and the region's own relics.** That keeps the four outer regions in any order.
 - **Each dungeon also has a Sealed Vault** that needs a different region's relic. The vaults hold Uniques, which gives a reason to return. Overworld secrets use the same cross-relic idea.
 
+### Dungeon kit and structure **[PROTOTYPE in the Dungeon Lab, awaiting playtest]**
+Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeons need Zelda-style mechanics, progression and puzzles. A redesigned Undercroft is being dialled in off to the side in the **Dungeon Lab** (title screen > DUNGEON LAB, or `#dungeon`): same engine, its own area, never saved, so the real game is untouched until it's approved.
+
+- **Structure every dungeon follows:**
+  1. An entry puzzle that teaches the dungeon's language.
+  2. A hub room that shows the boss door early.
+  3. Branches that pay out keys, the map and the compass.
+  4. A locked miniboss room that awards the dungeon's relic.
+  5. A second half that can only be solved with that relic.
+  6. The big key, then the boss.
+  - A fight about every 30 seconds between puzzle rooms (C5 density).
+- **Kit pieces** (src/game/dungeon.js; layouts are text grids in src/data/dungeons.json, one character per tile):
+  - Small keys and key doors.
+  - The big key (Warden's Seal) and the boss door.
+  - Push blocks and floor plates. Plates latch, so a solved room stays solved. Leaving a room with its puzzle unsolved resets its blocks.
+  - Crystal switches that swap raised red and blue pegs. Any hit flips one (blade, arrow, spell, knife, hook). Shots fly over pegs. A switch only works the pegs in its own zone.
+  - Sealed fight rooms: the doors slam until the room is clear, sometimes revealing a chest.
+  - Hook posts across chasms, cracked walls, and the map and compass.
+- **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
+- **Party use:** some switches want a ranged hero (swap leader). After the relic, the hook hits switches nobody can walk to.
+- **Variation per dungeon:** each region's dungeon leans on its own relic (Lantern braziers, Tide Charm water levels, Lens false walls, Gauntlet boulders, Gale Cloak wind) and recombines the kit, so no two feel the same.
+
 ### The five lieutenants (Ward Stone bosses)
 Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 

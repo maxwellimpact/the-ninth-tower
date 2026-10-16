@@ -6,6 +6,7 @@ import { hash, vnoise } from '../gfx/pixel.js';
 import LORE from '../data/lore.json';
 import W from '../data/world.json';
 import QD from '../data/quests.json';
+import DUNGEONS from '../data/dungeons.json';
 
 export const TILE = 16;
 export const MAP_W = W.size.w;
@@ -32,6 +33,9 @@ export const AREAS = {
   grotto: { x0: 236, y0: 32, x1: 248, y1: 43, interior: true, dark: true },
   undercroft: { x0: 256, y0: 2, x1: 318, y1: 60, interior: true },
   abbey: { x0: 256, y0: 63, x1: 318, y1: 126, interior: true },
+  // Dungeon lab: test dungeons built off to the side, reachable only from the
+  // title screen's test entry (never from the real world)
+  lab: { x0: 322, y0: 2, x1: 383, y1: 64, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -89,7 +93,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'lab' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
@@ -234,6 +238,11 @@ export function buildWorld() {
   for (let y = 94; y <= 104; y++) for (let x = 181; x <= 190; x++) {
     const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;
     if (d < 1) set(x, y, T.WATER); else if (d < 1.35) set(x, y, T.SHALLOW);
+  }
+  // Lab dungeons: authored as text grids (src/data/dungeons.json)
+  for (const d of Object.values(DUNGEONS)) {
+    const [ox, oy] = d.origin;
+    d.rows.forEach((row, y) => [...row].forEach((ch, x) => set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : T.DFLOOR)));
   }
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)
   const shell = (A) => rect(A.x0 + 1, A.y0 + 2, A.x1 - 1, A.y1 - 1, T.FLOOR);

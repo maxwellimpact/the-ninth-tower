@@ -4,6 +4,7 @@
 // is how a much larger world stays within memory and startup budgets.
 import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
+import * as DG from '../gfx/dungeonart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
@@ -182,6 +183,12 @@ GROUPS.core.push(
     s.textures.addCanvas('snare', Q.snareTrap());
     s.textures.addCanvas('cage', Q.cage()); s.textures.addCanvas('net', Q.net());
     s.textures.addCanvas('stairsDown', Q.stairsDown());
+    // dungeon kit pieces
+    s.textures.addCanvas('dgBlock', DG.pushBlock());
+    for (const k of ['key', 'seal', 'map', 'compass']) s.textures.addCanvas(`dgIcon_${k}`, DG.dungeonIcon(k));
+    s.textures.addCanvas('dgPlate', DG.plate(false)); s.textures.addCanvas('dgPlateDown', DG.plate(true));
+    for (const col of ['blue', 'red']) { s.textures.addCanvas(`dgCrystal_${col}`, DG.crystal(col)); s.textures.addCanvas(`dgPeg_${col}_up`, DG.peg(col, true)); s.textures.addCanvas(`dgPeg_${col}_down`, DG.peg(col, false)); }
+    for (const k of ['shutter', 'key', 'boss']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
 );

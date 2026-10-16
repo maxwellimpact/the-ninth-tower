@@ -1,0 +1,460 @@
+// Dungeon kit (C8): the puzzle pieces every hand-built dungeon draws from,
+// driven by a text-grid layout in src/data/dungeons.json.
+//
+//   small keys + key doors, a big key (the boss door), push blocks onto floor
+//   plates (plates latch, so a solved room stays solved), crystal switches
+//   that swap which coloured pegs are raised, sealed fight rooms (the doors
+//   slam shut until the room is clear, sometimes revealing a chest), hook
+//   posts across chasms, cracked walls, map + compass.
+//
+// Rooms are found by flood-filling the floor between doors, so a layout only
+// marks what is where; which door a plate opens or a fight seals follows from
+// which room they share. Nothing here is saved yet: it's the dungeon lab.
+import { Unit, Breakable } from './units.js';
+import { audio } from '../audio/synth.js';
+import DUNGEONS from '../data/dungeons.json';
+
+const TILE = 16;
+const px = (t) => t * TILE + TILE / 2;
+const DOOR = { '=': 'shutter', k: 'key', K: 'boss' };
+const FOES = { h: 'hollow', R: 'rats' };
+const WALLISH = new Set(['#', ' ', '~']);
+const key = (x, y) => `${x},${y}`;
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+// A crystal switch: any hit (blade, arrow, spell, knife, the hook) flips it.
+class Crystal extends Unit {
+  constructor(scene, kit, tx, ty, zone) {
+    super(scene, px(tx), px(ty), { key: 'dgCrystal_blue', maxHp: 1, team: 'enemy', r: 7 });
+    this.kind = 'crystal'; this.kit = kit; this.tx = tx; this.ty = ty; this.zone = zone;
+    this.engaged = false; this.cd = 0;
+    this.def = { kind: 'crystal' }; this.hinted = true; // shares the breakables list
+    this.sprite.setOrigin(0.5, 1).setPosition(this.x, this.y + 6).setDepth(this.y + 4);
+    this.shadow.setAlpha(0.25);
+  }
+  damage(amount, src) {
+    if (this.cd > 0) return 0;
+    this.cd = 0.7;
+    this.kit.toggle(this.zone, this);
+    for (const h of this.scene.party) if (h.command?.target === this) h.command = null; // one hit, not a flurry
+    return 0;
+  }
+  update(dt) { this.cd = Math.max(0, this.cd - dt); }
+}
+
+export class DungeonKit {
+  constructor(scene, id) {
+    this.sc = scene;
+    this.id = id;
+    this.def = DUNGEONS[id];
+    const [ox, oy] = this.def.origin;
+    this.ox = ox; this.oy = oy;
+    this.keys = 0; this.big = false; this.map = false; this.compass = false;
+    this.cells = new Map();
+    this.def.rows.forEach((row, y) => [...row].forEach((ch, x) => this.cells.set(key(ox + x, oy + y), ch)));
+    this.at = (x, y) => this.cells.get(key(x, y)) ?? '#';
+    this.hinted = new Set();
+    this.findRooms();
+    this.build();
+    this.refreshDoors(true);
+    this.emit();
+  }
+
+  // ------------------------------------------------------------- layout
+  findRooms() {
+    // flood-fill the grid into connected groups of tiles; `into` maps tile -> group
+    const fill = (blocked, into) => {
+      const groups = [];
+      for (const [k, ch] of this.cells) {
+        if (blocked(ch) || into.has(k)) continue;
+        const id = groups.length, tiles = [], q = [k];
+        into.set(k, id);
+        while (q.length) {
+          const c = q.pop(); tiles.push(c);
+          const [x, y] = c.split(',').map(Number);
+          for (const [dx, dy] of DIRS) { const n = key(x + dx, y + dy); if (!into.has(n) && this.cells.has(n) && !blocked(this.cells.get(n))) { into.set(n, id); q.push(n); } }
+        }
+        groups.push(tiles);
+      }
+      return groups;
+    };
+    // rooms: floor between walls, chasms and doors
+    this.roomOf = new Map();
+    this.rooms = fill((ch) => WALLISH.has(ch) || DOOR[ch], this.roomOf).map((tiles, id) => ({ id, tiles, foes: [], plates: [], blocks: [], doors: new Set(), seal: false, cleared: false, active: false, entered: false }));
+    // crystal zones: like rooms, but chasms don't divide them (a switch on a
+    // pillar works the pegs on the ledge you shoot it from)
+    this.zoneOf = new Map();
+    this.zones = fill((ch) => ch === '#' || ch === ' ' || DOOR[ch], this.zoneOf).map(() => ({ raised: 'blue', pegs: [], crystals: [] }));
+  }
+
+  build() {
+    const sc = this.sc;
+    this.doors = []; this.blocks = []; this.plates = []; this.chests = []; this.crystals = [];
+    const seen = new Set();
+    for (const [k, ch] of this.cells) {
+      const [x, y] = k.split(',').map(Number);
+      const lx = x - this.ox, ly = y - this.oy;
+      const room = this.rooms[this.roomOf.get(k)];
+      if (DOOR[ch] && !seen.has(k)) this.addDoor(x, y, ch, seen);
+      else if (ch === '@') this.start = { x, y };
+      else if (ch === 'F') this.addCampfire(x, y);
+      else if (ch === 'B') { const b = { x, y, x0: x, y0: y, room, s: sc.add.image(px(x), px(y) + 8, 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', interact: (h) => this.pushFrom(b, h) }); }
+      else if (ch === 'P') { const p = { x, y, room, latched: false, s: sc.add.image(px(x), px(y), 'dgPlate').setDepth(-30) }; this.plates.push(p); room.plates.push(p); }
+      else if (ch === 'b' || ch === 'r') { const z = this.zones[this.zoneOf.get(k)]; z.pegs.push({ x, y, color: ch === 'b' ? 'blue' : 'red', s: sc.add.image(px(x), px(y) + 6, 'dgPeg_blue_up').setOrigin(0.5, 1) }); }
+      else if (ch === 'C') { const z = this.zones[this.zoneOf.get(k)]; const c = new Crystal(sc, this, x, y, z); z.crystals.push(c); this.crystals.push(c); sc.breakables.push(c); sc.nav.block(x, y); }
+      else if (ch === '%') { const b = new Breakable(sc, { id: `${this.id}_${lx}_${ly}`, kind: 'wall', x, y, hp: 60, tiles: [[x, y]] }); sc.nav.block(x, y); sc.breakables.push(b); }
+      else if (/[1-9]/.test(ch)) this.addChest(x, y, ch, room);
+      else if (this.def.posts?.[ch]) this.addPost(x, y, ch);
+      else if (FOES[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
+      else if (ch === '!') room.seal = true;
+      else if (ch === 'G') this.bossAt = { x, y };
+      else if (ch === 'g') this.gateAt = { x, y };
+    }
+    this.pegAt = new Set(this.zones.flatMap((z) => z.pegs.map((p) => key(p.x, p.y))));
+    for (const z of this.zones) this.applyPegs(z, true);
+    // which doors each room touches
+    for (const d of this.doors) for (const [x, y] of d.tiles) for (const [dx, dy] of DIRS) {
+      const r = this.roomOf.get(key(x + dx, y + dy));
+      if (r !== undefined) { this.rooms[r].doors.add(d); d.rooms.add(this.rooms[r]); }
+    }
+    // hints: shown the first time the leader walks into the room they sit in
+    this.hints = (this.def.hints || []).map((h) => ({ ...h, room: this.roomOf.get(key(this.ox + h.at[0], this.oy + h.at[1])) }));
+  }
+
+  addDoor(x0, y0, ch, seen) {
+    const tiles = [], q = [[x0, y0]]; seen.add(key(x0, y0));
+    while (q.length) {
+      const [x, y] = q.pop(); tiles.push([x, y]);
+      for (const [dx, dy] of DIRS) { const k = key(x + dx, y + dy); if (!seen.has(k) && this.cells.get(k) === ch) { seen.add(k); q.push([x + dx, y + dy]); } }
+    }
+    const xs = tiles.map((t) => t[0]), ys = tiles.map((t) => t[1]);
+    const vertical = Math.max(...ys) - Math.min(...ys) > Math.max(...xs) - Math.min(...xs);
+    const cx = (Math.min(...xs) + Math.max(...xs) + 1) / 2 * TILE, cy = (Math.min(...ys) + Math.max(...ys) + 1) / 2 * TILE;
+    const kind = DOOR[ch];
+    const tex = `dgDoor_${kind}_${vertical ? 'v' : 'h'}`;
+    const s = vertical ? this.sc.add.image(cx, cy, tex).setDepth(cy + 16) : this.sc.add.image(cx, (Math.max(...ys) + 1) * TILE, tex).setOrigin(0.5, 1).setDepth((Math.max(...ys) + 1) * TILE);
+    const d = { kind, tiles, vertical, cx, cy, s, tex, rooms: new Set(), unlocked: kind === 'shutter', closed: null };
+    // the spot you walk to: the middle floor tile on either side of the door
+    // (update() keeps it on the leader's side)
+    const sorted = [...tiles].sort((a, b) => (vertical ? a[1] - b[1] : a[0] - b[0]));
+    const m = sorted[Math.floor(sorted.length / 2)];
+    d.sides = vertical ? [[m[0] - 1, m[1]], [m[0] + 1, m[1]]] : [[m[0], m[1] - 1], [m[0], m[1] + 1]];
+    if (kind !== 'shutter') d.o = this.sc.addInteractable({ x: px(d.sides[1][0]), y: px(d.sides[1][1]), reach: 22, standOff: 0, h: 20, kind: 'door', interact: () => this.tryUnlock(d) });
+    this.doors.push(d);
+  }
+
+  addCampfire(x, y) {
+    const sc = this.sc;
+    this.camp = { x, y };
+    sc.add.sprite(px(x), px(y) + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(px(y));
+    sc.nav.block(x, y);
+    sc.addInteractable({ x: px(x), y: px(y), reach: 26, h: 20, kind: 'campfire', interact: () => sc.rest() });
+  }
+
+  addChest(x, y, ch, room) {
+    const c = { ...(this.def.chests?.[ch] || {}), x, y, ch, room, opened: false };
+    c.id = `${this.id}_${ch}`;
+    if (c.ambush) c.ambush = c.ambush.map(([k, ax, ay]) => [k, this.ox + ax, this.oy + ay]);
+    this.chests.push(c);
+    if (!c.reveal) this.placeChest(c);
+  }
+
+  placeChest(c) {
+    const sc = this.sc;
+    c.img = sc.add.image(px(c.x), px(c.y) + 4, 'chest').setOrigin(0.5, 1).setDepth(px(c.y));
+    sc.nav.block(c.x, c.y);
+    c.o = sc.addInteractable({ x: px(c.x), y: px(c.y), reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, h) });
+    c.placed = true;
+  }
+
+  addPost(x, y, ch) {
+    const sc = this.sc, p = this.def.posts[ch];
+    // land next to the pair post, offset as authored
+    const pair = [...this.cells].find(([, c]) => c === p.pair);
+    const [pxT, pyT] = pair[0].split(',').map(Number);
+    sc.add.image(px(x), px(y) + 4, 'post').setOrigin(0.5, 1).setDepth(px(y));
+    sc.add.image(px(x) + 1, px(y) + 3, 'shadow').setAlpha(0.2).setDepth(-4);
+    sc.nav.block(x, y);
+    sc.addInteractable({ x: px(x), y: px(y), reach: 34, standOff: 14, h: 20, kind: 'post', id: `${this.id}_${ch}`, pair: `${this.id}_${p.pair}`, land: [pxT + p.land[0], pyT + p.land[1]], interact: (h, o) => sc.grapple(o) });
+  }
+
+  // ------------------------------------------------------------- doors
+  // A door is shut if a fight in a room it borders is under way, or (shutters)
+  // a room it borders has plates that aren't all down, or (key / boss) it's
+  // still locked.
+  doorShut(d) {
+    for (const r of d.rooms) if (r.active) return true;
+    if (d.kind !== 'shutter') return !d.unlocked;
+    for (const r of d.rooms) if (r.plates.length && !r.plates.every((p) => p.latched)) return true;
+    return false;
+  }
+
+  refreshDoors(silent = false) {
+    const sc = this.sc;
+    let opened = false, closed = false;
+    for (const d of this.doors) {
+      const shut = this.doorShut(d);
+      if (shut === d.closed) continue;
+      if (d.closed !== null) { if (shut) closed = true; else opened = true; }
+      d.closed = shut;
+      // a sealed key/boss door shows bars over its open frame
+      const sealed = shut && d.unlocked && d.kind !== 'shutter';
+      d.s.setTexture(sealed ? `dgDoor_shutter_${d.vertical ? 'v' : 'h'}` : shut ? d.tex : `${d.tex}_open`);
+      for (const [x, y] of d.tiles) { if (shut) sc.nav.block(x, y); else sc.nav.unblock(x, y); }
+      if (shut) for (const h of sc.party) this.evict(h, d.tiles);
+      if (d.o) d.o.hidden = !shut || d.unlocked;
+    }
+    if (silent) return;
+    if (closed) { audio.sfx('doorClose'); sc.shake(160, 0.006); }
+    if (opened) audio.sfx('doorOpen');
+  }
+
+  tryUnlock(d) {
+    const sc = this.sc, L = sc.leader;
+    if (d.unlocked) return;
+    if (d.kind === 'key' && this.keys > 0) { this.keys--; d.unlocked = true; }
+    else if (d.kind === 'boss' && this.big) d.unlocked = true;
+    else {
+      sc.bark(L, d.kind === 'boss' ? 'A GREAT SEALED DOOR. THE LOCK IS SHAPED LIKE A WARDEN\'S CREST.' : 'LOCKED. THERE MUST BE A KEY SOMEWHERE DOWN HERE.');
+      audio.sfx('block');
+      return;
+    }
+    audio.sfx('unlock'); audio.sfx('chest');
+    sc.fx.burst('gold', d.cx, d.cy, 16);
+    this.refreshDoors();
+    this.emit();
+  }
+
+  // push anyone standing in a tile that just became solid to the nearest open floor
+  evict(u, tiles) {
+    const tx = Math.floor(u.x / TILE), ty = Math.floor(u.y / TILE);
+    if (!tiles.some(([x, y]) => x === tx && y === ty) && !this.sc.nav.isSolid(tx, ty)) return;
+    const o = this.sc.nav.nearestOpen(tx, ty, 4);
+    if (o) { u.x = o[0] * TILE + 8; u.y = o[1] * TILE + 8; u.clearPath?.(); }
+  }
+
+  // ------------------------------------------------------------- blocks
+  pushFrom(b, h) {
+    const dx = b.x * TILE + 8 - h.x, dy = b.y * TILE + 8 - h.y;
+    if (Math.abs(dx) > Math.abs(dy)) this.push(b, Math.sign(dx), 0, h); else this.push(b, 0, Math.sign(dy), h);
+  }
+
+  push(b, dx, dy, h) {
+    const sc = this.sc;
+    if (b.moving) return false;
+    const nx = b.x + dx, ny = b.y + dy;
+    const occupied = sc.enemies.some((e) => e.alive && Math.floor(e.x / TILE) === nx && Math.floor(e.y / TILE) === ny);
+    if (sc.nav.isSolid(nx, ny) || occupied || this.roomOf.get(key(nx, ny)) !== b.room.id) {
+      audio.sfx('block');
+      if (!this.hinted.has('stuck')) { this.hinted.add('stuck'); sc.bark(h || sc.leader, 'IT WON\'T BUDGE THAT WAY.'); }
+      return false;
+    }
+    b.moving = true;
+    sc.nav.unblock(b.x, b.y); sc.nav.block(nx, ny);
+    b.x = nx; b.y = ny;
+    audio.sfx('push');
+    sc.fx.dust(b.s.x, b.s.y);
+    sc.tweens.add({ targets: b.s, x: px(nx), y: px(ny) + 8, duration: 200, ease: 'Sine.easeOut', onUpdate: () => b.s.setDepth(b.s.y - 6), onComplete: () => {
+      b.moving = false;
+      b.o.x = px(nx); b.o.y = px(ny);
+      for (const u of sc.party) this.evict(u, [[nx, ny]]);
+      this.checkPlates();
+    } });
+    if (h) { h.face(dx, dy); h.anim = ''; h.play('attack'); }
+    return true;
+  }
+
+  // leaving a room with its puzzle unsolved puts the blocks back
+  resetBlocks(room) {
+    if (!room.plates.length || room.plates.every((p) => p.latched)) return;
+    for (const b of room.blocks) {
+      if (b.x === b.x0 && b.y === b.y0) continue;
+      this.sc.nav.unblock(b.x, b.y); this.sc.nav.block(b.x0, b.y0);
+      b.x = b.x0; b.y = b.y0;
+      b.s.setPosition(px(b.x), px(b.y) + 8).setDepth(px(b.y) + 2);
+      b.o.x = px(b.x); b.o.y = px(b.y);
+      this.sc.fx.puff(b.s.x, b.s.y - 8, 'spark');
+    }
+  }
+
+  checkPlates() {
+    const L = this.sc.leader;
+    const lt = [Math.floor(L.x / TILE), Math.floor(L.y / TILE)];
+    for (const p of this.plates) {
+      if (p.latched) continue;
+      const onBlock = this.blocks.some((b) => b.x === p.x && b.y === p.y && !b.moving);
+      if (!onBlock && !(lt[0] === p.x && lt[1] === p.y)) continue;
+      p.latched = true;
+      p.s.setTexture('dgPlateDown');
+      audio.sfx('click'); audio.sfx('block', { pitch: 0.6 });
+      this.sc.fx.burst('gold', px(p.x), px(p.y), 8);
+      const left = p.room.plates.filter((q) => !q.latched).length;
+      if (left) this.sc.floatText(px(p.x), px(p.y) - 14, `${left} MORE`, 'fontPlain');
+    }
+    this.refreshDoors();
+  }
+
+  // ------------------------------------------------------------- pegs
+  toggle(z, c) {
+    z.raised = z.raised === 'blue' ? 'red' : 'blue';
+    audio.sfx('frost', { pitch: 1.5 }); audio.sfx('block', { pitch: 1.4 });
+    if (c) this.sc.fx.burst('spark', c.x, c.y - 12, 10);
+    this.applyPegs(z);
+  }
+
+  applyPegs(z, silent = false) {
+    const sc = this.sc;
+    for (const c of z.crystals) c.sprite.setTexture(`dgCrystal_${z.raised}`);
+    for (const p of z.pegs) {
+      const up = p.color === z.raised;
+      p.s.setTexture(`dgPeg_${p.color}_${up ? 'up' : 'down'}`).setDepth(up ? px(p.y) + 4 : -30);
+      if (up) { sc.nav.block(p.x, p.y); for (const u of [...sc.party, ...sc.enemies.filter((e) => e.alive)]) this.evict(u, [[p.x, p.y]]); }
+      else sc.nav.unblock(p.x, p.y);
+      if (!silent && up) sc.fx.dust(px(p.x), px(p.y) + 4);
+    }
+  }
+
+  // raised pegs are low posts: shots and the hook pass over them
+  lowAt(x, y) { return this.pegAt.has(key(Math.floor(x / TILE), Math.floor(y / TILE))); }
+
+  // The Grapple reaches switches nobody can walk to.
+  hook(c) {
+    const sc = this.sc, L = sc.leader;
+    L.face(c.x - L.x, c.y - L.y); L.anim = ''; L.play('attack');
+    const line = sc.add.graphics().setDepth(100000 - 18);
+    const t = { k: 0 };
+    audio.sfx('zip');
+    sc.tweens.add({ targets: t, k: 1, duration: 180, yoyo: true, hold: 60, onUpdate: () => {
+      line.clear().lineStyle(1, 0xc4cfe2, 1).lineBetween(L.x, L.y - 12, L.x + (c.x - L.x) * t.k, L.y - 12 + (c.y - 12 - L.y + 12) * t.k);
+    }, onYoyo: () => c.damage(1, L), onComplete: () => line.destroy() });
+  }
+
+  // ------------------------------------------------------------- chests
+  openChest(c, h) {
+    const sc = this.sc;
+    if (c.opened) return;
+    c.opened = true;
+    if (!c.key) {
+      // ordinary loot (and the relic) through the game's own chest code
+      sc.openChest({ id: c.id, gold: c.gold, items: c.items, potions: c.potions, mats: c.mats, relic: c.relic, ambush: c.ambush }, c.img, h);
+      return;
+    }
+    c.img.setTexture('chestOpen');
+    audio.sfx('chest');
+    sc.fx.burst('gold', c.img.x, c.img.y - 10, 24);
+    if (c.key === 'small') { this.keys++; audio.sfx('levelUp'); sc.events.emit('banner', 'SMALL KEY', c.say || 'IT OPENS ONE LOCKED DOOR'); }
+    else {
+      const card = { big: ['WARDEN\'S SEAL', 'seal'], map: ['DUNGEON MAP', 'map'], compass: ['COMPASS', 'compass'] }[c.key];
+      if (c.key === 'big') this.big = true;
+      if (c.key === 'map') { this.map = true; this.revealMap(); }
+      if (c.key === 'compass') this.compass = true;
+      sc.scene.pause(); audio.sfx('levelUp');
+      sc.events.emit('keyItem', { name: card[0], icon: `dgIcon_${card[1]}`, text: c.say || '' }, () => sc.scene.resume());
+    }
+    if (c.ambush) sc.time.delayedCall(900, () => { for (const [k, x, y] of c.ambush) sc.spawnEnemy(k, px(x), px(y), true); sc.bark(h, 'THE ARMOUR IS MOVING!'); });
+    this.emit();
+  }
+
+  revealMap() {
+    for (const r of this.rooms) for (const k of r.tiles) { const [x, y] = k.split(',').map(Number); this.sc.minimap.reveal(x, y, 1); }
+    this.sc.minimap.flush();
+  }
+
+  // compass: unopened chests and the boss on the minimap / map
+  markers() {
+    if (!this.compass) return [];
+    const m = this.chests.filter((c) => !c.opened).map((c) => ({ x: c.x, y: c.y, kind: 'chest', always: true }));
+    if (this.bossAt && !this.sc.flags[this.bossFlag]) m.push({ ...this.bossAt, kind: 'boss', always: true });
+    return m;
+  }
+
+  emit() { this.sc.events.emit('dungeon', { keys: this.keys, big: this.big, map: this.map, compass: this.compass }); }
+
+  // ------------------------------------------------------------- boss
+  get bossFlag() { return `${this.id}_boss`; }
+
+  bossDef(W, make) {
+    if (!this.bossAt || !this.gateAt) return null;
+    const room = this.rooms[this.roomOf.get(key(this.bossAt.x, this.bossAt.y))];
+    const pts = room.tiles.map((k) => k.split(',').map(Number)).filter(([, y]) => y < this.gateAt.y);
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const b = this.def.boss || {};
+    return { id: this.id, flag: this.bossFlag, cfg: { ...W.boss, ...b, arena: [this.bossAt.x, this.bossAt.y], shadow: true, ward: null, drops: [] }, rect: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys) - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
+  }
+
+  // ------------------------------------------------------------- update
+  update(dt) {
+    const sc = this.sc, L = sc.leader;
+    const lt = key(Math.floor(L.x / TILE), Math.floor(L.y / TILE));
+    const rid = this.roomOf.get(lt);
+    for (const c of this.crystals) c.update(dt);
+    for (const d of this.doors) if (d.o) { const [a, b] = d.sides.map(([x, y]) => [px(x), px(y)]); const near = Math.hypot(a[0] - L.x, a[1] - L.y) < Math.hypot(b[0] - L.x, b[1] - L.y) ? a : b; d.o.x = near[0]; d.o.y = near[1]; }
+    // walking into a room: puzzles reset behind you, fights start, hints show
+    if (rid !== undefined && rid !== this.roomNow) {
+      const prev = this.rooms[this.roomNow];
+      if (prev) this.resetBlocks(prev);
+      this.roomNow = rid;
+      this.enter(this.rooms[rid]);
+    }
+    const room = this.rooms[rid];
+    if (room?.active) {
+      const inRoom = (e) => this.roomOf.get(key(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) === room.id;
+      if (!sc.enemies.some((e) => e.alive && !e.boss && inRoom(e))) this.clearRoom(room);
+    }
+    // the leader can stand on a plate too
+    if (this.plates.some((p) => !p.latched)) this.checkPlates();
+    // keyboard / stick: walking into a block pushes it
+    const d = L.direct;
+    if (d && (d.x || d.y)) {
+      const [dx, dy] = Math.abs(d.x) > Math.abs(d.y) ? [Math.sign(d.x), 0] : [0, Math.sign(d.y)];
+      const tx = Math.floor((L.x + dx * 9) / TILE), ty = Math.floor((L.y + dy * 9) / TILE);
+      const b = this.blocks.find((k) => k.x === tx && k.y === ty);
+      this.pushT = b ? (this.pushT || 0) + dt : 0;
+      if (b && this.pushT > 0.25) { this.pushT = 0; this.push(b, dx, dy, L); }
+    } else this.pushT = 0;
+  }
+
+  enter(room) {
+    const sc = this.sc;
+    for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text)) { this.hinted.add(h.text); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
+    if (room.entered || !room.foes.length) { room.entered = true; return; }
+    room.entered = true;
+    const elite = this.def.elite || {};
+    const spawn = () => room.spawned = room.foes.map(({ ch, x, y }) => {
+      const e = elite[ch];
+      const u = sc.spawnEnemy(e ? e.kind : FOES[ch], px(x), px(y), room.seal, !!e);
+      if (e?.name) { u.named = true; u.s = { ...u.s, name: e.name }; }
+      return u;
+    });
+    if (!room.seal) { spawn(); return; }
+    // sealed fight: everyone in, doors slam, foes rise
+    room.active = true;
+    const L = sc.leader;
+    for (const h of sc.party) if (h !== L && !h.downed && this.roomOf.get(key(Math.floor(h.x / TILE), Math.floor(h.y / TILE))) !== room.id) { h.x = L.x + (Math.random() - 0.5) * 14; h.y = L.y + (Math.random() - 0.5) * 8; h.clearPath(); }
+    this.refreshDoors();
+    sc.bark(L, 'THE DOORS SLAMMED SHUT!');
+    sc.time.delayedCall(500, spawn);
+  }
+
+  clearRoom(room) {
+    const sc = this.sc;
+    if (!room.spawned) return; // foes still on their way in
+    room.active = false; room.cleared = true;
+    this.refreshDoors();
+    audio.sfx('levelUp');
+    for (const c of this.chests) if (c.reveal && !c.placed && c.room === room) {
+      this.placeChest(c);
+      sc.fx.puff(c.img.x, c.img.y - 8, 'spark'); sc.fx.burst('gold', c.img.x, c.img.y - 8, 20);
+      sc.events.emit('banner', 'ROOM CLEARED', 'A CHEST APPEARED!');
+      return;
+    }
+    sc.events.emit('banner', 'ROOM CLEARED', 'THE DOORS GRIND OPEN');
+  }
+}
+
+export { DUNGEONS };
+export const dungeonStart = (id) => {
+  const d = DUNGEONS[id];
+  for (let y = 0; y < d.rows.length; y++) { const x = d.rows[y].indexOf('@'); if (x >= 0) return { x: d.origin[0] + x, y: d.origin[1] + y }; }
+  return { x: d.origin[0], y: d.origin[1] };
+};

@@ -200,7 +200,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: DEPTHS_THEME, abbey: DEPTHS_THEME, lab: DEPTHS_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

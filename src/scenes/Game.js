@@ -12,6 +12,7 @@ import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
 import { rollGearDrop, ensureItems } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
+import { DungeonKit } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
@@ -137,6 +138,8 @@ export class Game extends Phaser.Scene {
 
     this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
+    // dungeon lab: a test dungeon off to the side (never saved)
+    this.dungeon = st.lab ? new DungeonKit(this, st.lab) : null;
     this.quests = new QuestManager(this);
 
     // ------------------------------------------------------------ party
@@ -547,7 +550,7 @@ export class Game extends Phaser.Scene {
       const hit = this.party.find((h) => h.alive && !h.downed && !h.zipping && Math.hypot(h.x - p.x, h.y - 8 - p.y) < h.r + 4)
         || (this.allies || []).find((a) => a.alive && Math.hypot(a.x - p.x, a.y - 8 - p.y) < a.r + 4);
       const t = this.painter.typeAt(p.x, p.y + 8);
-      const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM;
+      const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM && !this.dungeon?.lowAt(p.x, p.y + 8); // shots fly over pegs
       if (hit && hit.wallT > 0 && !p.reflected && p.from?.alive) {
         // Shield Wall: send the arrow back at the archer
         p.reflected = true; p.life = 1.1;
@@ -913,6 +916,7 @@ export class Game extends Phaser.Scene {
     const pin = this.quests.pin();
     if (pin) m.push({ ...pin, kind: 'quest', always: true });
     for (const n of this.nodes) if (n.ready) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
+    if (this.dungeon) m.push(...this.dungeon.markers());
     const a = this.areaRect();
     return m.filter((k) => k.x >= a.x0 && k.x <= a.x1 && k.y >= a.y0 && k.y <= a.y1 && (k.always || this.minimap.isExplored(k.x, k.y)));
   }
@@ -942,6 +946,13 @@ export class Game extends Phaser.Scene {
     for (const e of all) {
       const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' || e.kind === 'breakable' ? 10 : e.boss ? 16 : 0);
       if (d < bd) { bd = d; best = e; }
+    }
+    if (best?.kind === 'crystal') {
+      // crystal switches: shoot them from range, or (with the Grapple) hook
+      // them from across a chasm or a row of pegs
+      const d = Math.hypot(best.x - L.x, best.y - L.y);
+      if (L.ranged && d < L.stats.range + 12) { L.command = null; L.clearPath(); L.face(best.x - L.x, best.y - L.y); L.startAttack(best); audio.sfx('click'); return; }
+      if (!L.ranged && d > L.stats.range + 14 && d < 150 && this.state.relics.includes('grapple')) { L.command = null; L.clearPath(); this.dungeon?.hook(best); return; }
     }
     if (best) {
       L.command = { type: 'attack', target: best };
@@ -1124,7 +1135,7 @@ export class Game extends Phaser.Scene {
         hit = null;
       }
       const t = this.painter.typeAt(p.x, p.y + 8);
-      const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM;
+      const wall = this.nav.solidAtPx(p.x, p.y + 8) && t !== T.WATER && t !== T.BOG && t !== T.CHASM && !this.dungeon?.lowAt(p.x, p.y + 8); // shots fly over pegs
       if (hit || p.life <= 0 || wall) {
         p.dead = true;
         p.s.destroy();
@@ -1359,6 +1370,7 @@ export class Game extends Phaser.Scene {
   }
 
   autosave(reason) {
+    if (this.state.lab) return; // the dungeon lab never touches the real save
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
     // never save a spot the party can't stand on (up a lookout, inside a blocked tile)
@@ -1701,6 +1713,7 @@ export class Game extends Phaser.Scene {
   // Where the party regroups after a wipe: the found campfire nearest to where they fell.
   // Inside an interior, distance is measured from its entrance in the overworld.
   respawnCamp() {
+    if (this.dungeon?.camp) return { x: this.dungeon.camp.x + 2, y: this.dungeon.camp.y };
     const L = this.leader;
     let fx = L.x / TILE, fy = L.y / TILE;
     if (this.area !== 'overworld') {
@@ -2182,7 +2195,8 @@ export class Game extends Phaser.Scene {
     return [
       { id: 'golem', flag: 'golemDefeated', cfg: W.boss, rect: [270, 3, 306, 13], gate: [288, 17], make: (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: W.boss.shadow }) },
       { id: 'murk', flag: 'murkDefeated', cfg: W.murk, rect: [266, 65, 308, 77], gate: [287, 79], make: (x, y, o) => new Murk(this, x, y, { ...o, shadow: W.murk.shadow }) },
-    ];
+      this.dungeon?.bossDef(W, (x, y, o) => new Golem(this, x, y - 24, { ...o, shadow: true })),
+    ].filter(Boolean);
   }
 
   // ------------------------------------------------------------ boss intros
@@ -2745,6 +2759,7 @@ export class Game extends Phaser.Scene {
     this.updateThoughts(dt);
     this.updateWarps();
     this.quests.update(dt);
+    this.dungeon?.update(dt);
     this.groupT = (this.groupT || 0) - dt;
     if (this.groupT <= 0) { this.groupT = 0.4; this.updateGroups(0.4); }
 

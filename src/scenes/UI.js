@@ -282,7 +282,7 @@ export class UI extends Phaser.Scene {
   // Key item card: the game is paused behind it until it's tapped away.
   showKeyItem(def, onClose) {
     const W = this.W, H = this.H;
-    const w = Math.min(220, W - 16), h = 128, x = Math.round((W - w) / 2), y = Math.round(H * 0.32 - h / 2);
+    const w = Math.min(220, W - 16), h = 128, x = Math.round((W - w) / 2), y = Math.max(4, Math.round(H * 0.32 - h / 2)); // never off the top in landscape
     const box = this.add.container(0, 0).setDepth(80);
     const dim = this.add.rectangle(0, 0, W, H, 0x0a0710, 0.6).setOrigin(0);
     const g = this.add.graphics();
@@ -542,8 +542,15 @@ export class UI extends Phaser.Scene {
       p.nm.setTint(lead ? C.goldL : 0xffffff);
     }
     const tq = game.quests, tid = tq?.state.tracked, tstep = tid && tq.step(tid);
-    this.trackTitle.setText(tstep ? tq.title(tid) : '');
-    this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
+    const dk = game.dungeon;
+    if (dk) {
+      // dungeon lab: what you're carrying in place of the errand tracker
+      this.trackTitle.setText(dk.def.name);
+      this.trackTxt.setText([`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
+    } else {
+      this.trackTitle.setText(tstep ? tq.title(tid) : '');
+      this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
+    }
     const L = game.leader;
 
     this.skillBtns.forEach((b, i) => {

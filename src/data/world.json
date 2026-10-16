@@ -1,6 +1,6 @@
 {
  "size": {
-  "w": 320,
+  "w": 384,
   "h": 128,
   "tile": 16,
   "overworldW": 192
@@ -71,6 +71,15 @@
    "id": "undercroft",
    "name": "BRIGHTWATER UNDERCROFT",
    "sub": "BENEATH THE OLD KEEP",
+   "band": [
+    3,
+    6
+   ]
+  },
+  {
+   "id": "lab",
+   "name": "THE UNDERCROFT (TEST)",
+   "sub": "DUNGEON LAB",
    "band": [
     3,
     6

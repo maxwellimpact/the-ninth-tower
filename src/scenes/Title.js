@@ -3,6 +3,7 @@ import { HEROES } from '../gfx/heroes.js';
 import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
 import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
+import { dungeonStart } from '../game/dungeon.js';
 
 // Title + "choose your starting hero" (the other two join as first recruits).
 export class Title extends Phaser.Scene {
@@ -35,6 +36,27 @@ export class Title extends Phaser.Scene {
     if (save) this.saveMenu(save);
     else this.heroSelect();
     this.add.bitmapText(W / 2, H - 10, 'fontPlain', 'OPEN /LAB.HTML FOR THE SPRITE + SOUND LAB').setOrigin(0.5).setAlpha(0.6);
+    // Dungeon lab: try a test dungeon with a ready-made party. Never saves,
+    // so it can't touch the real game. (Also opens straight away via #dungeon.)
+    const lab = this.add.bitmapText(W - 30, 10, 'fontGold', 'DUNGEON LAB >').setOrigin(1, 0); // clear of a landscape notch / rounded corner
+    const lz = this.add.zone(lab.x - lab.width - 6, 2, lab.width + 12, 20).setOrigin(0).setInteractive({ useHandCursor: true });
+    lz.on('pointerdown', () => this.enterLab());
+    if (location.hash === '#dungeon') this.time.delayedCall(300, () => this.enterLab());
+  }
+
+  enterLab(id = 'labUndercroft') {
+    if (this.leaving) return;
+    this.leaving = true;
+    audio.init(); audio.sfx('levelUp');
+    const st = newState('brann');
+    st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
+    for (const h of st.recruited) { st.heroes[h].level = 5; st.heroes[h].sp = (st.heroes[h].sp || 0) + 4; }
+    st.potions.potion = 4;
+    st.lab = id;
+    const p = dungeonStart(id);
+    st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };
+    this.cameras.main.fadeOut(400, 10, 6, 20);
+    this.time.delayedCall(420, () => this.enterWorld(st));
   }
 
   saveMenu(save) {

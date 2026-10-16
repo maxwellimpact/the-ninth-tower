@@ -309,6 +309,16 @@ export const SFX = {
     a.tone({ type: 'triangle', freq: 110, freq2: 60, dur: 0.1, vol: 0.35 });
     a.noiseHit({ dur: 0.1, vol: 0.18, type: 'lowpass', f0: 900, f1: 200 });
   },
+  // dungeon kit: a key turning in a heavy lock, and a stone block scraping a tile over
+  unlock(a) {
+    a.noiseHit({ dur: 0.05, vol: 0.12, type: 'bandpass', f0: 2400, f1: 1800, q: 8 });
+    a.tone({ type: 'pulse', duty: 0.125, freq: 880, freq2: 660, dur: 0.06, vol: 0.1, time: a.t + 0.07 });
+    a.noiseHit({ dur: 0.08, vol: 0.14, type: 'bandpass', f0: 1200, f1: 700, q: 6, time: a.t + 0.14 });
+  },
+  push(a) {
+    a.noiseHit({ dur: 0.22, vol: 0.2, type: 'lowpass', f0: 500, f1: 180 });
+    a.tone({ type: 'triangle', freq: 70, freq2: 55, dur: 0.2, vol: 0.25, vibrato: 0.1 });
+  },
   equip(a) {
     a.tone({ type: 'pulse', duty: 0.25, freq: midiHz(67), dur: 0.05, vol: 0.12 });
     a.tone({ type: 'pulse', duty: 0.25, freq: midiHz(74), dur: 0.12, vol: 0.12, time: a.t + 0.06, echo: 0.2 });
