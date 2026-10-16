@@ -8,16 +8,19 @@ let ref = null; // the viewer's save document, once the runtime answers
 let pending = null, timer = null;
 let copy = null; // the newest save JSON we know of, for when localStorage refuses it entirely
 export const cloudCopy = () => copy;
+// for the title screen: is the cloud copy working on this device?
+let status = 'connecting';
+export const cloudStatus = () => status;
 
 const withTimeout = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
 
 async function connect() {
   const use = window.claude?.use;
-  if (!use) return null;
+  if (!use) { status = 'off (no runtime)'; return null; }
   const [db, user] = await Promise.all([use('db'), use('user')]);
-  if (!db || !user) return null;
+  if (!db || !user) { status = `off (${!db ? 'no db' : 'no user'})`; return null; }
   const id = await user.id();
-  if (!id) return null; // signed out: no private subtree, stay local-only
+  if (!id) { status = 'off (signed out)'; return null; } // no private subtree, stay local-only
   return db.doc(`data/users/${id}/${DOC}`);
 }
 
@@ -33,8 +36,9 @@ export function cloudRestore(key) {
       if (pending) { clearTimeout(timer); timer = setTimeout(flush, 1500); } // saves made while connecting
       if (late) return; // too late to restore, but backups still go through
       const snap = await ref.get();
-      if (late) return;
       const cloud = snap.exists ? snap.data() : null;
+      status = cloud?.json ? 'on' : 'on (empty)';
+      if (late) return;
       let local = null;
       try { local = JSON.parse(localStorage.getItem(key) || 'null'); } catch { /* unreadable -> treat as missing */ }
       if (cloud?.json && (!local || (cloud.savedAt || '') > (local.savedAt || ''))) {
@@ -43,8 +47,8 @@ export function cloudRestore(key) {
       } else if (local && (!cloud || (local.savedAt || '') > (cloud.savedAt || ''))) {
         cloudBackup(JSON.stringify(local), local.savedAt); // local is ahead (saved while offline)
       }
-    } catch (e) { console.warn('[cloudsave] restore failed', e); }
-  })(), 4000);
+    } catch (e) { status = `error ${e?.code || e}`; console.warn('[cloudsave] restore failed', e); }
+  })(), 4000).then(() => { if (status === 'connecting') status = 'slow (gave up waiting)'; });
 }
 
 // After each save: back up the latest one, batched so a burst of autosaves
@@ -60,7 +64,7 @@ export function cloudBackup(json, savedAt) {
 function flush() {
   if (!ref || !pending) return;
   const body = pending; pending = null;
-  ref.set(body).catch((e) => console.warn('[cloudsave] backup failed', e?.code || e));
+  ref.set(body).then(() => { status = 'on'; }, (e) => { status = `backup failed ${e?.code || e}`; console.warn('[cloudsave] backup failed', e?.code || e); });
 }
 
 export function cloudClear() {
