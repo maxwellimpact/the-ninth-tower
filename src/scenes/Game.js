@@ -1280,12 +1280,17 @@ export class Game extends Phaser.Scene {
   drawEnemyBars() {
     const g = (this.hpBars ??= this.add.graphics().setDepth(TOP - 35));
     g.clear();
+    // an elite's tag shows exactly when its bar does (hidden here, re-shown
+    // below); otherwise it was left frozen where the fight happened
+    for (const e of this.enemies) e.eliteTag?.setVisible(false);
     for (const e of this.enemies) {
       if (!e.alive || e.boss || e.submerged || e.riseT > 0) continue;
       const hurt = e.hp < e.maxHp;
       if (!(e.engaged || (hurt && e.state !== 'idle' && e.state !== 'return'))) continue;
       const w = e.named ? 26 : e.elite ? 20 : 16;
-      const top = e.sprite.y - e.sprite.displayHeight * e.sprite.originY;
+      // measured once: per-frame sprite sizes (attack poses) made the bar and tag hop
+      e.barH ??= e.sprite.displayHeight * e.sprite.originY;
+      const top = e.sprite.y - e.barH;
       const x = Math.round(e.x - w / 2), y = Math.round(top + (e.puppet ? 10 : 6) - 6);
       const f = Math.max(0, e.hp / e.maxHp);
       g.fillStyle(0x1a1423, 0.9).fillRect(x - 1, y - 1, w + 2, 4);
@@ -1304,7 +1309,7 @@ export class Game extends Phaser.Scene {
     rg.clear();
     const view = this.cameras.main.worldView, pulse = 0.35 + Math.sin(this.time.now / 260) * 0.2;
     for (const e of this.enemies) {
-      if (!e.alive || !e.elite || e.boss || e.submerged) { e.eliteTag?.setVisible(false); continue; }
+      if (!e.alive || !e.elite || e.boss || e.submerged) continue;
       if (e.x < view.x - 20 || e.x > view.right + 20 || e.y < view.y - 20 || e.y > view.bottom + 20) continue;
       rg.lineStyle(1, 0xf2c14e, pulse + 0.3).strokeEllipse(e.x, e.y + 2, 22, 9);
       rg.fillStyle(0xf2c14e, pulse * 0.35).fillEllipse(e.x, e.y + 2, 22, 9);
@@ -1315,7 +1320,6 @@ export class Game extends Phaser.Scene {
         rg.lineStyle(2, 0xbfd0e6, 0.85).beginPath(); rg.arc(e.x, e.y - 6, 14, a0 - 0.9, a0 + 0.9); rg.strokePath();
       }
       if (e.affix === 'volatile' && e.hp < e.maxHp * 0.3) rg.lineStyle(1, 0xffa060, 0.5 + Math.sin(this.time.now / 90) * 0.4).strokeCircle(e.x, e.y - 8, 12);
-      if (!(e.engaged || e.hp < e.maxHp)) e.eliteTag?.setVisible(false);
     }
   }
 

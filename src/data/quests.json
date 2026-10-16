@@ -340,7 +340,7 @@
    "steps": [
     {
      "type": "defend",
-     "text": "DRIVE OFF THE GOBLINS BEFORE THEY REACH QUILL",
+     "text": "DRIVE OFF THE GOBLINS HOUNDING QUILL",
      "npc": "quill",
      "hp": 160,
      "units": [

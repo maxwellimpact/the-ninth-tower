@@ -23,6 +23,7 @@ export class QuestManager {
     st.tracked ??= null;
     this.npcs = [];
     this.live = {}; // runtime objects per active errand step
+    this.staged = {}; // errand id -> set-piece enemies waiting for you to step in
     for (const n of Q.npcs) this.addNpc(n);
     // chance-meeting errands can also be (re)taken by talking to their giver
     for (const [id, e] of Object.entries(ERRANDS)) {
@@ -123,7 +124,35 @@ export class QuestManager {
     audio.sfx('equip');
     this.sc.events.emit('banner', 'ERRAND ACCEPTED', ERRANDS[id].title);
     this.enterStep(id);
+    // taking a defend errand is stepping in: the raiders turn on you
+    if (this.step(id)?.type === 'defend') this.engageStaged(id, this.sc.leader);
     this.sc.autosave('errand');
+  }
+
+  // Defend errands are a set piece: from the moment you meet the giver, the
+  // raiders are there swinging at them for show (no damage, no fail state).
+  // They only fight once you accept, or once you hit one first.
+  stageAmbush(id, wake = false) {
+    const e = ERRANDS[id], s = e.steps[0], sc = this.sc;
+    if (this.staged[id]?.some((u) => u.alive)) return this.staged[id];
+    const npc = this.npc(s.npc);
+    if (!npc) return [];
+    if (npc.hiddenNow) this.setNpcVisible(npc, true);
+    this.staged[id] = s.units.map(([k, x, y]) => {
+      const u = sc.spawnEnemy(k, px(x), px(y), false);
+      u.questSpawn = id;
+      u.staged = { id, npc, wake };
+      return u;
+    });
+    return this.staged[id];
+  }
+
+  engageStaged(id, h) {
+    if (this.engaging) return;
+    this.engaging = true;
+    if (!this.q(id)) this.start(id); // hit one before saying yes: that's a yes
+    for (const u of this.staged[id] || []) if (u.alive && u.staged) u.engageStaged(h);
+    this.engaging = false;
   }
 
   // ---------------------------------------------------------------- steps
@@ -327,29 +356,12 @@ export class QuestManager {
   }
 
   startDefend(id, s, live) {
-    const sc = this.sc;
     const npc = this.npc(s.npc);
     this.setNpcVisible(npc, true);
-    const guard = { x: npc.px, y: npc.py, r: 6, alive: true, team: 'party', hp: s.hp, maxHp: s.hp, ally: true,
-      damage: (amt) => {
-        guard.hp -= amt; npc.s.setTintFill(0xffffff); sc.time.delayedCall(70, () => npc.s.clearTint());
-        sc.floatText(guard.x, guard.y - 24, `${Math.round(amt)}`, 'font', 0xff6a6a);
-        if (guard.hp <= 0 && guard.alive) {
-          // failed: the raiders make off with the goods; talk to them again to retry
-          guard.alive = false;
-          sc.events.emit('banner', `${npc.name} IS DOWN`, 'THE RAIDERS FLED WITH THE GOODS. TALK TO THEM TO TRY AGAIN.');
-          for (const e of live.units || []) if (e.alive) { e.alive = false; sc.fx.puff(e.x, e.y, 'spark'); e.destroy(); }
-          this.clearLive(id);
-          delete this.state.quests[id];
-          if (this.state.tracked === id) this.state.tracked = null;
-        }
-        return amt;
-      } };
-    live.guard = guard;
-    (sc.allies ??= []).push(guard);
-    live.units = s.units.map(([k, x, y]) => { const e = sc.spawnEnemy(k, px(x), px(y), false); e.questSpawn = id; e.setTaunt(guard, 999); return e; });
-    live.bar = sc.add.graphics().setDepth(100000 - 41);
-    live.objs.push(live.bar);
+    // reuse the raiders already on stage; after a reload they're re-staged and
+    // wake when the party walks up
+    live.units = this.stageAmbush(id, true);
+    for (const u of live.units) if (u.staged && !this.engaging) u.staged.wake = true;
   }
 
   update(dt) {
@@ -370,7 +382,11 @@ export class QuestManager {
     for (const [id, e] of Object.entries(ERRANDS)) {
       if (!e.trigger || this.q(id)) continue;
       // already met (e.g. after a reload): they wait where you left them
-      if (sc.flags[`met_${id}`]) { const g = this.npc(e.giver); if (g?.hiddenNow) this.setNpcVisible(g, true); continue; }
+      if (sc.flags[`met_${id}`]) {
+        const g = this.npc(e.giver); if (g?.hiddenNow) this.setNpcVisible(g, true);
+        if (e.steps[0].type === 'defend') this.stageAmbush(id);
+        continue;
+      }
       if (sc.busy || sc.ui?.dialogOpen || sc.combatHold > 0) continue;
       const [tx, ty, r] = e.trigger;
       if (Math.hypot(L.x - px(tx), L.y - px(ty)) < r * TILE) {
@@ -378,6 +394,7 @@ export class QuestManager {
         const npc = this.npc(e.giver);
         sc.flags[`met_${id}`] = true;
         this.setNpcVisible(npc, true);
+        if (e.steps[0].type === 'defend') this.stageAmbush(id);
         this.offer(id, npc);
       }
     }
@@ -423,11 +440,7 @@ export class QuestManager {
         live.bar.clear().fillStyle(0x1a1423).fillRect(c.x - 13, c.y - 22, 26, 4).fillStyle(0x6fd3a0).fillRect(c.x - 12, c.y - 21, Math.round(24 * Math.max(0, c.hp) / c.maxHp), 2);
         if (c.idx >= s.path.length && !fighting) { sc.floatText(c.x, c.y - 26, 'MADE IT!', 'fontGold'); this.advance(id); }
       }
-      if (s.type === 'defend' && live.guard) {
-        const gd = live.guard;
-        live.bar.clear().fillStyle(0x1a1423).fillRect(gd.x - 13, gd.y - 30, 26, 4).fillStyle(0xf2c14e).fillRect(gd.x - 12, gd.y - 29, Math.round(24 * Math.max(0, gd.hp) / gd.maxHp), 2);
-        if (live.units.every((e) => !e.alive)) this.advance(id);
-      }
+      if (s.type === 'defend' && live.units?.length && live.units.every((e) => !e.alive)) { delete this.staged[id]; this.advance(id); }
     }
   }
 

@@ -1005,7 +1005,7 @@ export class Enemy extends Unit {
   setTaunt(by, t) { this.taunter = by; this.tauntT = t; this.target = by; this.engaged = true; if (this.state === 'idle') this.state = 'chase'; }
 
   aggroOn(h, spread = true) {
-    if (!h || h.downed) return;
+    if (!h || h.downed || this.staged) return;
     const was = this.engaged;
     this.target = this.tauntT > 0 ? this.taunter : h;
     this.engaged = true;
@@ -1020,6 +1020,7 @@ export class Enemy extends Unit {
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
     if (this.submerged || this.introT > 0) return 0;
+    if (this.staged && src?.team === 'party') this.engageStaged(src instanceof Hero && !src.downed ? src : this.scene.leader);
     // Armored: a frontal guard. Hit it from the side or behind, while it's stunned, or Shock it
     if (this.affix === 'armored' && src && !dot && !(this.stunT > 0) && !this.status?.shock) {
       const f = this.view === 'side' ? [this.flip ? -1 : 1, 0] : [0, this.view === 'down' ? 1 : -1];
@@ -1166,6 +1167,7 @@ export class Enemy extends Unit {
     }
     this.physics(dt);
     this.tauntT = Math.max(0, this.tauntT - dt);
+    if (this.staged) { this.updateStaged(dt); this.sync(dt); if (this.staged) return; }
     if (this.stunT > 0) {
       this.stunT -= dt;
       this.play('idle');
@@ -1284,6 +1286,38 @@ export class Enemy extends Unit {
       }
     }
     this.sync(dt);
+  }
+
+  // Errand set-piece (Quill's ambush): circle the NPC and swing at them for
+  // show. No damage, no aggro, until the errand is taken or someone hits us.
+  // staged.wake: the errand is already running (after a reload), so the
+  // party walking up is enough to start the fight.
+  updateStaged(dt) {
+    const st = this.staged, n = st.npc, sc = this.scene;
+    if (st.wake) { const h = sc.nearestHero(this, this.s.aggro); if (h) { this.engageStaged(h); return; } }
+    st.a = (st.a ?? Math.random() * Math.PI * 2) + dt * 0.3;
+    const ring = this.s.ranged ? 40 : 17;
+    const spot = { x: n.px + Math.cos(st.a) * ring, y: n.py + 4 + Math.sin(st.a) * ring * 0.7 };
+    st.swing = Math.max(0, (st.swing || 0) - dt);
+    st.t = (st.t ?? 0.4 + Math.random()) - dt;
+    if (st.swing > 0) return; // mid-swing: hold the pose
+    if (Math.hypot(spot.x - this.x, spot.y - this.y) > 4) { this.stepTo(spot, dt, 0.45); return; }
+    this.face(n.px - this.x, n.py - this.y);
+    if (st.t <= 0) {
+      st.t = 1 + Math.random() * 1.2; st.swing = 0.35;
+      this.anim = ''; this.play('attack');
+      if (!this.s.ranged) sc.time.delayedCall(140, () => { if (!n.s?.active || !this.staged) return; n.s.setTintFill(0xffffff); sc.time.delayedCall(60, () => n.s.active && n.s.clearTint()); });
+      if (this.onScreen()) audio.sfx(this.s.ranged ? 'swing' : 'stab', { pitch: this.s.ranged ? 1.6 : 1.2 });
+    } else this.play('idle');
+  }
+
+  engageStaged(h) {
+    if (!this.staged) return;
+    const id = this.staged.id;
+    this.staged = null;
+    this.spawn = { x: this.x, y: this.y }; // home is the fight, not where we first stood
+    this.aggroOn(h);
+    this.scene.quests?.engageStaged(id, h);
   }
 
   stepTo(p, dt, mul) {
