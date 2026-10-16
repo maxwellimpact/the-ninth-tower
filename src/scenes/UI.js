@@ -35,7 +35,7 @@ export class UI extends Phaser.Scene {
     //   [DODGE] [SKILL 1]  [SKILL 2]  [SKILL 3]
     const SZ = 26;
     this.skillBtns = [0, 1, 2].map((i) => this.makeButton('icon_bash', () => this.g.leaderSkill(i), `${i + 1}`, null, SZ, true));
-    this.dodgeBtn = this.makeButton('icon_dodge', () => { const L = this.g.leader; L.dodge(...L.facingVec()); }, 'SPC', null, SZ, true);
+    this.dodgeBtn = this.makeButton('icon_dodge', () => this.g.leaderDodge(), 'SPC', null, SZ, true);
     this.ultBtn = this.makeButton('icon_meteor', () => this.g.useUltimate(this.g.leader), 'Z', null, SZ, true);
     this.allyBtns = [0, 1].map((i) => this.makeButton('icon_meteor', () => { const a = this.allies()[i]; if (a) this.g.useUltimate(a); }, '', null, SZ, true));
     for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl = this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5, 0);
@@ -560,8 +560,10 @@ export class UI extends Phaser.Scene {
       if (!s) return;
       if (this.textures.exists(s.icon)) b.icon.setTexture(s.icon);
       b.lbl.setText(s.short || s.name);
+      b.cdSecs = s.t;
       this.drawBtn(g, b, s.t / s.cd);
     });
+    this.dodgeBtn.cdSecs = 0; // too short for a number: the flash shows it's back
     this.drawBtn(g, this.dodgeBtn, L.dodgeCd / 0.55);
     // ultimate: its own icon, a slow clockwise recharge sweep, gold pulse when ready
     const u = L.ultimate;
@@ -659,14 +661,23 @@ export class UI extends Phaser.Scene {
       g.fillStyle(ring, 1).fillCircle(cx, cy, r);
       g.fillStyle(C.night, 1).fillCircle(cx, cy, r - 1.5);
       const charging = cd > 0.001;
-      b.icon?.setAlpha(charging ? 0.4 : 1);
+      b.icon?.setAlpha(charging ? 0.3 : 1);
       if (charging) {
         // remaining cooldown as a dark pie, plus a bright rim arc that fills clockwise
         const f = 1 - Math.min(1, cd);
         const a0 = -Math.PI / 2 + f * Math.PI * 2;
-        g.fillStyle(C.ink, 0.6).slice(cx, cy, r - 1.5, a0, Math.PI * 1.5, false).fillPath();
+        g.fillStyle(C.ink, 0.82).slice(cx, cy, r - 1.5, a0, Math.PI * 1.5, false).fillPath();
         if (f > 0.01) this.arcG.lineStyle(2, arc, 1).beginPath().arc(cx, cy, r - 0.5, -Math.PI / 2, a0, false).strokePath();
-      }
+      } else if (b !== this.ultBtn) this.arcG.lineStyle(1, 0xe8e2f0, 0.9).strokeCircle(cx, cy, r - 0.5); // ready: a bright rim
+      // seconds left on longer cooldowns (b.cdSecs is set by the caller)
+      b.cdTxt ??= this.add.bitmapText(0, 0, 'font', '').setOrigin(0.5).setDepth(5);
+      const secs = charging && b.cdSecs >= 1 ? Math.ceil(b.cdSecs) : 0;
+      b.cdTxt.setText(secs ? `${secs}` : '').setPosition(Math.round(cx), Math.round(cy)).setVisible(b.visible && !!secs);
+      // back from cooldown: a flash ring and a little pop so you notice it's ready
+      if (b.wasCharging && !charging) { b.readyAt = this.time.now; if (b.icon) { this.tweens.killTweensOf(b.icon); this.tweens.add({ targets: b.icon, scale: { from: 1.35, to: 1 }, duration: 220, ease: 'Back.easeOut' }); } }
+      b.wasCharging = charging;
+      const since = this.time.now - (b.readyAt || -1e9);
+      if (since < 380) { const k = since / 380; this.arcG.lineStyle(2, 0xfff0a0, 1 - k).strokeCircle(cx, cy, r + 1 + k * 7); }
       this.children.sendToBack(g);
       return;
     }

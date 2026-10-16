@@ -1413,6 +1413,8 @@ Each region adds a theme variation (§11a). Its dungeon uses the Depths variatio
 - **In-combat pickups:** shown as a small white outlined line, off to the right.
 - **Outlined text:** any text drawn over the game world (tracker, toasts, button labels, names) uses the outlined font.
 - **Landscape is the primary orientation** (portrait still works). In landscape, all combat controls sit in one compact row hugging the bottom edge, icons only. The leader's own buttons (ULT, DODGE, skills) are in a thin gold outline tagged with the leader's name; the companions' ULTs sit apart in a grey "ALLIES" outline. Only visible buttons are packed and framed. The native iOS build can lock to landscape.
+- **Cooldowns read at a glance:** a charging button dims its icon, darkens a sweep over it and fills a green arc back in. Cooldowns of a second or more show the seconds left, and a ready button has a bright rim. The moment a button comes back it flashes a ring and pops, which also marks the half-second dodge.
+- **Smart dodge:** the dodge goes where you steer. Without steering, it picks the short hop (about 3 tiles) that best clears telegraphed attacks and the reach of whoever is fighting you, into open floor. A boss always counts as a threat. It never goes further than it needs to.
 - **Saves never put the party somewhere it can't stand.** Positions up a lookout or inside a blocked tile snap to the nearest open ground, both when saving and when loading.
 
 ### 8. Never-again rules (from playtest bugs) [LOCKED]

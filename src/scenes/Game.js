@@ -846,9 +846,7 @@ export class Game extends Phaser.Scene {
     const kb = this.input.keyboard;
     kb.on('keydown-SPACE', () => {
       if (this.ui?.dialogOpen) { this.ui.advanceDialog(); return; }
-      const L = this.leader;
-      const v = L.direct && (L.direct.x || L.direct.y) ? [L.direct.x, L.direct.y] : L.facingVec();
-      L.dodge(...v);
+      this.leaderDodge();
     });
     kb.on('keydown-ONE', () => this.leaderSkill(0));
     kb.on('keydown-TWO', () => this.leaderSkill(1));
@@ -926,6 +924,12 @@ export class Game extends Phaser.Scene {
     this.scene.resume();
     this.autosave('menu');
     this.events.emit('party');
+  }
+
+  // Dodge: where you're steering, else wherever is safe (Hero.smartDodge)
+  leaderDodge() {
+    const L = this.leader;
+    L.dodge(...(L.direct && (L.direct.x || L.direct.y) ? [L.direct.x, L.direct.y] : L.smartDodge()));
   }
 
   leaderSkill(i) {

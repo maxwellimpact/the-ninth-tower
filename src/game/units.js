@@ -362,6 +362,42 @@ export class Hero extends Unit {
     });
   }
 
+  // Where a dodge should go when you aren't steering: out of telegraphed
+  // attacks and out of reach of whoever is fighting you, into open floor, and
+  // only as far as it takes (a ~3 tile hop, never across the room).
+  smartDodge() {
+    const sc = this.scene;
+    const threats = [];
+    for (const z of sc.dangers) if (Math.hypot(this.x - z.x, this.y - z.y) < z.r + 48) threats.push({ x: z.x, y: z.y, r: z.r + 10, w: 3 });
+    for (const e of sc.enemies) {
+      if (!e.alive || e.submerged || !(e.engaged || e.boss || e.target === this)) continue; // a boss always counts
+      const reach = e.s.ranged ? 24 : (e.s.range || 14) + e.r + 14;
+      if (dist(e, this) < reach + 48) threats.push({ x: e.x, y: e.y, r: reach, w: e.target === this ? 2 : 1 });
+    }
+    if (!threats.length) {
+      // nothing swinging at us: roll back from a nearby foe rather than into it
+      const near = sc.nearestEnemy(this, 80);
+      if (near) return norm(this.x - near.x, this.y - near.y);
+      return this.facingVec();
+    }
+    const hop = 46; // what a dodge actually covers
+    let best = null, bs = -Infinity;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a);
+      let len = hop;
+      if (!sc.nav.lineClear(this.x, this.y, this.x + ux * len, this.y + uy * len, 4)) { len = hop * 0.5; if (!sc.nav.lineClear(this.x, this.y, this.x + ux * len, this.y + uy * len, 4)) continue; }
+      const lx = this.x + ux * len, ly = this.y + uy * len;
+      let score = len * 0.05;
+      for (const t of threats) {
+        const d = Math.hypot(lx - t.x, ly - t.y);
+        if (d < t.r) score -= (t.r - d + 20) * t.w * 3; // still in it: bad
+        score += Math.min(d, t.r + 24) * 0.2 * t.w;     // clear of it is good, further is no better
+      }
+      if (score > bs) { bs = score; best = [ux, uy]; }
+    }
+    return best || this.facingVec();
+  }
+
   dodge(dx, dy) {
     if (!this.alive || this.downed || this.dodgeCd > 0) return;
     if (this.action && this.action.type === 'dodge') return;
