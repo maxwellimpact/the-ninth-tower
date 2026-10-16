@@ -1108,6 +1108,7 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   - Hook posts across chasms, cracked walls, and the map and compass.
   - **Sealed Vault:** a vault door that only another region's relic opens. In the lab it's the Tide Charm, behind which is a flooded chamber you swim across to reach the Sunspire Staff. The lab party carries the Charm so the vault can be tried; in the real game it's a return visit. The final design names the Gale Cloak for the Undercroft vault; swap it in once the Cloak exists.
 - **Music:** dungeons get their own theme. The Undercroft's is "The Undercroft", a stately minor march over a ticking clockwork ostinato. It plays in the lab only until the redesign is approved.
+- **Must meet C12's never-again rules:** a camera margin around every room, wipes that reset fights, and doors that never pin anyone.
 - **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
 - **Party use:** some switches want a ranged hero (swap leader). After the relic, the hook hits switches nobody can walk to.
 - **Variation per dungeon:** each region's dungeon leans on its own relic (Lantern braziers, Tide Charm water levels, Lens false walls, Gauntlet boulders, Gale Cloak wind) and recombines the kit, so no two feel the same.
@@ -1407,6 +1408,30 @@ Each region adds a theme variation (§11a). Its dungeon uses the Depths variatio
 - **Landscape is the primary orientation** (portrait still works). In landscape, all combat controls sit in one compact row hugging the bottom edge, icons only. The leader's own buttons (ULT, DODGE, skills) are in a thin gold outline tagged with the leader's name; the companions' ULTs sit apart in a grey "ALLIES" outline. Only visible buttons are packed and framed. The native iOS build can lock to landscape.
 - **Saves never put the party somewhere it can't stand.** Positions up a lookout or inside a blocked tile snap to the nearest open ground, both when saving and when loading.
 
+### 8. Never-again rules (from playtest bugs) [LOCKED]
+Each of these shipped once and broke a playtest. Every new region, dungeon, room and system is checked against them.
+
+1. **Nothing important hides under the HUD.**
+   - **The bug:** the crystal room sat on the edge of its area. The camera stops at an area's edge, so the room's switch and key chest ended up under the minimap and the puzzle couldn't be read.
+   - **The rule:** every interior (dungeon, cave, building) keeps a margin of solid wall around its rooms wide enough for the camera to center any room. That's at least 16 tiles beside the outermost rooms and 8 above and below. Authored as data: a dungeon's `origin` sits inside its area with that margin.
+   - **HUD zones to keep clear:** the minimap at top right, the hero portraits at top left, and the combat row along the bottom. No switch, chest, plate, door or enemy should spend time there while the camera is held at an edge.
+   - **Check:** screenshot every room in iPhone landscape with the safe-area insets on.
+2. **Dying never locks you out.**
+   - **The bug:** the party died inside a sealed fight room. The fight stayed "in progress", so its doors stayed barred and the room could never be re-entered.
+   - **The rule:** a wipe puts everything the fight touched back into a state you can retry:
+     - Sealed fight rooms stand down (foes removed, doors open) and re-arm.
+     - Boss arenas reopen and the boss resets.
+     - Spawned helpers and ambushers reset.
+     - Doors you already unlocked stay unlocked, so a spent key is never lost to a death.
+   - **Respawn:** the party always respawns somewhere that can reach what killed it.
+   - **Check:** any new kind of gate, seal or one-way trigger must say what a wipe does to it.
+3. **Doors and gates never pin anyone.**
+   - **The bug:** a shutter, and in the original Undercroft the boss gate, slammed on a hero still half in the doorway. Every move left part of their footprint over solid ground, so they froze.
+   - **The rule:** movement always lets a unit already overlapping something solid step toward open floor. A closing door pushes anyone its footprint catches into the room. Seals only trigger once the leader is a full step inside.
+4. **Changing the world's size never breaks saves.**
+   - **The bug:** widening the map skewed the saved fog of war, which is stored as one bit per tile, row by row.
+   - **The rule:** anything saved per tile records the map width it was written at (`exploredW`), and older saves are read at their own width. Any change to the map's size or layout gets a save-compatibility check against an existing save before it ships.
+
 ---
 
 ## 16. Open Questions
@@ -1515,3 +1540,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Elite affixes built (all 8, each with a visible cue); disciplines built with Blade (Master Iren, Brightwater) and Shadow (Sly Margo, Mistfen smugglers' isle) trainers; switching refunds skill points |
 | 2026-10-15 | Brightwater rebuild started: 10 cursed townsfolk (Bard at 10, harp music layer); 12 lore pages with a reading card and Journal list; Golden Flies to 20; antidotes |
 | 2026-10-15 | Wave 1 complete: frog races (Mistfen), The Champion's Bout errand and Bloodfang Axe. Artifact publishing now ships the hashed scripts with the page (the page alone left the phone stuck on LOADING ENGINE) |
+| 2026-10-16 | Never-again rules added to C12 after playtest bugs: rooms keep camera margins so nothing important sits under the HUD; a wipe returns fights, seals and arenas to a retryable state; doors never pin a unit; saves record map width so resizing the world never breaks them |
