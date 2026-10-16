@@ -121,6 +121,8 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
 **Goal:** companions should feel like competent co-op partners. They must never be something the player has to babysit.
 
 ### Movement & positioning
+- **Commit to dodges [LOCKED from playtest]:** a companion escaping a telegraphed zone keeps going until well clear, then waits just outside it (facing the foe, attacking if in reach) until the attack resolves. It never steps back in early. Before this, Sable flickered on a zone's edge about 12 times a second.
+- **Ranged allies keep their distance [LOCKED from playtest]:** they hold about ¾ of their range from their target. They back off when it comes inside that, with slack so they don't jitter, sliding sideways off walls. They shoot while backing off unless the foe is right on top of them, when they just run. They only close in until the target is in range, and they can hang back further from a melee leader before regrouping.
 - **Never block the leader.** Companions have *soft* collision with the leader and step aside in narrow corridors.
 - **Formation follow:** loose trailing positions with a leash. If a companion falls too far behind or gets stuck, it catches up off-screen or with a quick "dash" effect, never a visible pop-in.
 - **Terrain-aware:** companions automatically follow through ledge drops, swimming, gliding and grapple points the leader uses. Relics are party-wide, so a companion never strands the party.

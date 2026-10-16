@@ -665,15 +665,18 @@ export class Hero extends Unit {
     this.thinkT -= dt;
     if (this.thinkT <= 0) { this.thinkT = 0.15; this.think(); }
 
-    // 1) step out of telegraphed danger zones
-    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + 4);
+    // 1) step out of telegraphed danger zones, and commit to it: keep going
+    // until well clear (not just over the edge), or the AI flickers in and out
+    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + (z === this.evading ? 12 : 4));
     if (danger) {
+      this.evading = danger;
       const [nx, ny] = norm(this.x - danger.x, this.y - danger.y);
       this.face(nx, ny);
       this.moveBy(nx * this.spd * 1.3 * dt, ny * this.spd * 1.3 * dt);
       this.clearPath();
       return;
     }
+    this.evading = null;
 
     // 2) revive a downed ally
     if (this.reviveTarget) {
@@ -695,7 +698,7 @@ export class Hero extends Unit {
     if (leaderRunning && dl0 > 56) { this.target = null; this.runOff = 1.2; }
     this.runOff = Math.max(0, (this.runOff || 0) - dt);
     if (this.runOff > 0) this.target = null;
-    if (this.target && dl0 > 112) this.target = null;
+    if (this.target && dl0 > (this.ranged ? 170 : 112)) this.target = null; // ranged allies hang back further
 
     // 4) fight
     const t = this.target;
@@ -703,12 +706,19 @@ export class Hero extends Unit {
       const d = dist(this, t);
       const st = this.stats;
       if (this.ranged) {
-        // kite: step back only when something is really close, and never far from the leader
-        if (d < 34 && dl0 < 110) {
+        // keep a comfortable firing distance (about 3/4 of range): back off when
+        // the target gets inside it, with some slack so it doesn't jitter, and
+        // never wander far from the leader
+        const keep = Math.min(st.range - 12, Math.max(56 + t.r, st.range * 0.72));
+        if (d < keep - 12) this.backing = true; else if (d >= keep) this.backing = false;
+        if (this.backing && dl0 < 170) {
           const [nx, ny] = norm(this.x - t.x, this.y - t.y);
+          const ox = this.x, oy = this.y;
           this.moveBy(nx * st.speed * dt, ny * st.speed * dt);
+          if (Math.hypot(this.x - ox, this.y - oy) < st.speed * dt * 0.3) this.moveBy(-ny * st.speed * dt, nx * st.speed * dt); // backed into a wall: slide sideways
           this.face(t.x - this.x, t.y - this.y);
           this.clearPath();
+          if (d > keep - 24) this.startAttack(t); // shoot while backing off, unless it's right on top of us: then just run
           return;
         }
         if (d <= st.range && sc.nav.lineClear(this.x, this.y, t.x, t.y, 1)) {
@@ -725,6 +735,14 @@ export class Hero extends Unit {
       // melee: approach a flank slot (opposite the leader / tank, not stacked)
       const slot = this.flankSlot(t);
       const reach = st.range + t.r;
+      // don't walk back into an attack that's about to land: wait just outside it
+      const [ax, ay] = norm(slot.x - this.x, slot.y - this.y);
+      if (sc.dangers.some((z) => Math.hypot(this.x + ax * 10 - z.x, this.y + ay * 10 - z.y) < z.r + 6)) {
+        this.clearPath();
+        this.face(t.x - this.x, t.y - this.y);
+        if (d <= reach + 6) this.startAttack(t);
+        return;
+      }
       if (d <= reach + 6) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
