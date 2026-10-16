@@ -35,7 +35,7 @@ export const AREAS = {
   abbey: { x0: 256, y0: 63, x1: 318, y1: 126, interior: true },
   // Dungeon lab: test dungeons built off to the side, reachable only from the
   // title screen's test entry (never from the real world)
-  lab: { x0: 322, y0: 2, x1: 383, y1: 64, interior: true },
+  lab: { x0: 322, y0: 0, x1: 415, y1: 80, interior: true }, // wide wall margins so the camera can centre any room
 };
 export const CAVE_RECT = AREAS.cave;
 

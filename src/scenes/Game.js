@@ -1373,6 +1373,7 @@ export class Game extends Phaser.Scene {
     if (this.state.lab) return; // the dungeon lab never touches the real save
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
+    this.state.exploredW = MAP_W; // so a later, wider map still reads it right
     // never save a spot the party can't stand on (up a lookout, inside a blocked tile)
     let px0 = L.x, py0 = L.y;
     const tx = Math.floor(px0 / TILE), ty = Math.floor(py0 / TILE);
@@ -1570,6 +1571,7 @@ export class Game extends Phaser.Scene {
       this.state.gold -= Math.floor(this.state.gold * 0.1);
       for (const h of this.party) { h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; }
       for (const e of this.enemies) if (e.alive) { e.x = e.spawn.x; e.y = e.spawn.y; e.state = 'idle'; e.target = null; e.engaged = false; e.hp = e.maxHp; e.clearZone(); }
+      this.dungeon?.onWipe();
       if (this.golem) { for (const p of this.golem.plates || []) { p.img.destroy(); this.removeInteractable(p.o); } this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); this.sealArena(false); }
       this.setLeader(this.party[0], true);
       this.events.emit('party');

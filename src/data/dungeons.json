@@ -3,8 +3,8 @@
   "name": "THE UNDERCROFT (TEST)",
   "sub": "DUNGEON LAB - NOTHING HERE IS SAVED",
   "origin": [
-   322,
-   2
+   338,
+   8
   ],
   "legend": "# wall, . floor, ~ chasm, W water (swim), @ start, F campfire, B push block, P plate, b/r blue/red peg, C crystal switch, = shutter, k key door, K boss door, V sealed vault door, % cracked wall, 1-9 chest, t-y hook posts, h hollow, H hollow captain, R rats, ! sealed fight room, G boss, g arena gate",
   "chests": {

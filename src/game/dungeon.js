@@ -470,6 +470,20 @@ export class DungeonKit {
     sc.time.delayedCall(500, spawn);
   }
 
+  // The party fell: any sealed fight under way stands down (its foes vanish,
+  // its doors open) and re-arms, so walking back in starts it over.
+  onWipe() {
+    for (const r of this.rooms) {
+      if (!r.active) continue;
+      for (const e of r.spawned || []) if (e.alive) { e.alive = false; e.destroy(); }
+      const inRoom = (e) => this.roomOf.get(key(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) === r.id;
+      for (const e of this.sc.enemies) if (e.alive && !e.boss && inRoom(e)) { e.alive = false; e.destroy(); } // reassembled hollows too
+      r.active = false; r.entered = false; r.spawned = null;
+    }
+    this.roomNow = undefined;
+    this.refreshDoors(true);
+  }
+
   clearRoom(room) {
     const sc = this.sc;
     if (!room.spawned) return; // foes still on their way in

@@ -12,6 +12,8 @@ const COL = {
 };
 const FOG = rgb('night');
 
+const LEGACY_W = 320; // map width before the dungeon lab widened it
+
 export class MiniMap {
   constructor(scene, world, state) {
     this.scene = scene;
@@ -78,12 +80,17 @@ export class MiniMap {
     return btoa(s);
   }
 
+  // Explored tiles are saved as a bit per tile, row by row, so they only line
+  // up at the map width they were saved with. Saves record that width
+  // (state.exploredW); older saves predate it and were written at 320 wide.
   decode(b64) {
     const out = new Uint8Array(MAP_W * MAP_H);
     if (!b64) return out;
     try {
       const s = atob(b64);
-      for (let i = 0; i < MAP_W * MAP_H; i++) if (s.charCodeAt(i >> 3) & (1 << (i & 7))) out[i] = 1;
+      const w = this.state.exploredW || LEGACY_W;
+      const bit = (i) => s.charCodeAt(i >> 3) & (1 << (i & 7));
+      for (let y = 0; y < MAP_H; y++) for (let x = 0; x < Math.min(w, MAP_W); x++) if (bit(y * w + x)) out[y * MAP_W + x] = 1;
     } catch { /* corrupt -> start fresh */ }
     return out;
   }
