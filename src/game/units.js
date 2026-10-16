@@ -377,7 +377,25 @@ export class Hero extends Unit {
     this.scene.fx.dust(this.x, this.y);
   }
 
+  // The leader is never stuck in a swing: moving, picking another target or a
+  // skill cuts it short (a swing cut before it lands doesn't hit, and its
+  // cooldown comes back). Skill animations can be cut once their effect is out.
+  cancelForInput() {
+    const a = this.action, c = this.command, d = this.direct;
+    const cancellable = a.type === 'attack' || (a.type === 'skill' && !a.tick && (a.hitAt === undefined || a.done));
+    if (!cancellable) return;
+    const wants = (d && (d.x || d.y)) || c?.type === 'move' || c?.type === 'interact' || (c?.type === 'attack' && a.type === 'attack' && c.target !== a.target);
+    if (wants) this.cancelAction();
+  }
+
+  cancelAction() {
+    const a = this.action;
+    if (a?.type === 'attack' && !a.done) this.atkT = 0;
+    this.action = null; this.anim = '';
+  }
+
   useSkill(i, target) {
+    if (this.isLeader && this.action?.type === 'attack') this.cancelAction(); // a skill press never waits on a swing
     const sk = this.skills[i];
     if (!sk || sk.t > 0 || !this.canAct()) return false;
     const fx = SKILL_FX[sk.id];
@@ -542,6 +560,7 @@ export class Hero extends Unit {
 
     if (this.downed) { this.sync(dt); return; }
 
+    if (this.action && this.isLeader) this.cancelForInput();
     if (this.action) this.updateAction(dt);
     else if (this.isLeader) this.updateLeader(dt);
     else this.updateCompanion(dt);

@@ -113,7 +113,8 @@
     "THE SHADOW BREAKS",
     "TEST DUNGEON CLEARED - TELL CLAUDE WHAT YOU THOUGHT"
    ],
-   "levelBonus": 0
+   "hpMul": 0.92,
+   "dmgMul": 0.92
   },
   "rows": [
    "##############################################################",

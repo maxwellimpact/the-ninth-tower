@@ -1108,6 +1108,10 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   - Hook posts across chasms, cracked walls, and the map and compass.
   - **Sealed Vault:** a vault door that only another region's relic opens. In the lab it's the Tide Charm, behind which is a flooded chamber you swim across to reach the Sunspire Staff. The lab party carries the Charm so the vault can be tried; in the real game it's a return visit. The final design names the Gale Cloak for the Undercroft vault; swap it in once the Cloak exists.
 - **Music:** dungeons get their own theme. The Undercroft's is "The Undercroft", a stately minor march over a ticking clockwork ostinato. It plays in the lab only until the redesign is approved.
+- **Vine life cycle:**
+  1. Alive while the Shadow stands.
+  2. When the Shadow breaks, a wave of decay crawls from the shrine back toward the stone while the vine greys out, slowly enough to watch (about 6–10 s).
+  3. The dead vine stays until the region's Ward Stone is destroyed, then crumbles away entirely and is never rebuilt.
 - **The cursed vine runs through it** (C12 §1): from the entrance, through the hub and under the great door to the sacred place where the Shadow stands. The lead hero's vine thoughts play along it, and it withers when the Shadow breaks. Authored as a `vine` waypoint list in the dungeon's data; the route is grown along walls automatically.
 - **Must meet C12's never-again rules:** a camera margin around every room, wipes that reset fights, and doors that never pin anyone.
 - **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
@@ -1433,6 +1437,10 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
    - **The bug:** widening the map skewed the saved fog of war, which is stored as one bit per tile, row by row.
    - **The rule:** anything saved per tile records the map width it was written at (`exploredW`), and older saves are read at their own width. Any change to the map's size or layout gets a save-compatibility check against an existing save before it ships.
 
+5. **The leader is never stuck in an action.**
+   - **The bug:** in the boss fight, running away or tapping an attack felt stuck while a swing played out. Dodge and skills were refused mid-swing, and frequent freeze-frames on hits stalled input too.
+   - **The rule:** moving, choosing a different target or pressing a skill cancels the leader's swing at once. A swing cut before it lands doesn't hit, and its cooldown is refunded, so you can step in and back out. Skill animations can be cut once their effect is out. Freeze-frames come only from the leader's own hits, are short and spaced out, and never fire while you're steering.
+
 ---
 
 ## 16. Open Questions
@@ -1542,3 +1550,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Brightwater rebuild started: 10 cursed townsfolk (Bard at 10, harp music layer); 12 lore pages with a reading card and Journal list; Golden Flies to 20; antidotes |
 | 2026-10-15 | Wave 1 complete: frog races (Mistfen), The Champion's Bout errand and Bloodfang Axe. Artifact publishing now ships the hashed scripts with the page (the page alone left the phone stuck on LOADING ENGINE) |
 | 2026-10-16 | Never-again rules added to C12 after playtest bugs: rooms keep camera margins so nothing important sits under the HUD; a wipe returns fights, seals and arenas to a retryable state; doors never pin a unit; saves record map width so resizing the world never breaks them |
+| 2026-10-16 | The leader can always cancel a swing (never-again rule 5). Vines wither slowly when the Shadow breaks and vanish when the stone falls. Lab boss tuned between the two tested strengths (normal level, 92% health and damage) |

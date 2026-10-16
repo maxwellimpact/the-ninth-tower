@@ -1081,7 +1081,10 @@ export class Game extends Phaser.Scene {
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
     // hit-stop sells impact, but stacked on every party hit it makes crowds feel sluggish:
     // only the leader's hits (and crits) freeze, and never more than ~4 times a second
-    if ((src === this.leader || crit) && this.time.now - (this.lastHitStop || 0) > 250) { this.lastHitStop = this.time.now; this.hitStop(crit ? 0.07 : 0.035); }
+    // a tiny freeze on the leader's own hits for punch; never while you're steering
+    // away, and spaced out so a busy fight doesn't stutter (it froze input too)
+    const steering = this.leader.direct && (this.leader.direct.x || this.leader.direct.y);
+    if (src === this.leader && !steering && this.time.now - (this.lastHitStop || 0) > 450) { this.lastHitStop = this.time.now; this.hitStop(crit ? 0.05 : 0.025); }
     if (crit) { this.shake(80, 0.004); audio.sfx('crit'); }
     else if (target.kind === 'hexling' || target.kind === 'mire') audio.sfx('squish');
     else audio.sfx('hit', { pitch: target.kind === 'ward' || target.boss ? 0.6 : 1 });
@@ -2115,6 +2118,7 @@ export class Game extends Phaser.Scene {
     const region = W.regions.find((r) => r.outer === def.region);
     if (region) this.flags[`band_${def.region}`] = regionBand(this.state, region);
     this.flags[def.flag] = true;
+    this.removeVines(w);
     if (def.id === 'vale') this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
     const down = this.wards.filter((k) => this.flags[k.def.flag]).length;
     if (down >= 2) this.flags.enchanter = true; // two stones: the Enchanter comes home
@@ -2318,7 +2322,7 @@ export class Game extends Phaser.Scene {
     this.vineStuff = new Set();
     for (const p of this.world.props) if (BLOCKING.has(p.type)) this.vineStuff.add(p.x + ',' + p.y);
     for (const w of this.wards) {
-      const list = w.def.vines || [];
+      const list = this.flags[w.def.flag] ? [] : w.def.vines || []; // a fallen stone's vines are gone
       list.forEach((pts, i) => {
         const v = { ward: w, i, n: list.length, seed: w.def.x * 31 + i * 17, dead: !!this.flags[w.def.guardian] || !!this.flags[w.def.flag] };
         v.pts = this.vinePath(this.growVineRoute(pts));
@@ -2530,7 +2534,7 @@ export class Game extends Phaser.Scene {
       for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; g.fillStyle(gold, ga).fillRect(Math.round(X(e.x + Math.cos(a) * 17)) - 1, Math.round(Y(e.y + Math.sin(a) * 11)) - 1, 2, 2); }
       if (!dead) roots(e.x, e.y, 9, 16, 22);
     }
-    const key = `vine_${v.ward.def.id}_${v.i}`;
+    const key = `vine_${v.ward.def.id}_${v.i}${dead ? '_dead' : ''}`;
     if (this.textures.exists(key)) this.textures.remove(key);
     g.generateTexture(key, w, h);
     g.destroy();
@@ -2554,11 +2558,12 @@ export class Game extends Phaser.Scene {
       const b = v.box;
       if (b.x > view.right || b.x + b.w < view.x || b.y > view.bottom || b.y + b.h < view.y) continue;
       v.t = (v.t || 0) + dt;
-      if (v.dead) {
+      if (v.dead && !v.dying) {
         if (v.sigil) { const a = 0.25 + Math.sin(v.t * 2) * 0.12; v.fx.fillStyle(0xfff0a0, a).fillEllipse(v.sigil.x, v.sigil.y, 34, 20); }
         continue;
       }
-      for (const p of v.pods) { const a = 0.35 + Math.sin(v.t * 3 + p.ph) * 0.3; v.fx.fillStyle(0xe7a6ff, a).fillCircle(p.x, p.y, 3.2).fillStyle(0xffffff, a * 0.8).fillCircle(p.x - 0.6, p.y - 0.6, 0.9); }
+      const life = v.dying ? 1 - v.dying.k : 1; // pods and motes fade out with the wither
+      for (const p of v.pods) { const a = (0.35 + Math.sin(v.t * 3 + p.ph) * 0.3) * life; v.fx.fillStyle(0xe7a6ff, a).fillCircle(p.x, p.y, 3.2).fillStyle(0xffffff, a * 0.8).fillCircle(p.x - 0.6, p.y - 0.6, 0.9); }
       if (v.sigil) { const a = 0.18 + Math.sin(v.t * 4) * 0.1; v.fx.fillStyle(0xffd27a, a).fillEllipse(v.sigil.x, v.sigil.y, 30, 18); }
       // motes travel toward d = 0; on the shrine vine they start gold and sour to purple
       for (let k = 0; k < Math.ceil(v.len / 70); k++) {
@@ -2567,22 +2572,42 @@ export class Game extends Phaser.Scene {
         if (p.x < view.x - 8 || p.x > view.right + 8 || p.y < view.y - 8 || p.y > view.bottom + 8) continue;
         const f = v.source ? d / v.len : 0;
         const col = f > 0.6 ? 0xffe08a : f > 0.3 ? 0xf0b8e8 : 0xe7a6ff;
-        v.fx.fillStyle(col, 0.95).fillCircle(p.x, p.y, 1.8).fillStyle(0xffffff, 0.9).fillCircle(p.x, p.y, 0.8);
+        v.fx.fillStyle(col, 0.95 * life).fillCircle(p.x, p.y, 1.8).fillStyle(0xffffff, 0.9 * life).fillCircle(p.x, p.y, 0.8);
       }
     }
   }
 
+  // The Shadow is broken: the vine dies slowly enough to watch. A wave of
+  // decay crawls from the shrine back toward the stone while the living vine
+  // greys out in step with it; the dead vine stays until the stone falls.
   witherVines(w) {
     for (const v of this.vines || []) {
       if (v.ward !== w || v.dead) continue;
+      const live = v.img; v.img = null;
       v.dead = true;
-      // crumbles back from the shrine toward the stone
-      const steps = Math.ceil(v.len / 40);
-      for (let i = 0; i < steps; i++) { const p = this.vineAt(v, v.len - i * 40); this.time.delayedCall(i * 60, () => this.fx.burst('curse', p.x, p.y, 3)); }
+      this.paintVine(v); // the dead version, faded in under the living one
+      const dead = v.img.setAlpha(0);
+      const dur = Phaser.Math.Clamp(v.len / 130, 4, 7) * 1000; // game time: about 6-10 s at the default 0.72 speed
+      v.dying = { k: 0 };
+      this.tweens.add({ targets: v.dying, k: 1, duration: dur, ease: 'Linear', onUpdate: () => { live?.setAlpha(1 - v.dying.k); dead.setAlpha(v.dying.k); }, onComplete: () => { live?.destroy(); this.textures.remove(`vine_${v.ward.def.id}_${v.i}`); v.dying = null; } });
+      const step = 22, n = Math.ceil(v.len / step);
+      for (let i = 0; i <= n; i++) {
+        const p = this.vineAt(v, Math.max(0, v.len - i * step));
+        this.time.delayedCall((i / n) * dur, () => { this.fx.burst('curse', p.x, p.y, 4); if (i % 4 === 0) this.fx.dust(p.x, p.y + 2); });
+      }
       if (v.sigil) { this.fx.burst('gold', v.sigil.x, v.sigil.y, 24); this.fx.burst('bloom', v.sigil.x, v.sigil.y, 20); }
-      this.time.delayedCall(Math.min(2400, steps * 60), () => this.paintVine(v));
+      audio.sfx('rumble');
     }
     this.time.delayedCall(2600, () => this.think(w.def.id, 'withered', true));
+  }
+
+  // The Ward Stone itself is down: its dead vines crumble away entirely.
+  removeVines(w) {
+    for (const v of (this.vines || []).filter((k) => k.ward === w)) {
+      for (let i = 0; i < v.len; i += 30) { const p = this.vineAt(v, i); this.time.delayedCall(Math.random() * 1500, () => this.fx.dust(p.x, p.y)); }
+      this.tweens.add({ targets: v.img, alpha: 0, duration: 2500, delay: 400, onComplete: () => { v.img?.destroy(); v.fx?.destroy(); } });
+      this.vines = this.vines.filter((k) => k !== v);
+    }
   }
 
   // ------------------------------------------------------------ thoughts
@@ -2643,7 +2668,10 @@ export class Game extends Phaser.Scene {
       if (!inArena(L)) continue;
       for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y - 6; }
       const ax = B.cfg.arena[0] * TILE + 8, ay = B.cfg.arena[1] * TILE + 8;
-      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + (B.cfg.levelBonus ?? 1) }); // bosses sit a level up unless the def says otherwise
+      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + 1 });
+      // per-boss tuning (like the true lieutenants' hpMul / dmgMul)
+      if (B.cfg.hpMul) { g.maxHp = Math.round(g.maxHp * B.cfg.hpMul); g.hp = g.maxHp; }
+      if (B.cfg.dmgMul) g.s = { ...g.s, dmg: g.s.dmg * B.cfg.dmgMul };
       g.bossName = B.cfg.name; g.bossDef = B;
       this.golem = g; // the active lieutenant (name kept from the demo)
       this.enemies.push(g);
