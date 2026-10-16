@@ -10,6 +10,7 @@ import world from '../data/world.json';
 import skills from '../data/skills.json';
 import gearData from '../data/gear.json';
 import { ensureItems, isGenerated, tierOf } from './itemgen.js';
+import { cloudBackup, cloudClear, cloudCopy } from './cloudsave.js';
 
 export const SAVE_KEY = 'ninthTower.save.v1';
 export const SLOTS = ['head', 'body', 'weapon', 'offhand']; // drawn on the hero
@@ -124,14 +125,18 @@ export const rankMul = (rank) => 1 + Math.max(0, rank - 1) * tuning.skillRankBon
 export function saveState(state) {
   try {
     state.savedAt = new Date().toISOString();
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const json = JSON.stringify(state);
+    cloudBackup(json, state.savedAt); // the Claude app can wipe localStorage, so keep a copy
+    localStorage.setItem(SAVE_KEY, json);
     return true;
   } catch { return false; }
 }
 
 export function loadState() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    let raw = null;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch { /* storage blocked */ }
+    raw ||= cloudCopy();
     if (!raw) return null;
     const s = JSON.parse(raw);
     if (!s || s.version !== 1) return null;
@@ -169,7 +174,7 @@ export function freshFor(state, heroId, kind) {
   return (state.fresh || []).filter((id) => state.inventory.includes(id) && items[id] && (!kind || (items[id].slot === kind)) && (items[id].slot === 'trinket' || items[id].hero === heroId));
 }
 
-export function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ } }
+export function clearSave() { cloudClear(); try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ } }
 
 export const heroInfo = (id) => heroData.find((h) => h.id === id);
 
