@@ -10,6 +10,7 @@ import { RACE_BET } from '../scenes/FrogRace.js';
 import { audio } from '../audio/synth.js';
 import { makeItem, tierForLevel } from './itemgen.js';
 import { addMats, addPotions, CRAFT, gainItems } from './state.js';
+import { makeStage } from './setpiece.js';
 
 const TILE = 16;
 const px = (t) => t * TILE + 8;
@@ -131,20 +132,34 @@ export class QuestManager {
 
   // Defend errands are a set piece: from the moment you meet the giver, the
   // raiders are there swinging at them for show (no damage, no fail state).
-  // They only fight once you accept, or once you hit one first.
+  // They only fight once you accept, or once you hit one first. How they act
+  // meanwhile is the step's "stage" (see setpiece.js).
   stageAmbush(id, wake = false) {
     const e = ERRANDS[id], s = e.steps[0], sc = this.sc;
     if (this.staged[id]?.some((u) => u.alive)) return this.staged[id];
     const npc = this.npc(s.npc);
     if (!npc) return [];
     if (npc.hiddenNow) this.setNpcVisible(npc, true);
-    this.staged[id] = s.units.map(([k, x, y]) => {
+    const units = s.units.map(([k, x, y]) => {
       const u = sc.spawnEnemy(k, px(x), px(y), false);
       u.questSpawn = id;
-      u.staged = { id, npc, wake };
       return u;
     });
-    return this.staged[id];
+    // one shared stage per group: posts around the victim, turn-taking swings
+    const group = makeStage(npc, units, s.stage);
+    for (const u of units) u.staged = { id, npc, wake, group };
+    this.staged[id] = units;
+    return units;
+  }
+
+  // Set pieces keep their stage clear: while the errand is unfinished, world
+  // groups based within its radius (stage.clear, tiles) stay away, so nobody
+  // wanders into the scene or gets mistaken for one of its actors.
+  quietZones() {
+    return Object.entries(ERRANDS).filter(([id, e]) => e.steps[0].type === 'defend' && !this.q(id)?.done).map(([, e]) => {
+      const n = this.npc(e.steps[0].npc);
+      return n && { x: n.px, y: n.py, r: (e.steps[0].stage?.clear ?? 10) * TILE };
+    }).filter(Boolean);
   }
 
   engageStaged(id, h) {

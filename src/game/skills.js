@@ -221,7 +221,7 @@ export const SKILL_FX = {
   blink: {
     cast(h, { m }) {
       const sc = h.scene;
-      const threats = sc.enemies.filter((e) => e.alive && dist(e, h) < 90);
+      const threats = sc.enemies.filter((e) => sc.fairTarget(e) && dist(e, h) < 90);
       let [nx, ny] = threats.length ? norm(h.x - threats.reduce((a, e) => a + e.x, 0) / threats.length, h.y - threats.reduce((a, e) => a + e.y, 0) / threats.length) : h.facingVec();
       let tx = h.x, ty = h.y;
       for (let d = 80; d > 16; d -= 8) { const x = h.x + nx * d, y = h.y + ny * d; if (!sc.nav.solidAtPx(x, y)) { tx = x; ty = y; break; } }
@@ -240,7 +240,7 @@ export const SKILL_FX = {
   barrage: {
     cast(h, { target, m }) {
       const sc = h.scene;
-      const pool = sc.enemies.filter((e) => e.alive && dist(e, h) < 130);
+      const pool = sc.enemies.filter((e) => sc.fairTarget(e) && dist(e, h) < 130);
       if (!pool.length) return false;
       h.act('barrage', 0.6, 'cast');
       for (let i = 0; i < 6; i++) sc.time.delayedCall(i * 80, () => {

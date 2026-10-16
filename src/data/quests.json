@@ -325,8 +325,8 @@
    "giver": "quill",
    "region": "meadow",
    "trigger": [
-    92,
-    31,
+    104,
+    33,
     9
    ],
    "offer": [
@@ -346,18 +346,18 @@
      "units": [
       [
        "goblin",
-       96,
-       29
+       108,
+       31
       ],
       [
        "goblin",
-       97,
-       33
+       109,
+       35
       ],
       [
        "archer",
-       99,
-       31
+       111,
+       33
       ]
      ]
     },
@@ -1067,8 +1067,8 @@
   {
    "id": "quill",
    "name": "QUILL",
-   "x": 94,
-   "y": 31,
+   "x": 106,
+   "y": 33,
    "look": "quill",
    "lines": [
     "NEED ANYTHING WRITTEN? I DO SIGNS, LETTERS AND THREATENING NOTES."

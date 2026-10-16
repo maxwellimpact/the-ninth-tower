@@ -269,8 +269,10 @@ export class Game extends Phaser.Scene {
 
   updateGroups(dt) {
     const L = this.leader;
+    const quiet = this.quests?.quietZones() || [];
+    const inQuiet = (g) => quiet.some((z) => (g.def ??= W.groups.find((x) => x.id === g.id)).units.some(([, x, y]) => Math.hypot(x * TILE - z.x, y * TILE - z.y) < z.r));
     for (const g of this.groups) {
-      const blocked = (g.until && this.flags[g.until]) || (g.once && this.state.cleared[g.id]);
+      const blocked = (g.until && this.flags[g.until]) || (g.once && this.state.cleared[g.id]) || (!g.active && quiet.length && inQuiet(g)); // kept off an errand set piece's stage
       const res = this.streamer.resident.has(g.chunk);
       if (!g.active) {
         if (blocked || !res) continue;
@@ -958,9 +960,12 @@ export class Game extends Phaser.Scene {
     const all = [...this.enemies.filter((e) => e.alive && !e.submerged), ...this.wardUnits(), ...this.breakables.filter((b) => b.alive)];
     let best = null, bd = 16;
     for (const e of all) {
-      const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' || e.kind === 'breakable' ? 10 : e.boss ? 16 : 0);
+      // set-piece foes (staged for an errand) need a tap right on them: hitting
+      // one starts the fight, so a tap meant for the NPC they crowd mustn't
+      const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' || e.kind === 'breakable' ? 10 : e.boss ? 16 : 0) + (e.staged ? 7 : 0);
       if (d < bd) { bd = d; best = e; }
     }
+    if (best?.staged && this.interactables.some((o) => o.kind === 'npc' && !o.hidden && Math.hypot(o.x - wx, o.y - (o.h || 12) / 2 - wy) < Math.min(18, bd))) best = null; // nearer the NPC: talk to them
     if (best?.kind === 'crystal') {
       // crystal switches: shoot them from range, or (with the Grapple) hook
       // them from across a chasm or a row of pegs
@@ -997,9 +1002,16 @@ export class Game extends Phaser.Scene {
   }
 
   // ============================================================== combat api
+  // A foe heroes may pick on their own (skills, ultimates, auto-aim): one
+  // already in the fight, or one in view. Never an errand set piece's actor,
+  // and never something off screen that hasn't noticed us.
+  fairTarget(e) {
+    return e.alive && !e.staged && (e.engaged || e.boss || e.onScreen(0));
+  }
+
   nearestEnemy(from, range) {
     let best = null, bd = range;
-    for (const e of this.enemies) { if (!e.alive || e.submerged) continue; const d = dist(e, from); if (d < bd) { bd = d; best = e; } }
+    for (const e of this.enemies) { if (!this.fairTarget(e) || e.submerged) continue; const d = dist(e, from); if (d < bd) { bd = d; best = e; } }
     return best;
   }
 
@@ -1129,6 +1141,14 @@ export class Game extends Phaser.Scene {
     this.enemyShots = [];
   }
 
+  // can a hero's shot hit this foe? Always if aimed at it; otherwise not a
+  // staged set-piece foe, nor an idle one off screen
+  strayHits(e, p) {
+    if (p.target === e) return true;
+    if (e.staged) return false;
+    return e.engaged || e.boss || !e.onScreen || e.onScreen(0);
+  }
+
   updateProjectiles(dt) {
     const targets = [...this.enemies, ...this.wardUnits(), ...this.breakables.filter((b) => b.alive)];
     for (const p of this.projectiles) {
@@ -1144,7 +1164,9 @@ export class Game extends Phaser.Scene {
       p.s.setPosition(Math.round(p.x), Math.round(p.y));
       if (p.kind !== 'knife' && p.kind !== 'arrow') { p.trail -= dt; if (p.trail <= 0) { p.trail = 0.03; this.fx.burst('ember', p.x - p.vx * 0.02, p.y - p.vy * 0.02, 1); } }
       let hit = null;
-      for (const e of targets) if (e.alive && !e.submerged && !p.hitSet?.has(e) && Math.hypot(e.x - p.x, e.y - (e.boss ? 24 : 8) - p.y) < e.r + 5) { hit = e; break; }
+      // shots aimed elsewhere fly past set-piece foes (staged for an errand)
+      // and foes off screen that aren't in the fight yet (no surprise pulls)
+      for (const e of targets) if (e.alive && !e.submerged && !p.hitSet?.has(e) && this.strayHits(e, p) && Math.hypot(e.x - p.x, e.y - (e.boss ? 24 : 8) - p.y) < e.r + 5) { hit = e; break; }
       if (hit && p.pierce) {
         // Power Shot: punches through everything in the line
         (p.hitSet ??= new Set()).add(hit);
@@ -1171,7 +1193,7 @@ export class Game extends Phaser.Scene {
         if (p.aoe) {
           this.fx.ring(p.x, p.y + 6, 'ringGold', (p.aoe / 8) * 1.2);
           this.shake(90, 0.005);
-          for (const e of targets) if (e.alive && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.45), { knock: e === hit ? 90 : 40, element: e === hit ? p.element : null, spell: p.spell }); // splash: weaker, and only the direct hit burns
+          for (const e of targets) if (e.alive && (e === hit || this.strayHits(e, p)) && Math.hypot(e.x - p.x, e.y - 8 - p.y) < p.aoe + e.r) this.dealDamage(p.owner, e, p.dmg * (e === hit ? 1 : 0.45), { knock: e === hit ? 90 : 40, element: e === hit ? p.element : null, spell: p.spell }); // splash: weaker, and only the direct hit burns
         } else if (hit) {
           const crit = Math.random() < p.owner.stats.crit;
           this.dealDamage(p.owner, hit, p.dmg * (crit ? tuning.critMult : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 35, element: p.element, spell: p.spell, basic: p.basic });
@@ -1226,7 +1248,7 @@ export class Game extends Phaser.Scene {
         break;
       }
       case 'meteor': {
-        const pool = this.enemies.filter((e) => e.alive && dist(e, h) < 190);
+        const pool = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 190);
         if (!pool.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         const t = pool.map((e) => [e, pool.filter((o) => dist(o, e) < 44).length]).sort((a, b) => b[1] - a[1])[0][0];
         const tx = t.x, ty = t.y;
@@ -1253,7 +1275,7 @@ export class Game extends Phaser.Scene {
       }
       case 'talons': {
         // Storm of Talons: Kestrel and a rain of arrows on every foe nearby
-        const pool = () => this.enemies.filter((e) => e.alive && !e.submerged && dist(e, h) < 180);
+        const pool = () => this.enemies.filter((e) => this.fairTarget(e) && !e.submerged && dist(e, h) < 180);
         if (!pool().length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         sc.floatText(h.x, h.y - 36, 'STORM OF TALONS!', 'fontGold', 0xffffff, true);
         const hawk = this.add.sprite(h.x, h.y - 60, 'hawk', '0').play('hawk').setDepth(TOP - 15).setScale(1.4);
@@ -1280,7 +1302,7 @@ export class Game extends Phaser.Scene {
         break;
       }
       case 'thousand_cuts': {
-        const targets = this.enemies.filter((e) => e.alive && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, 6);
+        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, 6);
         if (!targets.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         const home = { x: h.x, y: h.y };
         h.invuln = 0.15 * targets.length + 0.4;

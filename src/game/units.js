@@ -9,6 +9,7 @@ import tuning from '../data/tuning.json';
 import { computeStats, heroInfo, mitigate, xpToNext, skillRank, rankMul } from './state.js';
 import { SKILL_FX, TARGETED } from './skills.js';
 import { bakeHero } from './bake.js';
+import { updateStaged as updateStagedShow } from './setpiece.js';
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
@@ -795,32 +796,63 @@ export class Hero extends Unit {
       return;
     }
 
-    // 4) follow in formation behind the leader
-    const slot = this.formationSlot();
+    // 4) follow in formation behind the leader, on a loose lead: the slot is
+    // smoothed (the leader's tile-path stair-steps and quick turns don't yank
+    // it), we stay put inside a slack radius, and speed ramps with the gap
+    // (ease in, ease out, catch up when far) instead of tracking every step
+    const raw = this.formationSlot();
     const dl = dist(this, L);
-    if (dl > 230) { this.teleportNear(slot); return; }
+    if (dl > 230) { this.teleportNear(raw); this.fspd = 0; return; }
+    // smooth the slot's offset from the leader (which swings as it turns), not
+    // the slot itself, so the slot never trails a walking leader
+    const ox = raw.x - L.x, oy = raw.y - L.y, sa = Math.min(1, dt * 4);
+    this.slotOff = this.slotOff ? { x: this.slotOff.x + (ox - this.slotOff.x) * sa, y: this.slotOff.y + (oy - this.slotOff.y) * sa } : { x: ox, y: oy };
+    const sm = { x: L.x + this.slotOff.x, y: L.y + this.slotOff.y };
+    const slot = this.scene.nav.solidAtPx(sm.x, sm.y) ? raw : sm;
     const ds = Math.hypot(this.x - slot.x, this.y - slot.y);
-    // settle/resume with a gap between the thresholds so we don't stop-start
-    // (only settle once the leader has stopped; while it walks, keep easing)
     const lsp = Math.hypot(L.vel?.x || 0, L.vel?.y || 0);
-    if (ds < 3 && lsp < 12) this.settled = true;
-    else if (ds > 12 || lsp > 20) this.settled = false;
-    if (!this.settled && ds < 48 && this.scene.nav.lineClear(this.x, this.y, slot.x, slot.y, 3)) {
-      // close and in the open: ease toward the slot, matching the leader's pace
-      // rather than sprinting there and stopping dead
-      this.clearPath();
-      const want = Math.min(this.spd * 1.3, lsp + ds * 3);
-      const [nx, ny] = norm(slot.x - this.x, slot.y - this.y);
-      const step = Math.min(ds, want * dt);
-      if (lsp > 12) this.face(L.head?.x ?? nx, L.head?.y ?? ny); else this.face(nx, ny);
-      this.moveBy(nx * step, ny * step);
-    } else if (!this.settled) {
-      this.repathT -= dt;
-      if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(slot.x, slot.y); }
-      this.followPath(dt, dl > 40 ? 1.3 : 1);
-    } else {
+    // slack: settle once close and the leader has (nearly) stopped; only move
+    // again when the gap has really opened up
+    if (ds < 4 && lsp < 12) this.settled = true;
+    else if (ds > 16 || (lsp > 30 && ds > 8)) this.settled = false;
+    if (this.settled) {
+      this.fspd = 0; this.pathing = false;
       this.clearPath();
       if (L.view) this.face(L.x - this.x + (L.view === 'side' ? (L.flip ? -40 : 40) : 0), L.y - this.y + (L.view === 'down' ? 40 : L.view === 'up' ? -40 : 0));
+      return;
+    }
+    // direct while the slot is in plain view; once we've had to path round
+    // something, stick with the path a moment (flicking between the two jitters)
+    this.pathHoldT = Math.max(0, (this.pathHoldT || 0) - dt);
+    if (this.pathHoldT <= 0 && ds < 60 && this.scene.nav.lineClear(this.x, this.y, slot.x, slot.y, 3)) {
+      this.pathing = false;
+      this.clearPath();
+      // wanted speed: the leader's pace, plus a catch-up term for the gap
+      // beyond the slack, eased so starts and stops aren't instant
+      const want = Math.min(this.spd * 1.35, Math.max(0, lsp * 0.95 + (ds - 5) * 2.2));
+      this.fspd = (this.fspd || 0) + (want - (this.fspd || 0)) * Math.min(1, dt * 5);
+      const [nx, ny] = norm(slot.x - this.x, slot.y - this.y);
+      // our own heading turns smoothly too
+      const h = this.fhead || { x: nx, y: ny }, ha = Math.min(1, dt * 8);
+      const hx = h.x + (nx - h.x) * ha, hy = h.y + (ny - h.y) * ha, hl = Math.hypot(hx, hy) || 1;
+      this.fhead = { x: hx / hl, y: hy / hl };
+      const stp = Math.min(ds, this.fspd * dt);
+      if (lsp > 12 && L.head) this.face(L.head.x, L.head.y); // walk the way the party walks
+      else if (this.fspd > 10) this.face(this.fhead.x, this.fhead.y);
+      this.moveBy(this.fhead.x * stp, this.fhead.y * stp);
+    } else {
+      // out of sight of the slot (round a corner): path there
+      if (!this.pathing) { this.pathing = true; this.pathHoldT = 0.5; }
+      this.fspd = this.spd;
+      this.repathT -= dt;
+      if (!this.path || this.repathT <= 0) {
+        this.path = null; this.setGoal(slot.x, slot.y);
+        // skip waypoints we can already see past (a path from our tile's
+        // centre can start behind us, which read as a step back)
+        const nav = this.scene.nav;
+        while (this.path?.length > 1 && nav.lineClear(this.x, this.y, this.path[1].x, this.path[1].y, 3)) this.path.shift();
+      }
+      this.followPath(dt, dl > 40 ? 1.3 : 1);
     }
   }
 
@@ -894,8 +926,8 @@ export class Hero extends Unit {
     const idx = this.scene.party.filter((h) => !h.isLeader).indexOf(this);
     const side = idx === 0 ? -1 : 1;
     // behind the leader, offset to either side
-    const bx = L.x - fx * 14 + -fy * side * 11;
-    const by = L.y - fy * 12 + fx * side * 8;
+    const bx = L.x - fx * 17 + -fy * side * 12;
+    const by = L.y - fy * 14 + fx * side * 9;
     return this.scene.nav.solidAtPx(bx, by) ? { x: L.x - fx * 10, y: L.y - fy * 10 } : { x: bx, y: by };
   }
 
@@ -1121,14 +1153,19 @@ export class Enemy extends Unit {
     if (!was) {
       this.scene.fx.alert(this);
       if (this.elite) this.scene.floatText(this.x, this.y - 34, this.named ? this.s.name : `${this.affix ? AFFIXES[this.affix] : 'ELITE'} ${this.s.name}`, 'fontGold');
-      if (spread) for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && dist(e, this) < 70) e.aggroOn(h, false);
+      if (spread) for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && dist(e, this) < 70 && e.onScreen(0)) e.aggroOn(h, false); // packmates out of view notice for themselves once seen
     }
   }
 
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
     if (this.submerged || this.introT > 0) return 0;
-    if (this.staged && src?.team === 'party') this.engageStaged(src instanceof Hero && !src.downed ? src : this.scene.leader);
+    if (this.staged && src?.team === 'party') {
+      // only a deliberate hit starts an errand fight: the leader's (you), or a
+      // companion's aimed at us. Strays from a fight nearby glance off.
+      if (!src.isLeader && src.target !== this) return 0;
+      this.engageStaged(src instanceof Hero && !src.downed ? src : this.scene.leader);
+    }
     // Armored: a frontal guard. Hit it from the side or behind, while it's stunned, or Shock it
     if (this.affix === 'armored' && src && !dot && !(this.stunT > 0) && !this.status?.shock) {
       const f = this.view === 'side' ? [this.flip ? -1 : 1, 0] : [0, this.view === 'down' ? 1 : -1];
@@ -1161,19 +1198,29 @@ export class Enemy extends Unit {
     if (src && src.team === 'party') this.noteAttacker(src, amount);
     if (this.hp <= 0) this.die(src);
     else if (this.elite) this.affixOnHurt();
-    else if (!this.fled && COWARDS.has(this.kind) && !this.boss && this.hp < this.maxHp * 0.25) this.flee(src);
+    else if (!this.fled && COWARDS.has(this.kind) && !this.boss && this.hp < this.maxHp * 0.25 && this.mayFlee()) this.flee(src);
     return amount;
   }
 
-  // Morale (group roles): small fry break once when badly hurt, run a short
-  // way and shout for help (idle allies nearby join in), then come back.
+  // Morale is rare: most foes stand and fight. Only about one small fry in
+  // six has the nerve to break, never the last of its group, and never while
+  // a nearby ally is already running.
+  mayFlee() {
+    this.morale ??= Math.random();
+    if (this.morale > 0.17) return false;
+    const near = this.scene.enemies.filter((e) => e !== this && e.alive && dist(e, this) < 160);
+    return near.length > 0 && !near.some((e) => e.state === 'flee');
+  }
+
+  // Morale (group roles): a small fry that breaks runs a short way and
+  // shouts for help (idle allies nearby join in), then comes back.
   flee(src) {
     this.fled = true;
     this.clearZone();
     this.state = 'flee'; this.t = 0; this.token = null;
     this.fleeFrom = src && src.alive ? src : this.scene.leader;
     this.scene.floatText(this.x, this.y - 26, 'HELP!', 'fontPlain', 0xffd04a);
-    for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && !e.staged && dist(e, this) < 160) e.aggroOn(this.fleeFrom, false);
+    for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && !e.staged && dist(e, this) < 160 && e.onScreen(0)) e.aggroOn(this.fleeFrom, false);
   }
 
   // Group roles: in a pack of four or more melee foes, about one in three
@@ -1355,7 +1402,7 @@ export class Enemy extends Unit {
 
     switch (this.state) {
       case 'idle': {
-        const h = sc.nearestHero(this, s.aggro);
+        const h = this.notice(s.aggro);
         if (h) { this.aggroOn(h); break; }
         this.wanderT -= dt;
         if (this.wanderT <= 0) {
@@ -1462,7 +1509,7 @@ export class Enemy extends Unit {
         this.stepTo(this.spawn, dt, 1);
         // heading home: ignore the party for a couple of seconds so it doesn't ping-pong
         this.homeT = (this.homeT || 0) + dt;
-        const h = this.homeT > 2 && sc.nearestHero(this, s.aggro * 0.6);
+        const h = this.homeT > 2 && this.notice(s.aggro * 0.6);
         if (h) { this.homeT = 0; this.aggroOn(h); }
         break;
       }
@@ -1470,27 +1517,12 @@ export class Enemy extends Unit {
     this.sync(dt);
   }
 
-  // Errand set-piece (Quill's ambush): circle the NPC and swing at them for
-  // show. No damage, no aggro, until the errand is taken or someone hits us.
-  // staged.wake: the errand is already running (after a reload), so the
-  // party walking up is enough to start the fight.
+  // Errand set piece (Quill's ambush): put on a show around the NPC until the
+  // errand is taken or someone hits us (setpiece.js). staged.wake: the errand
+  // is already running (after a reload), so the party walking up starts it.
   updateStaged(dt) {
-    const st = this.staged, n = st.npc, sc = this.scene;
-    if (st.wake) { const h = sc.nearestHero(this, this.s.aggro); if (h) { this.engageStaged(h); return; } }
-    st.a = (st.a ?? Math.random() * Math.PI * 2) + dt * 0.3;
-    const ring = this.s.ranged ? 40 : 17;
-    const spot = { x: n.px + Math.cos(st.a) * ring, y: n.py + 4 + Math.sin(st.a) * ring * 0.7 };
-    st.swing = Math.max(0, (st.swing || 0) - dt);
-    st.t = (st.t ?? 0.4 + Math.random()) - dt;
-    if (st.swing > 0) return; // mid-swing: hold the pose
-    if (Math.hypot(spot.x - this.x, spot.y - this.y) > 4) { this.stepTo(spot, dt, 0.45); return; }
-    this.face(n.px - this.x, n.py - this.y);
-    if (st.t <= 0) {
-      st.t = 1 + Math.random() * 1.2; st.swing = 0.35;
-      this.anim = ''; this.play('attack');
-      if (!this.s.ranged) sc.time.delayedCall(140, () => { if (!n.s?.active || !this.staged) return; n.s.setTintFill(0xffffff); sc.time.delayedCall(60, () => n.s.active && n.s.clearTint()); });
-      if (this.onScreen()) audio.sfx(this.s.ranged ? 'swing' : 'stab', { pitch: this.s.ranged ? 1.6 : 1.2 });
-    } else this.play('idle');
+    if (this.staged.wake) { const h = this.notice(this.s.aggro); if (h) { this.engageStaged(h); return; } }
+    updateStagedShow(this, dt);
   }
 
   engageStaged(h) {
@@ -1643,7 +1675,7 @@ export class Enemy extends Unit {
     const sc = this.scene;
     if (this.submerged) {
       if (Math.random() < dt * 2) sc.fx.burst('foam', this.x + (Math.random() - 0.5) * 10, this.y - 2, 1);
-      const h = sc.nearestHero(this, this.s.aggro);
+      const h = this.notice(this.s.aggro);
       if (h) { this.submerge(false); sc.fx.burst('foam', this.x, this.y, 16); audio.sfx('squish'); this.aggroOn(h); this.beginWindup(h); }
       return true;
     }
@@ -1721,6 +1753,14 @@ export class Enemy extends Unit {
   onScreen(m = 10) {
     const v = this.scene.cameras.main.worldView;
     return this.x > v.x + m && this.x < v.right - m && this.y > v.y + m && this.y < v.bottom - m;
+  }
+
+  // Noticing the party (starting a fight) needs us on screen: the player
+  // should see a foe before it charges in. Once engaged, the fight can run
+  // past the screen edge (a chase, an archer at range).
+  notice(range) {
+    if (!this.onScreen(4)) return null;
+    return this.scene.nearestHero(this, range);
   }
 
   beginWindup(t) {

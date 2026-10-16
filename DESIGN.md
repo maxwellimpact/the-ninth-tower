@@ -126,6 +126,12 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
 - **Ranged allies keep their distance [LOCKED from playtest]:** they hold about ¾ of their range from their target. They back off when it comes inside that, with slack so they don't jitter, sliding sideways off walls. They shoot while backing off unless the foe is right on top of them, when they just run. They only close in until the target is in range, and they can hang back further from a melee leader before regrouping.
 - **Never block the leader.** Companions have *soft* collision with the leader and step aside in narrow corridors.
 - **Formation follow:** loose trailing positions with a leash. If a companion falls too far behind or gets stuck, it catches up off-screen or with a quick "dash" effect, never a visible pop-in.
+- **A loose lead, not a tight tow [LOCKED from playtest]:**
+  - **Slack:** a companion stands still inside a slack radius and only moves again once the gap has really opened.
+  - **Eased speed:** speed ramps with the gap, at the leader's pace plus a catch-up term, so starts and stops are never instant.
+  - **Smoothed offset:** the slot's offset from the leader is smoothed, so the stair-steps of a tap-to-walk path and quick turns don't yank it. The slot itself never trails behind.
+  - **Paths:** once a companion has had to path round something, it keeps the path for half a second and skips waypoints it can already see past.
+  - **Measured** with `tools/follow-test.js` (9 walking patterns, including tap-to-walk): twitches 0.17 → 0.03 a second, stop-start 0.31 → 0.09, jerk 2.6 → 2.1, trailing gap 17 → 23 px.
 - **Terrain-aware:** companions automatically follow through ledge drops, swimming, gliding and grapple points the leader uses. Relics are party-wide, so a companion never strands the party.
 - **No puzzle interference:** companions don't step on pressure plates, push blocks, pull levers or trigger traps unless asked.
 
@@ -136,6 +142,12 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
   - **Ranged** characters kite and stay at their optimal range.
   - **Melee** characters flank instead of stacking on the leader.
 - **Respect the leader's intent:** companions engage what the leader engages. They don't run off and pull extra enemies packs.
+- **Fights start on screen [LOCKED from playtest]:** the phone's landscape view is only about 195 px tall, so a foe used to notice the party from off screen.
+  - **Noticing:** a foe now notices the party only while on screen. That covers aggro, packmates joining, a fleeing foe's call for help, lurkers surfacing and set pieces waking.
+  - **Strays:** shots and splash that miss pass through idle foes off screen.
+  - **Self-picked targets:** skills, ultimates and auto-aim pick only foes that are already fighting or in view (`fairTarget`).
+  - **Already fighting:** a fight that is already going may run past the screen edge, such as a chase or an archer at range.
+  - **Measured** with `tools/engage-test.js` at iPhone landscape size: off-screen fight starts 16 of 28 → 0 of 25.
 - **Dodge telegraphs:** companions step out of boss area-attack warning zones. They're deliberately a bit less perfect than an ideal player, but never stand in fire.
 - **Smart resources:** companions don't waste big cooldowns on trash mobs, and they save heals for when they matter.
 - **Out of combat:** companions return to formation quickly and stop attacking objects in the world.
@@ -972,7 +984,8 @@ Each rule was added one at a time and checked before and after with the fight be
 3. **Sticky targets:** commit about 2 s and never switch mid-swing. After that, switch only for a reason: much more damage from someone else, or the target out of reach while another hero is right here. Remembered damage fades. A taunt always wins.
 4. **Ranged foes:** prefer the most fragile hero, spread across heroes so a line of archers doesn't queue on one. They back off along open floor, sidestep for a clear shot, and shift a little after shooting.
 5. **Leash:** none in sealed rooms. About 22 tiles in dungeons and caves, about 12 in the overworld. Foes only give up when they're also out of sight for 2.5 s, so backing off a step no longer resets and heals them.
-6. **Group roles:** in packs of four or more melee, about one in three flanks to the back line. Small fry (goblins, rats, hexlings) break once at a quarter health, shout HELP (idle allies nearby join in) and come back. Support roles (healers, buffers) come with the region enemies that need them.
+6. **Group roles:** in packs of four or more melee, about one in three flanks to the back line. Support roles (healers, buffers) come with the region enemies that need them.
+   - **Morale is rare [LOCKED from playtest]:** most foes stand and fight. About one small fry in six (goblins, rats, hexlings) has the nerve to break at a quarter health. It is never the last of its group, and never breaks while an ally nearby is already running. It shouts HELP (idle allies in view join in) and comes back. Measured with `tools/flee-test.js`: small fry fleeing 87.5% → 13.9%, and last survivors fleeing 7 → 0.
 7. **Elites read the party's telegraphs:** they step out of Meteor and Volley zones, abandoning a swing if they must. Regular foes don't, so area attacks stay strong against crowds.
 8. **Unsticking:** straight-line checks are as wide as the body, and a foe that barely moves for 0.4 s sidesteps and re-routes.
 
@@ -1437,6 +1450,12 @@ Each region adds a theme variation (§11a). Its dungeon uses the Depths variatio
 ### 6. Key items, errands and enemies [BUILT]
 - **Key items (relics):** picking one up pauses the game with a card (icon, name, what it does) until it's tapped away. Anything on the game clock, like a chest's ambush, waits. Key items are listed in the Bag.
 - **Chance-meeting errands** (an NPC calling for help) always ask first ("Hold on!" / "Not now").
+  - **Set pieces [BUILT, reusable]:** foes staged for an errand act out a scene until the party steps in. It is driven by `src/game/setpiece.js`, and the step's `"stage": {"mode": "harass", ...}` sets the options.
+    - **How they act:** each foe holds a fixed post around the victim and walks only when clearly off it. The group swings one at a time with a visible wind-up, the victim flinches, and the foes never face the party.
+    - **What wakes them:** accepting, a deliberate hit (the leader's, or a companion's aimed at them), or the party walking up after a reload. Stray shots and splash pass through them. A tap that is nearer the NPC than a foe talks to the NPC.
+    - **A quiet stage:** while the errand is unfinished, world groups based within `stage.clear` tiles (default 10) don't spawn, so nobody wanders in or gets mistaken for an actor.
+    - **Placement:** place set pieces about 10+ tiles from world groups, as Quill now sits on the east road.
+    - **Measured** with `tools/staged-test.js`: facing flips 40 → 0.3 a second, early wake-ups 42–72% → 0, and 10/10 taps on Quill talk to him.
   - **Failing:** a failed errand clears its spawned enemies, and you can retry by talking to the NPC.
   - **Loading a save mid-errand:** errand fights rebuilt during loading use the saved party levels.
 - **Ranged enemies** only aim and fire while on screen (portrait phones have a narrow view). Base reach is 75–80 px.
@@ -1592,3 +1611,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-16 | The leader can always cancel a swing (never-again rule 5). Vines wither slowly when the Shadow breaks and vanish when the stone falls. Lab boss tuned between the two tested strengths (normal level, 92% health and damage) |
 | 2026-10-16 | Enemy AI rules (C7): attack tokens, surround slots, sticky targets, smarter ranged foes, dungeon leash, group roles, elites reading telegraphs, unsticking. Each measured with the new fight benchmark, old vs new over 7 fights × 2 seeds |
 | 2026-10-16 | Redesigned dungeons moved into the real game: the Undercroft (from the lab), the Sunken Abbey rebuilt with sluices and the Tide Charm, the Drowned Hollow given a crystal/peg gate. Progress saved per dungeon; old saves migrate. The Sunspire Staff moves from the Gatewarden's drops to the Undercroft vault (Tide Charm) per the uniques table |
+| 2026-10-16 | Playtest fixes, each measured old vs new: errand set pieces (`setpiece.js`: fixed posts, turn-taking swings, never facing the party, only a deliberate hit wakes them, a quiet stage clear of world groups) with Quill moved down the east road; companions follow on a loose lead (slack, eased speed, smoothed slot); foes notice the party only on screen, and heroes pick only foes in view or already fighting; morale is rare (1 in 6 small fry, never the last). The title screen shows cloud-save status; saves mirror to the artifact's private storage |
