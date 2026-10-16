@@ -6,6 +6,7 @@
 // order), defend (keep an NPC alive until the attackers are gone).
 import Q from '../data/quests.json';
 import items from '../data/items.json';
+import { RACE_BET } from '../scenes/FrogRace.js';
 import { audio } from '../audio/synth.js';
 import { makeItem, tierForLevel } from './itemgen.js';
 import { addMats, addPotions, CRAFT, gainItems } from './state.js';
@@ -89,6 +90,14 @@ export class QuestManager {
     const oid = this.offerFor(npc);
     if (oid) { this.offer(oid, npc); return; }
     if (npc.trainer) { sc.trainerTalk(npc); return; }
+    if (npc.minigame) {
+      // a game host: their pitch the first time, then straight to the offer
+      const lines = (npc.metHost ? npc.lines.slice(-1) : npc.lines).map((t) => this.line(npc, t));
+      npc.metHost = true;
+      lines[lines.length - 1].choices = [[`RACE (${RACE_BET}G)`, () => sc.openOverlay(npc.minigame)], ['NOT NOW', () => {}]];
+      sc.events.emit('dialogue', lines);
+      return;
+    }
     if (npc.service) {
       // Brightwater services open the matching crafting screen
       const lines = npc.lines.map((t) => this.line(npc, t));

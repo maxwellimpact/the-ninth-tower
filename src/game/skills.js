@@ -543,6 +543,7 @@ export const SKILL_FX = {
           if (!target.alive) return;
           sc.dealDamage(h, target, h.stats.atk * 1.2 * m, { knock: 20 });
           target.addBleed?.(h.stats.atk * 0.18 * m, 5);
+          if (h.hasPerk('bloodfang')) target.addBleed?.(h.stats.atk * 0.18 * m, 5); // Bloodfang: stacks twice as fast
           audio.sfx('stab');
         },
       });

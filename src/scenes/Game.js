@@ -51,8 +51,8 @@ const THOUGHTS = {
   },
 };
 
-// Golden Flies in the world, plus the one won at Hexling Whack
-export const TOTAL_FLIES = W.flies.length + 1;
+// Golden Flies in the world, plus the ones won at the minigames
+export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
 
 const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
@@ -1063,6 +1063,7 @@ export class Game extends Phaser.Scene {
       src.addUlt(Math.max(tuning.ultHitMin, Math.min(tuning.ultHitMax, share * tuning.ultPerFoe)));
     }
     if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
+    if (hero && src.hasPerk('bloodfang') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.05);
     if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);

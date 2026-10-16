@@ -918,6 +918,60 @@
     "xp": 200,
     "recruit": "wren"
    }
+  },
+  "pitChampion": {
+   "title": "THE CHAMPION'S BOUT",
+   "giver": "grub",
+   "region": "marsh",
+   "requires": "thePit",
+   "offer": [
+    "YOU AGAIN. YOU STOLE MY BEAST AND MY CROWD.",
+    "FINE. ONE MORE BOUT. AGAINST GUTCRUSHER, MY CHAMPION. WIN, AND HIS AXE IS YOURS. YOUR BEAST LOOKS LIKE HE'D LIKE IT."
+   ],
+   "accept": "BRING HIM OUT.",
+   "thanks": [
+    "GRUB: GUTCRUSHER! GET UP! ...HE'S NOT GETTING UP.",
+    "TAKE THE BLOODFANG AXE. AND YOUR BEAST. AND GET OUT OF MY PIT."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "BEAT GUTCRUSHER IN THE PIT",
+     "at": [
+      60,
+      104
+     ],
+     "r": 6,
+     "announce": "THE CHAMPION'S BOUT!",
+     "units": [
+      [
+       "pitchamp",
+       60,
+       100
+      ],
+      [
+       "goblin",
+       56,
+       102
+      ],
+      [
+       "goblin",
+       64,
+       102
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM YOUR PRIZE FROM GRUB",
+     "npc": "grub"
+    }
+   ],
+   "reward": {
+    "xp": 260,
+    "gold": 120,
+    "item": "bloodfang_axe"
+   }
   }
  },
  "npcs": [
@@ -1198,7 +1252,8 @@
     "duty": 0.125
    },
    "errands": [
-    "thePit"
+    "thePit",
+    "pitChampion"
    ]
   },
   {
@@ -1269,6 +1324,23 @@
     "THEY SAY THE KING WAS A FINE SINGER BEFORE HE WAS A FROG. HONESTLY HE STILL IS. VERY RESONANT.",
     "ONE OLD BALLAD SAYS MALGRIM LEARNED HIS ART FROM THE SAME MASTER AS THE MAGES WHO TAUGHT YOUR PIP. SMALL WORLD.",
     "BRING MORE FOLK HOME AND I'LL FIND THE CARTOGRAPHER. SHE OWES ME A SONG."
+   ]
+  },
+  {
+   "id": "rosie",
+   "name": "RIBBIT ROSIE",
+   "x": 89,
+   "y": 96,
+   "look": "ada",
+   "minigame": "FrogRace",
+   "voice": {
+    "pitch": 460,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "lines": [
+    "STEP UP, STEP UP! THE FINEST RACING FROGS IN ALL MISTFEN! ALSO THE ONLY RACING FROGS IN ALL MISTFEN.",
+    "PICK A FROG, PLACE YOUR BET, AND TAP WHEN THE NEEDLE'S IN THE GOLD. A GOOD TAP IS A GOOD HOP!"
    ]
   }
  ]

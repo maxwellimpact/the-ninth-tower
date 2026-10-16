@@ -800,7 +800,7 @@ Locations use the region codes **V** Vale, **M** Mistfen, **G** Gloamwood, **C**
 |---|---|---|---|
 | **Wolfskull Helm** | Head | Howl also gives the party +15% ATK for 6s | F: bounty "Greymaw" |
 | **Troll-Hide Mantle** | Body | Below 50% HP: regenerates 1% HP/s | F: Avalanche Troll |
-| **Bloodfang Axe** | Weapon | 5% lifesteal; Rend stacks twice as fast | M: goblin fighting-pit champion |
+| **Bloodfang Axe** | Weapon | 5% lifesteal; Rend stacks twice as fast | M: goblin fighting-pit champion **[BUILT: Grub's follow-up errand "The Champion's Bout" vs Gutcrusher]** |
 | **Gnasher** | Off-hand | Fire. Leap leaves a burning crater | C: Cinder Drake |
 
 **Mirelle**
@@ -1264,7 +1264,7 @@ Small, self-contained jobs from ordinary people. They're never required, but the
   - and about 4 town quests (Lamplighter, Alchemist, Shattered Mirror, Hexling Whack championship).
 - **18 bounties.**
 - **Minigames:** Hexling Whack (demo), plus one per village:
-  - Mistfen frog races,
+  - Mistfen frog races **[BUILT: Ribbit Rosie at the fen camp. Bet 15g, win pays 45; tap when the swinging needle is in the gold for a long hop, mistimed taps stumble. Precise timing wins nearly every time, decent about half, mashing never. First win gives a Golden Fly]**,
   - Cinderreach forge rhythm,
   - Frosthelm ice fishing,
   - Gloamwood lantern-lighting puzzle run.
@@ -1410,7 +1410,7 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 9. Recruits: Kesh in Mistfen, Wren in Gloamwood, Oake in Cinderreach, Mirelle in Frosthelm, Gizmo in Brightwater. **[LOCKED 2026-10-14]** Also added: opt-in **errands** (small side quests from townsfolk and tavern rumours; see C10).
 10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED 2026-10-14]**
 11. No cuts; build in three waves, each playtested:
-    - **Wave 1:** full Vale and Mistfen, Kesh and Wren.
+    - **Wave 1:** full Vale and Mistfen, Kesh and Wren. **[COMPLETE 2026-10-15]** Beyond the original list it also has: elite affixes, the Blade and Shadow disciplines, 10 cursed townsfolk + the Bard, 12 lore pages, 20 Golden Flies, antidotes, the frog races, the Bloodfang Axe, two lookouts, shadow/true lieutenants with vines. Deferred by design to the regions that hold them: the other Kesh and Wren uniques (Frosthelm / Cinderreach), Sealed Vaults (need Wave 2 relics), the Trainers' Hall (3 stones) and Ultimate Tomes (level 20).
     - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo.
     - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. **[LOCKED 2026-10-14]**
 
@@ -1490,3 +1490,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Health and ultimate values are guarded against invalid numbers (keep the last good value and report the cause) after errand fights rebuilt on load produced NaN levels |
 | 2026-10-15 | Elite affixes built (all 8, each with a visible cue); disciplines built with Blade (Master Iren, Brightwater) and Shadow (Sly Margo, Mistfen smugglers' isle) trainers; switching refunds skill points |
 | 2026-10-15 | Brightwater rebuild started: 10 cursed townsfolk (Bard at 10, harp music layer); 12 lore pages with a reading card and Journal list; Golden Flies to 20; antidotes |
+| 2026-10-15 | Wave 1 complete: frog races (Mistfen), The Champion's Bout errand and Bloodfang Axe. Artifact publishing now ships the hashed scripts with the page (the page alone left the phone stuck on LOADING ENGINE) |

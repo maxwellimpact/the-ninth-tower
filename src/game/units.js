@@ -4,6 +4,7 @@ import { audio } from '../audio/synth.js';
 import { CURSE_TINT } from '../gfx/palette.js';
 import skillData from '../data/skills.json';
 import enemyData from '../data/enemies.json';
+import itemsData from '../data/items.json';
 import tuning from '../data/tuning.json';
 import { computeStats, heroInfo, mitigate, xpToNext, skillRank, rankMul } from './state.js';
 import { SKILL_FX, TARGETED } from './skills.js';
@@ -168,6 +169,8 @@ export class Hero extends Unit {
   }
   addUlt(n) { if (!this.downed) this.ult = this.ult + n * (this.stats?.traits?.includes('zeal') ? 1.15 : 1); }
   hasTrait(t) { return !!this.stats.traits?.includes(t); }
+  // unique-item perks (signature effects named on the item)
+  hasPerk(p) { return Object.values(this.hs.equip).some((id) => id && itemsData[id]?.perk === p); }
 
   // Equipped active skills (keeps cooldowns across loadout changes).
   buildSkills() {
@@ -798,8 +801,8 @@ export class Hero extends Unit {
 
 // ---------------------------------------------------------------- Enemies
 const ENEMY = enemyData;
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'drowned', 'witchling']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.

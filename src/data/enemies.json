@@ -501,5 +501,31 @@
    "pearl": 2,
    "crystal": 1
   }
+ },
+ "pitchamp": {
+  "name": "GUTCRUSHER",
+  "maxHp": 900,
+  "speed": 42,
+  "aggro": 120,
+  "reach": 26,
+  "windup": 0.55,
+  "recover": 0.6,
+  "dmg": 34,
+  "xp": 200,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 24,
+  "drops": {
+   "scrap": 2,
+   "ore": 1
+  },
+  "weak": "venom",
+  "hexed": true,
+  "scale": 1.7,
+  "named": true
  }
 }

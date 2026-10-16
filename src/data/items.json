@@ -616,5 +616,22 @@
    "atk": 1
   },
   "desc": ""
+ },
+ "bloodfang_axe": {
+  "name": "BLOODFANG AXE",
+  "hero": "kesh",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "axe_bearded@5",
+  "stats": {
+   "atk": 14,
+   "crit": 0.04
+  },
+  "perk": "bloodfang",
+  "desc": "5% LIFESTEAL. REND STACKS BLEED TWICE AS FAST. STILL WARM FROM THE PIT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "weapon"
+  }
  }
 }

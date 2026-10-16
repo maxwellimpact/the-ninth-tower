@@ -8,6 +8,7 @@ import { Menu } from './scenes/Menu.js';
 import { WorldMap } from './scenes/WorldMap.js';
 import { Shop } from './scenes/Shop.js';
 import { Minigame } from './scenes/Minigame.js';
+import { FrogRace } from './scenes/FrogRace.js';
 import { FxLab } from './scenes/FxLab.js';
 
 // Pixel-perfect integer scaling: pick the integer zoom that gets the view
@@ -33,7 +34,7 @@ const game = new Phaser.Game({
   zoom: f.zoom,
   scale: { mode: Phaser.Scale.NONE },
   input: { activePointers: 2 },
-  scene: [Boot, Title, Game, UI, Menu, WorldMap, Shop, Minigame, FxLab, Loading],
+  scene: [Boot, Title, Game, UI, Menu, WorldMap, Shop, Minigame, FrogRace, FxLab, Loading],
 });
 
 // Phaser stops requesting frames if anything throws inside the loop, which
