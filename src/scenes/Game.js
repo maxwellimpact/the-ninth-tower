@@ -2642,7 +2642,7 @@ export class Game extends Phaser.Scene {
       if (!inArena(L)) continue;
       for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y - 6; }
       const ax = B.cfg.arena[0] * TILE + 8, ay = B.cfg.arena[1] * TILE + 8;
-      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + 1 });
+      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + (B.cfg.levelBonus ?? 1) }); // bosses sit a level up unless the def says otherwise
       g.bossName = B.cfg.name; g.bossDef = B;
       this.golem = g; // the active lieutenant (name kept from the demo)
       this.enemies.push(g);

@@ -112,7 +112,8 @@
    "fall": [
     "THE SHADOW BREAKS",
     "TEST DUNGEON CLEARED - TELL CLAUDE WHAT YOU THOUGHT"
-   ]
+   ],
+   "levelBonus": 0
   },
   "rows": [
    "##############################################################",

@@ -4,6 +4,7 @@ import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
 import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
 import { dungeonStart } from '../game/dungeon.js';
+import { makeItem } from '../game/itemgen.js';
 
 // Title + "choose your starting hero" (the other two join as first recruits).
 export class Title extends Phaser.Scene {
@@ -63,8 +64,14 @@ export class Title extends Phaser.Scene {
     audio.init(); audio.sfx('levelUp');
     const st = newState('brann');
     st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
-    for (const h of st.recruited) { st.heroes[h].level = 5; st.heroes[h].sp = (st.heroes[h].sp || 0) + 4; }
-    st.potions.potion = 4;
+    // geared a tier above level 5 (rare weapon + body, fine head + off-hand) so
+    // the boss fight can be tested properly, plus party Elixirs
+    for (const h of st.recruited) {
+      const hs = st.heroes[h];
+      hs.level = 5; hs.sp = (hs.sp || 0) + 4;
+      for (const [slot, rarity] of [['weapon', 'rare'], ['body', 'rare'], ['head', 'fine'], ['offhand', 'fine']]) { const id = makeItem(h, slot, 2, rarity); if (id) hs.equip[slot] = id; }
+    }
+    st.potions.potion = 6; st.potions.elixir = 3;
     st.relics = ['tide']; // carried from Mistfen, so the Sealed Vault can be tried (normally a return visit)
     st.lab = id;
     const p = dungeonStart(id);
