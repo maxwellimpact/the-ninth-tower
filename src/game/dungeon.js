@@ -69,6 +69,9 @@ export class DungeonKit {
     for (const r of ['grapple']) if (!st.relics.includes(r)) st.relics.push(r);
     this.big = true;
     for (const d of this.doors) if (d.kind === 'boss') d.unlocked = true;
+    // and the rooms before it count as solved, so you can walk back out
+    for (const p of this.plates) { p.latched = true; p.s.setTexture('dgPlateDown'); }
+    for (const r of this.rooms) if (r.seal) { r.entered = true; r.cleared = true; }
     const s = dungeonStart(this.id);
     this.respawn = { x: s.x, y: s.y };
     this.restock = { ...st.potions }; // every retry starts with the same supplies

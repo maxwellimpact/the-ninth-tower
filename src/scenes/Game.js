@@ -974,7 +974,7 @@ export class Game extends Phaser.Scene {
     this.nav.swimmer = this.canSwim;
     const path = this.nav.find(L.x, L.y, wx, wy);
     this.nav.swimmer = false;
-    if (path) {
+    if (path?.length) { // empty when you're already as close as you can get (e.g. tapping a shut door beside you)
       L.command = { type: 'move' };
       L.path = path;
       L.pathGoal = { x: wx, y: wy };
@@ -2668,7 +2668,7 @@ export class Game extends Phaser.Scene {
       if (!inArena(L)) continue;
       for (const h of this.party) if (!inArena(h) && !h.downed) { h.x = L.x + (Math.random() - 0.5) * 16; h.y = L.y - 6; }
       const ax = B.cfg.arena[0] * TILE + 8, ay = B.cfg.arena[1] * TILE + 8;
-      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + 1 });
+      const g = B.make(ax, ay, { level: this.enemyLevel(ax, ay) + (B.cfg.levelBonus ?? 1) }); // bosses sit a level up unless the def says otherwise
       // per-boss tuning (like the true lieutenants' hpMul / dmgMul)
       if (B.cfg.hpMul) { g.maxHp = Math.round(g.maxHp * B.cfg.hpMul); g.hp = g.maxHp; }
       if (B.cfg.dmgMul) g.s = { ...g.s, dmg: g.s.dmg * B.cfg.dmgMul };
