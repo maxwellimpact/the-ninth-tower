@@ -34,7 +34,10 @@ export class Unit {
 
   face(dx, dy) {
     if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return;
-    if (Math.abs(dx) > Math.abs(dy) * 1.05) { this.view = 'side'; this.flip = dx < 0; }
+    // hysteresis: near-diagonal headings keep the current view instead of
+    // flipping side/front every frame (reads as twitching)
+    const k = this.view === 'side' ? 0.75 : this.view ? 1.35 : 1.05;
+    if (Math.abs(dx) > Math.abs(dy) * k) { this.view = 'side'; this.flip = dx < 0; }
     else this.view = dy > 0 ? 'down' : 'up';
   }
 
@@ -335,7 +338,7 @@ export class Hero extends Unit {
     let crit = this.nextCrit || Math.random() < this.stats.crit;
     if (this.stats.traits?.includes('opener') && !target.openedBy?.has(this)) { (target.openedBy ??= new Set()).add(this); crit = true; }
     this.nextCrit = false;
-    sc.dealDamage(this, target, this.stats.atk * (crit ? this.critMult() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: this.def.id === 'brann' ? 70 : 40, basic: true });
+    sc.dealDamage(this, target, this.stats.atk * (crit ? this.critMult() : 1) * (0.9 + Math.random() * 0.2), { crit, knock: { brann: 70, sable: 12 }[this.def.id] ?? 40, basic: true });
   }
 
   // Orb of Echoes: every third spell repeats as a purple echo bolt from the orb.
@@ -538,8 +541,24 @@ export class Hero extends Unit {
     else if (this.isLeader) this.updateLeader(dt);
     else this.updateCompanion(dt);
 
+    // smoothed velocity: the leader's heading steers the formation, and the
+    // walk/idle choice uses it so tiny nudges don't flicker the animation
+    if (this.lastX !== undefined && dt > 0) {
+      const vx = (this.x - this.lastX) / dt, vy = (this.y - this.lastY) / dt;
+      const a = Math.min(1, dt * 10);
+      this.vel = { x: (this.vel?.x || 0) + (vx - (this.vel?.x || 0)) * a, y: (this.vel?.y || 0) + (vy - (this.vel?.y || 0)) * a };
+      const sp = Math.hypot(this.vel.x, this.vel.y);
+      if (sp > 12) {
+        const ux = this.vel.x / sp, uy = this.vel.y / sp;
+        const h = this.head || { x: ux, y: uy };
+        const b = Math.min(1, dt * 6);
+        const hx = h.x + (ux - h.x) * b, hy = h.y + (uy - h.y) * b;
+        const hl = Math.hypot(hx, hy) || 1;
+        this.head = { x: hx / hl, y: hy / hl };
+      }
+    }
     if (!this.action) {
-      const moving = this.lastX !== undefined && Math.hypot(this.x - this.lastX, this.y - this.lastY) > 0.15;
+      const moving = this.lastX !== undefined && Math.hypot(this.vel?.x || 0, this.vel?.y || 0) > 8;
       this.play(moving ? 'walk' : 'idle');
       if (moving && this.isLeader) {
         this.stepT -= dt;
@@ -703,7 +722,21 @@ export class Hero extends Unit {
     const dl = dist(this, L);
     if (dl > 230) { this.teleportNear(slot); return; }
     const ds = Math.hypot(this.x - slot.x, this.y - slot.y);
-    if (ds > 10) {
+    // settle/resume with a gap between the thresholds so we don't stop-start
+    // (only settle once the leader has stopped; while it walks, keep easing)
+    const lsp = Math.hypot(L.vel?.x || 0, L.vel?.y || 0);
+    if (ds < 3 && lsp < 12) this.settled = true;
+    else if (ds > 12 || lsp > 20) this.settled = false;
+    if (!this.settled && ds < 48 && this.scene.nav.lineClear(this.x, this.y, slot.x, slot.y, 3)) {
+      // close and in the open: ease toward the slot, matching the leader's pace
+      // rather than sprinting there and stopping dead
+      this.clearPath();
+      const want = Math.min(this.spd * 1.3, lsp + ds * 3);
+      const [nx, ny] = norm(slot.x - this.x, slot.y - this.y);
+      const step = Math.min(ds, want * dt);
+      if (lsp > 12) this.face(L.head?.x ?? nx, L.head?.y ?? ny); else this.face(nx, ny);
+      this.moveBy(nx * step, ny * step);
+    } else if (!this.settled) {
       this.repathT -= dt;
       if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(slot.x, slot.y); }
       this.followPath(dt, dl > 40 ? 1.3 : 1);
@@ -777,7 +810,9 @@ export class Hero extends Unit {
 
   formationSlot() {
     const L = this.scene.leader;
-    const [fx, fy] = L.facingVec();
+    // the leader's smoothed heading, not its 4-way facing: a diagonal walk
+    // flips facing back and forth, which made the slot (and Sable) jump
+    const [fx, fy] = L.head ? [L.head.x, L.head.y] : L.facingVec();
     const idx = this.scene.party.filter((h) => !h.isLeader).indexOf(this);
     const side = idx === 0 ? -1 : 1;
     // behind the leader, offset to either side

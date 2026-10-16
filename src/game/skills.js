@@ -270,11 +270,11 @@ export const SKILL_FX = {
   step: {
     cast(h, { target }) {
       const sc = h.scene;
-      if (!target || dist(h, target) > 115) return false;
+      if (!target || dist(h, target) > 85) return false;
       sc.fx.puff(h.x, h.y, 'sparkCurse');
       const [nx, ny] = norm(target.x - h.x, target.y - h.y);
-      const bx = target.x + nx * 12, by = target.y + ny * 12;
-      if (!sc.nav.solidAtPx(bx, by)) { h.x = bx; h.y = by; } else { h.x = target.x - nx * 12; h.y = target.y - ny * 12; }
+      const bx = target.x + nx * 8, by = target.y + ny * 8;
+      if (!sc.nav.solidAtPx(bx, by)) { h.x = bx; h.y = by; } else { h.x = target.x - nx * 8; h.y = target.y - ny * 8; }
       h.face(target.x - h.x, target.y - h.y);
       sc.fx.puff(h.x, h.y, 'sparkCurse');
       audio.sfx('dash');
@@ -284,7 +284,7 @@ export const SKILL_FX = {
       if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
       return true;
     },
-    ai(h, c) { const t = c.target; return t && dist(t, h) > 50 && dist(t, h) < 110 && t.kind !== 'ward' ? t : null; },
+    ai(h, c) { const t = c.target; return t && dist(t, h) > 36 && dist(t, h) < 75 && dist(t, h.scene.leader) < 60 && t.kind !== 'ward' ? t : null; }, // short hops into the leader's fight, not cross-screen blinks
   },
   fan: {
     cast(h, { m }) {
