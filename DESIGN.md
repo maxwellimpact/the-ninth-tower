@@ -965,6 +965,18 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 
 ## C7. Enemies
 
+### Enemy AI rules **[BUILT, measured]**
+Each rule was added one at a time and checked before and after with the fight benchmark (`tools/fight-bench.js`). It runs seven fixed fights, from 3 goblins to 10 mixed foes, in an open hall and a tight pillared room, plus leash, area-attack and doorway tests. Results are in `tools/bench-results/`. Rerun it before shipping any enemy change.
+1. **Attack turns (tokens):** at most 2 foes wind up on one hero at the same moment (`tuning.attackTokens`, the main crowd-difficulty dial). The rest wait just outside reach. Bosses don't queue.
+2. **Surround, don't stack:** melee foes take spread-out spots on a ring around their target. Foes waiting, winding up or recovering keep a little room between them.
+3. **Sticky targets:** commit about 2 s and never switch mid-swing. After that, switch only for a reason: much more damage from someone else, or the target out of reach while another hero is right here. Remembered damage fades. A taunt always wins.
+4. **Ranged foes:** prefer the most fragile hero, spread across heroes so a line of archers doesn't queue on one. They back off along open floor, sidestep for a clear shot, and shift a little after shooting.
+5. **Leash:** none in sealed rooms. About 22 tiles in dungeons and caves, about 12 in the overworld. Foes only give up when they're also out of sight for 2.5 s, so backing off a step no longer resets and heals them.
+6. **Group roles:** in packs of four or more melee, about one in three flanks to the back line. Small fry (goblins, rats, hexlings) break once at a quarter health, shout HELP (idle allies nearby join in) and come back. Support roles (healers, buffers) come with the region enemies that need them.
+7. **Elites read the party's telegraphs:** they step out of Meteor and Volley zones, abandoning a swing if they must. Regular foes don't, so area attacks stay strong against crowds.
+8. **Unsticking:** straight-line checks are as wide as the body, and a foe that barely moves for 0.4 s sidesteps and re-routes.
+
+
 **How to read the tables:**
 - **HP and DMG are multipliers of the Hex Goblin's** demo values at level 1 (100 HP, 20 damage). Level scaling (C1) is applied on top.
 - **Behaviour** describes what the player has to read or react to.
@@ -1556,3 +1568,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-15 | Wave 1 complete: frog races (Mistfen), The Champion's Bout errand and Bloodfang Axe. Artifact publishing now ships the hashed scripts with the page (the page alone left the phone stuck on LOADING ENGINE) |
 | 2026-10-16 | Never-again rules added to C12 after playtest bugs: rooms keep camera margins so nothing important sits under the HUD; a wipe returns fights, seals and arenas to a retryable state; doors never pin a unit; saves record map width so resizing the world never breaks them |
 | 2026-10-16 | The leader can always cancel a swing (never-again rule 5). Vines wither slowly when the Shadow breaks and vanish when the stone falls. Lab boss tuned between the two tested strengths (normal level, 92% health and damage) |
+| 2026-10-16 | Enemy AI rules (C7): attack tokens, surround slots, sticky targets, smarter ranged foes, dungeon leash, group roles, elites reading telegraphs, unsticking. Each measured with the new fight benchmark, old vs new over 7 fights × 2 seeds |

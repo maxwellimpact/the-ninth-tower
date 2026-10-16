@@ -501,6 +501,7 @@ export class DungeonKit {
       const e = elite[ch];
       const u = sc.spawnEnemy(e ? e.kind : FOES[ch], px(x), px(y), room.seal, !!e);
       if (e?.name) { u.named = true; u.s = { ...u.s, name: e.name }; }
+      if (room.seal) u.noLeash = true; // a sealed fight is fought to the end
       return u;
     });
     if (!room.seal) { spawn(); return; }

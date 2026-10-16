@@ -1225,6 +1225,7 @@ export class Game extends Phaser.Scene {
         h.action = { type: 'skill', id: 'meteor', t: 0, dur: 0.6 }; h.anim = ''; h.play('cast');
         const g = this.fx.telegraph(tx, ty, 46, 0.8);
         g.setDepth(-2);
+        (this.partyZones ??= []).push({ x: tx, y: ty, r: 46, until: this.time.now + 800 }); // elites read it and step out
         const m = this.add.sprite(tx - 60, ty - 180, 'firebolt').play('firebolt').setScale(3.2).setDepth(TOP - 15).setRotation(Math.atan2(180, 60));
         audio.sfx('fireCast');
         this.tweens.add({

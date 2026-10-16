@@ -15,6 +15,7 @@
  "hpGrowth": 0.09,
  "atkGrowth": 2,
  "critMult": 1.75,
+ "attackTokens": 2,
  "enemyHpGrowth": 0.25,
  "enemyDmgGrowth": 0.13,
  "enemyXpGrowth": 0.15,

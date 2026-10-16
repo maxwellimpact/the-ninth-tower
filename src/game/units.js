@@ -914,6 +914,8 @@ export class Hero extends Unit {
 
 // ---------------------------------------------------------------- Enemies
 const ENEMY = enemyData;
+const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
+const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
 const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk' };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling']);
 
@@ -1082,8 +1084,36 @@ export class Enemy extends Unit {
 
   setTaunt(by, t) { this.taunter = by; this.tauntT = t; this.target = by; this.engaged = true; if (this.state === 'idle') this.state = 'chase'; }
 
+  // Sticky targeting: a foe commits to its target for a couple of seconds and
+  // never switches mid-swing; after that it switches only for a reason (someone
+  // hurting it far more, or its target out of reach while another hero is right
+  // here). Remembered damage fades. A taunt always wins.
+  noteAttacker(src, amount) {
+    (this.threat ??= new Map()).set(src, (this.threat.get(src) || 0) + amount);
+    const t = this.target;
+    if (!t || t.downed || !t.alive || !this.engaged) { this.aggroOn(src); return; }
+    if (t === src || this.tauntT > 0 || TOKEN_STATES.has(this.state) || (this.commitT || 0) > 0) return;
+    const reach = (this.s.reach || 16) + 10;
+    const outOfReach = dist(this, t) > reach + 50 && dist(this, src) < reach + (src.r || 5) + 10;
+    const harder = this.threat.get(src) > (this.threat.get(t) || 0) * 1.6;
+    if (outOfReach || harder) { this.target = src; this.commitT = 2; }
+  }
+
   aggroOn(h, spread = true) {
     if (!h || h.downed || this.staged) return;
+    // archers and casters go for the most fragile hero they can reach
+    if (this.s.ranged && !(this.tauntT > 0)) {
+      // ...spread across them, so a whole archer line doesn't queue on one hero
+      const load = (p) => this.scene.enemies.filter((e) => e !== this && e.alive && e.s.ranged && e.target === p).length;
+      const soft = this.scene.party.filter((p) => p.alive && !p.downed && dist(p, this) < this.s.aggro * 1.4).sort((a, b) => (a.maxHp + load(a) * 70) - (b.maxHp + load(b) * 70))[0];
+      if (soft) h = soft;
+    }
+    this.pickRole();
+    if (this.role === 'flank' && !(this.tauntT > 0)) {
+      const soft = this.scene.party.filter((p) => p.alive && !p.downed && !p.isLeader && dist(p, this) < this.s.aggro * 1.6).sort((a, b) => a.maxHp - b.maxHp)[0];
+      if (soft) h = soft;
+    }
+    this.commitT = 2;
     const was = this.engaged;
     this.target = this.tauntT > 0 ? this.taunter : h;
     this.engaged = true;
@@ -1128,10 +1158,31 @@ export class Enemy extends Unit {
     if (!dot) this.flash(crit ? 90 : 60);
     if (knock && this.state !== 'windup') this.knock(this.x - src.x, this.y - src.y, knock);
     else if (knock) this.knock(this.x - src.x, this.y - src.y, knock * 0.3);
-    if (src && src.team === 'party') this.aggroOn(src);
+    if (src && src.team === 'party') this.noteAttacker(src, amount);
     if (this.hp <= 0) this.die(src);
     else if (this.elite) this.affixOnHurt();
+    else if (!this.fled && COWARDS.has(this.kind) && !this.boss && this.hp < this.maxHp * 0.25) this.flee(src);
     return amount;
+  }
+
+  // Morale (group roles): small fry break once when badly hurt, run a short
+  // way and shout for help (idle allies nearby join in), then come back.
+  flee(src) {
+    this.fled = true;
+    this.clearZone();
+    this.state = 'flee'; this.t = 0; this.token = null;
+    this.fleeFrom = src && src.alive ? src : this.scene.leader;
+    this.scene.floatText(this.x, this.y - 26, 'HELP!', 'fontPlain', 0xffd04a);
+    for (const e of this.scene.enemies) if (e !== this && e.alive && !e.engaged && !e.staged && dist(e, this) < 160) e.aggroOn(this.fleeFrom, false);
+  }
+
+  // Group roles: in a pack of four or more melee foes, about one in three
+  // flanks, going for the back line (the most fragile hero) instead of the leader.
+  pickRole() {
+    if (this.role || this.boss || this.s.ranged) return;
+    this.role = 'front';
+    const pack = this.scene.enemies.filter((e) => e.alive && !e.s.ranged && !e.boss && dist(e, this) < 140).length;
+    if (pack >= 4 && Math.random() < 0.34) this.role = 'flank';
   }
 
   // ---- elite affixes
@@ -1245,6 +1296,9 @@ export class Enemy extends Unit {
     }
     this.physics(dt);
     this.tauntT = Math.max(0, this.tauntT - dt);
+    if (this.token && !TOKEN_STATES.has(this.state)) this.token = null;
+    this.commitT = Math.max(0, (this.commitT || 0) - dt);
+    if (this.threat) for (const [k, v] of this.threat) this.threat.set(k, v * (1 - dt * 0.25)); // grudges fade
     if (this.staged) { this.updateStaged(dt); this.sync(dt); if (this.staged) return; }
     if (this.stunT > 0) {
       this.stunT -= dt;
@@ -1269,6 +1323,19 @@ export class Enemy extends Unit {
     if (s.ai === 'blink' && this.engaged) { this.blinkT = (this.blinkT ?? 4) - dt; if (this.blinkT <= 0 && this.state === 'chase') this.blinkAway(); }
     if (s.ai === 'warlock' && this.engaged) this.aiWarlock(dt);
     if (this.affix) this.affixTick(dt);
+    // elites read the party's telegraphed area attacks (Meteor, Volley) and step out
+    if ((this.elite || this.named) && !this.boss && this.state !== 'charging' && sc.partyZones?.length) {
+      const now = sc.time.now;
+      sc.partyZones = sc.partyZones.filter((z) => z.until > now);
+      const z = sc.partyZones.find((q) => Math.hypot(this.x - q.x, this.y - q.y) < q.r + 6);
+      if (z) {
+        if (TOKEN_STATES.has(this.state)) { this.clearZone(); this.state = 'chase'; this.t = 0; } // abandon the swing to get clear
+        const [nx, ny] = norm(this.x - z.x, this.y - z.y);
+        this.face(nx, ny); this.moveBy(nx * s.speed * 1.6 * dt, ny * s.speed * 1.6 * dt); this.play('walk');
+        this.sync(dt);
+        return;
+      }
+    }
     if (this.fearT > 0) {
       // Howl: run from Kesh
       this.fearT -= dt;
@@ -1301,23 +1368,43 @@ export class Enemy extends Unit {
         break;
       }
       case 'chase': {
+        this.waiting = false;
         const t = this.target;
         if (!t) { this.state = 'return'; break; }
-        // give up the chase: too far from home, or the target has pulled well away for a moment
+        // give up the chase only when it's really lost: dragged far from home
+        // (much further in dungeons; never out of a sealed fight room), or the
+        // target is both far away and out of sight for a while
         const d = dist(this, t);
-        this.loseT = d > s.aggro * 1.4 ? (this.loseT || 0) + dt : 0;
-        if (!this.boss && (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) > 160 || this.loseT > 1.2)) { this.state = 'return'; this.engaged = false; this.target = null; this.loseT = 0; this.homeT = 0; this.clearZone(); break; }
+        const lost = d > s.aggro * 1.4 && !(d < s.aggro * 2.2 && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1));
+        this.loseT = lost ? (this.loseT || 0) + dt : 0;
+        const leash = this.noLeash ? Infinity : this.scene.areaRect?.().interior ? 360 : 200;
+        if (!this.boss && !this.noLeash && (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) > leash || this.loseT > 2.5)) { this.state = 'return'; this.engaged = false; this.target = null; this.loseT = 0; this.homeT = 0; this.clearZone(); break; }
         if (s.ranged) {
-          // archers keep their distance and need a clear shot
-          if (d < s.keepAway) { this.stepTo({ x: this.x * 2 - t.x, y: this.y * 2 - t.y }, dt, 0.9); break; }
-          if (d <= s.reach && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1)) { this.beginWindup(t); break; }
+          // archers keep their distance and need a clear shot: back off along
+          // open floor (not into walls), sidestep to find an angle, and shift
+          // position a little after shooting
+          if (d < s.keepAway) { this.backOff(t, dt); break; }
+          if (this.repos && (this.reposT = (this.reposT || 0) - dt) > 0 && Math.hypot(this.repos.x - this.x, this.repos.y - this.y) > 3) { this.stepTo(this.repos, dt, 0.8); break; }
+          this.repos = null;
+          const clear = this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1);
+          if (d <= s.reach && !clear) { this.strafe(t, dt); break; }
+          if (d <= s.reach && this.onScreen() && clear) {
+            if (this.takeToken(t)) this.beginWindup(t); else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); } // wait for a turn to shoot
+            break;
+          }
           this.stepTo(t, dt, 1);
           break;
         }
-        if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen()) { this.beginTongue(t); break; }
-        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2)) { this.beginCharge(t); break; }
-        if (d <= s.reach + t.r) { this.beginWindup(t); break; }
-        this.stepTo(t, dt, 1);
+        if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
+        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2) && this.takeToken(t)) { this.beginCharge(t); break; }
+        // melee: surround the target; only a few may wind up on it at once (the
+        // rest wait just outside reach for a turn)
+        const free = this.tokenFree(t);
+        if (free && d <= s.reach + t.r && this.takeToken(t)) { this.beginWindup(t); break; }
+        const slot = this.boss ? t : this.surroundSlot(t, free ? s.reach + t.r - 3 : s.reach + t.r + 18);
+        this.waiting = !free; // holding outside reach for a turn (not stuck)
+        if (Math.hypot(slot.x - this.x, slot.y - this.y) > 3) this.stepTo(slot, dt, free ? 1 : 0.6);
+        else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); }
         break;
       }
       case 'tongueWind': {
@@ -1343,12 +1430,29 @@ export class Enemy extends Unit {
       }
       case 'windup': {
         this.play('windup');
+        this.keepApart(dt); // the strike lands on its marked zone, so a little sidestep is safe
         if (this.t >= s.windup) this.strike();
+        break;
+      }
+      case 'flee': {
+        const f = this.fleeFrom;
+        const [nx, ny] = f ? norm(this.x - f.x, this.y - f.y) : [0, 1];
+        this.stepTo({ x: this.x + nx * 30, y: this.y + ny * 30 }, dt, 1.15);
+        if (this.t >= 2.2) { this.state = 'chase'; this.t = 0; if (!this.target?.alive) this.target = this.scene.nearestHero(this, 300); }
         break;
       }
       case 'recover': {
         this.play('recover');
-        if (this.t >= s.recover) { this.state = 'chase'; this.t = 0; }
+        this.keepApart(dt);
+        if (this.t >= s.recover) {
+          this.state = 'chase'; this.t = 0;
+          const t = this.target, nav = sc.nav;
+          if (s.ranged && t && Math.random() < 0.5) {
+            const want = (s.keepAway + s.reach) / 2, a = Math.atan2(this.y - t.y, this.x - t.x) + (Math.random() < 0.5 ? 0.45 : -0.45);
+            const p = { x: t.x + Math.cos(a) * want, y: t.y + Math.sin(a) * want };
+            if (!nav.solidAtPx(p.x, p.y) && nav.lineClear(p.x, p.y, t.x, t.y, 1)) { this.repos = p; this.reposT = 0.8; }
+          }
+        }
         break;
       }
       case 'return': {
@@ -1398,10 +1502,75 @@ export class Enemy extends Unit {
     this.scene.quests?.engageStaged(id, h);
   }
 
+  // Attack tokens: only a few foes may be winding up an attack on one hero at
+  // the same moment (tuning.attackTokens), so a crowd attacks in turns that can
+  // be read and dodged on a phone. Bosses don't queue. Held only while winding
+  // up / charging; released the moment the attack resolves.
+  tokenFree(t) {
+    if (this.boss || !t || this.token === t) return true;
+    const max = tuning.attackTokens ?? 2;
+    let n = 0;
+    for (const e of this.scene.enemies) if (e !== this && e.alive && e.token === t && TOKEN_STATES.has(e.state)) n++;
+    return n < max;
+  }
+
+  takeToken(t) { if (!this.tokenFree(t)) return false; this.token = t; return true; }
+
+  // A spot on a ring around the target, pushed apart from the other melee foes
+  // on it, so a group surrounds instead of stacking on one side.
+  surroundSlot(t, ring) {
+    const others = this.scene.enemies.filter((e) => e !== this && e.alive && !e.boss && !e.s.ranged && e.target === t && Math.hypot(e.x - t.x, e.y - t.y) < ring + 40);
+    let a = Math.atan2(this.y - t.y, this.x - t.x);
+    const minSep = Math.min(1.1, (Math.PI * 2) / (others.length + 1));
+    for (let it = 0; it < 3; it++) for (const o of others) {
+      const ao = Math.atan2(o.y - t.y, o.x - t.x), da = Math.atan2(Math.sin(a - ao), Math.cos(a - ao));
+      if (Math.abs(da) < minSep) a += (da >= 0 ? 1 : -1) * (minSep - Math.abs(da)) * 0.5;
+    }
+    const x = t.x + Math.cos(a) * ring, y = t.y + Math.sin(a) * ring * 0.8;
+    return this.scene.nav.solidAtPx(x, y) ? { x: t.x + (this.x - t.x) * 0.5, y: t.y + (this.y - t.y) * 0.5 } : { x, y };
+  }
+
+  // nudge apart from other foes while standing still
+  keepApart(dt) {
+    for (const e of this.scene.enemies) {
+      if (e === this || !e.alive) continue;
+      const dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
+      if (d > 0.01 && d < 12) this.moveBy((dx / d) * 20 * dt, (dy / d) * 20 * dt);
+    }
+  }
+
+  // Ranged: retreat to the most open spot away from the target (straight back,
+  // or angled off a wall) instead of grinding into it.
+  backOff(t, dt) {
+    const base = Math.atan2(this.y - t.y, this.x - t.x), nav = this.scene.nav;
+    for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.6, -1.6]) {
+      const x = this.x + Math.cos(base + off) * 24, y = this.y + Math.sin(base + off) * 24;
+      if (!nav.solidAtPx(x, y) && nav.lineClear(this.x, this.y, x, y, 3)) { this.stepTo({ x, y }, dt, 0.9); return; }
+    }
+    this.stepTo({ x: this.x * 2 - t.x, y: this.y * 2 - t.y }, dt, 0.9);
+  }
+
+  // Ranged, in range but blocked: sidestep (keeping to one side a while) to
+  // find a line of fire.
+  strafe(t, dt) {
+    const nav = this.scene.nav;
+    this.strafeT = (this.strafeT || 0) - dt;
+    if (this.strafeT <= 0) { this.strafeT = 1.2; this.strafeSide = Math.random() < 0.5 ? 1 : -1; }
+    const [nx, ny] = norm(t.x - this.x, t.y - this.y);
+    for (const side of [this.strafeSide, -this.strafeSide]) {
+      const x = this.x - ny * side * 20, y = this.y + nx * side * 20;
+      if (!nav.solidAtPx(x, y) && nav.lineClear(this.x, this.y, x, y, 3)) { this.strafeSide = side; this.stepTo({ x, y }, dt, 0.85); return; }
+    }
+    this.stepTo(t, dt, 1); // boxed in: close the distance instead
+  }
+
   stepTo(p, dt, mul) {
     let [nx, ny] = norm(p.x - this.x, p.y - this.y);
-    // simple obstacle avoidance: if blocked, use a path
-    if (!this.scene.nav.lineClear(this.x, this.y, p.x, p.y, 3)) {
+    // stuck on a corner or in a crowd: sidestep briefly, then re-route
+    if (this.unstickT > 0) { this.unstickT -= dt; this.moveBy(this.unstick[0] * this.s.speed * dt, this.unstick[1] * this.s.speed * dt); this.play('walk'); return; }
+    // simple obstacle avoidance: if blocked, use a path (the straight-line test
+    // is as wide as the body, or it clips door frames and grinds on them)
+    if (!this.scene.nav.lineClear(this.x, this.y, p.x, p.y, Math.max(3, this.r))) {
       this.repathT = (this.repathT || 0) - dt;
       if (!this.path || this.repathT <= 0) { this.path = this.scene.nav.find(this.x, this.y, p.x, p.y, 1500); this.repathT = 0.6; }
       if (this.path && this.path.length) {
@@ -1424,8 +1593,18 @@ export class Enemy extends Unit {
     }
     [nx, ny] = norm(nx, ny);
     this.face(nx, ny);
+    const ox = this.x, oy = this.y;
     this.moveBy(nx * sp * dt, ny * sp * dt);
     this.play('walk');
+    // barely moving for a moment while trying to: sidestep and find a new route
+    const want = sp * dt, got = Math.hypot(this.x - ox, this.y - oy);
+    this.stuckT = want > 0.2 && got < want * 0.25 ? (this.stuckT || 0) + dt : Math.max(0, (this.stuckT || 0) - dt * 2);
+    if (this.stuckT > 0.4) {
+      this.stuckT = 0;
+      const side = Math.random() < 0.5 ? 1 : -1;
+      this.unstick = [-ny * side, nx * side]; this.unstickT = 0.3;
+      this.path = this.scene.nav.find(this.x, this.y, p.x, p.y, 3000); this.repathT = 0.6;
+    }
   }
 
   // Boar charge: paw the ground (telegraphed line), then rush in a straight line.

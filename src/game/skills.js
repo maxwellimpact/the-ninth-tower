@@ -406,6 +406,7 @@ export const SKILL_FX = {
       h.face(cx - h.x, cy - h.y);
       h.act('volley', 0.5, 'attack');
       const g = sc.fx.telegraph(cx, cy, 30, 0.3); sc.time.delayedCall(300, () => g.destroy());
+      (sc.partyZones ??= []).push({ x: cx, y: cy, r: 30, until: sc.time.now + 2100 }); // elites read the volley and step out
       for (let i = 0; i < 10; i++) sc.time.delayedCall(250 + i * 180, () => {
         const a = Math.random() * Math.PI * 2, r = Math.random() * 28;
         const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.7;

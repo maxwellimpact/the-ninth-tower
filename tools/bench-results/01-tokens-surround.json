@@ -1,0 +1,7 @@
+[{"id":"goblins3","maxWindupsOnOneHero":2,"pct3PlusWindups":0,"overlapPairsPerSec":0,"targetSwitchesPerEnemyMin":80,"partyDmgPerSec":16.6},
+{"id":"goblins6","maxWindupsOnOneHero":3,"pct3PlusWindups":1,"overlapPairsPerSec":3,"targetSwitchesPerEnemyMin":20.2,"partyDmgPerSec":38.2},
+{"id":"mixed10","maxWindupsOnOneHero":3,"pct3PlusWindups":1.4,"overlapPairsPerSec":1,"targetSwitchesPerEnemyMin":14.5,"rangedCanShootPct":46.5,"rangedShotsPerMin":18,"partyDmgPerSec":30.5},
+{"id":"archers","maxWindupsOnOneHero":2,"pct3PlusWindups":0,"overlapPairsPerSec":0,"targetSwitchesPerEnemyMin":29.2,"rangedCanShootPct":81.6,"rangedShotsPerMin":17,"partyDmgPerSec":13.4},
+{"id":"elitePack","maxWindupsOnOneHero":2,"pct3PlusWindups":0,"overlapPairsPerSec":7.3,"targetSwitchesPerEnemyMin":19.8,"partyDmgPerSec":36.5},
+{"id":"undercroft","maxWindupsOnOneHero":3,"pct3PlusWindups":2.8,"overlapPairsPerSec":12.6,"targetSwitchesPerEnemyMin":28.8,"partyDmgPerSec":18.3},
+{"id":"tightMixed","maxWindupsOnOneHero":3,"pct3PlusWindups":1.9,"overlapPairsPerSec":0,"targetSwitchesPerEnemyMin":18.9,"rangedCanShootPct":71.8,"rangedShotsPerMin":21,"partyDmgPerSec":26.9}]
