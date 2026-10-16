@@ -57,8 +57,28 @@ export class DungeonKit {
     this.findRooms();
     this.build();
     this.refreshDoors(true);
+    this.buildVine();
     this.emit();
   }
+
+  // The cursed vine (C12): grows in from the entrance, through the dungeon and
+  // under the great door to the sacred place where the Shadow stands, draining
+  // it. Same painter as the real wards' vines; withers when the Shadow breaks.
+  buildVine() {
+    const route = this.def.vine;
+    if (!route || !this.sc.paintVine) return;
+    const sc = this.sc;
+    this.ward = { def: { id: this.id } }; // stands in for a Ward Stone (texture key, thoughts)
+    const v = { ward: this.ward, i: 1, n: 2, seed: 991, dead: false, stoneEnd: false, diveEnd: false, source: true };
+    v.pts = sc.vinePath(sc.growVineRoute(route.map(([x, y]) => [this.ox + x, this.oy + y])));
+    v.len = v.pts[v.pts.length - 1].d;
+    sc.paintVine(v);
+    (sc.vines ??= []).push(v);
+    this.vine = v;
+    this.thinkT = 2; // first thought once the curtain is up, before the room hint
+  }
+
+  witherVine() { if (this.vine && !this.vine.dead) this.sc.witherVines(this.ward); }
 
   // ------------------------------------------------------------- layout
   findRooms() {
@@ -423,6 +443,12 @@ export class DungeonKit {
     if (room?.active) {
       const inRoom = (e) => this.roomOf.get(key(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) === room.id;
       if (!sc.enemies.some((e) => e.alive && !e.boss && inRoom(e))) this.clearRoom(room);
+    }
+    // the leader thinks out loud following the vine, and at its source
+    if (this.vine && !this.vine.dead && !sc.golem && !(this.thinkT = Math.max(0, (this.thinkT || 0) - dt))) {
+      this.thinkT = 0.5;
+      const nv = sc.nearVine(this.ward, L, 3);
+      if (nv) { if (Math.hypot(this.vine.sigil.x - L.x, this.vine.sigil.y - L.y) < 11 * TILE) sc.think(this.id, 'source'); else sc.think(this.id, 'below'); }
     }
     // the leader can stand on a plate too
     if (this.plates.some((p) => !p.latched)) this.checkPlates();

@@ -1108,6 +1108,7 @@ Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeon
   - Hook posts across chasms, cracked walls, and the map and compass.
   - **Sealed Vault:** a vault door that only another region's relic opens. In the lab it's the Tide Charm, behind which is a flooded chamber you swim across to reach the Sunspire Staff. The lab party carries the Charm so the vault can be tried; in the real game it's a return visit. The final design names the Gale Cloak for the Undercroft vault; swap it in once the Cloak exists.
 - **Music:** dungeons get their own theme. The Undercroft's is "The Undercroft", a stately minor march over a ticking clockwork ostinato. It plays in the lab only until the redesign is approved.
+- **The cursed vine runs through it** (C12 §1): from the entrance, through the hub and under the great door to the sacred place where the Shadow stands. The lead hero's vine thoughts play along it, and it withers when the Shadow breaks. Authored as a `vine` waypoint list in the dungeon's data; the route is grown along walls automatically.
 - **Must meet C12's never-again rules:** a camera margin around every room, wipes that reset fights, and doors that never pin anyone.
 - **Rooms are inferred, not configured:** floor flood-filled between doors. A plate opens the shutters of its own room, and a fight seals the doors of its own room.
 - **Party use:** some switches want a ranged hero (swap leader). After the relic, the hook hits switches nobody can walk to.

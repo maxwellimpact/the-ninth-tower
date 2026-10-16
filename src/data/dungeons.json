@@ -185,7 +185,7 @@
      37,
      60
     ],
-    "delay": 2600,
+    "delay": 9000,
     "text": "THAT SLAB FITS THE PLATE. TAP IT TO SHOVE IT."
    },
    {
@@ -229,6 +229,36 @@
    "relic": "tide",
    "locked": "A SEALED VAULT. THERE'S A WAVE CARVED ON THE DOOR... SOMETHING FROM THE FEN.",
    "open": "THE TIDE CHARM HUMS AND THE SEAL GIVES WAY"
-  }
+  },
+  "vine": [
+   [
+    37,
+    60.4
+   ],
+   [
+    37,
+    52
+   ],
+   [
+    33,
+    47
+   ],
+   [
+    41,
+    41
+   ],
+   [
+    37,
+    36
+   ],
+   [
+    37,
+    29
+   ],
+   [
+    37,
+    14.6
+   ]
+  ]
  }
 }

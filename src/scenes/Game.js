@@ -51,6 +51,7 @@ const THOUGHTS = {
     open: "SHE'S GONE. NOTHING GUARDS THE STONE NOW. BREAK IT!",
   },
 };
+THOUGHTS.labUndercroft = THOUGHTS.vale; // the Dungeon Lab's Undercroft tells the Vale's vine story
 
 // Golden Flies in the world, plus the ones won at the minigames
 export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
@@ -186,7 +187,7 @@ export class Game extends Phaser.Scene {
       music.start(themeFor(this.musicRegion));
       music.setBard(!!this.flags.bard);
       curtain.done();
-      this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id]));
+      if (!st.lab) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints
     });
 
     window.__game = this.game;
@@ -1487,6 +1488,7 @@ export class Game extends Phaser.Scene {
     this.state.gold += B.cfg.gold || 0;
     for (const h of this.party) if (!h.downed) h.gainXp(b.s.xp);
     this.golem = null;
+    if (this.dungeon && B.id === this.dungeon.id) this.dungeon.witherVine();
     for (const w of this.wards) {
       if (w.def.guardian === B.flag) this.witherVines(w);
       if (w.unit) w.shieldFx?.setVisible(this.wardShielded(w.unit));
