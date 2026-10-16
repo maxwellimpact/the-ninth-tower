@@ -1717,6 +1717,7 @@ export class Game extends Phaser.Scene {
   // Where the party regroups after a wipe: the found campfire nearest to where they fell.
   // Inside an interior, distance is measured from its entrance in the overworld.
   respawnCamp() {
+    if (this.dungeon?.respawn) return this.dungeon.respawn;
     if (this.dungeon?.camp) return { x: this.dungeon.camp.x + 2, y: this.dungeon.camp.y };
     const L = this.leader;
     let fx = L.x / TILE, fy = L.y / TILE;

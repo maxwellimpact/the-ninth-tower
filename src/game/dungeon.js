@@ -56,9 +56,23 @@ export class DungeonKit {
     this.hinted = new Set();
     this.findRooms();
     this.build();
+    if (this.def.startAt === 'boss') this.skipToBoss();
     this.refreshDoors(true);
     this.buildVine();
     this.emit();
+  }
+
+  // Boss test: everything up to the great door is done (Grapple, Seal, door
+  // open), and a wipe puts you back in the corridor for another go.
+  skipToBoss() {
+    const st = this.sc.state;
+    for (const r of ['grapple']) if (!st.relics.includes(r)) st.relics.push(r);
+    this.big = true;
+    for (const d of this.doors) if (d.kind === 'boss') d.unlocked = true;
+    const s = dungeonStart(this.id);
+    this.respawn = { x: s.x, y: s.y };
+    this.restock = { ...st.potions }; // every retry starts with the same supplies
+    for (const h of this.hints) this.hinted.add(h.text); // no tutorial hints on a boss rerun
   }
 
   // The cursed vine (C12): grows in from the entrance, through the dungeon and
@@ -499,6 +513,7 @@ export class DungeonKit {
   // The party fell: any sealed fight under way stands down (its foes vanish,
   // its doors open) and re-arms, so walking back in starts it over.
   onWipe() {
+    if (this.restock) Object.assign(this.sc.state.potions, this.restock);
     for (const r of this.rooms) {
       if (!r.active) continue;
       for (const e of r.spawned || []) if (e.alive) { e.alive = false; e.destroy(); }
@@ -527,8 +542,11 @@ export class DungeonKit {
 }
 
 export { DUNGEONS };
+// Where a lab run starts: the entrance ('@'), or with `startAt: 'boss'` the
+// corridor four tiles below the arena gate ('g').
 export const dungeonStart = (id) => {
   const d = DUNGEONS[id];
-  for (let y = 0; y < d.rows.length; y++) { const x = d.rows[y].indexOf('@'); if (x >= 0) return { x: d.origin[0] + x, y: d.origin[1] + y }; }
-  return { x: d.origin[0], y: d.origin[1] };
+  const find = (ch) => { for (let y = 0; y < d.rows.length; y++) { const x = d.rows[y].indexOf(ch); if (x >= 0) return { x: d.origin[0] + x, y: d.origin[1] + y }; } return null; };
+  if (d.startAt === 'boss') { const g = find('g'); if (g) return { x: g.x, y: g.y + 4 }; }
+  return find('@') || { x: d.origin[0], y: d.origin[1] };
 };
