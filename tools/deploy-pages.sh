@@ -22,6 +22,6 @@ touch site/.nojekyll # serve files as they are (no Jekyll processing)
 BUILD=$(git rev-parse --short HEAD)
 git -C site add -A
 if git -C site diff --cached --quiet; then echo "nothing changed since the last deploy"; exit 0; fi
-git -C site commit --quiet -m "Build $BUILD"
+git -C site commit --quiet -m "Build $BUILD" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git -C site push --quiet origin main
 echo "pushed build $BUILD -> https://maxwellimpact.github.io/ninth-tower/ (live in about a minute)"
