@@ -186,7 +186,9 @@ export class Game extends Phaser.Scene {
     order.forEach((id, i) => this.party.push(new Hero(this, id, st.heroes[id], start.x + i * 12, start.y + (i ? 12 : 0))));
     this.setLeader(this.party[0], true);
     this.buildRecruits();
-    this.groups = W.groups.map((g) => ({ ...g, units: [], active: false, deadT: 0, chunk: `${Math.floor((g.units[0][1] * TILE) / CHUNK)},${Math.floor((g.units[0][2] * TILE) / CHUNK)}` }));
+    // groups cleared before the last save keep their respawn clocks (and still never reappear in sight)
+    const rs = st.respawn || {};
+    this.groups = W.groups.map((g) => ({ ...g, units: [], active: false, deadT: rs[g.id] ?? 0, cleared: g.id in rs, spawnedOnce: g.id in rs, chunk: `${Math.floor((g.units[0][1] * TILE) / CHUNK)},${Math.floor((g.units[0][2] * TILE) / CHUNK)}` }));
 
     const cam = this.cameras.main;
     cam.startFollow(this.leader.sprite, true, 0.12, 0.12);
@@ -347,12 +349,14 @@ export class Game extends Phaser.Scene {
         g.units = def.map(([k, x, y], i) => this.spawnEnemy(k, x * TILE + 8, y * TILE + 8, false, i === eliteIdx));
         g.active = true;
         g.spawnedOnce = true;
+        g.cleared = false;
       } else {
         const alive = g.units.filter((u) => u.alive);
         if (!alive.length) {
           g.active = false;
           if (g.once) this.state.cleared[g.id] = true;
           g.deadT = RESPAWN_SECS;
+          g.cleared = true;
           continue;
         }
         if (!res && !alive.some((u) => u.engaged)) {
@@ -1668,6 +1672,7 @@ export class Game extends Phaser.Scene {
     if (L.lift || this.nav.isSolid(tx, ty)) { const o = this.nav.nearestOpen(tx, ty + 2, 8) || this.nav.nearestOpen(tx, ty, 8); if (o) { px0 = o[0] * TILE + 8; py0 = o[1] * TILE + 8; } }
     this.state.pos = { x: Math.round(px0), y: Math.round(py0) };
     for (const h of this.party) h.hs.hp = h.hp;
+    this.state.respawn = Object.fromEntries((this.groups || []).filter((g) => g.cleared && !g.active && !(g.once && this.state.cleared[g.id])).map((g) => [g.id, Math.max(0, Math.round(g.deadT))]));
     if (saveState(this.state)) this.events.emit('saved', reason);
   }
 

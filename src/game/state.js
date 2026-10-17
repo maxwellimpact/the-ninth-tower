@@ -32,6 +32,7 @@ export function newState(leaderId) {
     flags: {},          // chests opened, ward broken, boss defeated, ...
     relics: [],         // 'grapple'
     cleared: {},        // enemy group id -> true (only persists for one-shot groups)
+    respawn: {},        // enemy group id -> seconds left before a cleared group returns (0: due, waiting out of sight)
     pos: null,          // { x, y } world px of the leader at save time
     difficulty: 'normal',
     materials: { herb: 0, gel: 0, ore: 0, crystal: 0, scrap: 0 },
