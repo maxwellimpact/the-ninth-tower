@@ -537,9 +537,7 @@ export class UI extends Phaser.Scene {
     for (const p of this.portraits) {
       const h = p.h;
       const lead = h === game.leader;
-      const ready = h.ult >= 100 && !h.downed;
       // gold means the leader and nothing else: a double gold frame and a pointer
-      // (a ready ultimate shows on its own meter and the ULT! label, not the frame)
       panel(g, p.x, p.y, 22, 22, C.ink, lead ? C.gold : C.slate);
       if (lead) {
         g.fillStyle(C.goldL).fillRect(p.x + 1, p.y + 1, 20, 1).fillRect(p.x + 1, p.y + 20, 20, 1).fillRect(p.x + 1, p.y + 1, 1, 20).fillRect(p.x + 20, p.y + 1, 1, 20);
@@ -553,11 +551,8 @@ export class UI extends Phaser.Scene {
       g.fillStyle(0x3a2f52).fillRect(p.x + 26, p.y + 9, 40, 3);
       g.fillStyle(frac < 0.35 ? C.hpLow : C.hp).fillRect(p.x + 26, p.y + 9, Math.round(40 * frac), 3);
       if (h.shield > 0) g.fillStyle(C.ult).fillRect(p.x + 26, p.y + 9, Math.round(40 * Math.min(1, h.shield / h.maxHp)), 1);
-      // ultimate meter
-      g.fillStyle(C.ink).fillRect(p.x + 25, p.y + 14, 42, 4);
-      g.fillStyle(0x2b2140).fillRect(p.x + 26, p.y + 15, 40, 2);
-      g.fillStyle(ready ? C.ultFull : C.ult).fillRect(p.x + 26, p.y + 15, Math.round(40 * h.ult / 100), 2);
-      p.lv.setText(h.downed ? 'DOWN' : ready ? 'ULT!' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : ready ? 0xfff0a0 : 0xffffff);
+      // no ultimate here: the ULT buttons along the bottom already show it
+      p.lv.setText(h.downed ? 'DOWN' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : 0xffffff);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
       if (skillsReady(h.def.id, h.hs)) skillBadge(g, p.x - 2, p.y - 2); // skill points to spend (top-left: the name sits top-right)
     }
