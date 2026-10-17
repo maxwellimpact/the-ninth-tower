@@ -27,6 +27,20 @@
         "--strictPort"
       ],
       "port": 5184
+    },
+    {
+      "name": "ninth-tower-tiiny",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--outDir",
+        "dist/tiiny",
+        "--port",
+        "5187",
+        "--strictPort"
+      ],
+      "port": 5187
     }
   ]
 }
