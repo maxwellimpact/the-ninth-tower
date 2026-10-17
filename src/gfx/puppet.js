@@ -347,10 +347,19 @@ function walkPose(view, f) {
 export function buildPuppetFrames(def) {
   const views = ['down', 'up', 'side'];
   const out = { idle: {}, walk: {}, attack: {}, cast: {}, dodge: {}, hurt: {}, downed: {}, mine: {}, gather: {} };
+  // Mining: a real overhead pick swing, both hands on the haft. Lift it up
+  // behind the head, hold it high, bring it down fast, and the point bites the
+  // ground in front with the knees bent. Six frames at 10fps (0.6 s, the swing
+  // period): the lift and the strike are held two frames, the downswing one.
+  const pick = (x, y, ang, crouch = 0) => ({ handR: { x, y }, handL: { x: Math.round(x + Math.cos(ang) * 3), y: Math.round(y + Math.sin(ang) * 3) }, angR: ang, tool: 'pickaxe', crouch });
+  const swing = (lift, top, down, hit) => [lift, lift, top, down, hit, hit];
   const MINE = {
-    down: [{ handR: { x: 18, y: 20 }, angR: -2.3, tool: 'pickaxe' }, { handR: { x: 21, y: 25 }, angR: -0.6, tool: 'pickaxe' }, { handR: { x: 23, y: 31 }, angR: 1.25, tool: 'pickaxe', crouch: 1 }],
-    side: [{ handR: { x: 19, y: 20 }, angR: -2.4, tool: 'pickaxe' }, { handR: { x: 25, y: 22 }, angR: -1.1, tool: 'pickaxe' }, { handR: { x: 29, y: 29 }, angR: 0.9, tool: 'pickaxe', crouch: 1 }],
-    up: [{ handR: { x: 30, y: 23 }, angR: -0.5, tool: 'pickaxe' }, { handR: { x: 28, y: 20 }, angR: -1.2, tool: 'pickaxe' }, { handR: { x: 26, y: 19 }, angR: -1.7, tool: 'pickaxe', crouch: 1 }],
+    // facing right: up behind the head, over the top, forward, point into the ground ahead
+    side: swing(pick(21, 19, -2.25), pick(21, 14, -1.95), pick(28, 20, -0.35), pick(28, 26, 1.1, 1)),
+    // facing you: raised overhead, then straight down in front, head at the feet
+    down: swing(pick(22, 15, -1.85), pick(24, 13, -1.57), pick(24, 22, 1.57), pick(24, 27, 1.57, 1)),
+    // facing away: raised overhead, then forward and down onto the ground ahead
+    up: swing(pick(26, 16, -1.35), pick(24, 13, -1.57), pick(24, 17, -1.6), pick(26, 21, -1.4, 1)),
   };
   const GATHER = {
     down: [{ handR: { x: 20, y: 30 }, angR: 2.5, tool: 'sickle', crouch: 2 }, { handR: { x: 25, y: 31 }, angR: 0.6, tool: 'sickle', crouch: 2 }],

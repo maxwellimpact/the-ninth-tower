@@ -6,7 +6,7 @@ import { buildPuppetFrames } from '../gfx/puppet.js';
 import { portraitFrom } from '../gfx/creatures.js';
 import { makeCanvas } from '../gfx/pixel.js';
 
-export const ANIM_RATES = { idle: 2.5, walk: 9, attack: 15, cast: 9, dodge: 16, hurt: 1, downed: 1, mine: 5, gather: 4 };
+export const ANIM_RATES = { idle: 2.5, walk: 9, attack: 15, cast: 9, dodge: 16, hurt: 1, downed: 1, mine: 10, gather: 4 };
 let seq = 0;
 
 export function packFrames(scene, key, frames) {

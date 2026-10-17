@@ -448,7 +448,9 @@ export class Game extends Phaser.Scene {
     const dur = NODE_KINDS[n.kind]?.dur || 2;
     h.face(n.px - h.x, n.py - h.y);
     h.clearPath();
-    h.action = { type: 'harvest', t: 0, dur, node: n, anim: nodeBase(n) === 'herb' ? 'gather' : 'mine', swingT: 0, period: nodeBase(n) === 'herb' ? 0.5 : 0.6 };
+    const mine = nodeBase(n) !== 'herb';
+    // the mining swing strikes 4/6 of the way through its loop: start the clock so each tick (chip, sound) lands on the strike
+    h.action = { type: 'harvest', t: 0, dur, node: n, anim: mine ? 'mine' : 'gather', swingT: mine ? 0.6 / 3 : 0, period: mine ? 0.6 : 0.5 };
     h.anim = '';
     h.play(h.action.anim);
   }
