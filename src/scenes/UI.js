@@ -136,13 +136,13 @@ export class UI extends Phaser.Scene {
 
   allies() { return this.g.party.filter((h) => h !== this.g.leader); }
 
-  // The fight buttons show while there's a fight (and 2.5 s after), or for 8 s
+  // The fight buttons show while there's a fight (and 6 s after), or for 8 s
   // after you open them yourself with the folded button; any fight opens them at once.
   combatBarOpen(time) {
     const game = this.g;
     const fighting = !!this.boss || game.enemies.some((e) => e.alive && e.engaged);
     if (fighting) { this.fightT = time; this.hudManual = false; return true; }
-    if (time - (this.fightT ?? -1e9) < 2500) return true;
+    if (time - (this.fightT ?? -1e9) < 6000) return true; // a few seconds' grace: another foe often joins, and it shouldn't blink away
     if (this.hudManual && time - Math.max(this.hudUsedT || 0, this.btnTapT || 0) < 8000) return true;
     this.hudManual = false;
     return false;
