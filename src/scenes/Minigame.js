@@ -27,7 +27,7 @@ export class Minigame extends Phaser.Scene {
     this.time.removeAllEvents();
     const W = this.scale.width, H = this.scale.height;
     const g = this.add.graphics();
-    g.fillStyle(0x16121f, 0.96).fillRect(0, 0, W, H);
+    g.fillStyle(0x16121f, 0.96).fillRect(-2, -2, W + 4, H + 4);
     // board
     const cell = Math.floor(Math.min((W - 24) / 3, (H - 70) / 3, 56));
     const bw = cell * 3, bx = Math.round((W - bw) / 2), by = Math.round(40 + (H - 60 - bw) / 2);

@@ -79,7 +79,7 @@ export class Shop extends Phaser.Scene {
     const st = this.g.state;
     const g = this.add.graphics();
     this.dyn.push(g);
-    g.fillStyle(C.deep, 1).fillRect(0, 0, Wd, H);
+    g.fillStyle(C.deep, 1).fillRect(-2, -2, Wd + 4, H + 4);
     this.t(8, 7, "MARLA'S GOODS", 'fontGold');
     panel(g, Wd - 26, 5, 18, 14, C.night, 0x6e6a87);
     this.t(Wd - 20, 9, 'X');

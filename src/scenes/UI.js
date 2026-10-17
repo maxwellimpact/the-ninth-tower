@@ -4,13 +4,19 @@ import items from '../data/items.json';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
 import { fitString } from './textfit.js';
-import { freshFor } from '../game/state.js';
+import { freshFor, skillsReady } from '../game/state.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
 export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0, quest: 0xffffff };
+
+// green "+" badge: this hero has skill points to spend (matches the menu's rank-up button)
+export function skillBadge(g, x, y) {
+  g.fillStyle(0x1a1423).fillRect(x - 1, y - 1, 9, 9).fillStyle(0x8cff8c).fillRect(x, y, 7, 7);
+  g.fillStyle(0x1f4a2a).fillRect(x + 3, y + 1, 1, 5).fillRect(x + 1, y + 3, 5, 1);
+}
 
 export function panel(g, x, y, w, h, fill = C.night, edge = C.stone) {
   g.fillStyle(C.ink, 1).fillRect(x - 1, y - 1, w + 2, h + 2);
@@ -546,6 +552,7 @@ export class UI extends Phaser.Scene {
       g.fillStyle(ready ? C.ultFull : C.ult).fillRect(p.x + 26, p.y + 15, Math.round(40 * h.ult / 100), 2);
       p.lv.setText(h.downed ? 'DOWN' : ready ? 'ULT!' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : ready ? 0xfff0a0 : 0xffffff);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
+      if (skillsReady(h.def.id, h.hs)) skillBadge(g, p.x - 2, p.y - 2); // skill points to spend (top-left: the name sits top-right)
     }
     const tq = game.quests, tid = tq?.state.tracked, tstep = tid && tq.step(tid);
     const dk = game.dungeon;

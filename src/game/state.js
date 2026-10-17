@@ -75,6 +75,8 @@ export function canRankUp(hs, sid) {
   const cost = nextRankCost(hs, sid);
   return !!d && cost !== null && hs.level >= d.unlock && hs.sp >= cost;
 }
+// unspent points that would buy something right now (the "+" badges on the HUD and menu)
+export const skillsReady = (id, hs) => !!hs?.sp && heroSkillIds(id, hs.disc).some(([sid]) => canRankUp(hs, sid));
 export function rankUp(hs, sid) {
   if (!canRankUp(hs, sid)) return false;
   hs.sp -= nextRankCost(hs, sid);

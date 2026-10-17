@@ -3,9 +3,9 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill } from '../game/state.js';
+import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill, skillsReady } from '../game/state.js';
 import tuning from '../data/tuning.json';
-import { panel, RARITY } from './UI.js';
+import { panel, RARITY, skillBadge } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
 import { fitString } from './textfit.js';
 import { TRAITS } from '../game/itemgen.js';
@@ -243,7 +243,7 @@ export class Menu extends Phaser.Scene {
     const mode = H > W ? 'portrait' : W >= 360 && H >= 215 ? 'wide' : 'short';
     const g = this.add.graphics();
     this.dyn.push(g);
-    g.fillStyle(C.deep, 1).fillRect(0, 0, W, H);
+    g.fillStyle(C.deep, 1).fillRect(-2, -2, W + 4, H + 4); // past the edges: a rect at y=0 rasterizes a row short and the world peeks through
     this.gfx = g;
     const h = this.hero;
 
@@ -259,6 +259,7 @@ export class Menu extends Phaser.Scene {
       this.t(x + Math.round(tw / 2 - label.length * 2.5), 8, label, sel ? 'fontGold' : 'fontPlain');
       this.btn(x, 2, tw, 18, () => { if (this.tab !== tb) { audio.sfx('click'); this.tab = tb; this.selected = null; this.render(); } });
       if (tb === 'gear' && this.g.party.some((p) => freshFor(this.g.state, p.def.id).length)) this.newDot(x + tw - 2, 5);
+      if (tb === 'skills' && this.g.party.some((p) => skillsReady(p.def.id, p.hs))) skillBadge(g, x + tw - 5, 1);
     });
     panel(g, W - 26, 5, 18, 14, C.night, C.stone);
     this.t(W - 20, 9, 'X');
@@ -279,6 +280,7 @@ export class Menu extends Phaser.Scene {
       this.dyn.push(this.add.image(x + 3, y + 3, `${p.texKey}_portrait`).setOrigin(0));
       this.btn(x, y, 22, 22, () => { if (this.heroIdx !== i) { audio.sfx('click'); this.heroIdx = i; this.selected = null; this.render(); } });
       if (this.tab === 'gear' && freshFor(this.g.state, p.def.id).length) this.newDot(x + 21, y + 1);
+      if (skillsReady(p.def.id, p.hs)) skillBadge(g, x + 17, y + 17);
     });
     const name = `${h.def.name} THE ${h.def.title}`;
     if (mode === 'portrait') this.t(8, 48, name, 'font');

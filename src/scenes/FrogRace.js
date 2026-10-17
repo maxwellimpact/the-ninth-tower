@@ -34,7 +34,7 @@ export class FrogRace extends Phaser.Scene {
     this.clear();
     const W = this.scale.width, H = this.scale.height;
     const g = this.add.graphics();
-    g.fillStyle(0x16121f, 0.96).fillRect(0, 0, W, H);
+    g.fillStyle(0x16121f, 0.96).fillRect(-2, -2, W + 4, H + 4);
     this.add.bitmapText(W / 2, 8, 'fontGold', 'FROG RACES').setOrigin(0.5, 0).setScale(2);
     this.add.bitmapText(W / 2, 28, 'font', `PICK YOUR FROG - ${RACE_BET} GOLD. WIN PAYS ${RACE_BET * 3}.`).setOrigin(0.5, 0);
     const cw = Math.min(70, Math.floor((W - 40) / 4)), x0 = Math.round((W - cw * 4 - 18) / 2), y = 46, ch = Math.min(70, H - 90);
@@ -67,7 +67,7 @@ export class FrogRace extends Phaser.Scene {
     this.clear();
     const W = this.scale.width, H = this.scale.height;
     const g = this.add.graphics();
-    g.fillStyle(0x16121f, 0.96).fillRect(0, 0, W, H);
+    g.fillStyle(0x16121f, 0.96).fillRect(-2, -2, W + 4, H + 4);
     this.add.bitmapText(W / 2, 6, 'fontGold', 'FROG RACES').setOrigin(0.5, 0);
     const laneH = Math.min(28, Math.floor((H - 70) / 4)), top = 22, x0 = 24, x1 = W - 30;
     this.track = { x0, x1 };

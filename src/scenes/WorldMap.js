@@ -23,7 +23,7 @@ export class WorldMap extends Phaser.Scene {
     const mw = aw * s, mh = ah * s;
     const mx = Math.round((W - mw) / 2), my = Math.round(18 + (H - 18 - legendH - mh) / 2);
     const g = this.add.graphics();
-    g.fillStyle(0x16121f, 0.95).fillRect(0, 0, W, H);
+    g.fillStyle(0x16121f, 0.95).fillRect(-2, -2, W + 4, H + 4);
     panel(g, mx - 2, my - 2, mw + 4, mh + 4, 0x2b2140, 0x6e6a87);
     this.add.image(mx - a.x0 * s, my - a.y0 * s, 'minimap').setOrigin(0).setScale(s).setCrop(a.x0, a.y0, aw, ah);
     const title = a.interior ? (game.region || '').toUpperCase() : 'MAP OF ALDERMERE';
