@@ -983,6 +983,162 @@ export const SKILL_FX = {
     ai(h) { return attackers(h.scene, h, 40).length >= 1 ? true : null; },
   },
 
+  // ------------------------------------------------------------- Mirelle
+  // Ice Shard: a shard that punches through every foe in a line, Chilling
+  // each (the Glacier Wand splits it in three at the first hit)
+  iceshard: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 140) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('iceshard', 0.35, 'cast', {
+        hitAt: 0.15,
+        resolve: () => {
+          const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 10, y: h.y - 8, vx: nx * 230, vy: ny * 230, dmg: h.stats.atk * 1.2 * m, kind: 'iceshard', pierce: true, element: 'frost', spell: true, life: 0.75, split: h.hasPerk('glacier') ? 0 : -1 });
+          audio.sfx('frost', { pitch: 1.3 });
+        },
+      });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(h, t) < 125 ? t : null; },
+  },
+  // Frost Prison: encases a foe in ice (a boss is only chilled to the bone);
+  // with no foe at hand it guards the most hurt ally instead
+  frostprison: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const foe = target && target.alive && target.team === 'enemy' && dist(h, target) < 135 ? target : null;
+      const ally = !foe && sc.party.filter((p) => !p.downed && p.hp < p.maxHp).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+      if (!foe && !ally) return false;
+      const t = foe || ally;
+      h.face(t.x - h.x, t.y - h.y);
+      h.act('frostprison', 0.4, 'cast');
+      audio.sfx('frost', { pitch: 0.7 });
+      const ice = sc.add.image(t.x, t.y + 4, 'iceblock').setOrigin(0.5, 1).setDepth(t.y + 3).setAlpha(0.85);
+      sc.fx.burst('foam', t.x, t.y - 8, 14);
+      const hold = foe ? (foe.boss ? 0 : 3 * Math.min(1.4, m)) : 2;
+      if (foe) {
+        foe.status ??= {};
+        if (foe.boss) { foe.status.chill = { t: 3, n: 2, heavy: true, cold: !!h.passive('coldheart') }; ice.setScale(0.6).setAlpha(0.5); sc.floatText(foe.x, foe.y - 40, 'CHILLED TO THE BONE', 'fontPlain', 0x9fe6ff); }
+        else { foe.status.freeze = { t: hold, cold: !!h.passive('coldheart') }; foe.stunT = Math.max(foe.stunT, hold); foe.clearZone(); sc.floatText(foe.x, foe.y - 30, 'ENCASED', 'fontPlain', 0x9fe6ff); }
+        foe.statusTint?.();
+      } else { ally.invuln = Math.max(ally.invuln, 2); ally.prisonT = 2; sc.floatText(ally.x, ally.y - 30, 'SAFE IN THE ICE', 'fontPlain', 0x9fe6ff); }
+      sc.tweens.add({ targets: ice, alpha: 0, delay: Math.max(300, (foe?.boss ? 1 : hold) * 1000 - 300), duration: 300, onComplete: () => ice.destroy() });
+      sc.time.addEvent({ delay: 50, repeat: 60, callback: () => { if (ice.active && t.alive) ice.setPosition(t.x, t.y + 4); } });
+      return true;
+    },
+    ai(h, c) {
+      const sc = h.scene;
+      const hurt = sc.party.find((p) => !p.downed && p.hp / p.maxHp < 0.25 && sc.enemies.some((e) => e.alive && e.target === p && dist(e, p) < 40));
+      if (hurt) return true; // an ally in trouble: no target, so it guards the most hurt ally
+      const big = c.engaged.filter((e) => !e.boss && dist(e, h) < 120 && (e.elite || e.maxHp >= 200 || e.state === 'windup')).sort((a, b) => b.maxHp - a.maxHp)[0];
+      return big || null;
+    },
+  },
+  // Glacial Wall: a short wall of ice across the line between her and a foe;
+  // it blocks movement and enemy shots for 5s
+  glacialwall: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const t = target && target.alive ? target : sc.nearestEnemy(h, 120);
+      if (!t) return false;
+      h.face(t.x - h.x, t.y - h.y);
+      h.act('glacialwall', 0.4, 'cast');
+      const [nx, ny] = norm(t.x - h.x, t.y - h.y);
+      const mx = h.x + nx * 30, my = h.y + ny * 30;
+      const tiles = [];
+      for (let k = -2; k <= 2; k++) {
+        const tx = Math.floor((mx - ny * k * 16) / 16), ty = Math.floor((my + nx * k * 16) / 16);
+        if (sc.nav.isSolid(tx, ty) || tiles.some(([a, b]) => a === tx && b === ty)) continue;
+        if ([...sc.party, ...sc.enemies].some((u) => u.alive && Math.floor(u.x / 16) === tx && Math.floor(u.y / 16) === ty)) continue; // never entomb anyone
+        tiles.push([tx, ty]);
+      }
+      if (!tiles.length) return false;
+      audio.sfx('frost', { pitch: 0.5 }); sc.shake(80, 0.004);
+      const imgs = tiles.map(([tx, ty]) => { sc.nav.block(tx, ty); sc.fx.burst('foam', tx * 16 + 8, ty * 16 + 4, 6); return sc.add.image(tx * 16 + 8, ty * 16 + 14, 'icewall').setOrigin(0.5, 1).setDepth(ty * 16 + 14); });
+      const life = 5 * Math.min(1.3, m);
+      sc.time.delayedCall(life * 1000, () => { for (const [tx, ty] of tiles) sc.nav.unblock(tx, ty); for (const i of imgs) { sc.fx.burst('foam', i.x, i.y - 8, 5); i.destroy(); } audio.sfx('frost', { pitch: 1.6 }); });
+      return true;
+    },
+    ai(h, c) {
+      const sc = h.scene;
+      // shield the back line from a rush or a volley
+      const rushing = c.engaged.filter((e) => !e.boss && dist(e, h) < 90 && dist(e, h) > 34).length;
+      const shooting = c.engaged.filter((e) => e.s.ranged && e.state === 'windup' && dist(e, h) < 130).length;
+      return rushing >= 3 || shooting >= 2 ? (c.target || sc.nearestEnemy(h, 110)) : null;
+    },
+  },
+  // Shatter: a heavy burst that spends a foe's Chill or Freeze
+  shatter: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || !target.alive || dist(h, target) > 135) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('shatter', 0.35, 'cast', {
+        hitAt: 0.16,
+        resolve: () => {
+          if (!target.alive) return;
+          const cold = target.status?.freeze || target.status?.chill;
+          sc.fx.burst('foam', target.x, target.y - 10, cold ? 26 : 8);
+          if (cold) { delete target.status.freeze; delete target.status.chill; target.stunT = Math.min(target.stunT, 0.2); target.statusTint?.(); sc.shake(120, 0.006); audio.sfx('bash', { pitch: 1.6 }); sc.floatText(target.x, target.y - 34, 'SHATTER!', 'fontGold'); }
+          else audio.sfx('frost', { pitch: 1.8 });
+          sc.dealDamage(h, target, h.stats.atk * (cold ? 3.2 : 1) * m, { knock: cold ? 80 : 30, spell: true, noProc: !!cold });
+        },
+      });
+      return true;
+    },
+    ai(h, c) { const t = c.engaged.filter((e) => dist(e, h) < 125 && (e.status?.freeze || (e.status?.chill && (e.status.chill.n >= 2 || e.status.chill.heavy)))).sort((a, b) => b.hp - a.hp)[0]; return t || null; },
+  },
+  // Blizzard: snow over an area for 4s, chilling everything in it every half second
+  blizzard: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const t = target && target.alive ? target : sc.nearestEnemy(h, 130);
+      if (!t || dist(h, t) > 140) return false;
+      h.face(t.x - h.x, t.y - h.y);
+      h.act('blizzard', 0.45, 'cast');
+      const x = t.x, y = t.y, r = 40;
+      const zone = sc.add.ellipse(x, y, r * 2, r * 1.4, 0xd6efff, 0.18).setDepth(-25).setStrokeStyle(1, 0xffffff, 0.4);
+      (sc.partyZones ??= []).push({ x, y, r, until: sc.time.now + 4000 });
+      audio.sfx('frost', { pitch: 0.6 });
+      let n = 0;
+      sc.time.addEvent({ delay: 500, repeat: 7, callback: () => {
+        n++;
+        for (let i = 0; i < 8; i++) sc.fx.burst('foam', x + (Math.random() - 0.5) * r * 2, y - 20 + (Math.random() - 0.5) * r, 1);
+        for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - x, (e.y - y) * 1.3) < r + e.r) sc.dealDamage(h, e, h.stats.atk * 0.3 * m, { knock: 0, element: 'frost', spell: true });
+        if (n >= 8) sc.tweens.add({ targets: zone, alpha: 0, duration: 300, onComplete: () => zone.destroy() });
+      } });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(h, t) < 130 && c.engaged.filter((e) => dist(e, t) < 40).length >= 2 ? t : null; },
+  },
+  // Mirror Image: two ice copies of her step out to either side and cast shards for 6s
+  mirrorimage: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('mirrorimage', 0.45, 'cast');
+      audio.sfx('warp', { pitch: 1.4 });
+      for (const side of [-1, 1]) {
+        const img = sc.add.sprite(h.x + side * 18, h.y, h.sprite.texture.key, h.sprite.frame.name).setOrigin(h.sprite.originX, h.sprite.originY).setTint(0x9fe6ff).setAlpha(0.7).setFlipX(h.sprite.flipX).setDepth(h.y);
+        sc.fx.burst('foam', img.x, img.y - 10, 10);
+        const clone = { x: img.x, y: img.y };
+        const ev = sc.time.addEvent({ delay: 1100, repeat: 4, startAt: side > 0 ? 500 : 0, callback: () => {
+          if (h.downed) return;
+          const t = sc.nearestEnemy(clone, 140);
+          if (!t) return;
+          const [nx, ny] = norm(t.x - clone.x, t.y - (clone.y - 6));
+          img.setFlipX(nx < 0);
+          sc.spawnProjectile({ owner: h, x: clone.x + nx * 8, y: clone.y - 8, vx: nx * 220, vy: ny * 220, dmg: h.stats.atk * 0.6 * m, kind: 'iceshard', pierce: true, element: 'frost', spell: true, life: 0.7, split: -1 });
+          audio.sfx('frost', { pitch: 1.6 });
+        } });
+        sc.time.delayedCall(6000, () => { ev.remove(); sc.fx.burst('foam', img.x, img.y - 10, 8); img.destroy(); });
+      }
+      return true;
+    },
+    ai(h, c) { return c.engaged.filter((e) => dist(e, h) < 140).length >= 2 || c.engaged.some((e) => e.boss) ? true : null; },
+  },
+
   // ---------------------------------------------- Guardian discipline
   guardup: {
     cast(h, { m }) {

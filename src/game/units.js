@@ -359,6 +359,13 @@ export class Hero extends Unit {
       sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: far ? 0.15 : 0, life: 0.8, blast, element: blast ? 'fire' : undefined });
       return;
     }
+    if (this.def.id === 'mirelle') {
+      // a frost bolt; every third one carries the Chill
+      const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
+      const cold = (this.boltN = (this.boltN || 0) + 1) % 3 === 0;
+      sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8 + ny * 6, vx: nx * 185, vy: ny * 185, dmg: this.stats.atk, kind: 'bolt', target, spell: true, basic: true, element: cold ? 'frost' : undefined });
+      return;
+    }
     if (this.def.id === 'pip') {
       const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
       sc.spawnProjectile({ owner: this, x: this.x + nx * 10, y: this.y - 8 + ny * 6, vx: nx * 190, vy: ny * 190, dmg: this.stats.atk, kind: 'bolt', target, spell: true, basic: true });
@@ -1072,6 +1079,7 @@ export class Hero extends Unit {
       const id = this.ultimate.id;
       const want = (id === 'bulwark' && (hurt || near.length >= 3 || boss)) || (id === 'meteor' && (near.length >= 2 || boss)) || (id === 'thousand_cuts' && (near.length >= 2 || boss))
         || (id === 'talons' && (near.length >= 2 || boss)) || (id === 'primal' && (near.length >= 2 || boss || this.hp / this.maxHp < 0.5))
+        || (id === 'absolutezero' && (near.length >= 3 || boss))
         || (id === 'dawnbreak' && (sc.party.some((p) => p.downed) || sc.party.filter((p) => !p.downed && p.hp / p.maxHp < 0.4).length >= 2))
         || (id === 'clank' && (near.length >= 2 || boss));
       if (want && sc.useUltimate(this)) return;
@@ -1278,11 +1286,12 @@ export class Enemy extends Unit {
       this.status.poison = { t: 4 * dur, tick: 0.6, next: this.status.poison?.next ?? 0.6, dmg: base * 0.09, n, src };
     } else if (el === 'frost') {
       const n = (this.status.chill?.n || 0) + 1;
-      this.status.chill = { t: 3 * dur, n };
+      const cold = !!src.passive?.('coldheart') || !!this.status.chill?.cold; // Cold Heart (Mirelle): her chill saps their strength
+      this.status.chill = { t: 3 * dur, n, cold };
       if (n >= 3) {
         delete this.status.chill;
         if (this.boss) this.status.chill = { t: 2 * dur, n: 2, heavy: true };
-        else { this.status.freeze = { t: 1.5 * dur }; this.stunT = Math.max(this.stunT, 1.5 * dur); this.clearZone(); sc.floatText(this.x, this.y - 30, 'FROZEN', 'fontPlain', 0x9fe6ff); }
+        else { this.status.freeze = { t: 1.5 * dur, cold }; this.stunT = Math.max(this.stunT, 1.5 * dur); this.clearZone(); sc.floatText(this.x, this.y - 30, 'FROZEN', 'fontPlain', 0x9fe6ff); }
       }
     } else if (el === 'storm') {
       this.status.shock = { t: 3 * dur };
@@ -1461,7 +1470,7 @@ export class Enemy extends Unit {
   }
 
   // ---- elite affixes
-  affixDmg() { return this.frenzy ? 1.5 : 1; }
+  affixDmg() { return (this.frenzy ? 1.5 : 1) * (this.status?.chill?.cold || this.status?.freeze?.cold ? 0.85 : 1); } // Cold Heart: -15% while chilled
 
   affixOnHurt() {
     const sc = this.scene;

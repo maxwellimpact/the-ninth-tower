@@ -245,5 +245,40 @@
    "GIZMO: THE MILL TURNS! THE MILL TURNS! I KNEW THE COGS WOULD MESH IF I JUST HIT THEM HARDER.",
    "GIZMO, TINKERER, INVENTOR, OCCASIONAL EXPLODER. YOU NEED TURRETS? I'VE GOT TURRETS. YOU NEED A GIANT METAL FRIEND? WAIT TILL YOU MEET CLANK."
   ]
+ },
+ {
+  "id": "mirelle",
+  "name": "Mirelle",
+  "title": "Frost Witch",
+  "stats": {
+   "maxHp": 95,
+   "atk": 10,
+   "range": 100,
+   "atkCd": 1,
+   "speed": 60,
+   "crit": 0.08,
+   "role": "caster",
+   "hitAt": 0.13
+  },
+  "skills": [
+   "iceshard",
+   "frostprison"
+  ],
+  "ultimate": "absolutezero",
+  "voice": {
+   "pitch": 400,
+   "wave": "sine",
+   "speed": 0.95
+  },
+  "equip": {
+   "head": "silver_circlet",
+   "body": "frost_gown",
+   "weapon": "rime_wand",
+   "offhand": "hand_mirror"
+  },
+  "recruit": [
+   "MIRELLE: ...WARM. YOU'RE WARM. HOW LONG WAS I IN THERE? NO - DON'T TELL ME.",
+   "I SERVED MALGRIM ONCE. ISOLDE TOO - MY SISTER. HE FROZE ME WHEN I TRIED TO LEAVE. LET ME HELP YOU BREAK HIM. I KNOW HOW THE COLD WORKS."
+  ]
  }
 ]

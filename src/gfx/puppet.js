@@ -155,6 +155,19 @@ export const WEAPONS = {
     }
     if (st.glow) px(ctx, Math.round(hx), Math.round(hy), st.glow);
   },
+  // wand (Mirelle): a short slim rod with a faceted crystal at the tip
+  wand(ctx, h, ang, glow = 0, st = {}) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const len = st.len || 7;
+    ray(ctx, h.x - c * 2, h.y - s * 2, ang, len + 2, st.shaft || 'steelL');
+    px(ctx, Math.round(h.x - c * 2), Math.round(h.y - s * 2), st.cap || 'steel');
+    const gx = Math.round(h.x + c * (len + 1)), gy = Math.round(h.y + s * (len + 1));
+    const rim = st.rim || 'blueL', core = st.core || 'white';
+    px(ctx, gx - 1, gy, rim); px(ctx, gx + 1, gy, rim); px(ctx, gx, gy + 1, rim);
+    px(ctx, gx, gy - 1, st.tip || 'foam'); if (st.big) { px(ctx, gx, gy - 2, st.tip || 'foam'); px(ctx, gx - 1, gy - 1, rim); px(ctx, gx + 1, gy - 1, rim); }
+    px(ctx, gx, gy, glow ? 'white' : core);
+    if (glow) for (const [dx, dy] of [[-2, -2], [2, -2], [2, 2], [-2, 2]]) px(ctx, gx + dx, gy + dy, st.glow || 'foam');
+  },
   // spanner (Gizmo): a short shaft and an open jaw
   wrench(ctx, h, ang, glow, st = {}) {
     const c = Math.cos(ang), s = Math.sin(ang);

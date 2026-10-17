@@ -563,6 +563,71 @@
      "hp"
     ]
    }
+  },
+  "mirelle": {
+   "weapon": {
+    "name": "WAND",
+    "mat": "metal",
+    "looks": [
+     "wand_rime",
+     "wand_rime"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "MIRROR",
+    "mat": "metal",
+    "looks": [
+     "mirror_hand",
+     "mirror_hand"
+    ],
+    "split": {
+     "atk": 0.5,
+     "def": 0.5
+    },
+    "bonus": [
+     "atk",
+     "def"
+    ]
+   },
+   "head": {
+    "name": "CIRCLET",
+    "mat": "metal",
+    "looks": [
+     "circlet_silver",
+     "circlet_silver"
+    ],
+    "split": {
+     "def": 0.5,
+     "hp": 0.5
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   },
+   "body": {
+    "name": "GOWN",
+    "mat": "cloth",
+    "looks": [
+     "gown_frost",
+     "gown_frost"
+    ],
+    "split": {
+     "def": 0.6,
+     "hp": 0.4
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   }
   }
  },
  "rings": {

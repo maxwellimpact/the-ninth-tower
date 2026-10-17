@@ -1092,5 +1092,96 @@
   },
   "perk": "frostward",
   "desc": "IMMUNE TO THE FROSTHELM COLD, AND TO CHILL AND FREEZE. +12 HP. A TRAPPER'S CHARM OF WHITE FOX FUR."
+ },
+ "silver_circlet": {
+  "name": "SILVER CIRCLET",
+  "hero": "mirelle",
+  "slot": "head",
+  "rarity": "common",
+  "look": "circlet_silver",
+  "stats": {
+   "def": 1,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "frost_gown": {
+  "name": "FROST GOWN",
+  "hero": "mirelle",
+  "slot": "body",
+  "rarity": "common",
+  "look": "gown_frost",
+  "stats": {
+   "def": 3,
+   "hp": 4
+  },
+  "desc": ""
+ },
+ "rime_wand": {
+  "name": "RIME WAND",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "wand_rime",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "hand_mirror": {
+  "name": "HAND MIRROR",
+  "hero": "mirelle",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "mirror_hand",
+  "stats": {
+   "atk": 1,
+   "def": 1
+  },
+  "desc": ""
+ },
+ "glacier_wand": {
+  "name": "GLACIER WAND",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "wand_glacier",
+  "stats": {
+   "atk": 14,
+   "crit": 0.04
+  },
+  "element": "frost",
+  "perk": "glacier",
+  "desc": "FROST. ICE SHARD SPLITS INTO THREE WHEN IT HITS. ISOLDE'S, ONCE. SHE'D WANT YOU TO HAVE IT. PROBABLY.",
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  }
+ },
+ "crown_of_rime": {
+  "name": "CROWN OF RIME",
+  "hero": "mirelle",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "crown_rime",
+  "stats": {
+   "def": 6,
+   "hp": 12
+  },
+  "perk": "rimecrown",
+  "desc": "FROZEN FOES SHATTER WHEN THEY DIE, CHILLING EVERYTHING NEAR THEM. COLD TO THE TOUCH. COLDER TO WEAR."
+ },
+ "penitent_gown": {
+  "name": "PENITENT'S GOWN",
+  "hero": "mirelle",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "gown_penitent",
+  "stats": {
+   "def": 12,
+   "hp": 26
+  },
+  "perk": "penitent",
+  "desc": "WHEN AN ALLY GOES DOWN, THE WHOLE PARTY GETS A FROST SHIELD. WORN BY SOMEONE WHO HAD A LOT TO MAKE UP FOR."
  }
 }

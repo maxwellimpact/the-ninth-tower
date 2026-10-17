@@ -849,5 +849,101 @@
   "short": "STALW",
   "icon": "icon_stalwart",
   "desc": "+10% DEFENCE (+3% PER RANK) AND BLOWS NEVER KNOCK YOU BACK. (GUARDIAN)"
+ },
+ "iceshard": {
+  "hero": "mirelle",
+  "unlock": 1,
+  "name": "ICE SHARD",
+  "short": "SHARD",
+  "icon": "icon_iceshard",
+  "cd": 5,
+  "range": 130,
+  "desc": "A SHARD OF ICE THAT PIERCES EVERY FOE IN A LINE AND CHILLS THEM."
+ },
+ "frostprison": {
+  "hero": "mirelle",
+  "unlock": 1,
+  "name": "FROST PRISON",
+  "short": "PRISON",
+  "icon": "icon_frostprison",
+  "cd": 14,
+  "range": 120,
+  "desc": "ENCASES A FOE IN ICE FOR 3S (BOSSES ARE HEAVILY CHILLED). WITH NO FOE IN REACH, IT ENCASES THE MOST HURT ALLY INSTEAD, WHO CAN'T BE HURT FOR 2S."
+ },
+ "glacialwall": {
+  "hero": "mirelle",
+  "unlock": 4,
+  "name": "GLACIAL WALL",
+  "short": "WALL",
+  "icon": "icon_glacialwall",
+  "cd": 16,
+  "range": 110,
+  "desc": "RAISES A WALL OF ICE BETWEEN HER AND A FOE THAT BLOCKS ENEMIES AND THEIR SHOTS FOR 5S."
+ },
+ "shatter": {
+  "hero": "mirelle",
+  "unlock": 8,
+  "name": "SHATTER",
+  "short": "SHATTER",
+  "icon": "icon_shatter",
+  "cd": 9,
+  "range": 120,
+  "desc": "A HEAVY BURST ON A CHILLED OR FROZEN FOE THAT USES UP THE COLD. ON ANYTHING ELSE, A LIGHT BLOW."
+ },
+ "blizzard": {
+  "hero": "mirelle",
+  "unlock": 12,
+  "name": "BLIZZARD",
+  "short": "BLIZZ",
+  "icon": "icon_blizzard",
+  "cd": 15,
+  "range": 120,
+  "desc": "A STORM OF SNOW OVER AN AREA FOR 4S THAT KEEPS CHILLING (AND SO FREEZING) WHAT'S IN IT."
+ },
+ "mirrorimage": {
+  "hero": "mirelle",
+  "unlock": 16,
+  "name": "MIRROR IMAGE",
+  "short": "MIRROR",
+  "icon": "icon_mirrorimage",
+  "cd": 20,
+  "range": 0,
+  "desc": "TWO MIRROR COPIES OF HER STEP OUT AND CAST ICE SHARDS FOR 6S."
+ },
+ "coldheart": {
+  "hero": "mirelle",
+  "unlock": 1,
+  "passive": true,
+  "name": "COLD HEART",
+  "short": "COLD",
+  "icon": "icon_coldheart",
+  "desc": "FOES SHE CHILLS ALSO DEAL 15% LESS DAMAGE."
+ },
+ "frostbite": {
+  "hero": "mirelle",
+  "unlock": 6,
+  "passive": true,
+  "name": "FROSTBITE",
+  "short": "BITE",
+  "icon": "icon_frostbite",
+  "desc": "THE PARTY'S CRITS ON FROZEN FOES DO +25% (+5% PER RANK)."
+ },
+ "penance": {
+  "hero": "mirelle",
+  "unlock": 14,
+  "passive": true,
+  "name": "PENANCE",
+  "short": "PENANCE",
+  "icon": "icon_penance",
+  "desc": "WHEN AN ALLY GOES DOWN, SHE GAINS A SHIELD (20% OF MAX HP) AND HER COOLDOWNS RESET."
+ },
+ "absolutezero": {
+  "hero": "mirelle",
+  "ult": true,
+  "name": "ABSOLUTE ZERO",
+  "short": "ZERO",
+  "icon": "icon_absolutezero",
+  "desc": "FREEZES EVERY FOE ON SCREEN FOR 3S. BOSSES ARE CHILLED TO THE BONE INSTEAD.",
+  "upgrade": "L20 TOME: BOSSES FREEZE TOO, FOR 2S."
  }
 }

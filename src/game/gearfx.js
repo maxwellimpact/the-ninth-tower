@@ -9,6 +9,7 @@ import items from '../data/items.json';
 const ANCHOR = {
   brann: { weapon: { down: [-7, -1], up: [5, 1], side: [2, -1] }, offhand: { down: [5, -6], up: [-5, -6], side: [4, -6] }, head: [0, -17], body: [0, -8] },
   pip: { weapon: { down: [-5, -18], up: [4, -18], side: [0, -18] }, offhand: { down: [5, -6], up: [-5, -6], side: [2, -6] }, orb: { down: [8, -15], up: [-8, -15], side: [-7, -16] }, head: [0, -21], body: [0, -6] },
+  mirelle: { weapon: { down: [-5, -16], up: [4, -16], side: [0, -16] }, offhand: { down: [5, -8], up: [-5, -8], side: [2, -8] }, head: [0, -21], body: [0, -6] },
   sable: { weapon: { down: [-6, -2], up: [4, -2], side: [3, -2] }, offhand: { down: [5, -2], up: [-5, -2], side: [2, -4] }, head: [0, -17], body: [0, -8] },
 };
 // Glow halos sit BEHIND the sprite (never over the character) and only on

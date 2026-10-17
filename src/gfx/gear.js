@@ -100,6 +100,19 @@ BASE.gizmo = {
   cast: (v) => castRaise(v),
 };
 
+// Mirelle: a pale frost witch with long silver-white hair framing her face
+BASE.mirelle = {
+  headMap: { S: 'skinL', s: 'skin', L: 'white', E: 'ink', H: 'bone', h: 'mist', b: 'blueL' },
+  head: {
+    down: ['..hHHHHh..', '.hHHHHHHh.', 'hHHHHHHHHh', 'hHSSSSSSHh', 'HHSESSESHH', 'HHSLSSLSHH', 'HhSSbbSShH', 'Hh.SSSS.hH'],
+    side: ['..hHHHH...', '.hHHHHHH..', 'hHHHHHHHH.', 'HHHHHSSSS.', 'HHHHSSSES.', 'HHHHSSLSSS', 'HHHh.SbS..', 'HHh.......'],
+    up: ['..hHHHHh..', '.hHHHHHHh.', 'hHHHHHHHHh', 'HHHHHHHHHH', 'HHHHhHHHHH', 'HHHHHHHHHH', 'HHHHHHHHHH', '.HHHHHHHH.'],
+  },
+  idleAng: { down: -1.6, up: -1.6, side: -1.5 },
+  attack: staffAttack,
+  cast: (v) => castRaise(v).map((p) => ({ ...p, angR: -1.57 })),
+};
+
 // ------------------------------------------------------------------ LOOKS
 const HEAD = {
   // ---- Brann
@@ -154,6 +167,19 @@ const HEAD = {
     down: ['....gg....', '...wWWw...', '..wWGGWw..', '..WWGGWW..', '.wWWRRWWw.', '.GGGGGGGG.', 'wWWWWWWWWw'],
     side: ['...gg.....', '..wWWw....', '..WGGWw...', '.wWGGWWw..', '.WWRRWWW..', '.GGGGGGGG.', 'wWWWWWWWW.'],
     up: ['....gg....', '...wWWw...', '..wWWWWw..', '..WWWWWW..', '.wWWWWWWw.', '.GGGGGGGG.', 'wWWWWWWWWw'],
+  },
+  // ---- Mirelle
+  circlet_silver: {
+    oy: 1, map: { S: 'steelL', s: 'steel', B: 'blueL', b: 'blue' },
+    down: ['..........', '....B.....', '...bBb....', 'sSSSBBSSSs'],
+    side: ['..........', '.......B..', '......bBb.', '.sSSSSSSB.'],
+    up: ['..........', '..........', '..........', 'sSSSSSSSSs'],
+  },
+  crown_rime: {
+    oy: 3, map: { W: 'iceXL', B: 'iceL', b: 'ice', S: 'steelL', s: 'steel' },
+    down: ['.W..W...W.', '.B.WBW..B.', 'WB.BBB.WB.', 'bB.bBb.bB.', 'BBBBBBBBBB', 'sSSSSSSSSs'],
+    side: ['....W..W..', '...WBW.B..', '...BBB.BW.', '...bBb.bB.', '.BBBBBBBBB', '.sSSSSSSSS'],
+    up: ['.W..W...W.', '.B.WBW..B.', 'WB.BBB.WB.', 'bB.bBb.bB.', 'BBBBBBBBBB', 'sSSSSSSSSs'],
   },
   // ---- Gizmo
   goggles_brass: {
@@ -334,6 +360,15 @@ const BODY = {
     up: ['mMMMMMMm', 'mMMRRMMm', 'mMMRRMMm', '.mMRRMm.', '.rSSSSr.', '.mMMMMm.'],
     swayFrom: 6, legs: ['bone', 'night', 'woodD'], arms: ['white', 'bone', 'skin'],
   },
+  // ---- Mirelle
+  gown_frost: {
+    map: { P: 'blue', p: 'blueD', G: 'steelL', b: 'steel' }, ...ROBE_GRIDS, swayFrom: 6,
+    legs: ['blueD', 'night', 'woodD'], arms: ['blue', 'blueD', 'skinL'],
+  },
+  gown_penitent: {
+    map: { P: 'slate', p: 'night', G: 'mist', b: 'ink' }, ...ROBE_GRIDS, swayFrom: 6,
+    legs: ['night', 'ink', 'woodD'], arms: ['slate', 'night', 'skinL'],
+  },
   // ---- Gizmo
   overalls_work: {
     map: { D: 'blue', d: 'blueD', S: 'redL', s: 'red', G: 'gold', P: 'blueL' },
@@ -391,6 +426,8 @@ const WEAPON = {
   hammer_war: { kind: 'hammer', style: {} },
   hammer_dawn: { kind: 'hammer', style: { len: 10, head: 'gold', face: 'goldL', haft: 'bone', glow: 'goldL' } },
   wrench_steel: { kind: 'wrench', style: {} },
+  wand_rime: { kind: 'wand', style: {} },
+  wand_glacier: { kind: 'wand', style: { len: 9, shaft: 'iceL', cap: 'ice', rim: 'iceXL', core: 'white', tip: 'snowXL', big: true } },
   wrench_omni: { kind: 'wrench', style: { len: 9, head: 'gold', jaw: 'goldL', grip: 'redD' } },
 };
 
@@ -452,6 +489,15 @@ function relicDraw(map, lantern = false) {
   const rows = lantern ? ['.kk.', 'kggk', 'kgwk', 'kggk', '.kk.'] : ['.gg.', 'kcck', 'cwgc', 'cggc', 'kcck'];
   return held((ctx, view, hL) => grid(ctx, rows, map, hL.x - 1, hL.y - 3));
 }
+// Mirelle's hand mirror: a round glass in a metal frame on a short handle
+function mirrorDraw(map) {
+  const rows = ['.kk.', 'kwgk', 'kggk', '.kk.', '..h.', '..h.'];
+  return (ctx, view, hL) => {
+    if (view === 'side') return; // held on the far side
+    grid(ctx, rows, map, hL.x - 1, hL.y - 4);
+  };
+}
+const MIRRORS = { hand: { k: 'steel', g: 'blueL', w: 'white', h: 'woodD' }, truths: { k: 'purpD', g: 'purpL', w: 'curseL', h: 'night' } };
 // Gizmo's gadget: a little box of gears with a blinking light on a stalk
 function gadgetDraw(map) {
   const rows = ['..l.', '..k.', 'kcck', 'cgcc', 'kcck'];
@@ -505,6 +551,8 @@ const OFFHAND = {
   relic_holy: { draw: relicDraw({ k: 'hairBlD', c: 'gold', g: 'goldL', w: 'white' }) },
   relic_lantern: { draw: relicDraw({ k: 'hairBlD', c: 'gold', g: 'fireL', w: 'goldL' }, true) },
   gadget_box: { draw: gadgetDraw({ k: 'steelD', c: 'steel', l: 'redL', g: 'gold' }) },
+  mirror_hand: { draw: mirrorDraw(MIRRORS.hand), mirror: MIRRORS.hand },
+  mirror_truths: { draw: mirrorDraw(MIRRORS.truths), mirror: MIRRORS.truths },
   gadget_turret: { draw: gadgetDraw({ k: 'hairBlD', c: 'gold', l: 'blueL', g: 'goldL' }) },
   gadget_turret2: { draw: gadgetDraw({ k: 'night', c: 'blue', l: 'white', g: 'crystalL' }) }, // Turret Mk. II: storm-blue
   hatchet_plain: { weaponL: { kind: 'axe', style: { len: 7 } } },
@@ -667,6 +715,7 @@ const RAMPS = {
 const WEAPON_DEFAULTS = {
   hammer: { haft: 'wood', haftD: 'woodD', head: 'steel', face: 'steelL' },
   wrench: { head: 'steel', jaw: 'steelL', grip: 'leatherD' },
+  wand: { shaft: 'steelL', cap: 'steel', rim: 'blueL', core: 'white', tip: 'foam' },
   bow: { wood: 'woodL', tips: 'woodD', string: 'bone' },
   axe: { haft: 'wood', haftD: 'woodD', head: 'steel', edge: 'steelL' },
   sword: { blade: 'steelL', edge: 'steel', guard: 'gold', tip: 'white', grip: 'woodD' },
@@ -697,6 +746,7 @@ export function getLook(slot, lookId) {
     if (base.dagger) out = { dagger: mapObj({ ...WEAPON_DEFAULTS.dagger, ...base.dagger }, f) };
     else if (base.weaponL) out = { weaponL: { kind: base.weaponL.kind, style: mapObj({ ...WEAPON_DEFAULTS[base.weaponL.kind], ...base.weaponL.style }, f) } };
     else if (base.quiver) { const q = mapObj(base.quiver, f); out = { back: quiverDraw(q), quiver: q }; }
+    else if (base.mirror) { const m = mapObj(base.mirror, f); out = { draw: mirrorDraw(m), mirror: m }; }
     else if (baseId.startsWith('shield')) {
       const sh = SHIELDS[baseId.split('_')[1]];
       const s2 = { ...sh, map: mapObj(sh.map, f) };
@@ -712,8 +762,8 @@ export function getLook(slot, lookId) {
 
 // ---------------------------------------------------------------- compose
 // equip: { head, body, weapon, offhand } -> look ids (null = nothing equipped)
-export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather', wren: 'leathers_ranger', kesh: 'furs_hide', oake: 'habit_monk', gizmo: 'overalls_work' };
-export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel', wren: 'bow_hunting', kesh: 'axe_hand', oake: 'hammer_war', gizmo: 'wrench_steel' };
+export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather', wren: 'leathers_ranger', kesh: 'furs_hide', oake: 'habit_monk', gizmo: 'overalls_work', mirelle: 'gown_frost' };
+export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel', wren: 'bow_hunting', kesh: 'axe_hand', oake: 'hammer_war', gizmo: 'wrench_steel', mirelle: 'wand_rime' };
 export function composeHero(heroId, equip, meta = {}) {
   const b = BASE[heroId];
   const body = getLook('body', equip.body) || BODY[DEFAULT_BODY[heroId]];

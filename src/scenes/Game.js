@@ -1388,6 +1388,7 @@ export class Game extends Phaser.Scene {
         if (f[0] * dx + f[1] * dy < -0.3) amount *= 1.2 + 0.04 * (am - 1);
       }
     }
+    if (hero && crit && target.status?.freeze) { const fb = this.party.find((p) => !p.downed && p.passive('frostbite')); if (fb) amount *= 1.25 + 0.05 * (fb.passive('frostbite') - 1); } // Frostbite (Mirelle): the party's crits on frozen foes
     if (hero && crit && target.view && src.hasPerk('raven') && this.time.now > (src.ravenT || 0)) { // Raven Mask
       const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
       const [dx, dy] = norm(src.x - target.x, src.y - target.y);
@@ -1458,16 +1459,17 @@ export class Game extends Phaser.Scene {
   }
 
   spawnProjectile(o) {
-    const tex = o.kind === 'knife' ? 'px_white' : o.kind === 'arrow' ? 'arrow' : 'firebolt';
+    const tex = o.kind === 'knife' ? 'px_white' : o.kind === 'arrow' || o.kind === 'iceshard' ? 'arrow' : 'firebolt';
     const s = this.add.sprite(o.x, o.y, tex).setDepth(TOP - 20);
     if (o.kind === 'knife') s.setScale(4, 1);
+    else if (o.kind === 'iceshard') s.setScale(1.4, 1.2).setTint(0xc8f0ff);
     else if (o.kind === 'arrow') { if (o.pierce) s.setScale(1.4); if (o.element === 'frost') s.setTint(0x9fe6ff); }
     else {
       s.play('firebolt');
       if (o.kind === 'fireball') s.setScale(o.split ? 1 : o.echo ? 1.2 : 1.6);
       const el = o.owner?.stats?.element;
       if (o.echo || o.kind === 'missile') s.setTint(0xd28cff);
-      else if (el === 'frost') s.setTint(0x9fe6ff);
+      else if (el === 'frost' || o.owner?.def?.id === 'mirelle') s.setTint(0x9fe6ff);
       else if (el === 'venom') s.setTint(0xa6ff7a);
     }
     s.setRotation(Math.atan2(o.vy, o.vx));
@@ -1504,15 +1506,20 @@ export class Game extends Phaser.Scene {
       }
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.s.setPosition(Math.round(p.x), Math.round(p.y));
-      if (p.kind !== 'knife' && p.kind !== 'arrow') { p.trail -= dt; if (p.trail <= 0) { p.trail = 0.03; this.fx.burst('ember', p.x - p.vx * 0.02, p.y - p.vy * 0.02, 1); } }
+      if (p.kind !== 'knife' && p.kind !== 'arrow') { p.trail -= dt; if (p.trail <= 0) { p.trail = 0.03; this.fx.burst(p.kind === 'iceshard' || p.owner?.def?.id === 'mirelle' ? 'foam' : 'ember', p.x - p.vx * 0.02, p.y - p.vy * 0.02, 1); } }
       let hit = null;
       // shots aimed elsewhere fly past set-piece foes (staged for an errand)
       // and foes off screen that aren't in the fight yet (no surprise pulls)
       for (const e of targets) if (e.alive && !e.submerged && !p.hitSet?.has(e) && this.strayHits(e, p) && Math.hypot(e.x - p.x, e.y - (e.boss ? 24 : 8) - p.y) < e.r + 5) { hit = e; break; }
       if (hit && p.pierce) {
-        // Power Shot: punches through everything in the line
+        // Power Shot / Ice Shard: punches through everything in the line
         (p.hitSet ??= new Set()).add(hit);
-        this.dealDamage(p.owner, hit, p.dmg, { knock: 60 });
+        this.dealDamage(p.owner, hit, p.dmg, { knock: 60, element: p.element, spell: p.spell });
+        if (p.split === 0) { // Glacier Wand: the shard splits in three at the first hit
+          p.split = 1;
+          const a0 = Math.atan2(p.vy, p.vx);
+          for (const da of [-0.5, 0.5]) this.spawnProjectile({ owner: p.owner, x: p.x, y: p.y, vx: Math.cos(a0 + da) * 210, vy: Math.sin(a0 + da) * 210, dmg: p.dmg * 0.6, kind: 'iceshard', pierce: true, element: 'frost', spell: true, life: 0.4, split: -1, hitSet: new Set([hit]) });
+        }
         hit = null;
       }
       const t = this.painter.typeAt(p.x, p.y + 8);
@@ -1674,6 +1681,26 @@ export class Game extends Phaser.Scene {
         if (tome) { ck.life *= 2; ck.rockets = true; } // 24s, and rockets
         this.shake(260, 0.01); audio.sfx('bash');
         sc.floatText(h.x, h.y - 36, 'CLANK!', 'fontGold', 0xffffff, true);
+        break;
+      }
+      case 'absolutezero': {
+        // everything on screen freezes; bosses are chilled to the bone (tome: they freeze for 2s)
+        sc.shake(300, 0.01);
+        sc.cameras.main.flash(260, 200, 235, 255, false, null);
+        audio.sfx('frost', { pitch: 0.4 });
+        sc.fx.ring(h.x, h.y - 6, 'ringBlue', 12);
+        for (const e of this.enemies) {
+          if (!e.alive || e.submerged || !e.onScreen(0)) continue;
+          e.status ??= {};
+          const cold = !!h.passive('coldheart');
+          if (e.boss) {
+            e.status.chill = { t: 3, n: 2, heavy: true, cold };
+            if (tome) { e.status.freeze = { t: 2, cold }; e.stunT = Math.max(e.stunT, 2); e.clearZone(); }
+          } else { e.status.freeze = { t: 3, cold }; e.stunT = Math.max(e.stunT, 3); e.clearZone(); }
+          e.statusTint?.();
+          sc.fx.burst('foam', e.x, e.y - 10, 10);
+        }
+        sc.floatText(h.x, h.y - 40, 'ABSOLUTE ZERO', 'fontGold', 0xffffff, true);
         break;
       }
       case 'primal': {
@@ -1888,6 +1915,15 @@ export class Game extends Phaser.Scene {
 
   // ============================================================== events
   onEnemyKilled(e) {
+    // Crown of Rime: a frozen foe shatters, chilling everything near it
+    if (e.status?.freeze && !e.rimeBurst) {
+      const crown = this.party.find((p) => !p.downed && p.hasPerk('rimecrown'));
+      if (crown) {
+        e.rimeBurst = true;
+        this.fx.burst('foam', e.x, e.y - 8, 22); this.fx.ring(e.x, e.y - 4, 'ringBlue', 4); audio.sfx('bash', { pitch: 1.7 });
+        for (const o of this.enemies) if (o !== e && o.alive && dist(o, e) < 48) { o.applyElement?.('frost', crown); this.dealDamage(crown, o, crown.stats.atk * 0.8, { knock: 50, spell: true, noProc: true }); }
+      }
+    }
     audio.sfx('enemyDie');
     this.fx.dust(e.x, e.y);
     this.fx.burst('curse', e.x, e.y - 6, 10);
@@ -2048,6 +2084,15 @@ export class Game extends Phaser.Scene {
   }
 
   onHeroDowned(h) {
+    // Mirelle's Penance (passive) and the Penitent's Gown: someone falls, the cold answers
+    for (const p of this.party) {
+      if (p === h || p.downed) continue;
+      if (p.passive?.('penance')) { p.shield = Math.max(p.shield || 0, Math.round(p.maxHp * 0.2)); p.shieldT = Math.max(p.shieldT || 0, 6); for (const k of p.skills) k.t = 0; this.floatText(p.x, p.y - 34, 'PENANCE', 'fontPlain', 0x9fe6ff); this.fx.ring(p.x, p.y - 6, 'ringBlue', 2.6); }
+    }
+    if (this.party.some((p) => p !== h && !p.downed && p.hasPerk('penitent'))) {
+      for (const p of this.party) if (!p.downed && p !== h) { p.shield = Math.max(p.shield || 0, Math.round(p.maxHp * 0.15)); p.shieldT = Math.max(p.shieldT || 0, 6); this.fx.burst('foam', p.x, p.y - 10, 6); }
+      this.floatText(this.leader.x, this.leader.y - 40, 'A FROST SHIELD!', 'fontPlain', 0x9fe6ff);
+    }
     if (h.isLeader) {
       const next = this.party.find((p) => !p.downed);
       if (next) this.time.delayedCall(250, () => this.setLeader(next));

@@ -909,6 +909,30 @@ export function forgeGate() {
 }
 
 // ================================================================ Frosthelm
+// Frost Prison: a translucent block of ice that encases whoever is inside.
+export function iceBlock() {
+  const [c, ctx] = makeCanvas(22, 26);
+  for (let y = 2; y < 25; y++) for (let x = 2; x < 20; x++) {
+    const edge = x === 2 || x === 19 || y === 2 || y === 24;
+    const n = hash(x, y, 141);
+    px(ctx, x, y, edge ? 'iceL' : x < 6 || y < 6 ? 'iceXL' : n < 0.1 ? 'white' : 'ice');
+  }
+  for (let i = 0; i < 6; i++) px(ctx, 5 + i * 2, 18 - i * 2, 'white'); // a crack of light
+  outline(c, 'ink');
+  return c;
+}
+// Glacial Wall: one tile of a jagged ice wall (two tiles tall).
+export function iceWall() {
+  const [c, ctx] = makeCanvas(16, 26);
+  for (let x = 0; x < 16; x++) {
+    const top = 2 + Math.round(Math.abs(Math.sin(x * 1.3)) * 4);
+    for (let y = top; y < 26; y++) px(ctx, x, y, y < top + 2 ? 'snowXL' : x < 4 ? 'iceXL' : x < 10 ? 'iceL' : 'ice');
+  }
+  px(ctx, 0, 24, 'iceD', 16, 2);
+  outline(c, 'ink');
+  return c;
+}
+
 // Claw marks up a cliff face (Climbing Claws): paired scratches gouged into
 // the ice and rock, with frosted holds, reaching two tiles up the face.
 export function clawMarks() {

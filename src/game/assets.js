@@ -75,6 +75,8 @@ export const GROUPS = {
       s.textures.addCanvas('chestOpen', P.chest(true));
       s.textures.addCanvas('post', P.grapplePost());
       s.textures.addCanvas('clawmarks', P.clawMarks());
+      s.textures.addCanvas('iceblock', P.iceBlock());
+      s.textures.addCanvas('icewall', P.iceWall());
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
       s.textures.addCanvas('house_elder', P.elderTree());
