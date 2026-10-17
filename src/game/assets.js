@@ -78,6 +78,7 @@ export const GROUPS = {
       s.textures.addCanvas('iceblock', P.iceBlock());
       s.textures.addCanvas('house_spire', P.rimeSpire());
       s.textures.addCanvas('house_tower', P.ninthTower());
+      s.textures.addCanvas('house_towerRuin', P.towerRuin());
       s.textures.addCanvas('iceplat', P.icePlatform());
       frames(s, 'windvent', P.windVent(), 6);
       s.textures.addCanvas('icewall', P.iceWall());

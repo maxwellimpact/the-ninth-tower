@@ -126,6 +126,7 @@ export const FOLK = {
   // Frosthelm: Rimewatch
   hale: folk('hale', 'pip', { head: 'kerchief@5', body: 'furs_hide@4' }), // the tonic-brewer
   oda: folk('oda', 'brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_long@4' }), // the Guardian trainer
+  king: folk('king', 'brann', { head: 'helm_lion@6', body: 'robe_phoenix@6' }), // King Aldric, no longer a frog
   marek: folk('marek', 'brann', { head: 'helm_iron@1', body: 'plate_guard@1', weapon: 'sword_long@1' }), // the Basin's last watcher
   bjorna: folk('bjorna', 'brann', { head: 'kerchief@3', body: 'apron_brown@4' }), // the Rimewatch innkeeper (once Frosthelm is free)
   aldric: folk('aldric', 'brann', { head: 'helm_lion@6', body: 'plate_guard@6' }), // the Royal Armorer (five stones)

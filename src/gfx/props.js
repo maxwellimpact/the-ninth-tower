@@ -1008,6 +1008,16 @@ export function ninthTower() {
   return c;
 }
 
+// What's left of the Ninth Tower: a broken black stump in a ring of rubble.
+export function towerRuin() {
+  const [c, ctx] = makeCanvas(96, 70);
+  for (let y = 18; y < 62; y++) { const half = Math.round(14 + (y - 18) * 0.25), top = 18 + Math.round(Math.abs(Math.sin(y)) * 0); for (let x = 48 - half; x <= 48 + half; x++) { if (y < 18 + Math.round(6 + Math.sin(x * 0.7) * 5)) continue; const f = (x - (48 - half)) / (half * 2); px(ctx, x, y, f < 0.2 ? 'slate' : f < 0.6 ? 'night' : 'hexD'); } void top; }
+  for (let i = 0; i < 14; i++) { const x = 6 + ((i * 37) % 84), y = 56 + ((i * 13) % 10); shadedBlob(ctx, x, y, 3 + (i % 3), 2.5, ['ink', 'night', 'slate', 'stone']); }
+  px(ctx, 40, 40, 'purpD', 3, 3); // a dead rune
+  outline(c, 'ink');
+  return c;
+}
+
 // Frost Prison: a translucent block of ice that encases whoever is inside.
 export function iceBlock() {
   const [c, ctx] = makeCanvas(22, 26);

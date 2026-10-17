@@ -414,7 +414,7 @@ export class Game extends Phaser.Scene {
     if (['voidling', 'gargoyle', 'chainwarden'].includes(kind) && !loaded.has('basin')) loadGroupNow(this, 'basin');
     // the Blight Basin: the Hex Legion comes as Hexborn (elite, with an affix)
     const bAt = biomeAt(Math.floor(x / TILE), Math.floor(y / TILE));
-    const hexborn = HEXBORN.has(kind) && (bAt === 'basin' || bAt.startsWith('tower'));
+    const hexborn = HEXBORN.has(kind) && (bAt === 'basin' || bAt.startsWith('tower') || !!this.flags.postgame); // Hexborn remnants spread after the end
     if (hexborn) elite = true;
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
@@ -473,6 +473,7 @@ export class Game extends Phaser.Scene {
 
   tryWarp(w) {
     if (typeof w.tower === 'number') { this.towerStairs(w); return; }
+    if (w.tower === 'door' && this.flags.malgrimDefeated) { this.bark(this.leader, 'NOTHING LEFT OF THE TOWER BUT RUBBLE AND WIND.'); return; }
     if (w.tower === 'door' && this.flags.wardBroken && !this.flags.towerWarned && OUTER_REGIONS.some((r) => !this.flags[`ward_${r}`])) {
       this.flags.towerWarned = true;
       const M = (text) => ({ who: 'MALGRIM', text, voice: { pitch: 110, wave: 'sawtooth', speed: 0.8 } });
@@ -987,7 +988,7 @@ export class Game extends Phaser.Scene {
     // Brightwater buildings
     for (const b of W.buildings) {
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
-      this.add.image(bx, by, `house_${b.kind}`).setOrigin(0.5, 1).setDepth(by);
+      this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
     }
     // Doors: an open-doorway overlay on each cottage, and a door in each
@@ -1034,7 +1035,9 @@ export class Game extends Phaser.Scene {
     // Frog King
     const f = LANDMARKS.frog;
     const fx = px(f.x), fy = px(f.y);
-    this.frog = this.add.sprite(fx, fy + 6, 'frog').setOrigin(0.5, 1).play('frog_idle').setDepth(fy);
+    this.frog = this.flags.kingRestored
+      ? this.add.sprite(fx, fy, 'king', 'idle_down_0').setOrigin(0.5, 0.75).play('king_idle_down').setDepth(fy)
+      : this.add.sprite(fx, fy + 6, 'frog').setOrigin(0.5, 1).play('frog_idle').setDepth(fy);
     this.add.image(fx + 1, fy + 5, 'shadow').setAlpha(0.2).setDepth(-4);
     this.nav.block(f.x, f.y);
     this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
@@ -2145,6 +2148,77 @@ export class Game extends Phaser.Scene {
     for (const e of this.enemies) if (e.alive && e.summoned) e.damage(999, this.leader);
     if (B.cfg.ward) this.time.delayedCall(2600, () => this.think(B.cfg.ward, 'open', true));
     this.autosave('boss');
+    if (B.flag === 'malgrimDefeated') this.time.delayedCall(3200, () => this.ending());
+  }
+
+  // ============================================================== the end
+  // Malgrim is gone: his study gives up Pip's staff, the Tower shudders, the
+  // curse lifts across Aldermere (any stones still standing crumble), and the
+  // party is carried home to Brightwater, where the Frog King turns back into
+  // King Aldric. Credits, then the post-game: the world stays open.
+  ending() {
+    if (this.flags.endingSeen) return;
+    this.flags.endingSeen = true;
+    const st = this.state;
+    if (!st.inventory.includes('staff_ninth') && !Object.values(st.heroes).some((hs) => hs.equip?.weapon === 'staff_ninth')) {
+      gainItems(st, ['staff_ninth']);
+      this.events.emit('loot', { ids: ['staff_ninth'] });
+    }
+    const L = this.leader;
+    const lines = [
+      { who: 'NARRATOR', text: "IN MALGRIM'S STUDY, BEHIND A MIRROR THAT NO LONGER LIES, A STAFF WAITS ON A HOOK MARKED 'FOR THE NINTH APPRENTICE'." },
+      { who: 'NARRATOR', text: 'THE NINTH TOWER SHUDDERS. CRACKS OF WHITE LIGHT RUN UP ITS WALLS.' },
+      { who: L.def.name.toUpperCase(), text: "IT'S COMING DOWN. RUN!" },
+    ];
+    this.events.emit('dialogue', lines, () => {
+      this.busy = true;
+      this.cameras.main.flash(600, 255, 255, 255);
+      this.shake(1200, 0.02);
+      audio.sfx('shatter'); audio.sfx('curseLift');
+      this.time.delayedCall(900, () => {
+        // the curse lifts everywhere: the last stones crumble
+        for (const w of this.wards) {
+          const d = w.def;
+          if (this.flags[d.flag]) continue;
+          this.flags[d.flag] = true; if (d.guardian) this.flags[d.guardian] = true; if (d.warden) this.flags[d.warden] = true;
+          this.removeVines(w);
+          if (w.unit) { w.unit.alive = false; w.unit.sprite.stop(); w.unit.sprite.setTexture('wardRubble').clearTint(); w.shieldFx?.destroy(); }
+          w.bloomR = 0;
+        }
+        this.flags.smithRank = 3; this.flags.royalArmory = true; this.flags.enchanter = true;
+        this.buildBarrier();
+        this.busy = false;
+        this.warp({ to: { x: LANDMARKS.frog.x, y: LANDMARKS.frog.y + 2 } });
+        this.time.delayedCall(1800, () => this.kingRestored());
+      });
+    });
+  }
+
+  kingRestored() {
+    const f = LANDMARKS.frog, fx = f.x * TILE + 8, fy = f.y * TILE + 8;
+    const K = (text) => ({ who: 'KING ALDRIC', portrait: 'portrait_frog', voice: { pitch: 140, wave: 'square', duty: 0.25 }, text });
+    music.setVariant('freed', 1.6);
+    this.events.emit('banner', 'THE CURSE IS LIFTED', 'ALDERMERE IS FREE');
+    this.time.delayedCall(2200, () => {
+      this.cameras.main.flash(400, 255, 240, 200);
+      this.fx.burst('gold', fx, fy - 10, 40); audio.sfx('levelUp');
+      this.frog.destroy();
+      this.flags.kingRestored = true;
+      this.frog = this.add.sprite(fx, fy, 'king', 'idle_down_0').setOrigin(0.5, 0.75).play('king_idle_down').setDepth(fy);
+      this.time.delayedCall(900, () => this.events.emit('dialogue', [
+        K("...OH. OH NO. I'M TALL AGAIN. AND DRY. HOW DREADFUL."),
+        K('NO - FORGIVE ME. THANK YOU. ALL OF YOU. THE TOWER IS FALLEN, THE CURSE IS BROKEN, AND ALDERMERE IS FREE. I WILL NEVER HIRE A COURT MAGE AGAIN.'),
+        K('I DO MISS THE POND, THOUGH. AND THE FLIES. THE FLIES WERE DELICIOUS. KEEP BRINGING ME THE GOLDEN ONES, WOULD YOU? FOR OLD TIMES.'),
+      ], () => {
+        this.scene.pause();
+        this.scene.launch('Credits', { onDone: () => {
+          this.scene.resume();
+          this.flags.postgame = true;
+          this.events.emit('banner', 'THE WORLD IS YOURS', 'EVERY REGION NOW RISES TO LEVELS 30-35');
+          this.autosave('ending');
+        } });
+      }));
+    });
   }
 
   dropCoin(x, y) {
