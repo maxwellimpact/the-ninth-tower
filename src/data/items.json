@@ -1041,5 +1041,56 @@
   },
   "perk": "phial",
   "desc": "POTIONS AND ELIXIRS HEAL 30% MORE. +15 HP. SMELLS LIKE MINT AND A SECOND CHANCE."
+ },
+ "hawkeye_hood": {
+  "name": "HAWKEYE HOOD",
+  "hero": "wren",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "hood_ranger@6",
+  "stats": {
+   "def": 6,
+   "crit": 0.06
+  },
+  "perk": "hawkeye",
+  "desc": "HAWK STRIKE'S MARK MAKES FOES TAKE +20% (NOT 10%). YOU CAN SEE FOR MILES FROM UP HERE."
+ },
+ "wolfskull_helm": {
+  "name": "WOLFSKULL HELM",
+  "hero": "kesh",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "warhelm_hide@6",
+  "stats": {
+   "def": 8,
+   "hp": 14
+  },
+  "perk": "wolfskull",
+  "desc": "HOWL ALSO GIVES THE PARTY +15% DAMAGE FOR 6S. GREYMAW WON'T BE NEEDING IT."
+ },
+ "troll_hide_mantle": {
+  "name": "TROLL-HIDE MANTLE",
+  "hero": "kesh",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "furs_hide@6",
+  "stats": {
+   "def": 14,
+   "hp": 30
+  },
+  "perk": "trollhide",
+  "desc": "BELOW HALF HEALTH, REGENERATES 1% HP A SECOND (NOT WHILE BURNING). IT STILL TWITCHES SOMETIMES."
+ },
+ "frostfur_tassel": {
+  "name": "FROSTFUR TASSEL",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@2",
+  "stats": {
+   "hp": 12
+  },
+  "perk": "frostward",
+  "desc": "IMMUNE TO THE FROSTHELM COLD, AND TO CHILL AND FREEZE. +12 HP. A TRAPPER'S CHARM OF WHITE FOX FUR."
  }
 }

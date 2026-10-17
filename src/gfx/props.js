@@ -909,6 +909,18 @@ export function forgeGate() {
 }
 
 // ================================================================ Frosthelm
+// Claw marks up a cliff face (Climbing Claws): paired scratches gouged into
+// the ice and rock, with frosted holds, reaching two tiles up the face.
+export function clawMarks() {
+  const [c, ctx] = makeCanvas(16, 34);
+  for (let i = 0; i < 6; i++) {
+    const y = 2 + i * 5, x = 4 + (i % 2) * 5;
+    for (let k = 0; k < 3; k++) { px(ctx, x + k * 2, y + k, 'ink', 1, 3); px(ctx, x + k * 2 + 1, y + k, 'iceXL', 1, 2); }
+    px(ctx, x - 1, y + 4, 'snowXL', 4, 1); // a frosted hold
+  }
+  return c;
+}
+
 // Snow pine: a tall dark fir in stacked tiers, each tier's top loaded with
 // snow (lit on the left), on a short trunk.
 const PINE = ['pineD', 'pine', 'pineL', 'pineL'];

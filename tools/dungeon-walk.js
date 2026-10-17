@@ -265,6 +265,32 @@ export async function forge() {
   return log;
 }
 
+// The Clawhold (Frosthelm): block onto plate opens the den, the den fight
+// seals, its side room keeps the key, the key door, the Climbing Claws.
+export async function clawhold() {
+  const log = [];
+  const sc = window.__scene;
+  for (const h of sc.party) { h.maxHp *= 50; h.hp = h.maxHp; }
+  await enter('clawholdIn');
+  const c = ctx('clawhold');
+  log.push({ step: 'entered', area: sc.area, at: c.at() });
+  const shutter = c.door(21, 21);
+  log.push({ step: 'shutter', shut: !!shutter.closed });
+  const b0 = c.k.blocks[0];
+  for (let i = 0; i < 7; i++) await c.push(b0, b0.x - c.k.ox - 1, b0.y - c.k.oy);
+  await c.push(b0, b0.x - c.k.ox, b0.y - c.k.oy + 1);
+  log.push({ step: 'block on plate', block: [b0.x - c.k.ox, b0.y - c.k.oy], open: !shutter.closed });
+  log.push({ step: 'den fight', ...(await c.enterFight(21, 15)) });
+  c.tp(39, 14); log.push({ step: 'key', opened: await c.openChest('1'), keys: c.k.keys });
+  c.tp(9, 10); log.push({ step: 'key door', unlocked: await c.unlock(9, 9), keys: c.k.keys });
+  c.tp(9, 5); await step(40); await c.killAll();
+  c.tp(14, 3); log.push({ step: 'cache', opened: await c.openChest('2') });
+  c.tp(8, 4); await c.openChest('3'); await step(30);
+  log.push({ step: 'climbing claws', relics: [...sc.state.relics] });
+  log.push({ errs: window.__errs || [] });
+  return log;
+}
+
 // A fresh real game (not the lab): Brann, Pip and Sable at `level`, with the
 // given relics, at the start of the world. Clears the saved game first.
 export async function boot({ level = 6, relics = ['grapple'], state = null } = {}) {

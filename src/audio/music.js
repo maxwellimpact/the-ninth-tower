@@ -358,7 +358,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME, frost: FROSTHELM_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

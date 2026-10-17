@@ -117,6 +117,12 @@
    "name": "THE BLIGHT BASIN",
    "sub": "IN THE TOWER'S SHADOW",
    "basin": true
+  },
+  {
+   "id": "clawhold",
+   "name": "THE CLAWHOLD",
+   "sub": "THE TRAPPERS' ICE CAVE",
+   "outer": "frost"
   }
  ],
  "groups": [
@@ -1875,6 +1881,46 @@
    "mats": {
     "pearl": 1
    }
+  },
+  {
+   "id": "frostLake",
+   "x": 24,
+   "y": 251,
+   "gold": 70,
+   "mats": {
+    "rimeglass": 2
+   },
+   "potions": {
+    "tonic": 1
+   }
+  },
+  {
+   "id": "frostRidge",
+   "x": 109,
+   "y": 262,
+   "gold": 90,
+   "mats": {
+    "pelt": 2,
+    "silver": 1
+   }
+  },
+  {
+   "id": "frostSummit",
+   "x": 37,
+   "y": 273,
+   "gold": 80,
+   "items": [
+    "hawkeye_hood"
+   ]
+  },
+  {
+   "id": "frostSW",
+   "x": 4,
+   "y": 313,
+   "gold": 60,
+   "potions": {
+    "potion": 2
+   }
   }
  ],
  "boss": {
@@ -2135,6 +2181,25 @@
    },
    "exit": true,
    "requires": "vulkDefeated"
+  },
+  {
+   "id": "clawholdIn",
+   "x": 27,
+   "y": 216,
+   "to": {
+    "x": 279,
+    "y": 36
+   }
+  },
+  {
+   "id": "clawholdOut",
+   "x": 279,
+   "y": 38,
+   "to": {
+    "x": 27,
+    "y": 218
+   },
+   "exit": true
   }
  ],
  "posts": [
@@ -2753,6 +2818,30 @@
   [
    437,
    140
+  ],
+  [
+   12,
+   232
+  ],
+  [
+   36,
+   262
+  ],
+  [
+   107,
+   252
+  ],
+  [
+   52,
+   284
+  ],
+  [
+   7,
+   306
+  ],
+  [
+   86,
+   316
   ]
  ],
  "nodes": [
@@ -3045,6 +3134,61 @@
    "kind": "silver",
    "x": 160,
    "y": 204
+  },
+  {
+   "kind": "rimeglass",
+   "x": 30,
+   "y": 226
+  },
+  {
+   "kind": "rimeglass",
+   "x": 70,
+   "y": 240
+  },
+  {
+   "kind": "rimeglass",
+   "x": 96,
+   "y": 248
+  },
+  {
+   "kind": "rimeglass",
+   "x": 18,
+   "y": 263
+  },
+  {
+   "kind": "rimeglass",
+   "x": 50,
+   "y": 298
+  },
+  {
+   "kind": "rimeglass",
+   "x": 88,
+   "y": 300
+  },
+  {
+   "kind": "rimeglass",
+   "x": 58,
+   "y": 281
+  },
+  {
+   "kind": "herb",
+   "x": 56,
+   "y": 230
+  },
+  {
+   "kind": "herb",
+   "x": 14,
+   "y": 286
+  },
+  {
+   "kind": "herb",
+   "x": 100,
+   "y": 296
+  },
+  {
+   "kind": "herb",
+   "x": 76,
+   "y": 262
   }
  ],
  "shop": {
@@ -3163,6 +3307,11 @@
    "id": "shrineCinder",
    "x": 187,
    "y": 140
+  },
+  {
+   "id": "shrineFrost",
+   "x": 94,
+   "y": 283
   }
  ],
  "lookouts": [
@@ -3193,6 +3342,13 @@
    "y": 200,
    "r": 46,
    "name": "ASHFALL LOOKOUT"
+  },
+  {
+   "id": "lookoutFrost",
+   "x": 34,
+   "y": 272,
+   "r": 50,
+   "name": "HIGHFOLD LOOKOUT"
   }
  ],
  "wards": [
@@ -3456,6 +3612,53 @@
      [
       465,
       149.4
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "frost",
+   "x": 62,
+   "y": 307,
+   "r": 12,
+   "flag": "ward_frost",
+   "guardian": "isoldeDefeated",
+   "region": "frost",
+   "lifts": "THE CURSE LIFTS FROM FROSTHELM",
+   "warden": "isoldeWardenDefeated",
+   "vines": [
+    [
+     [
+      62,
+      307
+     ],
+     [
+      59,
+      302
+     ],
+     [
+      63,
+      297
+     ],
+     [
+      60,
+      293
+     ],
+     [
+      64,
+      288
+     ],
+     [
+      60,
+      282
+     ],
+     [
+      63,
+      276
+     ],
+     [
+      62,
+      272
      ]
     ]
    ]
@@ -3871,6 +4074,63 @@
      1
     ]
    ]
+  },
+  {
+   "id": "bram",
+   "name": "BRAM THE FISHER",
+   "look": "hobb",
+   "x": 20,
+   "y": 247,
+   "quirk": "EVERY TIME I SPEAK, A FISH COMES OUT. ...SORRY. THAT ONE WAS A HERRING.",
+   "home": "NO FISH! JUST WORDS! I'VE NEVER BEEN SO HAPPY TO BE BORING."
+  },
+  {
+   "id": "magda",
+   "name": "OLD MAGDA",
+   "look": "ada",
+   "x": 70,
+   "y": 229,
+   "quirk": "I'M FROZEN TO THIS SPOT. NOT IN A POETIC WAY. MY BOOTS ARE STUCK TO THE GROUND.",
+   "home": "I WALKED ALL THE WAY TO BRIGHTWATER. MY FEET ARE THRILLED. MY KNEES LESS SO."
+  },
+  {
+   "id": "pell",
+   "name": "PELL THE PEDLAR",
+   "look": "piet",
+   "x": 104,
+   "y": 260,
+   "quirk": "EVERYTHING I TOUCH TURNS TO SNOW. I USED TO SELL SPOONS. NOW I SELL SMALL PILES OF SNOW.",
+   "home": "I SOLD A SPOON TODAY! IT STAYED A SPOON! I CRIED A LITTLE.",
+   "guard": [
+    [
+     "frostwolf",
+     -2,
+     1
+    ],
+    [
+     "frostwolf",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "ingrid",
+   "name": "INGRID",
+   "look": "greta",
+   "x": 10,
+   "y": 296,
+   "quirk": "I CAN ONLY WHISPER, OR I START AN AVALANCHE. (THAT WAS A WHISPER.)",
+   "home": "I SHOUTED TODAY. NOTHING FELL ON ANYONE. I SHOUTED SOME MORE, JUST TO BE SURE."
+  },
+  {
+   "id": "hobnail",
+   "name": "BROTHER HOBNAIL",
+   "look": "quill",
+   "x": 92,
+   "y": 304,
+   "quirk": "I SNEEZE SNOWFLAKES. EACH ONE IS UNIQUE. I'VE NAMED SEVERAL HUNDRED.",
+   "home": "NO MORE SNOWFLAKES. I MISS GERALD. GERALD WAS MY FAVOURITE."
   }
  ],
  "huntsman": {
@@ -3933,6 +4193,26 @@
    "x": 46,
    "y": 220,
    "r": 9
+  }
+ ],
+ "climbs": [
+  {
+   "id": "climbW",
+   "x": 40,
+   "y": 294,
+   "top": [
+    40,
+    290
+   ]
+  },
+  {
+   "id": "climbE",
+   "x": 84,
+   "y": 294,
+   "top": [
+    84,
+    290
+   ]
   }
  ]
 }

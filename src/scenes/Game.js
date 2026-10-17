@@ -69,6 +69,15 @@ const THOUGHTS = {
     stir: 'THE LAVA VENT BY THE STONE IS BUBBLING... SOMETHING HUGE IS CLIMBING OUT.',
     open: "THE FORGEMASTER'S DOWN. NOTHING GUARDS THE STONE NOW. BREAK IT!",
   },
+  frost: {
+    stone: 'A WARD STONE FROZEN INTO THE SNOW... ITS VINE CLIMBS STRAIGHT UP THE CLIFF BEHIND IT.',
+    vine: "THE VINE GOES UP THE HIGHFOLD, TO THAT GLASS TOWER. WE'D HAVE TO CLIMB.",
+    below: "IT'S COLDER IN HERE THAN OUT IN THE SNOW. THE VINE KEEPS CLIMBING.",
+    source: "IT'S DRAINING THE ASTRONOMERS' STAR-MIRROR. THE LIGHT IN IT IS GOING OUT.",
+    withered: 'THE VINE IS SHATTERING LIKE ICE! THE MIRROR SHINES AGAIN. BACK TO THE STONE!',
+    stir: 'FROST IS CREEPING ACROSS THE SNOW BY THE STONE... SOMETHING IS GATHERING THERE.',
+    open: 'ISOLDE IS DOWN. NOTHING GUARDS THE STONE NOW. BREAK IT!',
+  },
 };
 
 // Golden Flies in the world, plus the ones won at the minigames
@@ -90,6 +99,7 @@ const NODE_KINDS = {
   crystal: { base: 'crystal', dur: 3.2 },
   ghostcap: { base: 'herb', dur: 1.6, tint: 0x9ff2c8 },
   brimstone: { base: 'ore', dur: 2.2, tint: 0xffe070 },
+  rimeglass: { base: 'crystal', dur: 2.8, tint: 0xd6efff },
 };
 const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
 const PROP_GROUP = { snowpine: 'frost', rimeglass: 'frost', snowrock: 'frost', drift: 'frost', snowtuft: 'frost', furtent: 'frost', ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
@@ -737,6 +747,12 @@ export class Game extends Phaser.Scene {
 
   // party-wide unique perks that tick on their own
   updatePerks(dt) {
+    // Troll-Hide Mantle: below half health, 1% a second (not while burning)
+    this.trollT = (this.trollT ?? 1) - dt;
+    if (this.trollT <= 0) {
+      this.trollT = 1;
+      for (const h of this.party) if (h.alive && !h.downed && !h.burn && h.hp < h.maxHp * 0.5 && h.hasPerk('trollhide')) { h.hp = Math.min(h.maxHp, h.hp + Math.max(1, Math.round(h.maxHp * 0.01))); if (Math.random() < 0.3) this.fx.burst('heal', h.x, h.y - 10, 1); }
+    }
     this.regenT = (this.regenT ?? 5) - dt;
     if (this.regenT > 0) return;
     this.regenT = 5;
@@ -875,6 +891,13 @@ export class Game extends Phaser.Scene {
       this.add.image(x + 1, y + 3, 'shadow').setAlpha(0.2).setDepth(-4);
       this.nav.block(p.x, p.y);
       this.addInteractable({ x, y, reach: 34, standOff: 14, h: 20, kind: 'post', id: p.id, pair: p.pair, land: p.land, interact: (h, o) => this.grapple(o) });
+    }
+    // Climbing Claws faces (Frosthelm's Highfold): tap the marks to climb up, or the lip above to climb down
+    for (const c of W.climbs || []) {
+      const x = px(c.x);
+      this.add.image(x, px(c.y) - 8, 'clawmarks').setOrigin(0.5, 1).setDepth(-38);
+      this.addInteractable({ x, y: px(c.y), reach: 26, standOff: 12, h: 30, kind: 'climb', interact: () => this.climb(c, true) });
+      this.addInteractable({ x, y: px(c.top[1]), reach: 26, standOff: 12, h: 14, kind: 'climb', interact: () => this.climb(c, false) });
     }
     // Shrines: +1 skill point for every recruited hero, once each (C10)
     for (const k of W.shrines || []) {
@@ -1167,7 +1190,7 @@ export class Game extends Phaser.Scene {
       else if (o.kind === 'recruit') m.push({ ...t, kind: 'recruit' });
       else if (o.kind === 'warp') m.push({ ...t, kind: 'door' });
       else if (o.kind === 'frog') m.push({ ...t, kind: 'npc' });
-      else if (o.kind === 'post') m.push({ ...t, kind: 'post' });
+      else if (o.kind === 'post' || o.kind === 'climb') m.push({ ...t, kind: 'post' });
       else if (o.kind === 'shrine') m.push({ ...t, kind: 'recruit' });
       else if (o.kind === 'lookout') m.push({ ...t, kind: 'recruit', always: !!this.flags.cartoPins }); // the Cartographer's pins
     }
@@ -1340,12 +1363,13 @@ export class Game extends Phaser.Scene {
     if (target.elementMul) amount *= target.elementMul(el);
     if (target.status?.weaken) amount *= 1.1;
     if (target.marked) amount *= target.marked.mul;
-    if (target.hawkMarked) amount *= 1.1;
+    if (target.hawkMarked) amount *= this.party.some((p) => p.hasPerk('hawkeye')) ? 1.2 : 1.1; // Hawkeye Hood
     if (hero) {
       const rage = src.passive('rage');
       if (rage) amount *= 1 + (0.4 + 0.05 * (rage - 1)) * (1 - src.hp / src.maxHp);
       if (src.passive('steadyaim') && src.stillT > 1) amount *= 1.2;
       if (src.buffs?.primal) amount *= 1.5;
+      if (src.buffs?.might) amount *= src.buffs.might.mul; // Wolfskull Helm's Howl
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
       if (target.s?.hexed) { const ws = src.hasPerk('wardcrown') ? 0.3 : src.hasPerk('wardprism') ? 0.2 : src.hasPerk('wardshard') ? 0.1 : 0; amount *= 1 + ws; } // Ward Shard / Prism / Crown
       // weapon gems: a little extra elemental damage on every hit
@@ -2473,6 +2497,31 @@ export class Game extends Phaser.Scene {
     });
     zipOne(L, 0);
     this.party.filter((p) => p !== L && !p.downed).forEach((p, i) => zipOne(p, 450 + i * 300));
+  }
+
+  // Climbing Claws: the party scrambles up (or down) a marked face one by one
+  climb(c, up) {
+    const L = this.leader;
+    if (this.busy) return;
+    if (!this.state.relics.includes('claws')) { this.bark(L, "CLAW MARKS, SCORED DEEP INTO THE ICE. SOMETHING CLIMBS HERE. WE'D NEED CLAWS OF OUR OWN."); return; }
+    const x = c.x * TILE + 8, foot = c.y * TILE + 8, top = c.top[1] * TILE + 8;
+    const from = up ? foot : top, to = up ? top : foot;
+    this.busy = true;
+    const heroes = [L, ...this.party.filter((p) => p !== L && !p.downed)];
+    heroes.forEach((h, i) => this.time.delayedCall(i * 380, () => {
+      h.zipping = true; h.clearPath(); h.command = null; h.target = null; h.action = null;
+      const ox = h.x, oy = h.y, tx = x + (h === L ? 0 : (i % 2 ? -1 : 1) * (6 + i * 3)), ty = to + (h === L ? 0 : (up ? -1 : 1) * (2 + i * 3));
+      audio.sfx('swing', { pitch: 1.8 });
+      this.tweens.addCounter({ from: 0, to: 1, duration: 1000, ease: 'Sine.easeInOut', onUpdate: (tw) => {
+        const k = tw.getValue();
+        if (k < 0.2) { const q = k / 0.2; h.x = ox + (x - ox) * q; h.y = oy + (from - oy) * q; h.face(x - ox, from - oy); }
+        else { const q = (k - 0.2) / 0.8; h.x = x + (tx - x) * q + Math.sin(q * 28) * 1.2; h.y = from + (ty - from) * q; h.face(0, up ? -1 : 1); }
+        h.play('walk');
+      }, onComplete: () => {
+        h.zipping = false; this.fx.dust(h.x, h.y);
+        if (i === heroes.length - 1) { this.busy = false; this.autosave('climb'); }
+      } });
+    }));
   }
 
   warp(w) {

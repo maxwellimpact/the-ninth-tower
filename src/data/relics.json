@@ -23,5 +23,10 @@
   "name": "STONE GAUNTLETS",
   "icon": "icon_gauntlets",
   "text": "HEAVY BOULDERS SHIFT AND REINFORCED WALLS BREAK. ROCK ARMOUR CRACKS UNDER YOUR BLOWS."
+ },
+ "claws": {
+  "name": "CLIMBING CLAWS",
+  "icon": "icon_claws",
+  "text": "TAP A CLIFF FACE SCORED WITH CLAW MARKS TO CLIMB IT, UP OR DOWN."
  }
 }

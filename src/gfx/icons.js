@@ -904,6 +904,18 @@ const ICONS = {
     '....bBBBBb....',
     '.....bbbb.....',
   ],
+  claws: [
+    '.KW.KW.KW.....',
+    '.KW.KW.KW.....',
+    '.KW.KW.KW.....',
+    '.dK.dK.dK.....',
+    '.dddddddddd...',
+    '.dssssssssd...',
+    '.dsSSSSSSsd...',
+    '.dsSSSSSSsd...',
+    '..dsssssd.....',
+    '...ddddd......',
+  ],
   gauntlets: [
     '..ss.ss.ss....',
     '.sSSsSSsSSs...',

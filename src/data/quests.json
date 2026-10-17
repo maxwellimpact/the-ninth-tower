@@ -2009,6 +2009,263 @@
     "xp": 300,
     "item": "phial_second_wind"
    }
+  },
+  "tonicRun": {
+   "title": "A COLD SPOON",
+   "giver": "hale",
+   "region": "frost",
+   "offer": [
+    "HALF OF RIMEWATCH IS RUNNING ON MY TONIC AND I'M DOWN TO THE DREGS.",
+    "SIX PIECES OF RIMEGLASS. THE PALE CRYSTALS THAT GROW OUT OF THE SNOW. CHIP THEM, BRING THEM, AND I'LL KEEP YOU WARM."
+   ],
+   "accept": "SIX PIECES.",
+   "thanks": [
+    "LOOK AT THAT. ENOUGH FOR A WEEK OF NOT FREEZING. HERE - TONIC, AND A LITTLE SOMETHING FOR THE ROAD."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "CHIP RIMEGLASS FROM THE CRYSTALS IN THE SNOW",
+     "mat": "rimeglass",
+     "count": 6
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE RIMEGLASS TO MOTHER HALE",
+     "npc": "hale",
+     "take": {
+      "rimeglass": 6
+     }
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 260,
+    "potions": {
+     "tonic": 3
+    }
+   }
+  },
+  "lostTrapper": {
+   "title": "THE TRAPPER'S SLED",
+   "giver": "kaari",
+   "region": "frost",
+   "offer": [
+    "OLD TOVE WENT OUT TO CHECK HIS LINES IN THE NORTH-WEST WOODS TWO DAYS AGO. HIS DOGS CAME BACK. HE DIDN'T.",
+    "FIND HIS SLED. IF THE WOLVES HAVE HIM... BRING BACK WHAT YOU CAN."
+   ],
+   "accept": "WE'LL FIND HIM.",
+   "thanks": [
+    "THE WOLVES HAD HIM TREED, AND HE'S STILL GRUMBLING. HE SENDS THIS - HIS LUCKY TASSEL. HE SAYS IT KEPT HIM WARM UP THAT TREE, AND NOW IT'S YOURS."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND OLD TOVE'S SLED IN THE NORTH-WEST WOODS",
+     "at": [
+      11,
+      228
+     ],
+     "r": 7,
+     "units": [
+      [
+       "frostwolf",
+       9,
+       227
+      ],
+      [
+       "frostwolf",
+       14,
+       229
+      ],
+      [
+       "frostwolf",
+       11,
+       232
+      ],
+      [
+       "frostwolf",
+       7,
+       231
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "TELL WARDEN KAARI WHAT YOU FOUND",
+     "npc": "kaari"
+    }
+   ],
+   "reward": {
+    "gold": 90,
+    "xp": 320,
+    "item": "frostfur_tassel"
+   }
+  },
+  "greymaw": {
+   "title": "BOUNTY: GREYMAW",
+   "giver": "rimeboard",
+   "region": "frost",
+   "offer": [
+    "BOUNTY: GREYMAW. A WOLF THE SIZE OF A PONY LEADING A PACK IN THE PINEWOOD NORTH-EAST OF RIMEWATCH. IT TOOK THE WARDEN'S GOAT. AND THE WARDEN'S OTHER GOAT.",
+    "IT NEVER COMES STRAIGHT AT YOU. IT CIRCLES. WATCH YOUR BACKS."
+   ],
+   "accept": "HUNT GREYMAW.",
+   "thanks": [
+    "KAARI: GREYMAW? THE PACK WILL SCATTER WITHOUT HIM. KEEP THE SKULL - IT MAKES A FINE HELMET, IF YOU DON'T MIND IT LOOKING AT YOU."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND GREYMAW IN THE NORTH-EAST PINEWOOD",
+     "at": [
+      94,
+      216
+     ],
+     "r": 7,
+     "units": [
+      [
+       "frostwolf",
+       94,
+       216
+      ],
+      [
+       "frostwolf",
+       91,
+       219
+      ],
+      [
+       "frostwolf",
+       97,
+       219
+      ],
+      [
+       "frostwolf",
+       94,
+       221
+      ]
+     ],
+     "elite": 0,
+     "name": "GREYMAW"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM WARDEN KAARI",
+     "npc": "kaari"
+    }
+   ],
+   "reward": {
+    "gold": 220,
+    "xp": 460,
+    "item": "wolfskull_helm"
+   }
+  },
+  "trollBounty": {
+   "title": "BOUNTY: THE AVALANCHE TROLL",
+   "giver": "rimeboard",
+   "region": "frost",
+   "offer": [
+    "BOUNTY: A TROLL IN THE GULLY EAST OF RIMEWATCH. WHEN IT POUNDS THE GROUND, THE ICICLES COME DOWN. WHEN YOU HIT IT, IT HEALS.",
+    "FIRE STOPS THE HEALING. BRING FIRE. BRING A LOT OF FIRE."
+   ],
+   "accept": "HUNT THE TROLL.",
+   "thanks": [
+    "KAARI: THE GULLY'S QUIET. FIRST TIME IN MONTHS. ITS HIDE'S YOURS - IT STILL KNITS ITSELF BACK TOGETHER. DON'T ASK ME HOW I KNOW."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE AVALANCHE TROLL IN THE EAST GULLY",
+     "at": [
+      100,
+      226
+     ],
+     "r": 7,
+     "units": [
+      [
+       "troll",
+       100,
+       225
+      ],
+      [
+       "frostwolf",
+       96,
+       228
+      ],
+      [
+       "frostwolf",
+       104,
+       228
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM WARDEN KAARI",
+     "npc": "kaari"
+    }
+   ],
+   "reward": {
+    "gold": 260,
+    "xp": 520,
+    "item": "troll_hide_mantle"
+   }
+  },
+  "sledKing": {
+   "title": "BOUNTY: THE SLED KING",
+   "giver": "rimeboard",
+   "region": "frost",
+   "requires": "greymaw",
+   "offer": [
+    "BOUNTY: A SNOW GOBLIN WHO CALLS HIMSELF THE SLED KING HAS BEEN BOMBING ANYONE WHO SETS FOOT ON THE GLASSWATER ICE. HE HAS A CROWN. IT'S A BUCKET.",
+    "DON'T CHASE HIM. HIT HIM WHEN HE TURNS."
+   ],
+   "accept": "DETHRONE HIM.",
+   "thanks": [
+    "KAARI: THE SLED KING'S DOWN? THE FISHERS CAN GO BACK OUT. HERE - HIS HOARD. MOSTLY STOLEN. ALL YOURS."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE SLED KING ON THE GLASSWATER ICE",
+     "at": [
+      22,
+      246
+     ],
+     "r": 8,
+     "units": [
+      [
+       "raider",
+       22,
+       246
+      ],
+      [
+       "raider",
+       17,
+       250
+      ],
+      [
+       "raider",
+       28,
+       250
+      ]
+     ],
+     "elite": 0,
+     "name": "THE SLED KING"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM WARDEN KAARI",
+     "npc": "kaari"
+    }
+   ],
+   "reward": {
+    "gold": 240,
+    "xp": 480,
+    "gear": {
+     "rarity": "rare"
+    }
+   }
   }
  },
  "npcs": [
@@ -2845,6 +3102,9 @@
    "lines": [
     "FROST TONIC. FIVE MINUTES OF WARM IN YOUR BELLY. SIXTY GOLD.",
     "RIMEGLASS AND MOONHERB, STEEPED. IT TASTES LIKE A COLD SPOON. IT WORKS."
+   ],
+   "errands": [
+    "tonicRun"
    ]
   },
   {
@@ -2873,6 +3133,11 @@
    "look": "board",
    "lines": [
     "NOTICES, PINNED WITH ICICLES."
+   ],
+   "errands": [
+    "greymaw",
+    "trollBounty",
+    "sledKing"
    ]
   },
   {
@@ -2889,6 +3154,9 @@
    "lines": [
     "RIMEWATCH WAS A TRAPPERS' CAMP. NOW IT'S EVERYONE WHO RAN FROM THE VILLAGE WHEN THE ICE KNIGHT CAME.",
     "THE SPIRE UP ON THE HIGHFOLD USED TO BE THE ASTRONOMERS'. NOW IT JUST GLOWS AT NIGHT. NOBODY GOES UP."
+   ],
+   "errands": [
+    "lostTrapper"
    ]
   }
  ]

@@ -586,6 +586,7 @@ export const SKILL_FX = {
       sc.fx.ring(h.x, h.y - 6, 'ringRed', 5);
       for (const e of sc.enemies) if (e.alive && !e.boss && dist(e, h) < 80) { e.fearT = 2 * Math.min(1.5, m); e.fearFrom = { x: h.x, y: h.y }; e.clearZone(); e.state = 'chase'; }
       sc.floatText(h.x, h.y - 30, 'HOWL!', 'fontGold');
+      if (h.hasPerk('wolfskull')) for (const p of sc.party) if (!p.downed && dist(p, h) < 160) { p.buff('might', 1.15, 6); sc.fx.burst('ember', p.x, p.y - 12, 4); } // Wolfskull Helm
       return true;
     },
     ai(h) { return attackers(h.scene, h, 45).length >= 3 || (attackers(h.scene, h, 40).length >= 1 && h.hp / h.maxHp < 0.35) ? true : null; },

@@ -50,6 +50,8 @@ export const AREAS = {
   witchroot: { x0: 322, y0: 130, x1: 415, y1: 209, interior: true, dark: true },
   // inside the Cinderreach volcano: the dwarves' forge (lit by its lava)
   forge: { x0: 418, y0: 130, x1: 511, y1: 209, interior: true },
+  // Wave 3: the trappers' ice cave under Rimewatch (the Climbing Claws)
+  clawhold: { x0: 250, y0: 0, x1: 312, y1: 50, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -190,7 +192,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'basin') { set(x, y, T.PLATEAU); continue; } // the Blight Basin (built in a later stage), walled off by the ridge
     if (b === 'frost') {
       set(x, y, T.SNOW);

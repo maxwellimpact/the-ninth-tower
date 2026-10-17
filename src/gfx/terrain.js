@@ -58,6 +58,8 @@ export function makeTerrainPainter(world) {
 
   const FG = AREAS.forge;
   const inForge = (tx, ty) => tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
+  const CH = AREAS.clawhold;
+  const inClawhold = (tx, ty) => tx >= CH.x0 && tx <= CH.x1 && ty >= CH.y0 && ty <= CH.y1;
   const WR = AREAS.witchroot;
   const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
@@ -395,6 +397,15 @@ export function makeTerrainPainter(world) {
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
       case T.DFLOOR: {
+        if (inClawhold(tx, ty)) {
+          // the ice cave: packed snow blown in over blue ice, frost thick under the walls
+          const up = tileAtPx(x, y - 6);
+          if (up === T.DWALL && bayer(x, y) < 0.7) return C.iceD;
+          const n = vnoise(x / 22, y / 22, 231) + (bayer(x, y) - 0.5) * 0.15;
+          if (Math.abs(vnoise(x / 15, y / 15, 232) - 0.5) < 0.01) return C.iceXL;
+          if (hash(x, y, 233) < 0.02) return C.snowXL;
+          return n < 0.38 ? C.ice : n < 0.6 ? C.iceL : C.snowL;
+        }
         if (inForge(tx, ty)) {
           // forge floor: square basalt tiles, soot in the joints, warm near lava
           const up = tileAtPx(x, y - 6);
@@ -426,6 +437,19 @@ export function makeTerrainPainter(world) {
         return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
       }
       case T.DWALL: {
+        if (inClawhold(tx, ty)) {
+          // walls of blue ice over dark rock, a frosted lip and icicles on the face
+          const faceBelowC = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+          if (!faceBelowC) { const n = vnoise(x / 7, y / 7, 234) + (bayer(x, y) - 0.5) * 0.3; return n > 0.72 ? C.frost : n > 0.4 ? C.frostD : C.ink; }
+          const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+          const ic = hash(x, 2, 235) < 0.3 ? 2 + Math.floor(hash(x, 3, 236) * 6) : 0;
+          if (fy < 2) return C.snowXL;
+          if (fy < 4 + ic) return fy === 3 + ic ? C.iceL : C.iceXL;
+          if (fy > 29) return C.iceD;
+          const v = vnoise(x / 5, ty, 237) * 4;
+          if ((fy + Math.floor(v)) % 7 === 0) return C.iceL;
+          return Math.floor((fy + v) / 7) % 2 ? C.ice : C.iceD;
+        }
         if (inForge(tx, ty)) {
           // dwarven brickwork, near-black, with a glowing seam in some courses
           const faceBelowF = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
