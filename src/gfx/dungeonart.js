@@ -80,8 +80,18 @@ export function door(kind, vertical = false, open = false) {
     // front-on: stone arch, the leaf filling the opening
     px(ctx, 0, 2, frame, 6, 24); px(ctx, 42, 2, frame, 6, 24); px(ctx, 0, 0, frame, 48, 5);
     px(ctx, 1, 1, kind === 'boss' ? 'purp' : kind === 'vault' ? 'blue' : 'stone', 46, 2);
-    if (open) px(ctx, 6, 5, 'night', 36, 21);
-    else if (kind === 'shutter') {
+    if (open) {
+      // an open doorway you can see (and walk) through: the floor shows in the
+      // opening, a little shade under the lintel, and the gate tucked out of the way
+      for (let x = 6; x < 42; x++) { px(ctx, x, 5, 'night'); if (x % 2 === 0) px(ctx, x, 6, 'night'); }
+      if (kind === 'shutter') { // the portcullis, hauled up under the arch
+        for (let x = 8; x < 42; x += 6) { px(ctx, x, 5, 'steelD', 3, 3); px(ctx, x, 5, 'steelL', 1, 3); px(ctx, x + 1, 8, 'steelD'); }
+        px(ctx, 6, 7, 'steelD', 36, 1);
+      } else { // the leaves swung back against the jambs
+        const [leaf, edge] = LEAF[kind];
+        for (const x0 of [6, 38]) { px(ctx, x0, 5, edge, 4, 21); px(ctx, x0 + 1, 5, leaf, 2, 21); px(ctx, x0, 9, 'steel', 4, 1); px(ctx, x0, 20, 'steel', 4, 1); }
+      }
+    } else if (kind === 'shutter') {
       px(ctx, 6, 5, 'night', 36, 21);
       for (let x = 8; x < 42; x += 6) { px(ctx, x, 5, 'steelD', 3, 21); px(ctx, x, 5, 'steelL', 1, 21); }
       px(ctx, 6, 9, 'steelD', 36, 2); px(ctx, 6, 19, 'steelD', 36, 2);

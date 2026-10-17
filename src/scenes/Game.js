@@ -2702,18 +2702,46 @@ export class Game extends Phaser.Scene {
   growVineRoute(anchors) {
     const at = this.world.at, stuff = this.vineStuff;
     const hard = (t) => t === T.CAVEWALL || t === T.DWALL || t === T.IWALL;
-    const cost = (x, y) => {
-      const t = at(x, y);
-      if (hard(t)) return 40;
-      let c = t === T.WATER || t === T.BOG ? 6 : SOLID.has(t) || stuff.has(x + ',' + y) ? 2.2 : 1.2;
-      let hug = false;
-      for (let dy = -1; dy <= 1 && !hug; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const n = at(x + dx, y + dy);
-        if ((SOLID.has(n) && n !== T.WATER && n !== T.BOG) || stuff.has(x + dx + ',' + (y + dy))) { hug = true; break; }
+    // dungeon doorways: the vine goes through the middle of the opening, square
+    // on, never along the leaf or the jambs
+    // (read from the layouts: the vines are grown before the dungeon kits are built)
+    const doors = this.vineDoors ??= (() => {
+      const m = new Map(), DOORCH = new Set(['=', 'k', 'K', 'V']);
+      for (const d of Object.values(DUNGEONS)) {
+        if (!d.rows) continue;
+        const [ox, oy] = d.origin, ch = (x, y) => d.rows[y]?.[x];
+        const seen = new Set();
+        d.rows.forEach((row, y) => [...row].forEach((c, x) => {
+          if (!DOORCH.has(c) || seen.has(x + ',' + y)) return;
+          const run = [], q = [[x, y]]; seen.add(x + ',' + y);
+          while (q.length) { const [a, b] = q.pop(); run.push([a, b]); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k2 = (a + dx) + ',' + (b + dy); if (!seen.has(k2) && ch(a + dx, b + dy) === c) { seen.add(k2); q.push([a + dx, b + dy]); } } }
+          const vertical = new Set(run.map((t) => t[0])).size === 1 && run.length > 1;
+          run.sort((p, q2) => (vertical ? p[1] - q2[1] : p[0] - q2[0]));
+          const mid = run[Math.floor(run.length / 2)];
+          for (const [a, b] of run) m.set((ox + a) + ',' + (oy + b), { center: a === mid[0] && b === mid[1], vertical });
+        }));
       }
-      if (hug) c *= 0.4;
+      return m;
+    })();
+    const wet = (t) => t === T.WATER || t === T.BOG;
+    const near = (x, y, test) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && test(x + dx, y + dy)) return true; return false; };
+    const cost = (x, y) => {
+      const t = at(x, y), door = doors.get(x + ',' + y);
+      if (door) return door.center ? 1 : 30;
+      if (hard(t)) return 40;
+      if (t === T.STAIRS) return 30;
+      const byDoor = near(x, y, (a, b) => doors.has(a + ',' + b));
+      // water is a last resort, except right at a doorway a channel runs up to (a short hop to its middle)
+      let c = wet(t) ? (byDoor ? 4 : 14) : SOLID.has(t) || stuff.has(x + ',' + y) ? 2.2 : 1.2;
+      // hug walls and clutter (it climbs them), but not round a doorway, where it should run straight in
+      if (!byDoor && near(x, y, (a, b) => { const n = at(a, b); return (SOLID.has(n) && !wet(n) && !doors.has(a + ',' + b)) || stuff.has(a + ',' + b); })) c *= 0.4;
+      // keep a clear margin off water's edge and the stairs
+      if (!wet(t) && near(x, y, (a, b) => wet(at(a, b)))) c += 2.5;
+      if (near(x, y, (a, b) => at(a, b) === T.STAIRS)) c += 2;
       return c + vnoise(x / 4, y / 4, 77) * 0.8; // a little meander
     };
+    // squeezing diagonally into or out of a doorway cuts the corner of the frame
+    const stepCost = (x, y, nx, ny) => (x !== nx && y !== ny && (doors.has(x + ',' + y) || doors.has(nx + ',' + ny)) ? 6 : 1);
     const out = [];
     for (let k = 0; k < anchors.length - 1; k++) {
       const [ax, ay] = anchors[k], [bx, by] = anchors[k + 1];
@@ -2735,7 +2763,7 @@ export class Game extends Phaser.Scene {
           if (!dx && !dy) continue;
           const nx = x + dx, ny = y + dy;
           if (nx < x0 || nx > x1 || ny < y0 || ny > y1) continue;
-          const ng = gc + cost(nx, ny) * (dx && dy ? 1.41 : 1);
+          const ng = gc + cost(nx, ny) * (dx && dy ? 1.41 : 1) * stepCost(x, y, nx, ny);
           const nk = key(nx, ny);
           if (ng < (g.get(nk) ?? Infinity)) { g.set(nk, ng); from.set(nk, [x, y]); open.push([ng + hScore(nx, ny), nx, ny]); }
         }
@@ -2743,8 +2771,10 @@ export class Game extends Phaser.Scene {
       const seg = [];
       if (found) { let c = [gx, gy]; while (c) { seg.push(c); c = from.get(key(c[0], c[1])); } seg.reverse(); }
       else seg.push([sx, sy], [gx, gy]);
-      // keep every other tile (smoother), and the exact authored endpoints
-      const pts = seg.filter((_, i) => i % 2 === 0 || i === seg.length - 1).map(([x, y]) => [x, y]);
+      // keep every other tile (smoother), the exact authored endpoints, and every
+      // doorway tile and its neighbours on the path (so the curve can't cut the frame)
+      const keep = (i) => i % 2 === 0 || i === seg.length - 1 || [-1, 0, 1].some((o) => seg[i + o] && doors.has(seg[i + o][0] + ',' + seg[i + o][1]));
+      const pts = seg.filter((_, i) => keep(i)).map(([x, y]) => [x, y]);
       pts[0] = [ax, ay]; pts[pts.length - 1] = [bx, by];
       if (k > 0) pts.shift();
       out.push(...pts);
@@ -2900,6 +2930,37 @@ export class Game extends Phaser.Scene {
     g.destroy();
     v.img?.destroy();
     v.img = this.add.image(ox, oy, key).setOrigin(0).setDepth(-80);
+    this.submergeVine(v, key, ox, oy, w, h);
+  }
+
+  // Where a vine crosses water it stays faintly visible under the surface
+  // instead of vanishing below pool overlays: the stretch over water is cut out
+  // of the vine and drawn as its own pale, blue-tinted copy above the water.
+  submergeVine(v, key, ox, oy, w, h) {
+    const wetTiles = this.vineWetTiles ??= (() => {
+      const m = new Set();
+      for (const d of Object.values(DUNGEONS)) if (d.rows) d.rows.forEach((row, y) => [...row].forEach((c, x) => { if (c === 'w' || c === 'v') m.add((d.origin[0] + x) + ',' + (d.origin[1] + y)); })); // basins (water images)
+      return m;
+    })();
+    // two masks: all water (the faint copy), and standing water only (cut from the vine
+    // itself; basins drain and refill, so under them the vine stays whole)
+    const mk = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; return [c, x]; };
+    const [allM, allX] = mk(), [poolM, poolX] = mk();
+    let any = false, pools = false;
+    for (let ty = Math.floor(oy / TILE); ty <= Math.floor((oy + h) / TILE); ty++) for (let tx = Math.floor(ox / TILE); tx <= Math.floor((ox + w) / TILE); tx++) {
+      const t = this.world.at(tx, ty), pool = t === T.WATER || t === T.BOG;
+      if (pool || wetTiles.has(tx + ',' + ty)) { allX.fillRect(tx * TILE - ox, ty * TILE - oy, TILE, TILE); any = true; }
+      if (pool) { poolX.fillRect(tx * TILE - ox, ty * TILE - oy, TILE, TILE); pools = true; }
+    }
+    if (!any) return;
+    const src = this.textures.get(key).getSourceImage();
+    const cut = (mask, op) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = op; x.drawImage(mask, 0, 0); return c; };
+    const wet = cut(allM, 'destination-in');
+    if (pools) { const dry = cut(poolM, 'destination-out'); this.textures.remove(key); this.textures.addCanvas(key, dry); v.img.setTexture(key); }
+    if (this.textures.exists(`${key}_wet`)) this.textures.remove(`${key}_wet`);
+    this.textures.addCanvas(`${key}_wet`, wet);
+    const wi = this.add.image(ox, oy, `${key}_wet`).setOrigin(0).setDepth(-28).setTint(0xa8d4ff);
+    (this.vineWet ??= []).push([v.img, wi]);
   }
 
   vineAt(v, d) {
@@ -2912,6 +2973,8 @@ export class Game extends Phaser.Scene {
   // live vines: pods throb, and stolen light flows from the shrine toward the stone
   updateVines(dt) {
     const view = this.cameras.main.worldView;
+    // submerged stretches follow their vine's fade (and go when it does)
+    if (this.vineWet) this.vineWet = this.vineWet.filter(([img, wi]) => { if (!img.active) { wi.destroy(); return false; } wi.setAlpha(img.alpha * 0.45).setVisible(img.visible); return true; });
     for (const v of this.vines || []) {
       v.fx ??= this.add.graphics().setDepth(-79);
       v.fx.clear();
