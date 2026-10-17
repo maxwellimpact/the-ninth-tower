@@ -1532,7 +1532,34 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 10. Tower loses a floor per Ward Stone; Malgrim gains a phase per standing stone. **[LOCKED 2026-10-14]**
 11. No cuts; build in three waves, each playtested:
     - **Wave 1:** full Vale and Mistfen, Kesh and Wren. **[COMPLETE 2026-10-15]** Beyond the original list it also has: elite affixes, the Blade and Shadow disciplines, 10 cursed townsfolk + the Bard, 12 lore pages, 20 Golden Flies, antidotes, the frog races, the Bloodfang Axe, two lookouts, shadow/true lieutenants with vines. Deferred by design to the regions that hold them: the other Kesh and Wren uniques (Frosthelm / Cinderreach), Sealed Vaults (need Wave 2 relics), the Trainers' Hall (3 stones) and Ultimate Tomes (level 20).
-    - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo. **[BUILT 2026-10-16, in playtest]** Both regions (C12 template: camp, signs, ward with two vines, lookout, 10 groups, nodes, flies, chests, shrine, errands), Witchroot Hollow (Seer's Lens, the Pale Huntsman) and the Forge of Ash (Stone Gauntlets, Forgemaster Vulk), the heat soft-gate with Ember Salve, Oake (recruit: Cinderreach errand) and Gizmo (recruit: The Water Wheel, Brightwater, after two Ward Stones), and the Wave 2 uniques in their table homes. Uniques that the Wave 1 demo had parked in Vale/Mistfen chests moved to their homes (Raven Mask → Huntsman, Emberbrand → Vulk, Phoenix Robe → Forge vault, Nightsilk Coat → Queen Mab, Ember Circlet → bounty "Flicker"); the Gatewarden keeps its three. Deferred: Penitent's Gown (Mirelle, Wave 3), the hermit's Arcane trainer and Orb puzzle, the monastery vault, Thunderwrench (Mistfen drowned mill), the Echo Bell and Ember Heart charms. Flameproof Overalls give heat immunity only (heroes have no Burn status yet). Witchroot's vault (Gauntlets) holds Vampire's Kiss (table: "G: crypt").
+    - **Wave 2:** Gloamwood and Cinderreach, Oake and Gizmo. **[COMPLETE 2026-10-16, in playtest]**
+      - **Regions:** both built to the C12 template, with Witchroot Hollow (Seer's Lens, the Pale Huntsman), the Forge of Ash (Stone Gauntlets, Forgemaster Vulk), and the heat soft-gate with Ember Salve.
+      - **Heroes:** Oake (Cinderreach errand) and Gizmo (*The Water Wheel*, Brightwater, after two stones).
+      - **Region borders meander:** no straight rows or columns. Landmarks keep the region they were built for, and the region banner waits a second before changing.
+      - **Every unique has its signature effect,** in its table home. Wave 1's parked uniques moved home; the Gatewarden now drops two generated Rares.
+      - **Heroes can Burn:** imp shots, drake breath and molten ground. Purify, Flameproof Overalls and the Ember Heart stop it.
+      - **Secrets:**
+        - the hermit's tower (Lens false wall): Arcane trainer, rune riddle, Orb of Echoes;
+        - the belfry hymn: Echo Bell;
+        - the King's tomb (Gauntlets): Lionheart Helm;
+        - St. Cinder's flooded vault (Tide): Aegis of Dawn;
+        - the drowned Fenmill (swim): Thunderwrench;
+        - *The Signal Fires*: Ember Heart;
+        - *The Master's Hourglass*: Hourglass Charm;
+        - Frog King tiers: Signet at 10 flies, Bulwark at 30;
+        - the Ward Shard grows to Prism and Crown with each stone.
+      - **Brightwater services:**
+        - **Trainers' Hall** (3 stones): disciplines whose trainer you've met, respec, Veteran's and Ultimate Tomes. All seven L20 ultimate upgrades are built.
+        - **Alchemist** (4 stones): shop, plus *A Second Wind* for the Phial.
+        - **Gizmo's workbench:** Traveler's Compass.
+        - **Cartographer** (20 townsfolk): lookout pins, plus the Wanderer's Charm once every lookout is climbed. It counts the lookouts that exist (4 now); Wave 3 adds more.
+      - **World map** fits a landscape phone.
+      - **Wren** now joins at the Gloamwood edge camp.
+      - **Left for Wave 3 by design:**
+        - Penitent's Gown (Mirelle).
+        - Hunter's Tooth: it needs 10 bounties, and 7 exist.
+        - The Ferryman (30 townsfolk).
+        - The Gold Fly in Amber (50 flies).
     - **Wave 3:** Frosthelm, Mirelle, the Blight Basin and the Tower. **[LOCKED 2026-10-14]**
 
 ### Build approach **[LOCKED]**
@@ -1618,3 +1645,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-16 | Redesigned dungeons moved into the real game: the Undercroft (from the lab), the Sunken Abbey rebuilt with sluices and the Tide Charm, the Drowned Hollow given a crystal/peg gate. Progress saved per dungeon; old saves migrate. The Sunspire Staff moves from the Gatewarden's drops to the Undercroft vault (Tide Charm) per the uniques table |
 | 2026-10-16 | Playtest fixes, each measured old vs new: errand set pieces (`setpiece.js`: fixed posts, turn-taking swings, never facing the party, only a deliberate hit wakes them, a quiet stage clear of world groups) with Quill moved down the east road; companions follow on a loose lead (slack, eased speed, smoothed slot); foes notice the party only on screen, and heroes pick only foes in view or already fighting; morale is rare (1 in 6 small fry, never the last). The title screen shows cloud-save status; saves mirror to the artifact's private storage |
 | 2026-10-16 | Wave 2 built: Gloamwood + Witchroot Hollow, Cinderreach + Forge of Ash, Oake and Gizmo, Wave 2 uniques. Recruit NPCs hide once their hero is in the party; a third Vale recruit spot (only used when the starter isn't Brann/Pip/Sable) keeps all three core heroes reachable. Title cards drop the skill list when seven heroes make them narrow |
+| 2026-10-16 | Wave 2 finished: unique signatures, hero Burn, hermit's tower + Arcane, belfry, region secrets, Trainers' Hall with L20 ultimate upgrades, Alchemist, workbench, Cartographer, Ward Shard. Region borders made organic (noise-warped, landmarks pinned, region banner has hysteresis) after playtest feedback that the map looked cut into straight bands |
