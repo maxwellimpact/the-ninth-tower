@@ -4,9 +4,9 @@ import items from '../data/items.json';
 import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
 import { fitString } from './textfit.js';
-import { freshFor, skillsReady } from '../game/state.js';
+import { freshFor, skillsReady, xpToNext } from '../game/state.js';
 
-const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, boss: 0xc0394b };
+const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
@@ -593,7 +593,11 @@ export class UI extends Phaser.Scene {
       g.fillStyle(0x3a2f52).fillRect(p.x + 26, p.y + 9, 40, 3);
       g.fillStyle(frac < 0.35 ? C.hpLow : C.hp).fillRect(p.x + 26, p.y + 9, Math.round(40 * frac), 3);
       if (h.shield > 0) g.fillStyle(C.ult).fillRect(p.x + 26, p.y + 9, Math.round(40 * Math.min(1, h.shield / h.maxHp)), 1);
-      // no ultimate here: the ULT buttons along the bottom already show it
+      // XP towards the next level (the ULT buttons along the bottom already show the ultimate)
+      const xpf = Math.max(0, Math.min(1, (h.hs.xp || 0) / xpToNext(h.level)));
+      g.fillStyle(C.ink).fillRect(p.x + 25, p.y + 14, 42, 4);
+      g.fillStyle(0x2b2140).fillRect(p.x + 26, p.y + 15, 40, 2);
+      g.fillStyle(C.xp).fillRect(p.x + 26, p.y + 15, Math.round(40 * xpf), 2);
       p.lv.setText(h.downed ? 'DOWN' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : 0xffffff);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
       if (skillsReady(h.def.id, h.hs)) skillBadge(g, p.x - 2, p.y - 2); // skill points to spend (top-left: the name sits top-right)

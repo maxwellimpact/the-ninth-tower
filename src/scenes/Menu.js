@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill, skillsReady } from '../game/state.js';
+import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill, skillsReady, skillDef } from '../game/state.js';
 import tuning from '../data/tuning.json';
 import { panel, RARITY, skillBadge } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
@@ -375,7 +375,8 @@ export class Menu extends Phaser.Scene {
       const py = top + act.length * rh + 12;
       this.t(x, py - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
       pas.forEach((e, i) => row(x, py + i * rh, w, rh, e));
-      this.drawSkillDesc(x, py + pas.length * rh + 4, w);
+      const uy = this.ultRow(x, py + pas.length * rh, w, rh);
+      this.drawSkillDesc(x, uy + 4, w);
     } else {
       const rh = mode === 'wide' ? 24 : 21, gap = 6, cw = Math.floor((W - 16 - gap) / 2);
       const x = 8 + ox;
@@ -383,20 +384,37 @@ export class Menu extends Phaser.Scene {
       act.forEach((e, i) => row(x, top + i * rh, cw, rh, e));
       this.t(x + cw + gap, top - 10, `PASSIVE ${nP}/${tuning.passiveSlots}`, 'fontPlain');
       pas.forEach((e, i) => row(x + cw + gap, top + i * rh, cw, rh, e));
-      this.drawSkillDesc(x + cw + gap, top + pas.length * rh + 4, cw);
+      const uy = this.ultRow(x + cw + gap, top + pas.length * rh, cw, rh);
+      this.drawSkillDesc(x + cw + gap, uy + 4, cw);
     }
+  }
+
+  // The ultimate (always equipped; fired from the ULT button) and its level-20
+  // upgrade, so the one level gate outside the skill list is visible too.
+  ultRow(x, y, w, rh) {
+    const g = this.gfx, h = this.hero, hs = h.hs;
+    const uid = HERO_DATA.find((d) => d.id === h.def.id)?.ultimate, d = uid && skillDef(uid);
+    if (!d) return y;
+    panel(g, x, y, w, rh - 3, C.night, C.slate);
+    g.fillStyle(C.ink).fillRect(x + 2, y + Math.floor((rh - 3 - 16) / 2), 16, 16);
+    this.dyn.push(this.add.image(x + 2, y + Math.floor((rh - 3 - 16) / 2), d.icon).setOrigin(0));
+    this.t(x + 21, y + 2, `ULTIMATE: ${d.name}`, 'font', 0xfff0a0, w - 24);
+    const up = hs.ultTome ? 'UPGRADED (LV20 TOME)' : hs.level >= 20 ? 'UPGRADE READY AT THE TRAINERS\' HALL' : `UPGRADES AT LV20 (NOW LV${hs.level})`;
+    this.t(x + 21, y + rh - 11, up, 'fontPlain', hs.ultTome ? 0xf2c14e : hs.level >= 20 ? 0x8cff8c : 0x9d93b3, w - 24);
+    this.btn(x, y, w, rh - 3, () => { this.skillSel = uid; audio.sfx('click'); this.render(); });
+    return y + rh;
   }
 
   drawSkillDesc(x, y, w) {
     const sid = this.skillSel;
-    const d = sid && heroSkillIds(this.hero.def.id, this.hero.hs.disc).find(([k]) => k === sid)?.[1];
+    const d = sid && (heroSkillIds(this.hero.def.id, this.hero.hs.disc).find(([k]) => k === sid)?.[1] || (skillDef(sid)?.ult && skillDef(sid).hero === this.hero.def.id ? skillDef(sid) : null));
     if (!d) {
       const disc = this.hero.hs.disc;
       this.t(x, y, `TAP A SKILL TO EQUIP IT. "+" SPENDS POINTS TO RANK IT UP (EACH RANK +20%). DISCIPLINE: ${disc ? `${DISCIPLINES[disc].name} (LAVENDER SKILLS)` : 'NONE YET - TRAINERS TEACH ONE PER HERO'}.`, 'fontPlain', 0x9d93b3).setMaxWidth(w);
       return;
     }
     this.t(x, y, d.name, 'fontGold');
-    this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : ''), 'fontPlain', undefined, w, 4);
+    this.t(x, y + 10, d.desc + (d.cd ? `  COOLDOWN ${d.cd}S.` : '') + (d.ult && d.upgrade ? `  ${d.upgrade.replace('L20 TOME:', 'AT LV20:')}` : ''), 'fontPlain', undefined, w, 4);
   }
 
   drawPreview(x, y, w, h) {
@@ -428,7 +446,17 @@ export class Menu extends Phaser.Scene {
       const cx = x + Math.floor(i / per) * cw, cy = y + (i % per) * 9;
       this.t(cx + 2, cy, k, 'fontPlain');
       this.t(cx + cw - 4 - v.length * 5, cy, v, 'font');
+      if (k === 'XP' && !compact) { // a bar between the label and the numbers: how close the next level is
+        const bx = cx + 14, bw = cw - 4 - v.length * 5 - 4 - bx + cx;
+        const f = Math.max(0, Math.min(1, hs.xp / xpToNext(hs.level)));
+        if (bw > 6) this.gfx.fillStyle(C.ink).fillRect(bx, cy + 1, bw, 5).fillStyle(C.night).fillRect(bx + 1, cy + 2, bw - 2, 3).fillStyle(0xc8a0ff).fillRect(bx + 1, cy + 2, Math.round((bw - 2) * f), 3);
+      }
     });
+    if (compact) { // the columns are too narrow for an inline bar: a full-width one under them
+      const by = y + per * 9 + 1, f = Math.max(0, Math.min(1, hs.xp / xpToNext(hs.level)));
+      this.gfx.fillStyle(C.ink).fillRect(x + 2, by, w - 4, 5).fillStyle(C.night).fillRect(x + 3, by + 1, w - 6, 3).fillStyle(0xc8a0ff).fillRect(x + 3, by + 1, Math.round((w - 6) * f), 3);
+      this.t(x + 2, by + 7, `${hs.xp}/${xpToNext(hs.level)} TO LV${hs.level + 1}`, 'fontPlain', 0x9d93b3, w - 4);
+    }
   }
 
   selectSlot(slot) { audio.sfx('click'); this.slot = slot; this.selected = null; this.render(); }
