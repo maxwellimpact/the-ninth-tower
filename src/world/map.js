@@ -20,16 +20,18 @@ export const T = {
   ASH: 24, // Cinderreach ash flats
   LAVA: 25, // Cinderreach lava (solid; scorches anyone near it)
   BASALT: 26, // Cinderreach basalt pavement
+  SNOW: 27, // Frosthelm snowfields
+  ICE: 28, // frozen lake (walkable)
 };
 export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL, T.LAVA]);
-export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM, T.ASH, T.LAVA]);
+export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM, T.ASH, T.LAVA, T.SNOW, T.ICE]);
 
 export const MARSH_Y = 64;
 export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
 export const RIDGE_X = 100; // the ridge between Gloamwood and Cinderreach
-export const OW_H = 208; // the overworld's walkable depth; the highlands beyond wait for Wave 3
 export const FROST_Y = 208; // Wave 3: the southern highlands (Frosthelm west, the Blight Basin east)
-export const BASIN_X = 116; // the rough line between Frosthelm and the Basin
+export const OW_H = MAP_H; // the overworld's walkable depth
+export const BASIN_X = 118; // the rough line (a ridge) between Frosthelm and the Basin
 export const OW_W = W.size.overworldW; // overworld width; interiors live to the right of it
 
 // Separate areas share one tile grid but never share a camera view: the
@@ -78,15 +80,20 @@ const PINS = [
   ...W.wards.map((w) => [w.x, w.y, 9]), ...W.chests.map((c) => [c.x, c.y, 2.5]), ...W.campfires.map((c) => [c.x, c.y, 3]),
   ...W.groups.flatMap((g) => g.units.map(([, x, y]) => [x, y, 2])), ...QD.npcs.map((n) => [n.x, n.y, 2]),
 ];
-export const basinEdge = (y) => BASIN_X + (vnoise(0.5, y / 14, 823) - 0.5) * 12;
-const straightBiome = (tx, ty) => (ty >= FROST_Y ? (tx < BASIN_X ? 'frost' : 'basin') : ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
+// The escarpment Frosthelm and the Basin stand on: its row in each column
+// wanders between 207 and 212 (never up into the band's older ground, and
+// level across the stair pass at x 44-48).
+const rawFrostEdge = (x) => 207 + Math.round(vnoise(x / 9, 0.5, 821) * 4 + vnoise(x / 3.5, 0.5, 822) * 1.4);
+export const frostEdge = (x) => rawFrostEdge(Math.abs(x - 46) <= 2 ? 46 : x);
+export const basinEdge = (y) => BASIN_X + (vnoise(0.5, y / 14, 823) - 0.5) * 10;
+const straightBiome = (tx, ty) => (ty > frostEdge(tx) ? (tx < BASIN_X ? 'frost' : 'basin') : ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
 
 export function biomeAt(tx, ty) {
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
   for (const [px, py, r] of PINS) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
-  // the highlands start at a cliff line along FROST_Y, so that border stays straight
-  if (ty >= FROST_Y) return tx < basinEdge(ty) + fray(tx, ty, 810) * 0.5 ? 'frost' : 'basin';
+  // the highlands start above the escarpment (it meanders, but never into older ground)
+  if (ty > frostEdge(tx)) return tx < basinEdge(ty) + fray(tx, ty, 810) * 0.5 ? 'frost' : 'basin';
   if (ty >= southEdge(tx) + fray(tx, ty, 805)) return tx < ridgeAt(ty) + 2 + (ty < SOUTH_Y + 4 ? fray(tx, ty, 806) : 0) ? 'gloam' : 'cinder';
   if (ty >= marshEdge(tx) + fray(tx, ty, 807)) return 'marsh';
   return tx >= meadowEdge(ty) + fray(tx, ty, 808) ? 'meadow' : 'vale';
@@ -110,7 +117,16 @@ export const LANDMARKS = {
   minersCamp: { x: 117, y: 188 },
   drakeLair: { x: 111, y: 135 },
   forgeGate: { x: 177, y: 185 }, // the Forge of Ash: a dwarven gate in the mountain's face
+  // Frosthelm landmarks (tiles)
+  rimewatch: { x: 46, y: 220 }, // the refugee outpost at the top of the pass
+  clawhold: { x: 28, y: 216 }, // the trappers' cave (Climbing Claws)
+  glasswater: { x: 22, y: 249 }, // the frozen lake
+  trollGully: { x: 100, y: 226 },
+  spire: { x: 62, y: 270 }, // the Rimeglass Spire, up on the Highfold
 };
+// the Highfold: a raised massif in the middle of Frosthelm, sheer on three
+// sides; its south face can be climbed with the Climbing Claws
+export const HIGHFOLD = { x0: 24, y0: 264, x1: 100, y1: 292 };
 // the lava river, from the volcano's flank down into a pool by the ridge
 export const LAVA_RIVER = [[166, 178], [156, 173], [146, 168], [134, 171], [122, 177], [110, 175]];
 
@@ -141,6 +157,15 @@ const PATHS = [
   { w: 0.8, pts: [[131, 163], [124, 170], [119, 180], [117, 186]] }, // the burned miners' camp
   { w: 0.85, pts: [[146, 150], [160, 150], [172, 149]] }, // to the monastery stairs
   { w: 0.75, pts: [[116, 150], [112, 142], [111, 137]] }, // up into the drake's crags
+  // Wave 3: Frosthelm. The old road behind the elder tree climbs a stair
+  // pass in the escarpment to the Rimewatch outpost ...
+  { w: 0.95, pts: [[50, 191], [47, 199], [46, 207], [46, 214]] },
+  // ... and on south round the Highfold's east side to the Ward Stone
+  { w: 1.0, pts: [[46, 226], [48, 236], [56, 245], [66, 251], [82, 255], [96, 258], [104, 266], [106, 280], [104, 294], [96, 301], [82, 306], [70, 307]] },
+  { w: 0.85, pts: [[54, 220], [68, 222], [84, 225], [96, 227]] }, // east into the pinewood (the troll's gully)
+  { w: 0.8, pts: [[47, 234], [40, 237], [34, 240]] }, // down to the frozen lake
+  { w: 0.75, pts: [[38, 220], [32, 219], [29, 218]] }, // the trappers' cave
+  { w: 0.75, pts: [[14, 259], [10, 268], [9, 282], [13, 296], [24, 305], [40, 308], [52, 308]] }, // the west trail past the lake
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
@@ -166,8 +191,13 @@ export function buildWorld() {
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
     if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' ? T.DWALL : T.CAVEWALL); continue; }
-    if (y >= OW_H) { set(x, y, T.PLATEAU); continue; } // the highlands beyond (Wave 3)
-    if (b === 'gloam') {
+    if (b === 'basin') { set(x, y, T.PLATEAU); continue; } // the Blight Basin (built in a later stage), walled off by the ridge
+    if (b === 'frost') {
+      set(x, y, T.SNOW);
+      // Glasswater: the frozen lake, with a few holes of open black water
+      const gd = Math.hypot((x - 22) / 16, (y - 249) / 10) + (vnoise(x / 4, y / 4, 200) - 0.5) * 0.3;
+      if (gd < 1) set(x, y, [[14, 246, 1.7], [30, 252, 1.4], [25, 242, 1.1]].some(([hx, hy, hr]) => Math.hypot(x - hx, y - hy) < hr) ? T.WATER : T.ICE);
+    } else if (b === 'gloam') {
       set(x, y, T.LOAM);
       // mossy clearings where the canopy breaks
       if (vnoise(x / 11, y / 11, 140) > 0.64) set(x, y, T.GRASS);
@@ -210,7 +240,7 @@ export function buildWorld() {
     if (onPath(x, y)) {
       const t = at(x, y);
       if (t === T.WATER || t === T.LAVA || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
-      else if (t !== T.CAVEWALL) set(x, y, T.PATH);
+      else if (t !== T.CAVEWALL && t !== T.ICE) set(x, y, T.PATH);
     }
   }
 
@@ -259,14 +289,18 @@ export function buildWorld() {
   rect(126, 108, 142, 112, T.MARSH); // firm ground at the foot of the face
 
   // Wave 2: the southern band ---------------------------------------------
-  // the highland edge along the bottom of the world (Wave 3 lies beyond it)
-  rect(0, OW_H - 1, OW_W - 1, OW_H - 1, T.RIM);
+  // the highland escarpment along the south of the band (Frosthelm lies above it)
+  // (a staircase of rim tiles, closed between columns so nothing slips through)
+  for (let x = 0; x < OW_W; x++) {
+    const e = frostEdge(x), p = x > 0 ? frostEdge(x - 1) : e;
+    for (let y = Math.min(e, p); y <= Math.max(e, p); y++) set(x, y, T.RIM);
+  }
   // the ridge between Gloamwood and Cinderreach: a raised rock spine with one
   // pass through it (the road at y 150-154)
-  for (let y = SOUTH_Y + 3; y < OW_H - 1; y++) {
+  for (let y = SOUTH_Y + 3; y < FROST_Y + 5; y++) {
     if (y >= 149 && y <= 155) continue;
     const w = Math.round(1 + vnoise(0, y / 7, 141) * 2), rx = ridgeAt(y);
-    for (let x = rx - w; x <= rx + 3 + w; x++) set(x, y, x === rx - w || x === rx + 3 + w ? T.RIM : T.PLATEAU);
+    for (let x = rx - w; x <= rx + 3 + w; x++) if (y < frostEdge(x)) set(x, y, x === rx - w || x === rx + 3 + w ? T.RIM : T.PLATEAU);
   }
   // Gloamwood edge camp: a trodden clearing where the hunters gather
   for (let y = 136; y <= 147; y++) for (let x = 24; x <= 37; x++) {
@@ -340,6 +374,43 @@ export function buildWorld() {
   for (let y = 182; y <= 187; y++) for (let x = 146; x <= 154; x++) {
     if (Math.hypot((x - 150) / 2.6, (y - 184.5) / 1.8) < 1) set(x, y, T.LAVA);
   }
+
+  // Wave 3: Frosthelm --------------------------------------------------------
+  rect(0, MAP_H - 1, OW_W - 1, MAP_H - 1, T.RIM); // the bottom of the world
+  for (let x = 45; x <= 47; x++) set(x, frostEdge(x), T.STAIRS); // the stair pass up from Gloamwood
+  // the ridge between Frosthelm and the Basin: a raised spine, sheer both sides
+  for (let y = FROST_Y; y < MAP_H - 1; y++) {
+    const w = Math.round(1 + vnoise(0, y / 7, 201) * 2), rx = Math.round(basinEdge(y));
+    for (let x = rx - w; x <= rx + 3 + w; x++) if (y > frostEdge(x)) set(x, y, x === rx - w || x === rx + 3 + w ? T.RIM : T.PLATEAU);
+  }
+  // Rimewatch: a refugee camp behind a stake palisade, gates on all four sides
+  rect(39, 214, 53, 225, T.PATH);
+  for (let x = 38; x <= 54; x++) { if (Math.abs(x - 46) > 1) { set(x, 213, T.WALL); set(x, 226, T.WALL); } }
+  for (let y = 213; y <= 226; y++) { if (Math.abs(y - 220) > 1) { set(38, y, T.WALL); set(54, y, T.WALL); } }
+  // the trappers' cave: an outcrop under the escarpment with a dark mouth
+  for (let x = 22; x <= 34; x++) rect(x, frostEdge(x) + 1, x, 214, T.PLATEAU);
+  rect(22, 215, 34, 216, T.CLIFF);
+  for (const x of [21, 35]) for (let y = frostEdge(x) + 1; y <= 216; y++) set(x, y, T.RIM);
+  rect(27, 215, 28, 216, T.MOUTH);
+  rect(25, 217, 31, 219, T.SNOW); // standing room at the mouth
+  // the troll's gully: a trampled clearing in the pinewood
+  for (let y = 220; y <= 233; y++) for (let x = 92; x <= 109; x++) if (Math.hypot((x - 100) / 7, (y - 226) / 5.5) + (vnoise(x / 3, y / 3, 202) - 0.5) * 0.3 < 1 && at(x, y) === T.SNOW && hash(x, y, 203) < 0.6) set(x, y, T.PATH);
+  // the Highfold: raised, sheer on its back and sides, a climbable face to the south
+  // (a rounded, noise-edged mass: a two-row face wherever it drops to the
+  // south, a sheer rim everywhere else)
+  const HF = HIGHFOLD, hcx = (HF.x0 + HF.x1) / 2, hcy = (HF.y0 + HF.y1) / 2;
+  const inHF = (x, y) => Math.abs((x - hcx) / ((HF.x1 - HF.x0) / 2 + 0.5)) ** 3 + Math.abs((y - hcy) / ((HF.y1 - HF.y0) / 2 + 0.5)) ** 3 + (vnoise(x / 6, y / 6, 206) - 0.5) * 0.4 < 1;
+  for (let y = HF.y0 - 3; y <= HF.y1 + 3; y++) for (let x = HF.x0 - 3; x <= HF.x1 + 3; x++) if (inHF(x, y)) set(x, y, T.PLATEAU);
+  for (let y = HF.y0 - 3; y <= HF.y1 + 5; y++) for (let x = HF.x0 - 4; x <= HF.x1 + 4; x++) {
+    if (inHF(x, y)) continue;
+    if (inHF(x, y - 1) || (inHF(x, y - 2) && at(x, y - 1) === T.CLIFF)) { set(x, y, T.CLIFF); continue; }
+  }
+  for (let y = HF.y0 - 4; y <= HF.y1 + 5; y++) for (let x = HF.x0 - 4; x <= HF.x1 + 4; x++) {
+    const t = at(x, y);
+    if (t === T.PLATEAU || t === T.CLIFF) continue;
+    if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].some(([dx, dy]) => at(x + dx, y + dy) === T.PLATEAU || (dy === 0 && at(x + dx, y) === T.CLIFF))) set(x, y, T.RIM);
+  }
+  rect(59, 266, 65, 270, T.HOUSE); // the Rimeglass Spire's footprint (the tower is drawn over it)
 
   // Interiors ---------------------------------------------------------------
   // Cave: tunnels + chambers carved out of rock
@@ -442,11 +513,14 @@ export function buildWorld() {
   reserve(LANDMARKS.mirrorPool.x, LANDMARKS.mirrorPool.y, 8); reserve(LANDMARKS.hermitTower.x, LANDMARKS.hermitTower.y, 6);
   reserve(LANDMARKS.spiderLair.x, LANDMARKS.spiderLair.y, 5);
   for (const k of ['emberwatch', 'springs', 'minersCamp', 'drakeLair']) reserve(LANDMARKS[k].x, LANDMARKS[k].y, 8);
+  reserve(LANDMARKS.rimewatch.x, LANDMARKS.rimewatch.y, 11); reserve(LANDMARKS.clawhold.x, LANDMARKS.clawhold.y + 2, 4);
+  reserve(LANDMARKS.trollGully.x, LANDMARKS.trollGully.y, 8); reserve(LANDMARKS.spire.x, LANDMARKS.spire.y + 1, 7);
+  for (const c of W.climbs || []) { reserve(c.x, c.y, 3); reserve(c.top[0], c.top[1], 3); }
   reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
-  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH;
+  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH || t === T.SNOW;
   const free = (x, y, pad = 1) => {
     for (let dy = -pad; dy <= pad; dy++) for (let dx = -pad; dx <= pad; dx++) {
       const tx = x + dx, ty = y + dy;
@@ -461,17 +535,21 @@ export function buildWorld() {
     const jx = x + Math.floor(hash(x, y, 11) * 2), jy = y + Math.floor(hash(x, y, 12) * 2);
     if (jx >= OW_W || jy >= OW_H - 1) continue;
     const b = biomeAt(jx, jy);
-    const edge = Math.min(jx, jy, OW_W - 1 - jx, OW_H - 1 - jy);
+    const fe = frostEdge(jx);
+    const edge = Math.min(jx, jy, OW_W - 1 - jx, jy < fe ? fe - 1 - jy : OW_H - 1 - jy); // the escarpment edges the band above it
+    if (b === 'basin') continue;
     const belt = Math.abs(jy - marshEdge(jx) + 1) < 2.5 + vnoise(jx / 5, 0, 9) * 2 || Math.abs(jy - southEdge(jx) + 0.5) < 2.5 + vnoise(jx / 5, 0, 19) * 2;
     const grove = vnoise(jx / 9, jy / 9, 21);
     // Gloamwood is the deep forest: trees everywhere the canopy doesn't break
-    const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : b === 'gloam' ? 0.3 : 0.72) || belt;
+    const pinewood = b === 'frost' && jx >= 58 && jy < 252; // Frosthelm's dense pinewood, east of the outpost
+    const highfold = jx >= HIGHFOLD.x0 && jx <= HIGHFOLD.x1 && jy >= HIGHFOLD.y0 && jy <= HIGHFOLD.y1;
+    const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : b === 'gloam' ? 0.3 : pinewood ? 0.38 : highfold ? 0.74 : b === 'frost' ? 0.64 : 0.72) || belt;
     if (!forest || hash(jx, jy, 13) < (b === 'gloam' ? 0.22 : 0.15)) continue;
     if (!free(jx, jy, 1) || isReserved(jx, jy)) continue;
     if (W.wards.some((wd) => Math.hypot(jx - wd.x, jy - wd.y) < 9)) continue;
     if (b === 'cinder' && grove < 0.82 && edge >= 4 + vnoise(jx / 5, jy / 5, 2) * 3) continue; // the badlands are mostly bare
-    const kind = b === 'cinder' ? 'ashtree' : b === 'gloam' && jy >= SOUTH_Y + 2 ? 'gloomtree' : b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree';
-    add(kind, jx, jy, { seed: Math.floor(hash(jx, jy, 14) * (kind === 'gloomtree' || kind === 'ashtree' ? 6 : 8)) });
+    const kind = b === 'frost' ? 'snowpine' : b === 'cinder' ? 'ashtree' : b === 'gloam' && jy >= SOUTH_Y + 2 ? 'gloomtree' : b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree';
+    add(kind, jx, jy, { seed: Math.floor(hash(jx, jy, 14) * (kind === 'gloomtree' || kind === 'ashtree' || kind === 'snowpine' ? 6 : 8)) });
     claim(jx, jy);
   }
 
@@ -496,6 +574,15 @@ export function buildWorld() {
       else if (r < 0.032 && !nearLava) { add('vent', x, y, { seed: x * 7 + y }); claim(x, y); }
       else if (r < 0.05 && t0 === T.ASH) add('emberbloom', x, y, { seed: x * 13 + y });
       else if (r < 0.07 && nearLava) add('cinders', x, y, { seed: x + y * 5 });
+      continue;
+    }
+    if (b === 'basin') continue;
+    if (b === 'frost') {
+      if (at(x, y) !== T.SNOW && at(x, y) !== T.PLATEAU) continue;
+      if (r < 0.008) { add('rimeglass', x, y, { seed: x + y * 3, big: hash(x, y, 33) < 0.35 }); claim(x, y); }
+      else if (r < 0.02) { add('snowrock', x, y, { seed: x * 7 + y, big: hash(x, y, 34) < 0.3 }); claim(x, y); }
+      else if (r < 0.045 && vnoise(x / 7, y / 7, 204) > 0.45) add('drift', x, y, { seed: x * 13 + y });
+      else if (r < 0.065 && vnoise(x / 6, y / 6, 205) > 0.55) add('snowtuft', x, y, { seed: x + y * 5 });
       continue;
     }
     if (b === 'gloam') {
@@ -524,6 +611,9 @@ export function buildWorld() {
     if (at(x, y) === T.WATER) add('lily', x, y, { seed: i });
   }
 
+  // Rimewatch dressing: hide tents along the palisade, barrels, a woodpile
+  for (const [x, y, k] of [[41, 216, 0], [51, 216, 1], [41, 224, 2], [51, 224, 0]]) add('furtent', x, y, { seed: k });
+  for (const [x, y] of [[44, 215], [49, 224], [40, 220], [52, 221]]) add('barrel', x, y);
   // Emberwatch dressing: tents along the palisade, barrels, crates
   for (const [x, y, k] of [[134, 147, 0], [144, 147, 1], [134, 153, 2], [143, 153, 0]]) add('tent', x, y, { seed: k });
   for (const [x, y] of [[136, 146], [145, 152], [133, 151], [141, 154]]) add('barrel', x, y);

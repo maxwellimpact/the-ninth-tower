@@ -907,3 +907,90 @@ export function forgeGate() {
   outline(c, 'ink');
   return c;
 }
+
+// ================================================================ Frosthelm
+// Snow pine: a tall dark fir in stacked tiers, each tier's top loaded with
+// snow (lit on the left), on a short trunk.
+const PINE = ['pineD', 'pine', 'pineL', 'pineL'];
+export function snowPine(seed = 0) {
+  const [c, ctx] = makeCanvas(34, 54);
+  const r = (i) => hash(seed, i, 131);
+  px(ctx, 15, 44, 'woodD', 4, 8); px(ctx, 16, 44, 'wood', 1, 8);
+  const tiers = 4 + (r(1) < 0.4 ? 1 : 0);
+  for (let t = 0; t < tiers; t++) {
+    const top = 4 + t * (38 / tiers), h = 14, w0 = 3 + t * 2.4 + r(2 + t) * 1.5;
+    for (let y = 0; y < h; y++) {
+      const half = Math.round(1 + (w0 + 1) * (y / h)), yy = Math.round(top + y);
+      for (let x = 17 - half; x <= 16 + half; x++) {
+        const lit = x < 17 - half / 3;
+        px(ctx, x, yy, y < 2 ? 'pineD' : lit ? 'pine' : 'pineD');
+      }
+      // the snow lying on the tier's upper slope
+      if (y > 1 && y < 6) { const sw = Math.round(half * (0.7 - y * 0.08)); px(ctx, 17 - half, yy, y < 4 ? 'snowL' : 'snow', sw + 1, 1); px(ctx, 17 + half - Math.round(sw / 2), yy, 'snowD', Math.max(1, Math.round(sw / 2)), 1); }
+    }
+    for (let i = 0; i < 3; i++) px(ctx, 17 - Math.round(w0) + Math.floor(r(20 + t * 3 + i) * w0 * 2), Math.round(top + 9 + r(40 + t + i) * 4), 'snowXL'); // clumps caught in the branches
+  }
+  px(ctx, 16, 2, 'snowXL', 2, 2); px(ctx, 16, 1, 'snowL');
+  outline(c, 'ink');
+  return c;
+}
+
+// Rimeglass: a cluster of pale ice crystals growing out of the snow, glowing
+// faintly from inside.
+export function rimeglass(seed = 0, big = false) {
+  const w = big ? 22 : 16, h = big ? 22 : 16;
+  const [c, ctx] = makeCanvas(w, h);
+  const r = (i) => hash(seed, i, 133);
+  const n = big ? 4 : 3;
+  for (let k = 0; k < n; k++) {
+    const cx = Math.round(w / 2 + (k - (n - 1) / 2) * (big ? 4 : 3.5) + (r(k) - 0.5) * 2), ch = Math.round((big ? 12 : 8) + r(k + 5) * (big ? 8 : 6) - Math.abs(k - (n - 1) / 2) * 3);
+    for (let y = 0; y < ch; y++) {
+      const half = y < 2 ? 0 : y < 4 ? 1 : 2;
+      for (let x = cx - half; x <= cx + half; x++) px(ctx, x, h - 2 - ch + y, x < cx ? 'iceXL' : x === cx ? 'iceL' : 'ice');
+    }
+    px(ctx, cx - 1, h - ch + 2, 'snowXL');
+  }
+  px(ctx, 2, h - 2, 'snowL', w - 4, 1); px(ctx, 3, h - 1, 'snowD', w - 6, 1);
+  outline(c, 'ink');
+  return c;
+}
+
+// A low wind-carved drift: a soft hump of snow with a blue lee side.
+export function snowDrift(seed = 0) {
+  const [c, ctx] = makeCanvas(20, 9);
+  shadedBlob(ctx, 10, 6, 8 + hash(seed, 1, 135) * 2, 3, ['snowD', 'snow', 'snowL', 'snowXL']);
+  return c;
+}
+
+// Dead grass poking out of the snow.
+export function snowTuft(seed = 0) {
+  const [c, ctx] = makeCanvas(10, 8);
+  for (let i = 0; i < 4; i++) { const x = 2 + Math.floor(hash(seed, i, 137) * 6), h = 2 + Math.floor(hash(seed, i, 138) * 4); px(ctx, x, 7 - h, i % 2 ? 'reedD' : 'reed', 1, h); }
+  px(ctx, 1, 7, 'snowL', 8, 1);
+  return c;
+}
+
+// A snow-capped boulder.
+export function snowRock(seed = 0, big = false) {
+  const w = big ? 20 : 14, h = big ? 14 : 10;
+  const [c, ctx] = makeCanvas(w + 2, h + 2);
+  shadedBlob(ctx, w / 2 + 1, h / 2 + 2, w / 2, h / 2, ['frostD', 'frost', 'frostL', 'snowL']);
+  for (let x = 2; x < w; x++) { const d = Math.round(1 + Math.sin(x * 0.9 + seed) * 1.2 + (h / 3)); px(ctx, x, 2, 'snowXL', 1, Math.max(1, d - Math.abs(x - w / 2) / 2.5)); }
+  outline(c, 'ink');
+  return c;
+}
+
+// A hide tent for the refugee camp: furs over a frame, snow on the ridge.
+export function furTent(seed = 0) {
+  const [c, ctx] = makeCanvas(32, 26);
+  const cols = [['woodD', 'leatherD', 'leather', 'dirtD'], ['leatherD', 'woodD', 'wood', 'woodL'], ['slate', 'stone', 'mist', 'bone']][seed % 3];
+  for (let y = 0; y < 18; y++) {
+    const half = Math.round(2 + y * 0.8);
+    for (let x = 16 - half; x <= 15 + half; x++) px(ctx, x, 5 + y, x < 16 ? (y % 5 === 4 ? cols[1] : cols[3]) : (y % 5 === 4 ? cols[0] : cols[2]));
+    if (y < 5) { px(ctx, 16 - half, 5 + y, 'snowL', half, 1); px(ctx, 16, 5 + y, 'snow', Math.max(1, half - 1), 1); }
+  }
+  for (let y = 10; y < 23; y++) { const w = Math.round((y - 10) * 0.45); px(ctx, 16 - w, y, 'ink', w * 2, 1); }
+  px(ctx, 13, 1, 'woodD', 1, 5); px(ctx, 18, 1, 'woodD', 1, 5); // crossed poles
+  outline(c, 'ink');
+  return c;
+}

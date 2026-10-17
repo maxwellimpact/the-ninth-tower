@@ -223,6 +223,8 @@ export class Hero extends Unit {
     this.sprite.setTint(0xffb08a);
   }
   buffMul(stat) { return this.buffs[stat]?.mul || 1; }
+  // Stalwart (Guardian): blows never shove this hero about
+  knock(dx, dy, power) { if (this.passive?.('stalwart')) return; super.knock(dx, dy, power); }
 
   heal(amt) {
     if (this.downed || amt <= 0) return;
@@ -533,7 +535,7 @@ export class Hero extends Unit {
       this.scene.dealDamage(this, src, this.stats.atk * 2 * this.critMult() * (this.riposteMul || 1), { crit: true, knock: 90 });
       return 0;
     }
-    if (this.taunting > 0) amount *= 0.5;
+    if (this.taunting > 0) amount *= this.provokeT > 0 && !this.skills.some((k) => k.id === 'taunt') ? 0.8 : 0.5; // Provoke's cut is gentler than Brann's Taunt
     if (this.wallT > 0) amount *= 0.2;
     if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
     if (this.action?.type === 'harvest') this.scene.cancelHarvest(this);
@@ -623,6 +625,7 @@ export class Hero extends Unit {
     this.dodgeCd = Math.max(0, this.dodgeCd - dt);
     this.invuln = Math.max(0, this.invuln - dt);
     this.taunting = Math.max(0, this.taunting - dt);
+    this.provokeT = Math.max(0, (this.provokeT || 0) - dt);
     if (this.shieldT > 0) { this.shieldT -= dt; if (this.shieldT <= 0) this.shield = 0; }
     this.wallT = Math.max(0, (this.wallT || 0) - dt);
     this.riposteT = Math.max(0, (this.riposteT || 0) - dt);

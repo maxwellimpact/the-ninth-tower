@@ -248,6 +248,7 @@ export function computeStats(id, level, equip, hs = null) {
   if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
   if (pr('eagleeye')) s.range = Math.round(s.range * 1.2);
   if (pr('fleet')) s.speed = Math.round(s.speed * (1.08 + 0.02 * (pr('fleet') - 1)));
+  if (pr('stalwart')) s.def = Math.round(s.def * (1.1 + 0.03 * (pr('stalwart') - 1)));
   return s;
 }
 

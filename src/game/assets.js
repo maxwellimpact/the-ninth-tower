@@ -182,6 +182,18 @@ export const GROUPS = {
       }
     }],
   ],
+  // Frosthelm (Wave 3)
+  frost: [
+    ['highlands', (s) => {
+      for (let k = 0; k < 6; k++) s.textures.addCanvas(`snowpine${k}`, P.snowPine(k));
+      for (let k = 0; k < 4; k++) {
+        s.textures.addCanvas(`rimeglass${k}`, P.rimeglass(k)); s.textures.addCanvas(`rimeglassB${k}`, P.rimeglass(k, true));
+        s.textures.addCanvas(`snowrock${k}`, P.snowRock(k)); s.textures.addCanvas(`snowrockB${k}`, P.snowRock(k, true));
+        s.textures.addCanvas(`drift${k}`, P.snowDrift(k)); s.textures.addCanvas(`snowtuft${k}`, P.snowTuft(k));
+      }
+      for (let k = 0; k < 3; k++) s.textures.addCanvas(`furtent${k}`, P.furTent(k));
+    }],
+  ],
   interior: [
     ['furniture', (s) => {
       s.textures.addCanvas('counter', P.counter());

@@ -982,6 +982,34 @@ export const SKILL_FX = {
     ai(h) { return attackers(h.scene, h, 40).length >= 1 ? true : null; },
   },
 
+  // ---------------------------------------------- Guardian discipline
+  guardup: {
+    cast(h, { m }) {
+      h.act('guardup', 0.3, 'cast');
+      h.shield = Math.max(h.shield || 0, Math.round(h.maxHp * (0.25 + 0.05 * (m - 1) / 0.15)));
+      h.shieldT = Math.max(h.shieldT || 0, 6);
+      audio.sfx('block');
+      h.scene.fx.ring(h.x, h.y - 6, 'ringBlue', 3);
+      h.scene.floatText(h.x, h.y - 30, 'GUARD UP', 'fontGold');
+      return true;
+    },
+    ai(h) { return !(h.shield > 0) && (attackers(h.scene, h, 50).length >= 2 || h.hp / h.maxHp < 0.5) ? true : null; },
+  },
+  provoke: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('provoke', 0.4, 'cast');
+      h.taunting = Math.max(h.taunting || 0, 3); // (taunting halves damage; Provoke's own cut is gentler, below)
+      h.provokeT = 3;
+      sc.taunt(h, 90 * Math.min(1.3, m), 3);
+      audio.sfx('aggro');
+      sc.fx.ring(h.x, h.y - 4, 'ringRed', 4.5);
+      sc.floatText(h.x, h.y - 30, 'PROVOKE!', 'fontGold');
+      return true;
+    },
+    ai(h, c) { return h.hp / h.maxHp > 0.5 && c.engaged.filter((e) => e.target && e.target !== h && dist(e, h) < 80).length >= 1 ? true : null; },
+  },
+
   // ------------------------------------------------- Blade discipline
   sweep: {
     cast(h, { m }) {

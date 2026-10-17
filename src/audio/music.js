@@ -69,6 +69,15 @@ const ARP = {
     for (const st of [2, 6, 10, 14]) ev.push([b * 16 + st, ch[0] + 48, 1, st === 6 || st === 14 ? 0.9 : 0.55]);
     ev.push([b * 16 + 7, ch[2] + 36, 1, 0.35]);
   },
+  // glass bells in three: a high chime on each "beat" of a slow waltz, with a
+  // fainter shimmer an octave up after the first (Frosthelm). A bar of 16
+  // steps is felt as three beats at 0, 5 and 11
+  bells: (ch, b, ev) => {
+    ev.push([b * 16, ch[0] + 48, 2, 0.8]);
+    ev.push([b * 16 + 5, ch[2] + 36, 2, 0.5]);
+    ev.push([b * 16 + 11, ch[1] + 36, 2, 0.5]);
+    if (b % 2) ev.push([b * 16 + 2, ch[2] + 48, 1, 0.3]);
+  },
   // lute strums on the beat (interiors)
   lute: (ch, b, ev) => {
     const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[2] + 24];
@@ -83,6 +92,7 @@ const BASS = {
   hollow: [[0, 'r', 12]],
   oompah: [[0, 'r', 2], [4, 'f', 2], [8, 'r', 2], [12, 'f', 2]],
   march: [[0, 'r', 3], [6, 'r', 1], [8, 'f', 3], [14, 'r', 1]],
+  waltz: [[0, 'r', 5], [5, 'f', 4], [11, 'r8', 4]], // oom, pah, pah
 };
 
 function buildTheme(o) {
@@ -270,6 +280,25 @@ export const CINDERREACH_THEME = buildTheme({
   inst: { lead: { duty: 0.25, vibrato: 0.01, echo: 0.3, vol: 0.95 }, arp: { vol: 0.8, echo: 0.2 }, bass: { vol: 1.15 }, pad: { vol: 1.1, cutoff: 480 }, sub: { vol: 1.5 } },
 });
 
+// Frosthelm: a slow waltz on glass bells over a cold, wide pad, the melody
+// turning in threes like skaters on the lake ice
+export const FROSTHELM_THEME = buildTheme({
+  name: 'Frosthelm', bpm: 64, key: -3, arp: 'bells', bass: 'waltz',
+  chords: [['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['C3', 'E3', 'G3'], ['G2', 'B2', 'D3'],
+    ['A2', 'C3', 'E3'], ['D2', 'F2', 'A2'], ['F2', 'A2', 'C3'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['E5', 5], ['D5', 6], ['C5', 5],
+    ['A4', 11], ['C5', 5],
+    ['E5', 5], ['G5', 6], ['E5', 5],
+    ['D5', 11], ['B4', 5],
+    ['C5', 5], ['E5', 6], ['A5', 5],
+    ['G5', 5], ['F5', 6], ['D5', 5],
+    ['C5', 5], ['A4', 6], ['F4', 5],
+    ['G#4', 11], ['-', 5],
+  ],
+  inst: { lead: { type: 'triangle', vol: 0.9, echo: 0.55, vibrato: 0.01 }, arp: { vol: 1.2, echo: 0.6 }, bass: { vol: 0.7 }, pad: { vol: 1.3, cutoff: 900 }, sub: { vol: 0.8 } },
+});
+
 // The Forge of Ash: the work song gone underground - slower, the anvil
 // echoing off stone, a hollow drone where the hearth used to roar
 export const FORGE_THEME = buildTheme({
@@ -328,7 +357,7 @@ export const HEARTH_THEME = buildTheme({
 });
 
 const REGION_THEMES = {
-  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME,
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME, frost: FROSTHELM_THEME,
   cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };

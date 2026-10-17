@@ -87,7 +87,40 @@
      "text": "KEEP THE CART SAFE ON THE SOUTH ROAD",
      "startLine": "STAY CLOSE. GOBLINS SMELL SEED SACKS A MILE OFF.",
      "ambushLine": "THAT'S THEM! KEEP THEM OFF THE SACKS! AND ME!",
-     "path": [[16, 33], [20, 37], [20, 44], [21, 50], [22, 53], [23, 57], [24, 60], [25, 63]],
+     "path": [
+      [
+       16,
+       33
+      ],
+      [
+       20,
+       37
+      ],
+      [
+       20,
+       44
+      ],
+      [
+       21,
+       50
+      ],
+      [
+       22,
+       53
+      ],
+      [
+       23,
+       57
+      ],
+      [
+       24,
+       60
+      ],
+      [
+       25,
+       63
+      ]
+     ],
      "stay": true,
      "hp": 120,
      "ambush": [
@@ -2790,6 +2823,72 @@
    "lines": [
     "TWENTY OF US HOME! ENOUGH TO NEED A PROPER MAP OF THE PLACE, AND I'M THE ONE TO DRAW IT.",
     "I KNOW EVERY LOOKOUT TOWER IN THE LAND. OR I DID, BEFORE THE HEX MOVED HALF THE TREES."
+   ]
+  },
+  {
+   "id": "hale",
+   "name": "MOTHER HALE",
+   "x": 42,
+   "y": 218,
+   "look": "hale",
+   "voice": {
+    "pitch": 230,
+    "wave": "triangle",
+    "speed": 0.9
+   },
+   "vendor": {
+    "item": "tonic",
+    "price": 60,
+    "gift": 2,
+    "giftLine": "YOU CAME UP THE PASS IN THAT? SIT. DRINK. HERE - TWO TONICS, AND DON'T ARGUE WITH ME."
+   },
+   "lines": [
+    "FROST TONIC. FIVE MINUTES OF WARM IN YOUR BELLY. SIXTY GOLD.",
+    "RIMEGLASS AND MOONHERB, STEEPED. IT TASTES LIKE A COLD SPOON. IT WORKS."
+   ]
+  },
+  {
+   "id": "oda",
+   "name": "SER ODA",
+   "x": 50,
+   "y": 222,
+   "look": "oda",
+   "trainer": "guardian",
+   "voice": {
+    "pitch": 200,
+    "wave": "square",
+    "duty": 0.5,
+    "speed": 0.9
+   },
+   "lines": [
+    "I HELD THE KING'S GATE FOR TWENTY WINTERS. THE CURSE DIDN'T MOVE ME EITHER.",
+    "I TEACH THE GUARDIAN'S OATH: RAISE YOUR GUARD, CALL THE BLOWS TO YOU, AND DON'T GIVE AN INCH."
+   ]
+  },
+  {
+   "id": "rimeboard",
+   "name": "BOUNTY BOARD",
+   "x": 49,
+   "y": 215,
+   "look": "board",
+   "lines": [
+    "NOTICES, PINNED WITH ICICLES."
+   ]
+  },
+  {
+   "id": "kaari",
+   "name": "WARDEN KAARI",
+   "x": 44,
+   "y": 222,
+   "look": "kaari",
+   "voice": {
+    "pitch": 180,
+    "wave": "square",
+    "duty": 0.25
+   },
+   "lines": [
+    "RIMEWATCH WAS A TRAPPERS' CAMP. NOW IT'S EVERYONE WHO RAN FROM THE VILLAGE WHEN THE ICE KNIGHT CAME.",
+    "THE SPIRE UP ON THE HIGHFOLD USED TO BE THE ASTRONOMERS'. NOW IT JUST GLOWS AT NIGHT. NOBODY GOES UP."
    ]
   }
  ]

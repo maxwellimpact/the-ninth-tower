@@ -28,5 +28,11 @@
   "first": "arcmissile",
   "cost": 180,
   "pitch": "THE ARCANE: SEEKING BOLTS, A STEP THROUGH NOTHING, AND A MIND CLEAR ENOUGH TO CAST AGAIN SOONER."
+ },
+ "guardian": {
+  "name": "GUARDIAN",
+  "first": "guardup",
+  "cost": 160,
+  "pitch": "THE GUARDIAN'S OATH: A SHIELD WHEN IT MATTERS, A SHOUT THAT DRAWS THE BLOWS, AND FEET THAT DON'T MOVE."
  }
 }

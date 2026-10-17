@@ -121,6 +121,22 @@ export const PAL = {
   lavaL: '#ff9a2e',
   lavaXL: '#ffe58a',
   brim: '#d8c24a',
+
+  // Frosthelm (frozen highlands): blue-shadowed snow, lake ice, dark pines
+  snowD: '#7d8bb4',
+  snow: '#b9c6e2',
+  snowL: '#dce6f5',
+  snowXL: '#f4f8ff',
+  iceD: '#2f5b8c',
+  ice: '#5f97c7',
+  iceL: '#9cc9ea',
+  iceXL: '#d6efff',
+  pineD: '#132c34',
+  pine: '#1d4448',
+  pineL: '#2f6660',
+  frostD: '#3a4566', // cold rock
+  frost: '#5c6a8e',
+  frostL: '#8c9abd',
 };
 
 export const hex = (k) => PAL[k] ?? k;

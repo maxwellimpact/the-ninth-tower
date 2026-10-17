@@ -820,5 +820,34 @@
   "short": "CLARITY",
   "icon": "icon_clarity",
   "desc": "-10% SKILL COOLDOWNS (-2% PER RANK). COOLDOWNS STILL CAP AT -30%. (ARCANE)"
+ },
+ "guardup": {
+  "discipline": "guardian",
+  "unlock": 1,
+  "name": "GUARD UP",
+  "short": "GUARD",
+  "icon": "icon_guardup",
+  "cd": 14,
+  "range": 0,
+  "desc": "RAISES A SHIELD THAT SOAKS 25% OF MAX HP (+5% PER RANK) FOR 6S. (GUARDIAN)"
+ },
+ "provoke": {
+  "discipline": "guardian",
+  "unlock": 1,
+  "name": "PROVOKE",
+  "short": "PROVOKE",
+  "icon": "icon_provoke",
+  "cd": 12,
+  "range": 0,
+  "desc": "A CHALLENGE THAT TURNS NEARBY FOES ON YOU FOR 3S, AND YOU TAKE 20% LESS DAMAGE WHILE THEY COME. (GUARDIAN)"
+ },
+ "stalwart": {
+  "discipline": "guardian",
+  "unlock": 1,
+  "passive": true,
+  "name": "STALWART",
+  "short": "STALW",
+  "icon": "icon_stalwart",
+  "desc": "+10% DEFENCE (+3% PER RANK) AND BLOWS NEVER KNOCK YOU BACK. (GUARDIAN)"
  }
 }

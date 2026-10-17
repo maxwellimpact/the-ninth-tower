@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, southEdge, ridgeAt } from '../world/map.js';
+import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
@@ -82,7 +82,7 @@ const TAP_FLASH = true;
 // hero health stages (portrait bars and the bar over a hurt hero): green, yellow below WARN, red below CRIT
 export const HP_WARN = 0.5, HP_CRIT = 0.35;
 
-const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
+const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'snowpine', 'rimeglass', 'snowrock', 'furtent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
 const NODE_KINDS = {
   herb: { base: 'herb', dur: 1.5 }, bogmoss: { base: 'herb', dur: 1.8, tint: 0xc9b46a },
@@ -92,7 +92,7 @@ const NODE_KINDS = {
   brimstone: { base: 'ore', dur: 2.2, tint: 0xffe070 },
 };
 const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
-const PROP_GROUP = { ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
+const PROP_GROUP = { snowpine: 'frost', rimeglass: 'frost', snowrock: 'frost', drift: 'frost', snowtuft: 'frost', furtent: 'frost', ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
 const BARKS = {
   start: { brann: "THE KING'S TOWN... WHAT'S LEFT OF IT.", pip: 'OOH, A RUIN! I MEAN... HOW TRAGIC.', sable: 'QUIET OUT HERE. TOO QUIET. ALSO: GOBLINS.' },
@@ -288,6 +288,15 @@ export class Game extends Phaser.Scene {
         out.push(this.add.image(x + 1, y + 4, 'shadow').setAlpha(0.22).setDepth(-4));
         break;
       case 'obsidian': img = this.add.image(x, y + 4, `${p.big ? 'obsidianB' : 'obsidian'}${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'snowpine':
+        img = this.add.image(x, y + 6, `snowpine${p.seed}`).setOrigin(0.5, 1);
+        out.push(this.add.image(x + 2, y + 4, 'shadowL').setAlpha(0.18).setDepth(-4).setScale(1.1, 1));
+        break;
+      case 'rimeglass': img = this.add.image(x, y + 5, `${p.big ? 'rimeglassB' : 'rimeglass'}${p.seed % 4}`).setOrigin(0.5, 1); img.isLight = true; break;
+      case 'snowrock': img = this.add.image(x, y + 4, `${p.big ? 'snowrockB' : 'snowrock'}${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'drift': img = this.add.image(x, y + 3, `drift${p.seed % 4}`).setOrigin(0.5, 1).setDepth(-45); break;
+      case 'snowtuft': img = this.add.image(x, y + 4, `snowtuft${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'furtent': img = this.add.image(x, y + 8, `furtent${p.seed % 3}`).setOrigin(0.5, 1); break;
       case 'vent': {
         img = this.add.sprite(x, y + 4, `vent${p.seed % 4}`).setOrigin(0.5, 1).play(`vent${p.seed % 4}`);
         // a lazy column of smoke
@@ -634,6 +643,10 @@ export class Game extends Phaser.Scene {
       st.salveT = 300; // five minutes in the heat
       for (const h of this.party) if (!h.downed) this.fx.heal(h.x, h.y);
       this.floatText(this.leader.x, this.leader.y - 28, 'COOL AS A CELLAR', 'font', 0x9fd8ff);
+    } else if (kind === 'tonic') {
+      st.tonicT = 300; // five minutes in the cold
+      for (const h of this.party) if (!h.downed) this.fx.heal(h.x, h.y);
+      this.floatText(this.leader.x, this.leader.y - 28, 'WARM AS TOAST', 'font', 0xffd04a);
     } else if (kind === 'antidote') {
       for (const h of this.party) { h.poison = null; h.antidoteT = 30; if (!h.downed) h.sprite.clearTint(); this.fx.heal(h.x, h.y); }
       this.floatText(this.leader.x, this.leader.y - 28, 'CURED', 'font', 0x8cff8c);
@@ -682,6 +695,43 @@ export class Game extends Phaser.Scene {
       this.floatText(h.x, h.y - 30, lvl === 2 ? 'SCORCHED' : 'HEAT', 'fontPlain', 0xffa060);
     }
     this.cameras.main.flash(120, 255, 120, 40, false, null);
+  }
+
+  // ============================================================ cold
+  // Frosthelm's soft gate, the heat's mirror: out in the snow the cold wears
+  // the party down (more out on the lake ice and up on the windswept
+  // Highfold) unless a Frost Tonic is on, or a hero's gear is coldproof. It
+  // never takes anyone below 15% on its own. Warm spots: Rimewatch, campfires.
+  inCold(x, y) {
+    const tx = x / TILE, ty = y / TILE;
+    if (this.areaRect() !== AREAS.overworld || biomeAt(Math.floor(tx), Math.floor(ty)) !== 'frost') return 0;
+    for (const z of W.warmZones || []) if (Math.hypot(tx - z.x, ty - z.y) < z.r) return 0;
+    for (const c of W.campfires) if (Math.hypot(tx - c.x, ty - c.y) < 4) return 0;
+    const t = this.world.at(Math.floor(tx), Math.floor(ty));
+    return t === T.ICE || t === T.PLATEAU ? 2 : 1;
+  }
+
+  updateCold(dt) {
+    const st = this.state, L = this.leader;
+    const cold = this.busy || this.onLookout ? 0 : this.inCold(L.x, L.y);
+    this.cold = { level: cold, tonic: st.tonicT || 0, region: this.areaRect() === AREAS.overworld && biomeAt(Math.floor(L.x / TILE), Math.floor(L.y / TILE)) === 'frost' };
+    if (!cold) return;
+    if (st.tonicT > 0) { st.tonicT = Math.max(0, st.tonicT - dt); if (st.tonicT === 0) this.bark(L, "THE TONIC'S WORN OFF. I CAN'T FEEL MY TOES."); return; }
+    if (!this.flags.coldWarned) { this.flags.coldWarned = true; this.bark(L, "IT'S BITTER UP HERE. WE WON'T LAST LONG IN THIS COLD WITHOUT SOMETHING WARMING."); }
+    this.coldT = (this.coldT ?? 1.5) - dt;
+    if (this.coldT > 0) return;
+    this.coldT = 3;
+    for (const h of this.party) {
+      if (h.downed || !h.alive || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward') || h.stats?.passives?.includes('coldproof')) continue;
+      const lvl = Math.max(cold, this.inCold(h.x, h.y));
+      const floor = h.maxHp * 0.15;
+      if (h.hp <= floor) continue;
+      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.05 : 0.03)));
+      h.hp -= amt;
+      h.flash?.(80);
+      this.floatText(h.x, h.y - 30, lvl === 2 ? 'FREEZING' : 'COLD', 'fontPlain', 0x9fd8ff);
+    }
+    this.cameras.main.flash(120, 150, 190, 255, false, null);
   }
 
   // party-wide unique perks that tick on their own
@@ -961,7 +1011,7 @@ export class Game extends Phaser.Scene {
     // Gloamwood's canopy dims the overworld: fades in over ~10 tiles as you
     // walk in from the fen, never as dark as a cave
     const ltx = L.x / TILE, lty = L.y / TILE;
-    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < ridgeAt(lty) + 2 ? Math.max(0, Math.min(1, (lty - (southEdge(ltx) - 4)) / 10)) : 0; // follows the meandering border
+    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < ridgeAt(lty) + 2 ? Math.max(0, Math.min(1, (lty - (southEdge(ltx) - 4)) / 10, (frostEdge(Math.floor(ltx)) + 1 - lty) / 5)) : 0; // follows the meandering border, and lifts on the stairs up to Frosthelm
     this.darkRT.setVisible(inCave || gloom > 0);
     if (!inCave && gloom <= 0) return;
     const cam = this.cameras.main;
@@ -1058,7 +1108,7 @@ export class Game extends Phaser.Scene {
     kb.on('keydown-H', () => this.usePotion('potion'));
     kb.on('keydown-J', () => this.usePotion('elixir'));
     kb.on('keydown-K', () => this.usePotion('antidote'));
-    kb.on('keydown-L', () => this.usePotion('salve'));
+    kb.on('keydown-L', () => this.usePotion(this.cold?.region ? 'tonic' : 'salve'));
     kb.on('keydown-BACKTICK', () => this.ui?.toggleDebug());
     kb.on('keydown-ENTER', () => { if (this.ui?.dialogOpen) this.ui.advanceDialog(); });
     kb.addCapture('TAB,SPACE');
@@ -1745,8 +1795,9 @@ export class Game extends Phaser.Scene {
   groupsNear(tx, ty, area) {
     const out = [];
     if ((ty > MARSH_Y - 22 && ty < SOUTH_Y + 10 && area === 'overworld') || area === 'abbey') out.push('marsh');
-    if ((ty > SOUTH_Y - 22 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
-    if (ty > SOUTH_Y - 22 && tx > RIDGE_X - 22 && area === 'overworld') out.push('cinder');
+    if ((ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
+    if (ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx > RIDGE_X - 22 && area === 'overworld') out.push('cinder');
+    if (ty > FROST_Y - 22 && area === 'overworld') out.push('frost');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;
@@ -3415,6 +3466,7 @@ export class Game extends Phaser.Scene {
     this.updateWarps();
     this.quests.update(dt);
     this.updateHeat(dt);
+    this.updateCold(dt);
     this.updatePerks(dt);
     this.dungeon?.update(dt);
     this.groupT = (this.groupT || 0) - dt;

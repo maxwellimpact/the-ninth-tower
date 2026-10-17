@@ -13,7 +13,8 @@ for (const k of ['grassD', 'grass', 'grassL', 'grassXL', 'leafD', 'leaf', 'dirtD
   'stone', 'slate', 'mist', 'bone', 'night', 'ink', 'white', 'gold', 'redL', 'blueL', 'purpL', 'woodD', 'wood', 'woodL',
   'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD',
   'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark', 'barkL',
-  'ashD', 'ash', 'ashL', 'ashXL', 'basaltD', 'basalt', 'basaltL', 'lavaD', 'lava', 'lavaL', 'lavaXL', 'brim']) C[k] = rgb(k);
+  'ashD', 'ash', 'ashL', 'ashXL', 'basaltD', 'basalt', 'basaltL', 'lavaD', 'lava', 'lavaL', 'lavaXL', 'brim',
+  'snowD', 'snow', 'snowL', 'snowXL', 'iceD', 'ice', 'iceL', 'iceXL', 'frostD', 'frost', 'frostL', 'hexD', 'purpD']) C[k] = rgb(k);
 
 export function makeTerrainPainter(world) {
   const at = world.at;
@@ -60,13 +61,109 @@ export function makeTerrainPainter(world) {
   const WR = AREAS.witchroot;
   const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
-  const BIOMES = ['gloam', 'cinder', 'other'], biomeCache = new Int8Array(192 * MAP_H).fill(-1);
+  const BIOMES = ['gloam', 'cinder', 'frost', 'basin', 'other'], biomeCache = new Int8Array(192 * MAP_H).fill(-1);
   const biomeOf = (tx, ty) => { // per tile, once: the meandering borders cost a few noise lookups
     if (tx < 0 || tx >= 192 || ty < 0 || ty >= MAP_H) return null;
     const i = ty * 192 + tx;
-    if (biomeCache[i] < 0) { const b = biomeAt(tx, ty); biomeCache[i] = b === 'gloam' ? 0 : b === 'cinder' ? 1 : 2; }
+    if (biomeCache[i] < 0) { const b = biomeAt(tx, ty); const k = BIOMES.indexOf(b); biomeCache[i] = k < 0 ? 4 : k; }
     return BIOMES[biomeCache[i]];
   };
+
+  // Frosthelm: blue-shadowed snow, trodden tracks, lake ice, icy rock
+  function snowColor(x, y) {
+    const n = vnoise(x / 38, y / 38, 210) * 0.7 + vnoise(x / 9, y / 9, 211) * 0.3 + (bayer(x, y) - 0.5) * 0.1;
+    const h = hash(x, y, 212);
+    if (h < 0.005) return C.snowXL; // glints
+    if (h < 0.009) return C.snow;
+    // wind ripples in the open drifts
+    if (vnoise(x / 30, y / 30, 214) > 0.55 && (y + Math.round(vnoise(x / 16, y / 16, 213) * 10)) % 11 === 0) return C.snow;
+    return n < 0.3 ? C.snow : n < 0.74 ? C.snowL : C.snowXL;
+  }
+  function rubble(x, y, snowy) {
+    const row = Math.floor(y / 6), sh = (row % 2) * 3;
+    const cx = Math.floor((x + sh) / 7);
+    const ox = cx * 7 - sh + 3.5 + (hash(cx, row, 240) - 0.5) * 2, oy = row * 6 + 3;
+    const dx = (x + 0.5 - ox) / 3.9, dy = (y + 0.5 - oy) / 3.3, d = dx * dx + dy * dy;
+    if (d > 1) return snowy ? C.frostD : C.slate; // the dark gaps between stones
+    const l = 0.55 - dx * 0.35 - dy * 0.55 - d * 0.3 + (bayer(x, y) - 0.5) * 0.25;
+    if (snowy && dy < -0.3 && l > 0.25) return hash(x, y, 241) < 0.7 ? C.snowL : C.snowXL;
+    if (!snowy && dy < -0.45 && hash(cx, row, 242) < 0.5) return C.mossD;
+    return snowy ? (l > 0.62 ? C.frostL : l > 0.18 ? C.frost : C.frostD) : (l > 0.62 ? C.mist : l > 0.18 ? C.stone : C.slate);
+  }
+  function frostPixel(t, x, y, tx, ty, lx, ly) {
+    const near = (k, r = 2) => typeAt(x + r, y) === k || typeAt(x - r, y) === k || typeAt(x, y + r) === k || typeAt(x, y - r) === k;
+    if (t === T.SNOW) {
+      if (near(T.PATH)) return C.snow;
+      if (near(T.ICE, 1) || near(T.WATER, 1)) return C.snowD; // the bank's shadow line
+      const above = tileAtPx(x, y - 6), above2 = tileAtPx(x, y - 12);
+      if ((above === T.WALL || above === T.CLIFF || above === T.MOUTH) && tileAtPx(x, y) !== above && bayer(x, y) < 0.7) return C.snowD;
+      if (above2 === T.CLIFF && tileAtPx(x, y) !== T.CLIFF && bayer(x, y) < 0.35) return C.snow;
+      return snowColor(x, y);
+    }
+    if (t === T.PATH) { // trodden snow, slushy grey-blue in the ruts
+      const edge = typeAt(x + 2, y) !== T.PATH || typeAt(x - 2, y) !== T.PATH || typeAt(x, y + 2) !== T.PATH || typeAt(x, y - 2) !== T.PATH;
+      if (edge) return C.snowD;
+      const h = hash(x, y, 215);
+      if (h < 0.015) return C.frostL;
+      if (h < 0.04) return C.snowL;
+      const n = vnoise(x / 14, y / 7, 216) * 0.8 + vnoise(x / 4, y / 4, 228) * 0.2 + (bayer(x, y) - 0.5) * 0.08;
+      return n > 0.68 ? C.frostL : n > 0.22 ? C.snow : C.snowL;
+    }
+    if (t === T.ICE) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const o = typeAt(x + dx, y + dy); if (o !== T.ICE && o !== T.WATER) return C.snowL; } // a rim of snow on the shore ice
+      if (Math.abs(vnoise(x / 14, y / 14, 217) - 0.5) < 0.014) return C.iceXL; // cracks
+      if ((x + y * 2) % 29 < 2 && vnoise(x / 20, y / 20, 218) > 0.55) return C.iceXL; // a glassy sheen
+      const n = vnoise(x / 30, y / 30, 219) * 0.8 + vnoise(x / 6, y / 6, 220) * 0.2 + (bayer(x, y) - 0.5) * 0.14;
+      return n < 0.32 ? C.ice : n < 0.78 ? C.iceL : C.iceXL;
+    }
+    if (t === T.PLATEAU) {
+      if (tileAtPx(x, y - 2) === T.RIM || tileAtPx(x - 2, y) === T.RIM || tileAtPx(x + 2, y) === T.RIM) return C.snow;
+      if (tileAtPx(x, y + 3) === T.CLIFF) return tileAtPx(x, y + 1) === T.CLIFF ? C.frostL : C.snowXL; // the lip of the face
+      return snowColor(x, y);
+    }
+    if (t === T.CLIFF) { // icy rock strata under a snow overhang, hung with icicles
+      const top = at(tx, ty - 1) !== T.CLIFF, fy = top ? ly : ly + TILE;
+      const ic = hash(x, 0, 221) < 0.3 ? 2 + Math.floor(hash(x, 1, 222) * 7) : 0;
+      if (fy < 3) return fy < 2 ? C.snowXL : C.snowL;
+      if (fy < 3 + ic) return fy === 2 + ic ? C.iceL : C.iceXL;
+      if (fy > 28) return C.frostD;
+      if (hash(x, 0, 223) < 0.05 && fy > 6) return C.frostD; // cracks
+      const v = vnoise(x / 6, 0, 224) * 4;
+      if ((fy + Math.floor(v)) % 6 === 0) return C.frostL;
+      return Math.floor((fy + v) / 6) % 2 ? C.frost : C.frostD;
+    }
+    if (t === T.RIM) {
+      if (at(tx, ty + 1) === T.PLATEAU) {
+        const d = TILE - 1 - ly;
+        if (d < 2) return C.snowL;
+        if (d < 4) return C.frostL;
+        if (d < 11) return (x + Math.floor(vnoise(x / 6, ty, 225) * 4)) % 7 === 0 ? C.frostD : C.frost;
+        return d < 13 ? C.frostD : C.snowD;
+      }
+      const plateauRight = at(tx + 1, ty) === T.PLATEAU;
+      const d = plateauRight ? TILE - 1 - lx : lx;
+      if (d < 2) return C.snowL;
+      if (d > 13) return C.snowD;
+      if ((y + Math.floor(vnoise(0, y / 6, 226) * 4)) % 6 === 0) return plateauRight ? C.frostD : C.frostL;
+      if (d > 11) return C.frostD;
+      return Math.floor((y + vnoise(0, y / 6, 226) * 4) / 6) % 2 ? C.frost : C.frostD;
+    }
+    if (t === T.WALL) { // a palisade of sharpened stakes, capped with snow
+      const faceBelow = at(tx, ty + 1) !== T.WALL;
+      const sx = x % 4;
+      if (!faceBelow || ly < 4) return sx === 0 ? C.woodD : ly < 2 || !faceBelow ? (hash(x, y, 227) < 0.6 ? C.snowXL : C.snowL) : C.woodL;
+      if (sx === 0 || ly > 13) return C.woodD;
+      return sx === 1 ? C.woodL : C.wood;
+    }
+    if (t === T.MOUTH) {
+      const fy = at(tx, ty - 1) === T.MOUTH ? ly + TILE : ly;
+      const fx = at(tx - 1, ty) === T.MOUTH ? lx + TILE : lx;
+      const archY = 4 + Math.round(Math.pow((fx - 15.5) / 15.5, 2) * 10);
+      if (fy < archY) return fy < archY - 2 ? (fy < 3 ? C.snowL : C.frostL) : C.frostD;
+      return C.ink;
+    }
+    return null;
+  }
 
   function pixel(x, y) {
     const t = typeAt(x, y);
@@ -123,6 +220,14 @@ export function makeTerrainPainter(world) {
       const band = Math.floor((fy + vnoise(x / 6, 0, 189) * 4) / 6);
       if (hash(x, 0, 190) < 0.05 && fy > 8) return C.lavaD; // a glowing seam
       return band % 2 ? C.basalt : C.basaltD;
+    }
+    // the highland escarpment: a wall of tumbled boulders, snowed on (the
+    // Frosthelm side) or mossy (the Gloamwood and Cinderreach side)
+    if (t === T.RIM && ty >= 206 && ty <= 213 && tx < 192 && at(tx, ty + 1) !== T.PLATEAU && at(tx + 1, ty) !== T.PLATEAU && at(tx - 1, ty) !== T.PLATEAU) return rubble(x, y, bm === 'frost' || bm === 'basin');
+    if (bm === 'frost') { const f = frostPixel(t, x, y, tx, ty, lx, ly); if (f) return f; }
+    if (bm === 'basin' && t === T.PLATEAU) { // the Basin, not yet open: dead cursed rock
+      const n = vnoise(x / 18, y / 18, 230) + (bayer(x, y) - 0.5) * 0.2;
+      return n < 0.4 ? C.hexD : n < 0.8 ? C.ashD : C.purpD;
     }
     switch (t) {
       case T.GRASS:

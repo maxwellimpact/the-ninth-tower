@@ -122,6 +122,10 @@ export const FOLK = {
   inka: folk('inka', 'wren', { head: 'cap_ranger@2', body: 'leathers_scout@5' }), // the cartographer
   vey: folk('vey', 'brann', { head: 'helm_iron@4', body: 'plate_guard@2', weapon: 'sword_iron@2' }), // Emberwatch's watch-captain
   tamsin: folk('tamsin', 'gizmo', { head: 'goggles_brass@2', body: 'apron_brown@5' }), // the Forgemaster's last apprentice
+  // Frosthelm: Rimewatch
+  hale: folk('hale', 'pip', { head: 'kerchief@5', body: 'furs_hide@4' }), // the tonic-brewer
+  oda: folk('oda', 'brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_long@4' }), // the Guardian trainer
+  kaari: folk('kaari', 'wren', { head: 'hood_ranger@5', body: 'furs_hide@2', weapon: 'bow_hunting@3' }), // Rimewatch's warden
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.

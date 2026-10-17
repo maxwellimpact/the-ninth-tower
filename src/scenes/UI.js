@@ -56,7 +56,7 @@ export class UI extends Phaser.Scene {
     this.potBtn = this.makeButton('icon_potion', () => this.g.usePotion('potion'), 'H', null, 18);
     this.elxBtn = this.makeButton('icon_elixir', () => this.g.usePotion('elixir'), 'J', null, 18);
     this.antBtn = this.makeButton('icon_antidote', () => this.g.usePotion('antidote'), 'K', null, 18);
-    this.salveBtn = this.makeButton('icon_salve', () => this.g.usePotion('salve'), 'L', null, 18); // shown once you've had a salve or felt the heat
+    this.salveBtn = this.makeButton('icon_salve', () => this.g.usePotion(this.climate || 'salve'), 'L', null, 18); // Ember Salve, or Frost Tonic in Frosthelm: shown once met
     this.salveTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.heatTxt = this.add.bitmapText(0, 0, 'font', '').setOrigin(1, 1);
     this.potTxt = this.add.bitmapText(0, 0, 'font', '0');
@@ -666,16 +666,21 @@ export class UI extends Phaser.Scene {
     this.potTxt.setText(`${game.state.potions.potion || 0}`).setTint(game.state.potions.potion ? 0xffffff : 0x777777);
     this.elxTxt.setText(`${game.state.potions.elixir || 0}`).setTint(game.state.potions.elixir ? 0xffffff : 0x777777);
     this.antTxt.setText(`${game.state.potions.antidote || 0}`).setTint(game.state.potions.antidote ? 0xffffff : 0x777777);
-    // Ember Salve: the flask appears once the heat or a salve has been met
-    const sv = game.state.potions.salve || 0, heat = game.heat?.level || 0, salveT = game.state.salveT || 0;
-    const showSalve = sv > 0 || salveT > 0 || game.flags.heatWarned;
+    // the climate flask: Ember Salve, or Frost Tonic while in Frosthelm; it
+    // appears once the heat (or cold) or the flask itself has been met
+    const frost = !!game.cold?.region;
+    this.climate = frost ? 'tonic' : 'salve';
+    const sv = game.state.potions[this.climate] || 0, lvl = (frost ? game.cold?.level : game.heat?.level) || 0, salveT = (frost ? game.state.tonicT : game.state.salveT) || 0;
+    const showSalve = sv > 0 || salveT > 0 || game.flags[frost ? 'coldWarned' : 'heatWarned'];
     this.salveBtn.visible = showSalve;
+    this.salveBtn.icon.setTexture(`icon_${this.climate}`);
     this.salveBtn.icon.setVisible(showSalve); this.salveBtn.key.setVisible(showSalve && !this.sys.game.device.input.touch); this.salveTxt.setVisible(showSalve);
     if (showSalve) this.drawBtn(g, this.salveBtn, 0);
     this.salveTxt.setText(`${sv}`).setTint(sv ? 0xffffff : 0x777777);
     const mm = Math.floor(salveT / 60), ss = String(Math.floor(salveT % 60)).padStart(2, '0');
-    this.heatTxt.setText(salveT > 0 && heat ? `SALVE ${mm}:${ss}` : heat && !salveT ? (heat === 2 ? 'SCORCHING!' : 'TOO HOT!') : '')
-      .setTint(salveT > 0 ? 0x9fd8ff : Math.floor(time / 300) % 2 ? 0xffa060 : 0xffd04a);
+    const warn = frost ? (lvl === 2 ? 'FREEZING!' : 'TOO COLD!') : (lvl === 2 ? 'SCORCHING!' : 'TOO HOT!');
+    this.heatTxt.setText(salveT > 0 && lvl ? `${frost ? 'TONIC' : 'SALVE'} ${mm}:${ss}` : lvl && !salveT ? warn : '')
+      .setTint(salveT > 0 ? (frost ? 0xffd04a : 0x9fd8ff) : frost ? (Math.floor(time / 300) % 2 ? 0x9fd8ff : 0xd6efff) : Math.floor(time / 300) % 2 ? 0xffa060 : 0xffd04a);
     this.muteBtn.icon.setTexture(audio.muted ? 'icon_soundOff' : 'icon_soundOn');
     this.drawBtn(g, this.muteBtn, 0);
     this.drawBtn(g, this.dbgBtn, 0);
