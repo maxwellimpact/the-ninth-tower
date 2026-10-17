@@ -125,6 +125,7 @@ export const FOLK = {
   // Frosthelm: Rimewatch
   hale: folk('hale', 'pip', { head: 'kerchief@5', body: 'furs_hide@4' }), // the tonic-brewer
   oda: folk('oda', 'brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_long@4' }), // the Guardian trainer
+  marek: folk('marek', 'brann', { head: 'helm_iron@1', body: 'plate_guard@1', weapon: 'sword_long@1' }), // the Basin's last watcher
   bjorna: folk('bjorna', 'brann', { head: 'kerchief@3', body: 'apron_brown@4' }), // the Rimewatch innkeeper (once Frosthelm is free)
   aldric: folk('aldric', 'brann', { head: 'helm_lion@6', body: 'plate_guard@6' }), // the Royal Armorer (five stones)
   kaari: folk('kaari', 'wren', { head: 'hood_ranger@5', body: 'furs_hide@2', weapon: 'bow_hunting@3' }), // Rimewatch's warden
@@ -191,4 +192,6 @@ export const VULK = { ...composeHero('lizard', { head: 'crown_forge', body: 'apr
 export const ISOLDE = { ...composeHero('mirelle', { head: 'helm_great', body: 'plate_guard', weapon: 'lance_rime', offhand: 'shield_kite' }), id: 'isolde', name: 'Isolde' };
 // Ice Wraith: a hooded, footless shape of frost that drifts through walls (iceRecolor)
 export const WRAITH = { ...composeHero('pip', { head: 'hood_shadow@3', body: 'robe_scholar@1', weapon: 'none', offhand: null }), id: 'icewraith', name: 'Ice Wraith' };
+// Chain Warden: Malgrim's jailer, a hulking plated hex knight swinging a shackle-mace (hexRecolor-free: dark steel)
+export const WARDEN = { ...composeHero('brann', { head: 'helm_hex', body: 'plate_hex', weapon: 'hammer_war@1', offhand: null }), id: 'chainwarden', name: 'Chain Warden' };
 export const WITCHLING = { ...composeHero('hag', { head: 'hat_hag', body: 'shawl_hag', weapon: 'staff_bog', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

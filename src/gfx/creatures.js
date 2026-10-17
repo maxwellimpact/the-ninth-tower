@@ -1034,3 +1034,58 @@ export function buildTroll() {
     hurt: [trollFrame({ eye: 'white' })],
   };
 }
+
+// ================================================================ the Basin
+// --------------------------------------------------------------- Voidling
+// A scrap of living dark: a hunched shadow body trailing tendrils, two
+// violet eyes, claws out when it strikes. It hovers (32x32).
+function voidlingFrame({ bob = 0, claw = 0, eye = 'curseL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const y = 14 + bob;
+  for (let i = 0; i < 5; i++) for (let k = 0; k < 4 + (i % 2) * 2; k++) px(ctx, 10 + i * 3 + Math.round(Math.sin(k * 0.9 + i) * 1), y + 6 + k, k > 3 ? 'hexD' : 'purpD'); // tendrils
+  shadedBlob(ctx, 16, y, 7, 6, ['ink', 'hexD', 'purpD', 'purp']);
+  px(ctx, 12, y - 1, eye, 2, 2); px(ctx, 18, y - 1, eye, 2, 2); px(ctx, 13, y - 1, 'white'); px(ctx, 19, y - 1, 'white');
+  px(ctx, 11, y - 6, 'hexD', 2, 2); px(ctx, 19, y - 6, 'hexD', 2, 2); // little horns
+  if (claw) { for (const sx of [7, 24]) { px(ctx, sx, y + 1 - claw, 'purp', 2, 1); px(ctx, sx + (sx < 16 ? -1 : 2), y - claw, 'curseL'); } }
+  outline(c, 'ink');
+  return c;
+}
+export function buildVoidling() {
+  return {
+    idle: [voidlingFrame({}), voidlingFrame({ bob: 1 })],
+    walk: [voidlingFrame({}), voidlingFrame({ bob: 1 }), voidlingFrame({ bob: 2 }), voidlingFrame({ bob: 1 })],
+    windup: [voidlingFrame({ claw: 2 }), voidlingFrame({ claw: 3, bob: 1 })],
+    attack: [voidlingFrame({ claw: 1 }), voidlingFrame({})],
+    hurt: [voidlingFrame({ eye: 'white' })],
+  };
+}
+
+// ---------------------------------------------------------- Tower Gargoyle
+// A crouched stone beast with folded bat wings, horns and a snarl, grey and
+// cracked; its eyes kindle when it moves (40x40, feet near y=33).
+const GSTONE = ['slate', 'stone', 'mist', 'bone'];
+function gargoyleFrame({ step = 0, wings = 0, lunge = 0, lit = true }) {
+  const [c, ctx] = makeCanvas(40, 40);
+  const y = -lunge;
+  // wings: folded behind, or half spread to pounce
+  for (const s of [-1, 1]) for (let i = 0; i < 9; i++) px(ctx, 20 + s * (6 + i * (wings ? 1.2 : 0.6)), 12 + y + i * (wings ? 0.4 : 1.2), i % 3 ? 'stone' : 'slate', 2, wings ? 6 - Math.floor(i / 2) : 3);
+  const lg = step % 2 ? [0, 1] : [1, 0];
+  shadedBlob(ctx, 14, 31 - lg[0], 3.5, 3, GSTONE); shadedBlob(ctx, 26, 31 - lg[1], 3.5, 3, GSTONE); // haunches
+  shadedBlob(ctx, 20, 24 + y, 9, 7, GSTONE); // body
+  shadedBlob(ctx, 20 + lunge, 13 + y, 5.5, 5, GSTONE); // head
+  px(ctx, 15 + lunge, 7 + y, 'slate', 2, 3); px(ctx, 24 + lunge, 7 + y, 'slate', 2, 3); // horns
+  px(ctx, 17 + lunge, 12 + y, 'ink', 6, 2); if (lit) { px(ctx, 17 + lunge, 12 + y, 'curseL', 2, 1); px(ctx, 21 + lunge, 12 + y, 'curseL', 2, 1); }
+  px(ctx, 18 + lunge, 16 + y, 'bone', 1, 2); px(ctx, 21 + lunge, 16 + y, 'bone', 1, 2); // fangs
+  for (const [cx, cy] of [[16, 22], [23, 26], [19, 29]]) px(ctx, cx, cy + y, 'slate', 2, 1); // cracks
+  outline(c, 'ink');
+  return c;
+}
+export function buildGargoyle() {
+  return {
+    idle: [gargoyleFrame({ lit: false })],
+    walk: [gargoyleFrame({ step: 0, wings: 1 }), gargoyleFrame({ step: 1, wings: 1 })],
+    windup: [gargoyleFrame({ wings: 1, lunge: 1 }), gargoyleFrame({ wings: 1, lunge: 2 })],
+    attack: [gargoyleFrame({ wings: 1, lunge: 3 }), gargoyleFrame({ wings: 1 })],
+    hurt: [gargoyleFrame({ lit: false })],
+  };
+}

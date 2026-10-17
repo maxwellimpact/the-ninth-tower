@@ -2266,6 +2266,183 @@
      "rarity": "rare"
     }
    }
+  },
+  "voidmother": {
+   "title": "BOUNTY: THE VOID MOTHER",
+   "giver": "basinboard",
+   "region": "basin",
+   "offer": [
+    "BOUNTY: SOMETHING IN THE NORTH OF THE BASIN KEEPS MAKING VOIDLINGS. MAREK CALLS IT THE VOID MOTHER. MAREK DOES NOT GO NORTH.",
+    "THE LITTLE ONES GO FOR WHOEVER'S HURT WORST. KEEP EACH OTHER UP."
+   ],
+   "accept": "HUNT HER.",
+   "thanks": [
+    "MAREK: NO MORE OF THOSE LITTLE HORRORS POPPING UP BEHIND ME. HERE - STARMETAL. I'VE BEEN SAVING IT FOR A HERO. YOU'LL DO."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE VOID MOTHER IN THE NORTH OF THE BASIN",
+     "at": [
+      140,
+      232
+     ],
+     "r": 7,
+     "units": [
+      [
+       "voidling",
+       140,
+       232
+      ],
+      [
+       "voidling",
+       137,
+       235
+      ],
+      [
+       "voidling",
+       143,
+       235
+      ],
+      [
+       "voidling",
+       140,
+       236
+      ]
+     ],
+     "elite": 0,
+     "name": "THE VOID MOTHER"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM OLD MAREK",
+     "npc": "marek"
+    }
+   ],
+   "reward": {
+    "gold": 300,
+    "xp": 700,
+    "mats": {
+     "starmetal": 3
+    }
+   }
+  },
+  "colossus": {
+   "title": "BOUNTY: THE COLOSSUS",
+   "giver": "basinboard",
+   "region": "basin",
+   "offer": [
+    "BOUNTY: A GARGOYLE THE SIZE OF A BARN, EAST OF THE CAUSEWAY. IT ONLY MOVES WHEN YOU'RE NOT LOOKING. SO DON'T STOP LOOKING.",
+    "...BUT YOU'LL HAVE TO STOP LOOKING EVENTUALLY. THAT'S THE PROBLEM."
+   ],
+   "accept": "FACE THE COLOSSUS.",
+   "thanks": [
+    "MAREK: THE COLOSSUS? IN PIECES? I'LL SLEEP TONIGHT. FIRST TIME IN A WHILE. TAKE THIS - IT CAME OFF THE LAST FOOL WHO TRIED."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE COLOSSUS EAST OF THE CAUSEWAY",
+     "at": [
+      178,
+      280
+     ],
+     "r": 7,
+     "units": [
+      [
+       "gargoyle",
+       178,
+       280
+      ],
+      [
+       "gargoyle",
+       175,
+       283
+      ],
+      [
+       "gargoyle",
+       181,
+       283
+      ]
+     ],
+     "elite": 0,
+     "name": "THE COLOSSUS"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM OLD MAREK",
+     "npc": "marek"
+    }
+   ],
+   "reward": {
+    "gold": 320,
+    "xp": 740,
+    "gear": {
+     "rarity": "rare"
+    },
+    "mats": {
+     "starmetal": 2
+    }
+   }
+  },
+  "glassking": {
+   "title": "BOUNTY: THE GLASS KING",
+   "giver": "basinboard",
+   "region": "basin",
+   "requires": "voidmother",
+   "offer": [
+    "BOUNTY: ONE OF MALGRIM'S MIRRORS HAS STARTED WALKING ABOUT ON ITS OWN, NEAR THE TOWER. IT LOOKS LIKE WHOEVER FOUND IT LAST.",
+    "IT WILL LOOK LIKE YOU. TRY NOT TO TAKE IT PERSONALLY."
+   ],
+   "accept": "BREAK THE GLASS KING.",
+   "thanks": [
+    "MAREK: YOU FOUGHT YOURSELF AND WON. THAT'S MORE THAN MOST OF US MANAGE. HERE. YOU'VE EARNED A GOOD SLEEP AND A BETTER SWORD."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE GLASS KING BY THE TOWER",
+     "at": [
+      140,
+      266
+     ],
+     "r": 6,
+     "units": [
+      [
+       "mirror",
+       140,
+       266
+      ],
+      [
+       "voidling",
+       137,
+       268
+      ],
+      [
+       "voidling",
+       143,
+       268
+      ]
+     ],
+     "elite": 0,
+     "name": "THE GLASS KING"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM OLD MAREK",
+     "npc": "marek"
+    }
+   ],
+   "reward": {
+    "gold": 360,
+    "xp": 800,
+    "gear": {
+     "rarity": "rare"
+    },
+    "mats": {
+     "starmetal": 3
+    }
+   }
   }
  },
  "npcs": [
@@ -3243,6 +3420,38 @@
    "lines": [
     "THE ICE KNIGHT'S GONE AND THE VILLAGERS ARE COMING BACK UP THE PASS. RIMEWATCH IS A VILLAGE AGAIN - AND A VILLAGE NEEDS AN INN.",
     "SIT BY THE FIRE. YOU'VE EARNED A HOT CUP AND A WARM BED. FIRST ONE'S FREE. SO'S THE SECOND."
+   ]
+  },
+  {
+   "id": "marek",
+   "name": "OLD MAREK, THE LAST WATCHER",
+   "x": 138,
+   "y": 313,
+   "look": "marek",
+   "voice": {
+    "pitch": 130,
+    "wave": "square",
+    "duty": 0.25,
+    "speed": 0.85
+   },
+   "lines": [
+    "I'VE WATCHED THAT TOWER FOR NINE YEARS. IT HASN'T BLINKED. NEITHER HAVE I. MUCH.",
+    "THE BARRIER COMES DOWN A LAYER EVERY TIME A WARD STONE BREAKS. I'VE SEEN IT THREE TIMES NOW. IT'S BEAUTIFUL. AND TERRIFYING."
+   ]
+  },
+  {
+   "id": "basinboard",
+   "name": "BOUNTY BOARD",
+   "x": 135,
+   "y": 313,
+   "look": "board",
+   "lines": [
+    "NOTICES, NAILED UP WITH SHAKING HANDS."
+   ],
+   "errands": [
+    "voidmother",
+    "colossus",
+    "glassking"
    ]
   }
  ]

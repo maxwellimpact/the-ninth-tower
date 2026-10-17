@@ -544,6 +544,7 @@ export class Hero extends Unit {
       this.scene.dealDamage(this, src, this.stats.atk * 2 * this.critMult() * (this.riposteMul || 1), { crit: true, knock: 90 });
       return 0;
     }
+    if (this.chainedT > 0) amount *= 1.2; // bound by a Chain Warden
     if (this.taunting > 0) amount *= this.provokeT > 0 && !this.skills.some((k) => k.id === 'taunt') ? 0.8 : 0.5; // Provoke's cut is gentler than Brann's Taunt
     if (this.wallT > 0) amount *= 0.2;
     if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
@@ -635,6 +636,7 @@ export class Hero extends Unit {
     this.invuln = Math.max(0, this.invuln - dt);
     this.taunting = Math.max(0, this.taunting - dt);
     this.provokeT = Math.max(0, (this.provokeT || 0) - dt);
+    this.chainedT = Math.max(0, (this.chainedT || 0) - dt);
     if (this.shieldT > 0) { this.shieldT -= dt; if (this.shieldT <= 0) this.shield = 0; }
     this.wallT = Math.max(0, (this.wallT || 0) - dt);
     this.riposteT = Math.max(0, (this.riposteT || 0) - dt);
@@ -1169,8 +1171,8 @@ export function freezeHero(h, t = 1.2) {
 
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -1224,6 +1226,8 @@ export class Enemy extends Unit {
     const t = this.statusColor();
     if (t) this.sprite.setTint(t);
     else if (this.frenzy) this.sprite.setTint(0xff8a7a);
+    else if (this.mirrorOf) this.sprite.setTint(0x8a6cc4); // Malgrim's Mirror: a dark copy
+    else if (this.hexborn) this.sprite.setTint(0xc9a0ff); // the Basin's Hexborn
     else if (this.elite) this.sprite.setTint(0xffd889);
     else if (this.s.tint) this.sprite.setTint(this.s.tint); // ghosts keep their pallor
     else if (this.puppet && this.cursed) this.sprite.setTint(0xd9b8ff);
@@ -1422,6 +1426,7 @@ export class Enemy extends Unit {
         if (f[0] * dx + f[1] * dy > 0.2) { amount *= 0.3; if (Math.random() < 0.3) this.scene.floatText(this.x, this.y - 24, 'CLANG', 'fontPlain'); }
       }
     }
+    if (this.statue && !dot) { amount *= 0.5; if (!this.guardMsgT || this.scene.time.now > this.guardMsgT) { this.guardMsgT = this.scene.time.now + 2500; this.scene.floatText(this.x, this.y - 34, 'STONE - LOOK AWAY AND IT MOVES', 'fontPlain', 0xbfb8cc); } }
     if (this.wardShield > 0 && !dot) {
       const a = Math.min(this.wardShield, amount);
       this.wardShield -= a; amount -= a;
@@ -1629,6 +1634,9 @@ export class Enemy extends Unit {
     if (s.ai === 'drake' && this.engaged && this.aiDrake(dt)) { this.sync(dt); return; }
     if (s.ai === 'sled' && this.engaged && this.aiSled(dt)) { this.sync(dt); return; }
     if (s.ai === 'troll' && this.engaged && this.aiTroll(dt)) { this.sync(dt); return; }
+    if (s.ai === 'gargoyle' && this.aiGargoyle(dt)) { this.sync(dt); return; }
+    if (s.ai === 'voidling' && this.engaged) this.aiVoidling(dt);
+    if (s.ai === 'chain' && this.engaged) this.aiChain(dt);
     if (this.affix) this.affixTick(dt);
     // elites read the party's telegraphed area attacks (Meteor, Volley) and step out
     if ((this.elite || this.named) && !this.boss && this.state !== 'charging' && sc.partyZones?.length) {
@@ -2228,6 +2236,55 @@ export class Enemy extends Unit {
     this.pound = { t: 0, zones: [...zones, this.zone], gfx, spikes: [] };
     sc.floatText(this.x, this.y - 64, 'IT RAISES BOTH FISTS...', 'fontPlain', 0x9fdcff);
     return true;
+  }
+
+  // Voidling: every few seconds it steps out of the dark beside whichever hero
+  // is weakest, and goes for them.
+  aiVoidling(dt) {
+    const sc = this.scene;
+    this.blinkT = (this.blinkT ?? 3) - dt;
+    if (this.blinkT > 0 || this.state !== 'chase' || !this.onScreen(-30)) return;
+    const weak = sc.party.filter((h) => h.alive && !h.downed).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    if (!weak) return;
+    this.blinkT = 4.5;
+    for (const a of [0.5, 2.6, 4.2, 1.6]) {
+      const x = weak.x + Math.cos(a) * 18, y = weak.y + Math.sin(a) * 12;
+      if (sc.nav.solidAtPx(x, y)) continue;
+      sc.fx.puff(this.x, this.y, 'sparkCurse'); this.x = x; this.y = y; sc.fx.puff(x, y, 'sparkCurse'); audio.sfx('warp', { pitch: 1.5 });
+      this.target = weak; this.face(weak.x - x, weak.y - y);
+      return;
+    }
+  }
+
+  // Tower Gargoyle: stone while the leader looks its way; the moment they turn
+  // their back, it moves - fast.
+  aiGargoyle(dt) {
+    const L = this.scene.leader;
+    const [fx, fy] = L.facingVec(), [nx, ny] = norm(this.x - L.x, this.y - L.y);
+    const watched = !L.downed && Math.hypot(this.x - L.x, this.y - L.y) < 240 && fx * nx + fy * ny > 0.35 && this.state !== 'windup';
+    if (watched !== !!this.statue) {
+      this.statue = watched;
+      if (watched) { this.clearZone(); if (this.state !== 'idle') this.state = 'chase'; this.anim = ''; this.play('idle'); this.sprite.setTint(0x9a96aa); }
+      else this.restoreTint();
+    }
+    if (watched) { if (this.notice(this.s.aggro) && !this.engaged) this.aggroOn(this.scene.leader, false); return true; }
+    return false;
+  }
+
+  // Chain Warden: hurls a chain that binds two heroes together - they're
+  // slowed, take more, and can't move apart. The Grapple Hook breaks it.
+  aiChain(dt) {
+    const sc = this.scene;
+    this.chainT = (this.chainT ?? 3) - dt;
+    if (this.chainT > 0 || this.state !== 'chase' || !this.onScreen()) return;
+    const hs = sc.party.filter((h) => h.alive && !h.downed && Math.hypot(h.x - this.x, h.y - this.y) < 160);
+    let best = null;
+    for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) { const d = Math.hypot(hs[i].x - hs[j].x, hs[i].y - hs[j].y); if (d < 150 && (!best || d > best.d)) best = { a: hs[i], b: hs[j], d }; }
+    if (!best) return;
+    this.chainT = 8;
+    this.anim = ''; this.play('attack');
+    audio.sfx('zip', { pitch: 0.6 });
+    sc.chainHeroes(best.a, best.b, this);
   }
 
   beetleBurst(r) {

@@ -2,10 +2,10 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, WARDEN, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -77,6 +77,7 @@ export const GROUPS = {
       s.textures.addCanvas('clawmarks', P.clawMarks());
       s.textures.addCanvas('iceblock', P.iceBlock());
       s.textures.addCanvas('house_spire', P.rimeSpire());
+      s.textures.addCanvas('house_tower', P.ninthTower());
       s.textures.addCanvas('iceplat', P.icePlatform());
       frames(s, 'windvent', P.windVent(), 6);
       s.textures.addCanvas('icewall', P.iceWall());
@@ -207,6 +208,17 @@ export const GROUPS = {
         s.textures.addCanvas(`drift${k}`, P.snowDrift(k)); s.textures.addCanvas(`snowtuft${k}`, P.snowTuft(k));
       }
       for (let k = 0; k < 3; k++) s.textures.addCanvas(`furtent${k}`, P.furTent(k));
+    }],
+  ],
+  // the Blight Basin (Wave 3)
+  basin: [
+    ['basin foes', (s) => {
+      creature(s, 'voidling', buildVoidling(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'gargoyle', buildGargoyle(), { idle: 1, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      registerPuppet(s, 'chainwarden', WARDEN);
+    }],
+    ['blight', (s) => {
+      for (let k = 0; k < 4; k++) { s.textures.addCanvas(`hexcrystal${k}`, P.hexCrystal(k)); s.textures.addCanvas(`hexcrystalB${k}`, P.hexCrystal(k, true)); s.textures.addCanvas(`bones${k}`, P.bones(k)); }
     }],
   ],
   interior: [

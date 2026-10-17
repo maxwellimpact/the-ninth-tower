@@ -22,9 +22,10 @@ export const T = {
   BASALT: 26, // Cinderreach basalt pavement
   SNOW: 27, // Frosthelm snowfields
   ICE: 28, // frozen lake (walkable)
+  BLIGHT: 29, // the Blight Basin's dead ground
 };
 export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL, T.LAVA]);
-export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM, T.ASH, T.LAVA, T.SNOW, T.ICE]);
+export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM, T.ASH, T.LAVA, T.SNOW, T.ICE, T.BLIGHT]);
 
 export const MARSH_Y = 64;
 export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
@@ -128,6 +129,13 @@ export const LANDMARKS = {
   trollGully: { x: 100, y: 226 },
   spire: { x: 62, y: 270 }, // the Rimeglass Spire, up on the Highfold
 };
+// The Blight Basin: the Ninth Tower stands at its heart, ringed by the
+// barrier's four layers (outermost first; each outer Ward Stone that falls
+// takes one away). A causeway through the Frosthelm ridge always reaches the
+// Tower door; its sides in each band are walled by that band's layer.
+export const TOWER = { x: 155, y: 262 };
+export const BARRIER_R = [40, 31, 22, 13];
+export const TOWER_DOOR = { x: 155, y: 269 };
 // the Highfold: a raised massif in the middle of Frosthelm, sheer on three
 // sides; its south face can be climbed with the Climbing Claws
 export const HIGHFOLD = { x0: 24, y0: 264, x1: 100, y1: 292 };
@@ -170,6 +178,8 @@ const PATHS = [
   { w: 0.8, pts: [[47, 234], [40, 237], [34, 240]] }, // down to the frozen lake
   { w: 0.75, pts: [[38, 220], [32, 219], [29, 218]] }, // the trappers' cave
   { w: 0.75, pts: [[14, 259], [10, 268], [9, 282], [13, 296], [24, 305], [40, 308], [52, 308]] }, // the west trail past the lake
+  // the causeway: from Frosthelm's south road, through a cut in the ridge, round to the Ninth Tower's door
+  { w: 1.1, pts: [[96, 301], [106, 306], [116, 309], [128, 310], [142, 309], [155, 306], [155, 270]] },
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
@@ -195,8 +205,12 @@ export function buildWorld() {
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
     if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' ? T.DWALL : T.CAVEWALL); continue; }
-    if (b === 'basin') { set(x, y, T.PLATEAU); continue; } // the Blight Basin (built in a later stage), walled off by the ridge
-    if (b === 'frost') {
+    if (b === 'basin') {
+      set(x, y, T.BLIGHT);
+      // rifts into nothing, where the curse ate through the ground
+      const rv = vnoise(x / 6, y / 6, 250), dT = Math.hypot(x - TOWER.x, y - TOWER.y);
+      if (rv > 0.79 && dT > 9 && Math.abs(x - TOWER.x) > 3) set(x, y, T.CHASM);
+    } else if (b === 'frost') {
       set(x, y, T.SNOW);
       // Glasswater: the frozen lake, with a few holes of open black water
       const gd = Math.hypot((x - 22) / 16, (y - 249) / 10) + (vnoise(x / 4, y / 4, 200) - 0.5) * 0.3;
@@ -421,6 +435,10 @@ export function buildWorld() {
     if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].some(([dx, dy]) => at(x + dx, y + dy) === T.PLATEAU || (dy === 0 && at(x + dx, y) === T.CLIFF))) set(x, y, T.RIM);
   }
   rect(61, 268, 63, 270, T.HOUSE); // the Rimeglass Spire's footprint (the tower is drawn over it)
+  // the Blight Basin: a cut through the ridge for the causeway, and the Tower's footprint
+  for (let y = 307; y <= 311; y++) for (let x = 104; x <= 128; x++) if (at(x, y) === T.RIM || at(x, y) === T.PLATEAU) set(x, y, Math.abs(y - 309) <= 1 ? T.PATH : T.RIM);
+  rect(TOWER.x - 3, TOWER.y + 2, TOWER.x + 3, TOWER.y + 6, T.HOUSE);
+  for (let y = TOWER.y - 10; y <= TOWER.y + 12; y++) for (let x = TOWER.x - 10; x <= TOWER.x + 10; x++) if (at(x, y) === T.CHASM) set(x, y, T.BLIGHT); // a clear courtyard
   // the sky ledge: a sheer pillar of rock standing out of the frozen lake,
   // reached only by gliding off the Highfold (Gale Cloak)
   rect(28, 249, 32, 252, T.PLATEAU);
@@ -538,7 +556,7 @@ export function buildWorld() {
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
-  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH || t === T.SNOW;
+  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH || t === T.SNOW || t === T.BLIGHT;
   const free = (x, y, pad = 1) => {
     for (let dy = -pad; dy <= pad; dy++) for (let dx = -pad; dx <= pad; dx++) {
       const tx = x + dx, ty = y + dy;
@@ -594,7 +612,13 @@ export function buildWorld() {
       else if (r < 0.07 && nearLava) add('cinders', x, y, { seed: x + y * 5 });
       continue;
     }
-    if (b === 'basin') continue;
+    if (b === 'basin') {
+      if (at(x, y) !== T.BLIGHT || Math.hypot(x - TOWER.x, y - TOWER.y) < 11) continue;
+      if (r < 0.008) { add('deadtree', x, y, { seed: Math.floor(hash(x, y, 14) * 8) }); claim(x, y); }
+      else if (r < 0.016) { add('hexcrystal', x, y, { seed: x + y * 3, big: hash(x, y, 33) < 0.35 }); claim(x, y); }
+      else if (r < 0.03) add('bones', x, y, { seed: x * 7 + y });
+      continue;
+    }
     if (b === 'frost') {
       if (at(x, y) !== T.SNOW && at(x, y) !== T.PLATEAU) continue;
       if (r < 0.008) { add('rimeglass', x, y, { seed: x + y * 3, big: hash(x, y, 33) < 0.35 }); claim(x, y); }

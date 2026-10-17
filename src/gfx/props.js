@@ -956,6 +956,58 @@ export function windVent() {
   });
 }
 
+// ================================================================ the Basin
+// A cluster of hex crystal: violet shards that grew where the curse pooled.
+export function hexCrystal(seed = 0, big = false) {
+  const w = big ? 22 : 16, h = big ? 22 : 16;
+  const [c, ctx] = makeCanvas(w, h);
+  const n = big ? 4 : 3;
+  for (let k = 0; k < n; k++) {
+    const cx = Math.round(w / 2 + (k - (n - 1) / 2) * (big ? 4 : 3.5) + (hash(seed, k, 261) - 0.5) * 2), ch = Math.round((big ? 12 : 8) + hash(seed, k + 5, 262) * (big ? 8 : 6) - Math.abs(k - (n - 1) / 2) * 3);
+    for (let y = 0; y < ch; y++) { const half = y < 2 ? 0 : y < 4 ? 1 : 2; for (let x = cx - half; x <= cx + half; x++) px(ctx, x, h - 2 - ch + y, x < cx ? 'curseL' : x === cx ? 'curse' : 'purp'); }
+  }
+  px(ctx, 2, h - 2, 'hexD', w - 4, 1);
+  outline(c, 'ink');
+  return c;
+}
+// Old bones in the dead earth.
+export function bones(seed = 0) {
+  const [c, ctx] = makeCanvas(14, 8);
+  px(ctx, 2, 4, 'bone', 7, 1); px(ctx, 1, 3, 'bone'); px(ctx, 1, 5, 'bone'); px(ctx, 9, 3, 'bone'); px(ctx, 9, 5, 'bone');
+  if (hash(seed, 1, 263) < 0.5) { px(ctx, 10, 1, 'bone', 3, 3); px(ctx, 11, 2, 'ink'); } // a skull
+  return c;
+}
+// The Ninth Tower: Malgrim's black spire - a tall tapering shaft of dark
+// stone in tiers, violet light in its windows and seams, a crown of horns
+// at the top round a burning hex, and a great door at its foot.
+export function ninthTower() {
+  const W = 104, H = 236;
+  const [c, ctx] = makeCanvas(W, H);
+  const cx = 52;
+  for (let y = 30; y < 226; y++) {
+    const half = Math.round(10 + (y - 30) * 0.13);
+    for (let x = cx - half; x <= cx + half; x++) {
+      const f = (x - (cx - half)) / (half * 2);
+      let col = f < 0.15 ? 'slate' : f < 0.55 ? 'night' : f < 0.85 ? 'hexD' : 'ink';
+      if ((y - 30) % 28 < 2) col = f < 0.5 ? 'stone' : 'slate'; // tier ledges
+      if (Math.abs(x - cx) === Math.round(half * 0.4) && hash(x, y, 264) < 0.35) col = 'purpD'; // seams
+      px(ctx, x, y, col);
+    }
+  }
+  for (let t = 0; t < 6; t++) { const wy = 44 + t * 28; px(ctx, cx - 2, wy, 'ink', 5, 9); px(ctx, cx - 1, wy + 1, t % 2 ? 'curse' : 'curseL', 3, 7); } // lit windows
+  for (let t = 0; t < 5; t++) for (const s of [-1, 1]) { const wy = 58 + t * 28, half = Math.round(10 + (wy - 30) * 0.13); px(ctx, cx + s * Math.round(half * 0.7) - 1, wy, 'curse', 2, 4); }
+  // the horned crown and the hex burning in it
+  for (let i = 0; i < 5; i++) { const x0 = cx - 16 + i * 8; for (let y = 0; y < 14 - Math.abs(i - 2) * 3; y++) px(ctx, x0 + Math.round(y * (i - 2) * 0.12), 30 - y, i % 2 ? 'night' : 'slate', 2, 1); }
+  for (let y = 4; y < 22; y++) { const half = Math.round(Math.sqrt(Math.max(0, 64 - (y - 13) * (y - 13)))); px(ctx, cx - half, y, y < 10 ? 'curseL' : 'curse', half * 2 + 1, 1); }
+  px(ctx, cx - 2, 11, 'white', 5, 4);
+  // the base and the great door
+  for (let y = 222; y < 234; y++) px(ctx, cx - 40 + (y - 222), y, y < 226 ? 'slate' : 'night', 80 - (y - 222) * 2, 1);
+  for (let y = 196; y < 232; y++) { const w = y < 204 ? 2 + (y - 196) : 10; px(ctx, cx - w, y, y < 204 ? 'purpD' : 'ink', w * 2 + 1, 1); }
+  px(ctx, cx - 1, 210, 'curse', 3, 3);
+  outline(c, 'ink');
+  return c;
+}
+
 // Frost Prison: a translucent block of ice that encases whoever is inside.
 export function iceBlock() {
   const [c, ctx] = makeCanvas(22, 26);

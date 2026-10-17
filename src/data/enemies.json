@@ -1115,5 +1115,102 @@
    "rimeglass": 3,
    "silver": 2
   }
+ },
+ "voidling": {
+  "name": "VOIDLING",
+  "maxHp": 100,
+  "speed": 50,
+  "aggro": 130,
+  "reach": 20,
+  "windup": 0.4,
+  "recover": 0.7,
+  "dmg": 26,
+  "xp": 18,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 14,
+  "flying": true,
+  "ai": "voidling",
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "crystal": 0.3
+  }
+ },
+ "gargoyle": {
+  "name": "TOWER GARGOYLE",
+  "maxHp": 250,
+  "speed": 72,
+  "aggro": 150,
+  "reach": 26,
+  "windup": 0.45,
+  "recover": 0.8,
+  "dmg": 32,
+  "xp": 30,
+  "gold": [
+   4,
+   9
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 20,
+  "ai": "gargoyle",
+  "weak": "storm",
+  "resist": "venom",
+  "drops": {
+   "starmetal": 0.12
+  }
+ },
+ "chainwarden": {
+  "name": "CHAIN WARDEN",
+  "maxHp": 350,
+  "speed": 30,
+  "aggro": 130,
+  "reach": 34,
+  "windup": 0.7,
+  "recover": 1.0,
+  "dmg": 36,
+  "xp": 36,
+  "gold": [
+   5,
+   10
+  ],
+  "r": 8,
+  "zone": "front",
+  "zr": 26,
+  "ai": "chain",
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "starmetal": 0.15,
+   "silver": 0.5
+  }
+ },
+ "mirror": {
+  "name": "MALGRIM'S MIRROR",
+  "maxHp": 300,
+  "speed": 55,
+  "aggro": 140,
+  "reach": 22,
+  "windup": 0.5,
+  "recover": 0.7,
+  "dmg": 30,
+  "xp": 40,
+  "gold": [
+   6,
+   12
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 16,
+  "ai": "mirror",
+  "weak": "light",
+  "drops": {
+   "crystal": 0.5
+  }
  }
 }

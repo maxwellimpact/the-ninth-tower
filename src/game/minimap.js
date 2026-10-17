@@ -8,7 +8,7 @@ const COL = {
   [T.GRASS]: 'grass', [T.PATH]: 'dirtL', [T.SAND]: 'sand', [T.WATER]: 'water', [T.PLATEAU]: 'grassL',
   [T.CLIFF]: 'slate', [T.STAIRS]: 'bone', [T.PAVED]: 'mist', [T.WALL]: 'bone', [T.RIM]: 'slate',
   [T.MARSH]: 'moss', [T.SHALLOW]: 'bogL', [T.BOG]: 'bogD', [T.CHASM]: 'ink', [T.CAVEFLOOR]: 'caveXL', [T.DFLOOR]: 'stone', [T.DWALL]: 'night',
-  [T.CAVEWALL]: 'caveD', [T.BRIDGE]: 'wood', [T.MOUTH]: 'ink', [T.LOAM]: 'gloomL', [T.HOUSE]: 'woodD', [T.ASH]: 'ashL', [T.LAVA]: 'lava', [T.BASALT]: 'basalt', [T.SNOW]: 'snowL', [T.ICE]: 'iceL',
+  [T.CAVEWALL]: 'caveD', [T.BRIDGE]: 'wood', [T.MOUTH]: 'ink', [T.LOAM]: 'gloomL', [T.HOUSE]: 'woodD', [T.ASH]: 'ashL', [T.LAVA]: 'lava', [T.BASALT]: 'basalt', [T.SNOW]: 'snowL', [T.ICE]: 'iceL', [T.BLIGHT]: 'slate',
 };
 const FOG = rgb('night');
 

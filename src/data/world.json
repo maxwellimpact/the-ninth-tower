@@ -1697,6 +1697,181 @@
      240
     ]
    ]
+  },
+  {
+   "id": "bG1",
+   "units": [
+    [
+     "hexling",
+     136,
+     303
+    ],
+    [
+     "hexling",
+     139,
+     305
+    ],
+    [
+     "hexling",
+     141,
+     301
+    ]
+   ]
+  },
+  {
+   "id": "bG2",
+   "units": [
+    [
+     "goblin",
+     145,
+     229
+    ],
+    [
+     "archer",
+     149,
+     227
+    ],
+    [
+     "knight",
+     147,
+     232
+    ]
+   ]
+  },
+  {
+   "id": "bG3",
+   "units": [
+    [
+     "voidling",
+     175,
+     241
+    ],
+    [
+     "voidling",
+     178,
+     244
+    ],
+    [
+     "wisp",
+     172,
+     244
+    ]
+   ]
+  },
+  {
+   "id": "bG4",
+   "units": [
+    [
+     "gargoyle",
+     131,
+     247
+    ],
+    [
+     "gargoyle",
+     126,
+     253
+    ]
+   ]
+  },
+  {
+   "id": "bG5",
+   "units": [
+    [
+     "chainwarden",
+     141,
+     281
+    ],
+    [
+     "knight",
+     145,
+     284
+    ]
+   ]
+  },
+  {
+   "id": "bG6",
+   "units": [
+    [
+     "gargoyle",
+     176,
+     282
+    ],
+    [
+     "voidling",
+     172,
+     286
+    ]
+   ]
+  },
+  {
+   "id": "bG7",
+   "units": [
+    [
+     "warlock",
+     168,
+     270
+    ],
+    [
+     "hexling",
+     165,
+     273
+    ],
+    [
+     "hexling",
+     171,
+     273
+    ]
+   ]
+  },
+  {
+   "id": "bG8",
+   "units": [
+    [
+     "mirror",
+     146,
+     257
+    ],
+    [
+     "voidling",
+     143,
+     260
+    ]
+   ]
+  },
+  {
+   "id": "bG9",
+   "units": [
+    [
+     "archer",
+     132,
+     292
+    ],
+    [
+     "goblin",
+     135,
+     296
+    ],
+    [
+     "goblin",
+     130,
+     296
+    ]
+   ]
+  },
+  {
+   "id": "bG10",
+   "units": [
+    [
+     "chainwarden",
+     184,
+     252
+    ],
+    [
+     "archer",
+     182,
+     248
+    ]
+   ]
   }
  ],
  "chests": [
@@ -2326,6 +2501,14 @@
   {
    "x": 11,
    "y": 276
+  },
+  {
+   "x": 133,
+   "y": 313
+  },
+  {
+   "x": 150,
+   "y": 272
   }
  ],
  "signs": [
@@ -2472,6 +2655,14 @@
     "GLASSWATER. THE ICE HOLDS. MOSTLY.",
     "THE WIND ON THE OPEN ICE IS THE COLDEST THING IN THE HIGHLANDS. AFTER THE WARDEN'S STARE."
    ]
+  },
+  {
+   "x": 130,
+   "y": 307,
+   "lines": [
+    "THE BLIGHT BASIN. THE CAUSEWAY RUNS TO THE NINTH TOWER.",
+    "THE BARRIER WALLS OFF EVERYTHING ELSE. EVERY WARD STONE YOU BREAK TAKES A LAYER AWAY. TURN BACK. PLEASE."
+   ]
   }
  ],
  "buildings": [
@@ -2506,6 +2697,13 @@
    "x": 62,
    "y": 270,
    "kind": "spire",
+   "landmark": true
+  },
+  {
+   "id": "tower",
+   "x": 155,
+   "y": 268,
+   "kind": "tower",
    "landmark": true
   }
  ],
@@ -3250,6 +3448,26 @@
    "kind": "herb",
    "x": 76,
    "y": 262
+  },
+  {
+   "kind": "starmetal",
+   "x": 128,
+   "y": 257
+  },
+  {
+   "kind": "starmetal",
+   "x": 178,
+   "y": 262
+  },
+  {
+   "kind": "starmetal",
+   "x": 150,
+   "y": 248
+  },
+  {
+   "kind": "starmetal",
+   "x": 162,
+   "y": 277
   }
  ],
  "shop": {
@@ -3373,6 +3591,21 @@
    "id": "shrineFrost",
    "x": 94,
    "y": 283
+  },
+  {
+   "id": "shrineBasinA",
+   "x": 180,
+   "y": 236
+  },
+  {
+   "id": "shrineBasinB",
+   "x": 130,
+   "y": 262
+  },
+  {
+   "id": "shrineBasinC",
+   "x": 168,
+   "y": 251
   }
  ],
  "lookouts": [
@@ -3410,6 +3643,13 @@
    "y": 272,
    "r": 50,
    "name": "HIGHFOLD LOOKOUT"
+  },
+  {
+   "id": "lookoutBasin",
+   "x": 126,
+   "y": 301,
+   "r": 52,
+   "name": "THE LAST WATCH"
   }
  ],
  "wards": [

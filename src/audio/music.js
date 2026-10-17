@@ -318,6 +318,25 @@ export const SPIRE_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 0.85, echo: 0.65, vibrato: 0.008 }, arp: { vol: 1.1, echo: 0.7 }, bass: { vol: 0.8 }, pad: { vol: 1.3, cutoff: 700 }, sub: { vol: 1.1 } },
 });
 
+// The Blight Basin: everything the realm's themes were, drained - a slow
+// tolling drone, the arpeggio a heartbeat, a melody that keeps falling
+export const BASIN_THEME = buildTheme({
+  name: 'The Blight Basin', bpm: 60, key: -4, arp: 'drip', bass: 'murk',
+  chords: [['A2', 'C3', 'E3'], ['A2', 'C3', 'F3'], ['G#2', 'B2', 'E3'], ['A2', 'C3', 'E3'],
+    ['F2', 'A2', 'C3'], ['E2', 'G#2', 'B2'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['E5', 8], ['D5', 4], ['C5', 4],
+    ['B4', 12], ['-', 4],
+    ['C5', 8], ['B4', 4], ['A4', 4],
+    ['G#4', 12], ['-', 4],
+    ['A4', 4], ['C5', 4], ['B4', 4], ['A4', 4],
+    ['G#4', 8], ['E4', 8],
+    ['F4', 4], ['E4', 4], ['D4', 4], ['C4', 4],
+    ['B3', 12], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 0.8, echo: 0.6, vibrato: 0.02 }, arp: { vol: 0.9, echo: 0.6 }, bass: { vol: 1.2 }, pad: { vol: 1.4, cutoff: 420 }, sub: { vol: 1.5 } },
+});
+
 // The Forge of Ash: the work song gone underground - slower, the anvil
 // echoing off stone, a hollow drone where the hearth used to roar
 export const FORGE_THEME = buildTheme({
@@ -377,7 +396,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME, frost: FROSTHELM_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, spire: SPIRE_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, spire: SPIRE_THEME, basin: BASIN_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

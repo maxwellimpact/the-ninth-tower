@@ -14,7 +14,7 @@ for (const k of ['grassD', 'grass', 'grassL', 'grassXL', 'leafD', 'leaf', 'dirtD
   'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD',
   'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark', 'barkL',
   'ashD', 'ash', 'ashL', 'ashXL', 'basaltD', 'basalt', 'basaltL', 'lavaD', 'lava', 'lavaL', 'lavaXL', 'brim',
-  'snowD', 'snow', 'snowL', 'snowXL', 'iceD', 'ice', 'iceL', 'iceXL', 'frostD', 'frost', 'frostL', 'hexD', 'purpD']) C[k] = rgb(k);
+  'snowD', 'snow', 'snowL', 'snowXL', 'iceD', 'ice', 'iceL', 'iceXL', 'frostD', 'frost', 'frostL', 'hexD', 'purpD', 'purp', 'curse']) C[k] = rgb(k);
 
 export function makeTerrainPainter(world) {
   const at = world.at;
@@ -230,10 +230,22 @@ export function makeTerrainPainter(world) {
     // Frosthelm side) or mossy (the Gloamwood and Cinderreach side)
     if (t === T.RIM && ty >= 206 && ty <= 213 && tx < 192 && at(tx, ty + 1) !== T.PLATEAU && at(tx + 1, ty) !== T.PLATEAU && at(tx - 1, ty) !== T.PLATEAU) return rubble(x, y, bm === 'frost' || bm === 'basin');
     if (bm === 'frost') { const f = frostPixel(t, x, y, tx, ty, lx, ly); if (f) return f; }
-    if (bm === 'basin' && t === T.PLATEAU) { // the Basin, not yet open: dead cursed rock
-      const n = vnoise(x / 18, y / 18, 230) + (bayer(x, y) - 0.5) * 0.2;
-      return n < 0.4 ? C.hexD : n < 0.8 ? C.ashD : C.purpD;
+    if (t === T.BLIGHT) { // the Basin: dead violet earth, split by cracks that glow faintly
+      if (typeAt(x + 2, y) === T.PATH || typeAt(x - 2, y) === T.PATH || typeAt(x, y + 2) === T.PATH || typeAt(x, y - 2) === T.PATH) return C.hexD;
+      const cr = Math.abs(vnoise(x / 20, y / 20, 251) - 0.5);
+      if (cr < 0.007) return hash(x, y, 252) < 0.5 ? C.curse : C.purp;
+      if (cr < 0.014) return C.hexD;
+      const h = hash(x, y, 253);
+      if (h < 0.006) return C.bone; // old bones
+      const n = vnoise(x / 30, y / 30, 254) * 0.75 + vnoise(x / 7, y / 7, 255) * 0.25 + (bayer(x, y) - 0.5) * 0.12;
+      return n < 0.3 ? C.hexD : n < 0.62 ? C.night : n < 0.86 ? C.slate : C.purpD;
     }
+    if (bm === 'basin' && t === T.PATH) { // the causeway: black flagstones, purple in the joints
+      const row = Math.floor(y / 8), ox = (row % 2) * 5;
+      if (y % 8 === 7 || (x + ox) % 10 === 9) return hash(x, y, 256) < 0.3 ? C.purp : C.purpD;
+      return hash(Math.floor((x + ox) / 10), row, 257) < 0.5 ? C.night : C.slate;
+    }
+    if (bm === 'basin' && t === T.HOUSE) return C.ink; // under the Tower
     switch (t) {
       case T.GRASS:
       case T.PLATEAU: {

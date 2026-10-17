@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt } from '../world/map.js';
+import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Isolde, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
@@ -16,7 +16,7 @@ import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
+import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
@@ -91,7 +91,9 @@ const TAP_FLASH = true;
 // hero health stages (portrait bars and the bar over a hurt hero): green, yellow below WARN, red below CRIT
 export const HP_WARN = 0.5, HP_CRIT = 0.35;
 
-const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'snowpine', 'rimeglass', 'snowrock', 'furtent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
+// the Hex Legion: in the Blight Basin every one of them comes as Hexborn
+const HEXBORN = new Set(['goblin', 'archer', 'knight', 'hexling', 'warlock', 'wisp']);
+const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'snowpine', 'rimeglass', 'snowrock', 'furtent', 'hexcrystal', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
 const NODE_KINDS = {
   herb: { base: 'herb', dur: 1.5 }, bogmoss: { base: 'herb', dur: 1.8, tint: 0xc9b46a },
@@ -100,9 +102,10 @@ const NODE_KINDS = {
   ghostcap: { base: 'herb', dur: 1.6, tint: 0x9ff2c8 },
   brimstone: { base: 'ore', dur: 2.2, tint: 0xffe070 },
   rimeglass: { base: 'crystal', dur: 2.8, tint: 0xd6efff },
+  starmetal: { base: 'ore', dur: 3.4, tint: 0xc9a0ff },
 };
 const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
-const PROP_GROUP = { snowpine: 'frost', rimeglass: 'frost', snowrock: 'frost', drift: 'frost', snowtuft: 'frost', furtent: 'frost', ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
+const PROP_GROUP = { hexcrystal: 'basin', bones: 'basin', snowpine: 'frost', rimeglass: 'frost', snowrock: 'frost', drift: 'frost', snowtuft: 'frost', furtent: 'frost', ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
 const BARKS = {
   start: { brann: "THE KING'S TOWN... WHAT'S LEFT OF IT.", pip: 'OOH, A RUIN! I MEAN... HOW TRAGIC.', sable: 'QUIET OUT HERE. TOO QUIET. ALSO: GOBLINS.' },
@@ -178,6 +181,7 @@ export class Game extends Phaser.Scene {
 
     this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
+    this.buildBarrier();
     // hand-built dungeons (C8): one kit each; this.dungeon is the one you're in
     this.dungeons = {};
     for (const id of Object.keys(DUNGEONS)) { const k = new DungeonKit(this, id); this.dungeons[k.def.area] = k; }
@@ -307,6 +311,8 @@ export class Game extends Phaser.Scene {
       case 'drift': img = this.add.image(x, y + 3, `drift${p.seed % 4}`).setOrigin(0.5, 1).setDepth(-45); break;
       case 'snowtuft': img = this.add.image(x, y + 4, `snowtuft${p.seed % 4}`).setOrigin(0.5, 1); break;
       case 'furtent': img = this.add.image(x, y + 8, `furtent${p.seed % 3}`).setOrigin(0.5, 1); break;
+      case 'hexcrystal': img = this.add.image(x, y + 5, `${p.big ? 'hexcrystalB' : 'hexcrystal'}${p.seed % 4}`).setOrigin(0.5, 1); img.isLight = true; break;
+      case 'bones': img = this.add.image(x, y, `bones${p.seed % 4}`).setDepth(-45); break;
       case 'vent': {
         img = this.add.sprite(x, y + 4, `vent${p.seed % 4}`).setOrigin(0.5, 1).play(`vent${p.seed % 4}`);
         // a lazy column of smoke
@@ -405,9 +411,15 @@ export class Game extends Phaser.Scene {
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
     if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll', 'isolde'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
+    if (['voidling', 'gargoyle', 'chainwarden'].includes(kind) && !loaded.has('basin')) loadGroupNow(this, 'basin');
+    // the Blight Basin: the Hex Legion comes as Hexborn (elite, with an affix)
+    const hexborn = HEXBORN.has(kind) && biomeAt(Math.floor(x / TILE), Math.floor(y / TILE)) === 'basin';
+    if (hexborn) elite = true;
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
+    if (hexborn) { e.hexborn = true; e.s = { ...e.s, name: `HEXBORN ${e.s.name}` }; e.restoreTint(); }
+    if (kind === 'mirror') this.makeMirror(e);
     this.enemies.push(e);
     if (engaged) { this.fx.puff(x, y, 'sparkCurse'); e.aggroOn(this.leader, false); }
     return e;
@@ -1029,6 +1041,85 @@ export class Game extends Phaser.Scene {
     const all = ['brann', 'pip', 'sable'];
     const first = this.state.recruited[0];
     return [first, ...all.filter((i) => i !== first)];
+  }
+
+  // ============================================================ the Basin's foes
+  // Malgrim's Mirror: a dark copy of whoever is leading - their look, their
+  // gear, their reach, their weight.
+  makeMirror(e) {
+    const L = this.leader;
+    e.mirrorOf = L.def.id;
+    e.tex = L.texKey; e.sprite.setTexture(L.texKey, 'idle_down_0'); e.anim = '';
+    e.maxHp = e.hp = Math.round(L.maxHp * 1.6 * this.difficulty.hp);
+    e.s = { ...e.s, name: `MIRROR OF ${L.def.name.toUpperCase()}`, dmg: L.stats.atk * 1.3, ranged: L.ranged, reach: L.ranged ? 100 : 22, keepAway: L.ranged ? 50 : 0, shot: L.ranged ? 'bolt' : undefined, speed: L.stats.speed * 0.9 };
+    e.restoreTint();
+  }
+
+  // A Chain Warden's chain: two heroes bound together for 6s (slowed, +20%
+  // damage taken, yanked back if they pull apart). Tap it with the Grapple
+  // Hook to break it.
+  chainHeroes(a, b, src) {
+    const ch = { a, b, t: 6, g: this.add.graphics().setDepth(TOP - 25) };
+    ch.o = this.addInteractable({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, reach: 30, standOff: 0, h: 10, kind: 'chain', interact: () => {
+      if (!this.state.relics.includes('grapple')) { this.bark(this.leader, "IT'S TOO STRONG TO PULL APART BY HAND."); return; }
+      ch.t = 0; this.fx.burst('spark', ch.o.x, ch.o.y - 8, 12); audio.sfx('zip'); this.floatText(ch.o.x, ch.o.y - 20, 'CHAIN BROKEN', 'fontGold');
+    } });
+    (this.chains ??= []).push(ch);
+    this.floatText((a.x + b.x) / 2, (a.y + b.y) / 2 - 30, 'CHAINED TOGETHER!', 'fontPlain', 0xd9b8ff);
+    void src;
+  }
+
+  updateChains(dt) {
+    if (!this.chains?.length) return;
+    for (const ch of this.chains) {
+      const { a, b } = ch;
+      ch.t -= dt;
+      if (ch.t <= 0 || a.downed || b.downed || !a.alive || !b.alive) { ch.g.destroy(); this.removeInteractable(ch.o); ch.dead = true; continue; }
+      a.chainedT = b.chainedT = 0.2; a.buff('slow', 0.6, 0.2); b.buff('slow', 0.6, 0.2);
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d > 70) { const k = (d - 70) / d * 0.25; const dx = (b.x - a.x) * k, dy = (b.y - a.y) * k; a.x += dx; a.y += dy; b.x -= dx; b.y -= dy; }
+      ch.o.x = (a.x + b.x) / 2; ch.o.y = (a.y + b.y) / 2;
+      const g = ch.g.clear();
+      g.lineStyle(3, 0x2b2140, 1).lineBetween(a.x, a.y - 10, b.x, b.y - 10);
+      g.lineStyle(1, 0xa3a1b9, 1);
+      const n = Math.max(2, Math.round(d / 6));
+      for (let i = 0; i < n; i += 2) { const t0 = i / n, t1 = (i + 1) / n; g.lineBetween(a.x + (b.x - a.x) * t0, a.y - 10 + (b.y - a.y) * t0, a.x + (b.x - a.x) * t1, a.y - 10 + (b.y - a.y) * t1); }
+    }
+    this.chains = this.chains.filter((c) => !c.dead);
+  }
+
+  // ============================================================ the barrier
+  // The Tower's barrier (the Blight Basin): four layers, one for each outer
+  // Ward Stone still standing, outermost first. A layer is a ring round the
+  // Tower plus the walls along the causeway inside its band, so the Basin opens
+  // band by band as stones fall while the causeway always runs to the door.
+  barrierTiles(i) {
+    this.barrierCache ??= [];
+    if (this.barrierCache[i]) return this.barrierCache[i];
+    const r = BARRIER_R[i], rIn = BARRIER_R[i + 1] ?? 6.5, out = [];
+    for (let y = Math.floor(TOWER.y - r - 2); y <= TOWER.y + r + 2; y++) for (let x = Math.floor(TOWER.x - r - 2); x <= TOWER.x + r + 2; x++) {
+      if (biomeAt(x, y) !== 'basin' || SOLID.has(this.world.at(x, y))) continue;
+      const d = Math.hypot(x - TOWER.x, y - TOWER.y), dx = Math.abs(x - TOWER.x), south = y > TOWER.y;
+      if (Math.abs(d - r) < 0.8 && !(south && dx <= 1)) out.push([x, y]);
+      else if (south && dx === 2 && d > rIn && d < r) out.push([x, y]);
+    }
+    return (this.barrierCache[i] = out);
+  }
+
+  buildBarrier() {
+    for (const [x, y] of this.barrierBlocked || []) this.nav.unblock(x, y);
+    this.barrierBlocked = [];
+    this.barrierG?.destroy();
+    const down = OUTER_REGIONS.filter((r) => this.flags[`ward_${r}`]).length;
+    if (down >= BARRIER_R.length) { this.barrierG = null; return; }
+    const g = this.barrierG = this.add.graphics().setDepth(-20);
+    for (let i = down; i < BARRIER_R.length; i++) for (const [x, y] of this.barrierTiles(i)) {
+      this.nav.block(x, y); this.barrierBlocked.push([x, y]);
+      // a curtain of hex light: thin violet strands rising off the tile
+      for (let k = 0; k < 8; k++) { const h = 10 + ((x * 7 + y * 3 + k * 5) % 9); g.fillStyle(k % 3 ? 0xb24ce6 : 0xe7a6ff, k % 3 ? 0.35 : 0.6).fillRect(x * TILE + k * 2, y * TILE + 14 - h, 1, h); }
+      g.fillStyle(0x6b3fa0, 0.35).fillRect(x * TILE, y * TILE + 10, TILE, 6);
+    }
+    this.tweens.add({ targets: g, alpha: 0.55, duration: 1100, yoyo: true, repeat: -1 });
   }
 
   // ============================================================ darkness (caves)
@@ -1883,6 +1974,7 @@ export class Game extends Phaser.Scene {
     if ((ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
     if (ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx > RIDGE_X - 22 && area === 'overworld') out.push('cinder');
     if (ty > FROST_Y - 22 && area === 'overworld') out.push('frost');
+    if (ty > FROST_Y - 10 && tx > 100 && area === 'overworld') out.push('basin');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;
@@ -2827,6 +2919,7 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(5200, () => this.growWardShard());
     if (down >= 2) this.flags.enchanter = true; // two stones: the Enchanter comes home
     if (down >= 3) this.flags.smithRank = Math.max(this.flags.smithRank || 0, 2);
+    if (OUTER_REGIONS.includes(def.region)) this.buildBarrier(); // a layer of the Tower's barrier falls with it
     if (down >= 5 && !this.flags.royalArmory) { // all five: the Royal Armory and the Blacksmith's last rank (C9)
       this.flags.royalArmory = true; this.flags.smithRank = 3;
       this.time.delayedCall(9000, () => this.events.emit('banner', 'THE ROYAL ARMORY OPENS', 'IN BRIGHTWATER: LEGENDARY ARMS. THE BLACKSMITH REACHES RANK 3'));
@@ -3645,6 +3738,7 @@ export class Game extends Phaser.Scene {
     this.quests.update(dt);
     this.updateHeat(dt);
     this.updateCold(dt);
+    this.updateChains(dt);
     this.updatePerks(dt);
     this.dungeon?.update(dt);
     this.groupT = (this.groupT || 0) - dt;
