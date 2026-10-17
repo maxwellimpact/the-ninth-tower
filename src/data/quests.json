@@ -85,6 +85,8 @@
     {
      "type": "escort",
      "text": "KEEP THE CART SAFE ON THE SOUTH ROAD",
+     "startLine": "STAY CLOSE. GOBLINS SMELL SEED SACKS A MILE OFF.",
+     "ambushLine": "THAT'S THEM! KEEP THEM OFF THE SACKS! AND ME!",
      "path": [
       [
        16,
@@ -1483,6 +1485,8 @@
     {
      "type": "escort",
      "text": "KEEP THE CART SAFE ON THE MONASTERY ROAD",
+     "startLine": "MIND THE CART. IMPS LOVE A SLOW TARGET.",
+     "ambushLine": "BEHIND ME! NO - IN FRONT OF ME!",
      "path": [
       [
        146,

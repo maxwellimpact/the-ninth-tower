@@ -13,6 +13,8 @@ import { makeItem, tierForLevel } from './itemgen.js';
 import { addMats, addPotions, CRAFT, gainItems } from './state.js';
 import { makeStage } from './setpiece.js';
 
+const dirTo = (dx, dy) => { const l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+
 const TILE = 16;
 const px = (t) => t * TILE + 8;
 export const ERRANDS = Q.errands;
@@ -306,6 +308,7 @@ export class QuestManager {
     for (const o of live.objs) o.destroy?.();
     if (live.find) this.sc.removeInteractable(live.find);
     if (live.cart) { live.cart.alive = false; this.sc.allies = this.sc.allies.filter((a) => a !== live.cart); }
+    if (live.driverNpc) this.setNpcVisible(live.driverNpc, true); // back at their usual spot
     if (live.guard) { live.guard.alive = false; this.sc.allies = this.sc.allies.filter((a) => a !== live.guard); }
     delete this.live[id];
   }
@@ -415,14 +418,38 @@ export class QuestManager {
       } };
     live.cart = cart;
     live.ambushed = new Set();
+    // the errand's giver walks behind the cart, pushing it, so there's someone
+    // to protect (their usual spot stands empty until the run is over)
+    const dn = this.npc(s.driver || ERRANDS[id].giver);
+    if (dn?.s?.anims) {
+      const look = dn.s.texture.key, p1 = s.path[1] || p0;
+      this.setNpcVisible(dn, false);
+      const d = sc.add.sprite(cart.x, cart.y, look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${look}_idle_side`);
+      live.objs.push(d);
+      live.driverNpc = dn;
+      cart.driver = { spr: d, look, voice: dn.voice, dir: dirTo(px(p1[0]) - cart.x, px(p1[1]) - cart.y) };
+      this.placeDriver(cart, false);
+      sc.time.delayedCall(500, () => { if (cart.alive) sc.bark({ x: d.x, y: d.y, def: { voice: dn.voice } }, s.startLine || 'STAY CLOSE. I PUSH, YOU STAB.'); });
+    }
     live.bar = sc.add.graphics().setDepth(100000 - 41);
     live.objs.push(live.bar);
     (sc.allies ??= []).push(cart);
   }
 
+  // The driver stands behind the cart (opposite the way it's heading) and walks while it rolls.
+  placeDriver(c, moving) {
+    const d = c.driver;
+    if (!d) return;
+    const [nx, ny] = d.dir, x = c.x - nx * 13, y = c.y - ny * 9 + 2;
+    const view = Math.abs(nx) > Math.abs(ny) ? 'side' : ny > 0 ? 'down' : 'up';
+    const key = `${d.look}_${moving ? 'walk' : 'idle'}_${view}`;
+    if (d.spr.anims.currentAnim?.key !== key) d.spr.play(key);
+    d.spr.setFlipX(view === 'side' && nx < 0).setPosition(Math.round(x), Math.round(y)).setDepth(y);
+  }
+
   failEscort(id) {
     const sc = this.sc;
-    sc.events.emit('banner', 'THE CART IS WRECKED', 'TALK TO PIET TO TRY AGAIN');
+    sc.events.emit('banner', 'THE CART IS WRECKED', `TALK TO ${this.npc(ERRANDS[id].giver)?.name || 'THEM'} TO TRY AGAIN`);
     this.q(id).s = 0;
     for (const e of sc.enemies) if (e.alive && e.questSpawn === id) { e.alive = false; e.clearZone(); e.destroy(); }
     sc.enemies = sc.enemies.filter((e) => e.alive);
@@ -518,16 +545,20 @@ export class QuestManager {
           const d = Math.hypot(tx - c.x, ty - c.y), sp = 26 * dt;
           if (d <= sp) { c.idx++; } else { c.x += ((tx - c.x) / d) * sp; c.y += ((ty - c.y) / d) * sp; c.spr.setFlipX(tx < c.x); }
           if (!c.spr.anims.isPlaying) c.spr.play('cart');
-        } else c.spr.anims.stop();
+          if (c.driver && d > 0.5) c.driver.dir = dirTo(tx - c.x, ty - c.y);
+          this.placeDriver(c, true);
+        } else { c.spr.anims.stop(); this.placeDriver(c, false); }
         c.spr.setPosition(Math.round(c.x), Math.round(c.y)).setDepth(c.y);
         for (const a of s.ambush) {
           if (c.idx >= a.at && !live.ambushed.has(a.at)) {
             live.ambushed.add(a.at);
             sc.bark(sc.leader, 'AMBUSH! PROTECT THE CART!');
+            if (c.driver) sc.time.delayedCall(900, () => { if (c.alive) sc.bark({ x: c.driver.spr.x, y: c.driver.spr.y, def: { voice: c.driver.voice } }, s.ambushLine || 'KEEP THEM OFF ME!'); });
             for (const [k, x, y] of a.units) { const e = sc.spawnEnemy(k, px(x), px(y), false); e.questSpawn = id; e.setTaunt(c, 6); e.engaged = true; }
           }
         }
-        live.bar.clear().fillStyle(0x1a1423).fillRect(c.x - 13, c.y - 22, 26, 4).fillStyle(0x6fd3a0).fillRect(c.x - 12, c.y - 21, Math.round(24 * Math.max(0, c.hp) / c.maxHp), 2);
+        const barY = c.y - (c.driver ? 36 : 22); // above the driver's head when there is one
+        live.bar.clear().fillStyle(0x1a1423).fillRect(c.x - 13, barY, 26, 4).fillStyle(0x6fd3a0).fillRect(c.x - 12, barY + 1, Math.round(24 * Math.max(0, c.hp) / c.maxHp), 2);
         if (c.idx >= s.path.length && !fighting) { sc.floatText(c.x, c.y - 26, 'MADE IT!', 'fontGold'); this.advance(id); }
       }
       if (s.type === 'defend' && live.units?.length && live.units.every((e) => !e.alive)) { delete this.staged[id]; this.advance(id); }
