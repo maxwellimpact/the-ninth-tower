@@ -61,6 +61,7 @@ const G = {
 };
 
 export const FONT_CHARS = Object.keys(G).join('');
+export const GLYPHS = G; // 3x5 shapes, for drawing tiny digits straight into a Graphics
 export const CELL_W = 5, CELL_H = 7;
 
 export function buildFontAtlas(color = 'white', edge = 'ink') {

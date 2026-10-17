@@ -5,6 +5,7 @@ import { itemTex } from '../game/itemtex.js';
 import { TRAITS } from '../game/itemgen.js';
 import { fitString } from './textfit.js';
 import { freshFor, skillsReady, xpToNext } from '../game/state.js';
+import { GLYPHS } from '../gfx/font.js';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
@@ -32,6 +33,7 @@ export class UI extends Phaser.Scene {
     this.g = game;
     this.dialogOpen = false;
     this.gfx = this.add.graphics();
+    this.lvG = this.add.graphics().setDepth(1); // over the portrait images (levels, skill badges)
     this.portraits = [];
     this.buttons = [];
 
@@ -201,15 +203,14 @@ export class UI extends Phaser.Scene {
   }
 
   buildPortraits() {
-    for (const p of this.portraits) { p.img.destroy(); p.hit.destroy(); p.lv.destroy(); p.nm.destroy(); }
+    for (const p of this.portraits) { p.img.destroy(); p.hit.destroy(); p.nm.destroy(); }
     this.portraits = this.g.party.map((h) => {
       const img = this.add.image(0, 0, `${h.texKey}_portrait`).setOrigin(0);
-      const hit = this.add.zone(0, 0, 70, 24).setOrigin(0).setInteractive({ useHandCursor: true });
+      const hit = this.add.zone(0, 0, 26, 40).setOrigin(0).setInteractive({ useHandCursor: true });
       // tap the leader to open their gear menu; tap anyone else to switch to them
       hit.on('pointerdown', () => { this.tapUI(); if (h === this.g.leader) this.g.openMenu(); else if (!h.downed) this.g.setLeader(h); });
-      const lv = this.add.bitmapText(0, 0, 'font', 'LV1');
       const nm = this.add.bitmapText(0, 0, 'font', h.def.name.toUpperCase());
-      return { h, img, hit, lv, nm };
+      return { h, img, hit, nm };
     });
     this.layout();
   }
@@ -225,13 +226,14 @@ export class UI extends Phaser.Scene {
     this.pad = pad;
     const W = this.W - pad.r, H = this.H - pad.b;
     const L0 = pad.l, T0 = pad.t;
+    // party portraits: a slim column down the left edge, each hero as name /
+    // 22px portrait / health+XP bars (name 7px, 1 gap, portrait, bars 7px, gaps)
     this.portraits.forEach((p, i) => {
-      const x = 6 + L0, y = 6 + T0 + i * 30;
+      const x = 6 + L0, y = 14 + T0 + i * 43;
       p.x = x; p.y = y;
       p.img.setPosition(x + 3, y + 3);
-      p.hit.setPosition(x, y);
-      p.nm.setPosition(x + 26, y + 1);
-      p.lv.setPosition(x + 56, y + 1);
+      p.hit.setPosition(x - 2, y - 9);
+      p.nm.setPosition(x - 1, y - 9);
     });
     // combat controls. Landscape: one row along the bottom edge — the leader's
     // own group (ULT, DODGE, skills) framed in gold, the companions' ULTs apart
@@ -283,7 +285,7 @@ export class UI extends Phaser.Scene {
     this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
     if (W < 360 || this.rowMode) this.hint.setVisible(false); // no room beside the combat controls
     // portrait: drop banners below the hero portraits
-    this.bannerY = W < 300 ? 112 + T0 : 40;
+    this.bannerY = W < 300 ? 142 + T0 : 40;
     this.bannerT.setPosition(W / 2, this.bannerY);
     this.bannerS.setPosition(W / 2, this.bannerY + 16);
     this.bossName.setPosition(W / 2, 12);
@@ -576,31 +578,30 @@ export class UI extends Phaser.Scene {
       const blink = Math.floor(time / 450) % 2;
       this.arcG.fillStyle(0x1a1423).fillCircle(b.x + b.size - 3, b.y + 3, 4).fillStyle(blink ? 0xfff0a0 : 0xf2c14e).fillCircle(b.x + b.size - 3, b.y + 3, 3);
     }
+    const lg = this.lvG.clear(); // drawn over the portrait art: levels and skill badges
     for (const p of this.portraits) {
-      const h = p.h;
-      const lead = h === game.leader;
-      // gold means the leader and nothing else: a double gold frame and a pointer
-      panel(g, p.x, p.y, 22, 22, C.ink, lead ? C.gold : C.slate);
-      if (lead) {
-        g.fillStyle(C.goldL).fillRect(p.x + 1, p.y + 1, 20, 1).fillRect(p.x + 1, p.y + 20, 20, 1).fillRect(p.x + 1, p.y + 1, 1, 20).fillRect(p.x + 20, p.y + 1, 1, 20);
-        g.fillStyle(C.ink).fillTriangle(p.x - 6, p.y + 5, p.x - 6, p.y + 17, p.x - 1, p.y + 11);
-        g.fillStyle(C.gold).fillTriangle(p.x - 5, p.y + 7, p.x - 5, p.y + 15, p.x - 2, p.y + 11);
-      }
+      const h = p.h, lead = h === game.leader, sz = 22;
+      // gold means the leader and nothing else: a double gold frame and a gold name
+      panel(g, p.x, p.y, sz, sz, C.ink, lead ? C.gold : C.slate);
+      if (lead) g.fillStyle(C.goldL).fillRect(p.x + 1, p.y + 1, sz - 2, 1).fillRect(p.x + 1, p.y + sz - 2, sz - 2, 1).fillRect(p.x + 1, p.y + 1, 1, sz - 2).fillRect(p.x + sz - 2, p.y + 1, 1, sz - 2);
       if (p.img.texture.key !== `${h.texKey}_portrait` && this.textures.exists(`${h.texKey}_portrait`)) p.img.setTexture(`${h.texKey}_portrait`);
       p.img.setAlpha(h.downed ? 0.35 : 1);
-      const frac = Math.max(0, h.hp / h.maxHp);
-      g.fillStyle(C.ink).fillRect(p.x + 25, p.y + 8, 42, 5);
-      g.fillStyle(0x3a2f52).fillRect(p.x + 26, p.y + 9, 40, 3);
-      g.fillStyle(frac < 0.35 ? C.hpLow : C.hp).fillRect(p.x + 26, p.y + 9, Math.round(40 * frac), 3);
-      if (h.shield > 0) g.fillStyle(C.ult).fillRect(p.x + 26, p.y + 9, Math.round(40 * Math.min(1, h.shield / h.maxHp)), 1);
-      // XP towards the next level (the ULT buttons along the bottom already show the ultimate)
-      const xpf = Math.max(0, Math.min(1, (h.hs.xp || 0) / xpToNext(h.level)));
-      g.fillStyle(C.ink).fillRect(p.x + 25, p.y + 14, 42, 4);
-      g.fillStyle(0x2b2140).fillRect(p.x + 26, p.y + 15, 40, 2);
-      g.fillStyle(C.xp).fillRect(p.x + 26, p.y + 15, Math.round(40 * xpf), 2);
-      p.lv.setText(h.downed ? 'DOWN' : `LV${h.level}`).setTint(h.downed ? 0xec6a5e : 0xffffff);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
-      if (skillsReady(h.def.id, h.hs)) skillBadge(g, p.x - 2, p.y - 2); // skill points to spend (top-left: the name sits top-right)
+      // health over XP in one dark strip, as wide as the portrait's frame (x-1 .. x+sz+1)
+      const fr = Math.max(0, h.hp / h.maxHp), xf = Math.max(0, Math.min(1, (h.hs.xp || 0) / xpToNext(h.level)));
+      const bx = p.x - 1, bw = sz + 2, by = p.y + sz + 2;
+      g.fillStyle(C.ink).fillRect(bx, by, bw, 7);
+      g.fillStyle(0x3a2f52).fillRect(bx + 1, by + 1, bw - 2, 3);
+      g.fillStyle(h.downed || fr < 0.35 ? C.hpLow : C.hp).fillRect(bx + 1, by + 1, Math.round((bw - 2) * fr), 3);
+      if (h.shield > 0) g.fillStyle(C.ult).fillRect(bx + 1, by + 1, Math.round((bw - 2) * Math.min(1, h.shield / h.maxHp)), 1);
+      g.fillStyle(0x2b2140).fillRect(bx + 1, by + 4, bw - 2, 2);
+      g.fillStyle(C.xp).fillRect(bx + 1, by + 4, Math.round((bw - 2) * xf), 2);
+      // level: bare 3x5 digits on a dark patch cut into the frame's top-left corner, the same
+      // for every hero (the font's outline would double its size); a red X while down
+      const t = h.downed ? 'X' : `${h.level}`;
+      lg.fillStyle(C.ink).fillRect(p.x, p.y, t.length * 4 + 1, 6).fillStyle(h.downed ? 0xec6a5e : 0xd8d3e0);
+      [...t].forEach((ch, k) => { const gl = GLYPHS[ch]; for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 3; xx++) if (gl[yy * 3 + xx] === '#') lg.fillRect(p.x + k * 4 + xx, p.y + yy, 1, 1); });
+      if (skillsReady(h.def.id, h.hs)) skillBadge(lg, p.x + sz - 6, p.y - 1); // skill points to spend: top-right, under the name line
     }
     const tq = game.quests, tid = tq?.state.tracked, tstep = tid && tq.step(tid);
     const dk = game.dungeon;
@@ -692,7 +693,7 @@ export class UI extends Phaser.Scene {
       this.dbgG.clear().fillStyle(0x000000, 0.6).fillRect(6, this.dbgTxt.y - 4, Math.max(170, this.dbgTxt.width + 8), lines.length * 8 + 6);
       this.drawBtn(g, this.speedDown, 0); this.drawBtn(g, this.speedUp, 0);
     }
-    this.bake(this.gfx); this.bake(this.arcG);
+    this.bake(this.gfx); this.bake(this.arcG); this.bake(this.lvG);
   }
 
   // The HUD is drawn as Graphics every frame, but WebGL re-processes every
