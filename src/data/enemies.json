@@ -119,7 +119,7 @@
  "golem": {
   "name": "HEX GOLEM",
   "maxHp": 1400,
-  "speed": 24,
+  "speed": 32,
   "aggro": 140,
   "reach": 34,
   "windup": 0.9,

@@ -43,11 +43,12 @@ export async function runScenario(sc, S, secs = 20) {
       foes.push(e);
     });
     const L = sc.leader;
-    const m = { frames: 0, windMax: 0, windSum: 0, windFrames: 0, wind3: 0, overlapPairs: 0, switches: 0, stuck: 0, chaseSamples: 0, rangedFrames: 0, rangedCanShoot: 0, rangedShots: 0, returns: 0, flees: 0, flankFrames: 0, enemyFrames: 0, hpLost: 0 };
+    const hp0 = foes.reduce((a, e) => a + e.hp, 0);
+    const m = { evadeFrames: 0, compFrames: 0, inReachFrames: 0, hits: 0, frames: 0, windMax: 0, windSum: 0, windFrames: 0, wind3: 0, overlapPairs: 0, switches: 0, stuck: 0, chaseSamples: 0, rangedFrames: 0, rangedCanShoot: 0, rangedShots: 0, returns: 0, flees: 0, flankFrames: 0, enemyFrames: 0, hpLost: 0 };
     const prevT = new Map(), prevState = new Map(), lastPos = new Map();
     // party damage: count the hits themselves (a level-up resets max HP, so
     // watching the HP bars would misread that as damage)
-    const restore = sc.party.map((h) => { const o = h.damage; h.damage = function (...a) { const r = o.apply(this, a); if (typeof r === 'number' && r > 0) m.hpLost += r; return r; }; return () => { h.damage = o; }; });
+    const restore = sc.party.map((h) => { const o = h.damage; h.damage = function (...a) { const r = o.apply(this, a); if (typeof r === 'number' && r > 0) { m.hpLost += r; m.hits++; } return r; }; return () => { h.damage = o; }; });
     let cleared = null;
     for (let f = 0; f < secs * 60; f++) {
       // the "player": keep hitting the nearest foe
@@ -57,6 +58,14 @@ export async function runScenario(sc, S, secs = 20) {
       m.frames++;
       const alive = foes.filter((e) => e.alive);
       if (!alive.length) { cleared = f / 60; break; }
+      // companions: time spent sidestepping, and time close enough to hit what they're fighting
+      for (const h of sc.party) {
+        if (h === L || h.downed) continue;
+        m.compFrames++;
+        if (h.evading) m.evadeFrames++;
+        const t = h.target;
+        if (t?.alive && Math.hypot(t.x - h.x, t.y - h.y) <= (h.stats.range || 16) + (t.r || 6) + 6) m.inReachFrames++;
+      }
       // wind-ups stacked on one hero at the same moment
       let worst = 0;
       for (const h of sc.party) worst = Math.max(worst, alive.filter((e) => WIND.has(e.state) && e.target === h).length);
@@ -107,6 +116,10 @@ export async function runScenario(sc, S, secs = 20) {
       flees: m.flees,
       pctTargetingNonLeader: +(100 * m.flankFrames / Math.max(1, m.enemyFrames)).toFixed(1),
       partyDmgPerSec: +(m.hpLost / Math.max(0.01, mins * 60)).toFixed(1),
+      hitsOnPartyPerSec: +(m.hits / Math.max(0.01, mins * 60)).toFixed(2),
+      partyDpsOut: +((hp0 - foes.reduce((a, e) => a + Math.max(0, e.alive ? e.hp : 0), 0)) / Math.max(0.01, mins * 60)).toFixed(1),
+      companionEvadePct: +(100 * m.evadeFrames / Math.max(1, m.compFrames)).toFixed(1),
+      companionInReachPct: +(100 * m.inReachFrames / Math.max(1, m.compFrames)).toFixed(1),
     };
   } finally { Math.random = realRandom; }
 }
@@ -203,4 +216,48 @@ export async function stuckTest() {
     const got = arrive.filter((a) => a !== null);
     return { arrived: `${got.length}/${foes.length}`, avgArriveSecs: got.length ? +(got.reduce((a, v) => a + v, 0) / got.length).toFixed(1) : null, slowestSecs: got.length === foes.length ? Math.max(...got) : 'never', stuckPct: samples ? Math.round(100 * stuck / samples) : 0 };
   } finally { Math.random = realRandom; for (const h of sc.party) delete h.update; }
+}
+
+// The Gatewarden (true form numbers: +30% HP, +15% damage) against the party
+// in the lab hall for a fixed time. Counts its slams that connect, rocks
+// thrown and hitting, how much of the fight the companions spend dodging, and
+// how often anyone is inside its slam reach.
+export async function golemTest(secs = 45, seed = 99, leaderDodges = true) {
+  const sc = window.__scene, O = sc.dungeon.def.origin, L = sc.leader;
+  const { Golem } = await import('/src/game/units.js');
+  const realRandom = Math.random; Math.random = seeded(seed);
+  const T = (lx, ly) => ({ x: (O[0] + lx) * 16 + 8, y: (O[1] + ly) * 16 + 8 });
+  try {
+    for (const e of sc.enemies) if (e.alive) { e.alive = false; e.destroy(); }
+    sc.enemies = sc.enemies.filter((e) => e.alive); sc.dangers.length = 0; await step(20);
+    const P = T(37, 47);
+    sc.party.forEach((h, i) => { h.x = P.x + (i - 1) * 14; h.y = P.y; h.downed = false; h.maxHp = h.hs.__baseMax ??= h.maxHp; h.maxHp *= 50; h.hp = h.maxHp; h.command = null; h.target = null; h.action = null; h.clearPath(); });
+    const g = new Golem(sc, P.x, P.y - 60, { level: 7 });
+    g.maxHp = Math.round(g.maxHp * 1.3 * 20); g.hp = g.maxHp; g.s = { ...g.s, dmg: g.s.dmg * 1.15 };
+    sc.enemies.push(g); g.aggroOn(L, false);
+    const landed = new Set(); let frame = 0;
+    const m = { frames: 0, slamHits: 0, rocks: 0, rockHits: 0, evade: 0, comp: 0, inReach: 0, hits: 0, windups: 0 };
+    let src = null;
+    const restore = sc.party.map((h) => { const o = h.damage; h.damage = function (a, s2, ...r) { const v = o.call(this, a, s2, ...r); if (typeof v === 'number' && v > 0) { m.hits++; if (s2 === g) { m.slamHits++; landed.add(frame); } } return v; }; return () => { h.damage = o; }; });
+    let prev = null;
+    for (let f = 0; f < secs * 60; f++) {
+      if (!L.command || L.command.type !== 'attack') L.command = { type: 'attack', target: g };
+      // the "player" dodges a marker they're standing in, a beat after it appears (as you would)
+      if (leaderDodges) {
+        const z = sc.dangers.find((q) => Math.hypot(L.x - q.x, L.y - q.y) < q.r + L.r);
+        if (z) { z.playerSeen ??= f; if (f - z.playerSeen >= 18 && L.dodgeCd <= 0) L.dodge(...L.smartDodge()); }
+      }
+      frame = f;
+      await step(1); m.frames++;
+      if (g.state === 'throw' && prev !== 'throw') m.rocks++;
+      if (g.state === 'windup' && prev !== 'windup') m.windups++;
+      prev = g.state;
+      for (const h of sc.party) { if (h === L) continue; m.comp++; if (h.evading) m.evade++; }
+      if (sc.party.some((h) => Math.hypot(h.x - g.x, h.y - g.y) < g.s.zr + h.r)) m.inReach++;
+    }
+    restore.forEach((f) => f());
+    const s2 = m.frames / 60;
+    g.alive = false; g.destroy?.();
+    return { slamsLandedPct: Math.round(100 * landed.size / Math.max(1, m.windups)), slamWindupsPerMin: +(m.windups / s2 * 60).toFixed(1), slamHitsPerMin: +(m.slamHits / s2 * 60).toFixed(1), rocksPerMin: +(m.rocks / s2 * 60).toFixed(1), hitsOnPartyPerMin: +(m.hits / s2 * 60).toFixed(1), companionEvadePct: Math.round(100 * m.evade / Math.max(1, m.comp)), anyoneInSlamReachPct: Math.round(100 * m.inReach / m.frames), golemHpLostPct: +(100 * (1 - g.hp / g.maxHp)).toFixed(1) };
+  } finally { Math.random = realRandom; }
 }

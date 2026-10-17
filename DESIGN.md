@@ -123,6 +123,22 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
 ### Movement & positioning
 - **Skills at the right moment, never spam:** each companion skill has a "worth it now" rule, and a companion uses at most one skill about every 1.5 s on top of cooldowns. Every skill needs a sensible single-boss trigger as well as a crowd one. For example, Fan of Knives fires point-blank on a boss or elite, not only in a crowd. Gap-closers never blink into a telegraphed attack. Measured in the lab boss fight: Pip 2 Fireballs, Sable 2 Fans and 3 Steps per 30 s.
 - **Commit to dodges [LOCKED from playtest]:** a companion escaping a telegraphed zone keeps going until well clear, then waits just outside it (facing the foe, attacking if in reach) until the attack resolves. It never steps back in early. Before this, Sable flickered on a zone's edge about 12 times a second.
+- **Pick dodges like a person [from playtest, 2026-10-16]:** companions used to sidestep every wind-up marker the instant it appeared. In a crowd they hopped about all fight and ended up out of range. Now:
+  - **Reaction:** they react after a short delay (0.2-0.36s).
+  - **Lock:** they wait for the blow to lock in before moving.
+  - **What they always dodge:** bosses, elites, big blasts, hazards (rocks, puddles, bombs), a hit worth 30%+ of their health, or anything once they're below half health.
+  - **Ordinary swings:** they dodge only sometimes: 60% when aimed at them, 20% when aimed at someone else.
+- **Wind-ups track [from playtest]:** for the first half of a melee wind-up, the foe shuffles after its target and the marker follows, then locks. Stepping away early no longer dodges everything; timing does.
+- **Measured (fight-bench, 7 fights x 2 seeds), old -> new:**
+  - companions dodging 9.5-43% -> 1-15% of the time;
+  - in reach of their target 44-70% -> 67-80%;
+  - party damage dealt +29%, taken +53%. Fights end sooner, so damage taken per fight is about +19%. Bench heroes have 50x health, so the "dodge when hurt" rule never fires there.
+- **The Gatewarden [from playtest]:**
+  - It is a little faster (speed 24 -> 32).
+  - It throws rocks in every phase on its own clock, aimed at whoever stays out of slam reach. Before, rocks only came in phase 2, and only while it was walking: about 0 a minute.
+  - A whiffed slam is followed by a leaping slam whose marker tracks the target, then locks.
+  - Against a player who dodges every marker after 0.3s, it now lands 67-78% of its slams (13-15 hits a minute). Before: 7-50% (1-5 hits a minute).
+
 - **Ranged allies keep their distance [LOCKED from playtest]:** they hold about ¾ of their range from their target. They back off when it comes inside that, with slack so they don't jitter, sliding sideways off walls. They shoot while backing off unless the foe is right on top of them, when they just run. They only close in until the target is in range, and they can hang back further from a melee leader before regrouping.
 - **Never block the leader.** Companions have *soft* collision with the leader and step aside in narrow corridors.
 - **Formation follow:** loose trailing positions with a leash. If a companion falls too far behind or gets stuck, it catches up off-screen or with a quick "dash" effect, never a visible pop-in.
@@ -1646,3 +1662,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-16 | Playtest fixes, each measured old vs new: errand set pieces (`setpiece.js`: fixed posts, turn-taking swings, never facing the party, only a deliberate hit wakes them, a quiet stage clear of world groups) with Quill moved down the east road; companions follow on a loose lead (slack, eased speed, smoothed slot); foes notice the party only on screen, and heroes pick only foes in view or already fighting; morale is rare (1 in 6 small fry, never the last). The title screen shows cloud-save status; saves mirror to the artifact's private storage |
 | 2026-10-16 | Wave 2 built: Gloamwood + Witchroot Hollow, Cinderreach + Forge of Ash, Oake and Gizmo, Wave 2 uniques. Recruit NPCs hide once their hero is in the party; a third Vale recruit spot (only used when the starter isn't Brann/Pip/Sable) keeps all three core heroes reachable. Title cards drop the skill list when seven heroes make them narrow |
 | 2026-10-16 | Wave 2 finished: unique signatures, hero Burn, hermit's tower + Arcane, belfry, region secrets, Trainers' Hall with L20 ultimate upgrades, Alchemist, workbench, Cartographer, Ward Shard. Region borders made organic (noise-warped, landmarks pinned, region banner has hysteresis) after playtest feedback that the map looked cut into straight bands |
+| 2026-10-16 | Playtest: companions over-dodged and the Gatewarden never landed a blow. Companions now react with a delay, wait for the wind-up to lock and skip most ordinary swings; melee wind-ups track their target for half the wind-up; the Gatewarden throws in every phase and follows a whiffed slam with a tracking leap. Measured with fight-bench + the new golemTest |

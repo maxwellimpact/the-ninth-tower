@@ -135,6 +135,12 @@ function guardNumber(proto, field, fallback) {
 guardNumber(Unit.prototype, 'maxHp', () => 100);
 guardNumber(Unit.prototype, 'hp', (u) => u.maxHp ?? 100);
 
+// Melee wind-ups track their target for this share of the wind-up, at this
+// share of their walking speed, then lock where the blow will land.
+const TRACK_PART = 0.5, TRACK_SPEED = 0.8;
+// Chance a companion bothers to sidestep an ordinary swing (aimed at them / at someone else).
+const DODGE_AIMED = 0.6, DODGE_STRAY = 0.2;
+
 export class Hero extends Unit {
   constructor(scene, id, hs, x, y) {
     const st = computeStats(id, hs.level, hs.equip, hs);
@@ -759,6 +765,25 @@ export class Hero extends Unit {
     if (threat && !this.ranged) this.command = { type: 'attack', target: threat };
   }
 
+  // A companion sidesteps like a person would: a beat to notice, only once the
+  // blow is committed (the marker has stopped following), and only when it
+  // matters: a boss or elite, a big blast, a hazard (rocks, puddles, bombs),
+  // a hit that would take a real chunk, or when already hurt. Ordinary swings
+  // from ordinary foes get traded, not danced around.
+  worthDodging(z) {
+    if (z === this.evading) return true; // committed: see it through
+    const now = this.scene.time.now;
+    z.seenAt ??= now;
+    if (now - z.seenAt < (this.reactMs ??= 200 + Math.random() * 160)) return false;
+    if (z.src && z.lockAt !== undefined && !z.locked && z.src.alive) return false;
+    if (!z.src || z.big) return true;
+    if (this.hp < this.maxHp * 0.5 || (z.dmg || 0) >= this.hp * 0.3) return true;
+    // an ordinary swing: sometimes they see it coming (more often when it's aimed at them), decided once
+    (z.dodgeRoll ??= new Map());
+    if (!z.dodgeRoll.has(this)) z.dodgeRoll.set(this, Math.random() < (z.src.target === this ? DODGE_AIMED : DODGE_STRAY));
+    return z.dodgeRoll.get(this);
+  }
+
   // ---------------------------------------------------------- companion AI
   updateCompanion(dt) {
     const sc = this.scene;
@@ -768,7 +793,7 @@ export class Hero extends Unit {
 
     // 1) step out of telegraphed danger zones, and commit to it: keep going
     // until well clear (not just over the edge), or the AI flickers in and out
-    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + (z === this.evading ? 12 : 4));
+    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + (z === this.evading ? 12 : 4) && this.worthDodging(z));
     if (danger) {
       this.evading = danger;
       const [nx, ny] = norm(this.x - danger.x, this.y - danger.y);
@@ -1578,7 +1603,19 @@ export class Enemy extends Unit {
       }
       case 'windup': {
         this.play('windup');
-        this.keepApart(dt); // the strike lands on its marked zone, so a little sidestep is safe
+        const z = this.zone, t = this.target;
+        if (z && !s.ranged && z.lockAt !== undefined && this.t < z.lockAt && t?.alive && !t.downed && !this.staged) {
+          // still tracking: shuffle after the target and drag the marker along
+          const reach = z.r + (t.r || 5) - 4, zx = z.x - this.x, zy = z.y - this.y;
+          if (Math.hypot(t.x - z.x, t.y - z.y) > reach) this.stepTo(t, dt, TRACK_SPEED);
+          if (s.zone === 'front') { const [nx, ny] = norm(t.x - this.x, t.y - this.y); z.x = this.x + nx * 16; z.y = this.y + ny * 16; this.face(nx, ny); }
+          else { z.x = this.x + zx; z.y = this.y + zy; }
+          this.zoneGfx?.setPosition(z.x - z.x0, z.y - z.y0);
+          this.play('windup');
+        } else {
+          if (z && !z.locked) z.locked = true;
+          this.keepApart(dt); // locked: the strike lands on its marked zone, so a little sidestep is safe
+        }
         if (this.t >= s.windup) this.strike();
         break;
       }
@@ -2097,7 +2134,9 @@ export class Enemy extends Unit {
     }
     let zx = this.x, zy = this.y;
     if (s.zone === 'front') { const [nx, ny] = norm(t.x - this.x, t.y - this.y); zx += nx * 16; zy += ny * 16; }
-    this.zone = { x: zx, y: zy, r: s.zr, until: s.windup };
+    // src/dmg/big: companions judge whether it's worth dodging; lockAt: until
+    // then the foe tracks its target (see 'windup'), so stepping away early doesn't dodge it
+    this.zone = { x: zx, y: zy, x0: zx, y0: zy, r: s.zr, until: s.windup, src: this, dmg: s.dmg * this.scene.difficulty.dmg * this.affixDmg(), big: this.boss || this.elite || s.zr >= 30, lockAt: s.windup * TRACK_PART };
     this.scene.dangers.push(this.zone);
     this.zoneGfx = this.scene.fx.telegraph(zx, zy, s.zr, s.windup);
     if (this.kind === 'hexling' || this.kind === 'mire') audio.sfx('hexCharge');
@@ -2140,7 +2179,7 @@ export class Golem extends Enemy {
     // the Undercroft's Shadow: a weaker cursed echo that never enrages
     this.isShadow = !!opts.shadow;
     if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; this.sprite.setTint(0x8a6cc4); }
-    this.throwT = 3.5;
+    this.throwT = 5;
     this.boss = true;
     this.sprite.play('golem_idle');
   }
@@ -2219,6 +2258,7 @@ export class Golem extends Enemy {
     this.alive = false;
     this.clearZone();
     for (const p of this.plates || []) { p.img.destroy(); this.scene.removeInteractable(p.o); }
+    this.lungeGfx?.destroy(); if (this.lungeZone) this.scene.dangers = this.scene.dangers.filter((q) => q !== this.lungeZone);
     this.scene.onBossKilled(this, src);
     this.destroy();
   }
@@ -2226,9 +2266,11 @@ export class Golem extends Enemy {
   update(dt) {
     if (!this.alive) return;
     const sc = this.scene;
-    if (this.state === 'chase' && this.phase >= 2) {
+    // rocks on their own clock in every phase (not only while walking, which
+    // a golem with heroes in its face almost never is); thrown between slams
+    if (this.engaged && this.state !== 'throw' && this.state !== 'windup' && !this.stunT) {
       this.throwT -= dt;
-      if (this.throwT <= 0) { this.throwBoulder(); this.sync(dt); return; }
+      if (this.throwT <= 0 && (this.state === 'chase' || this.state === 'recover')) { this.throwBoulder(); this.sync(dt); return; }
     }
     if (this.state === 'throw') {
       this.t += dt;
@@ -2236,19 +2278,62 @@ export class Golem extends Enemy {
       this.sync(dt);
       return;
     }
+    if (this.state === 'lunge') { this.updateLunge(dt); this.sync(dt); return; }
+    if (this.lungeNext && this.state === 'recover' && this.t >= 0.35 && !this.stunT) { this.startLunge(); this.sync(dt); return; }
     super.update(dt);
     this.sprite.setDepth(this.y);
     for (const p of this.plates || []) if (p.on) { p.img.setPosition(this.x + p.side * 15, this.y - 34 + Math.sin(Date.now() / 200) * 0.5).setDepth(this.y + 2); p.o.x = p.img.x; p.o.y = p.img.y + 24; }
+  }
+
+  // The follow-up: a leaping slam. The marker sits on the target and follows
+  // them for a moment (so an early dodge is wasted), locks, then the golem
+  // lands on it. A well-timed dodge after the lock still clears it.
+  startLunge() {
+    const sc = this.scene, t = this.target;
+    this.lungeNext = false;
+    if (!t?.alive || t.downed) return;
+    this.state = 'lunge'; this.t = 0;
+    const r = 26;
+    this.lungeZone = { x: t.x, y: t.y, x0: t.x, y0: t.y, r, until: 0.85, src: this, dmg: this.s.dmg * sc.difficulty.dmg, big: true, lockAt: 0.45 };
+    sc.dangers.push(this.lungeZone);
+    this.lungeGfx = sc.fx.telegraph(t.x, t.y, r, 0.85);
+    this.play('windup');
+    audio.sfx('roar', { pitch: 1.3 });
+  }
+
+  updateLunge(dt) {
+    const sc = this.scene, z = this.lungeZone, t = this.target;
+    this.t += dt;
+    if (!z) { this.state = 'chase'; return; }
+    if (this.t < z.lockAt && t?.alive && !t.downed) { z.x = t.x; z.y = t.y; this.lungeGfx?.setPosition(z.x - z.x0, z.y - z.y0); }
+    else z.locked = true;
+    if (this.t >= 0.85 && !z.landed) {
+      z.landed = true;
+      const sx = this.x, sy = this.y;
+      this.play('attack');
+      sc.tweens.addCounter({ from: 0, to: 1, duration: 220, onUpdate: (tw) => { const k = tw.getValue(); this.x = sx + (z.x - sx) * k; this.y = sy + (z.y - sy) * k - Math.sin(k * Math.PI) * 18; }, onComplete: () => {
+        this.lungeGfx?.destroy(); this.lungeGfx = null;
+        sc.dangers = sc.dangers.filter((q) => q !== z); this.lungeZone = null;
+        if (!this.alive) return;
+        sc.fx.slam(z.x, z.y, z.r); sc.fx.dust(z.x, z.y); sc.shake(260, 0.012); audio.sfx('bash');
+        for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(z.dmg, this);
+        for (const a of sc.allies || []) if (a.alive && Math.hypot(a.x - z.x, a.y - z.y) <= z.r + a.r) a.damage(z.dmg, this);
+        this.state = 'recover'; this.t = 0;
+      } });
+    }
   }
 
   throwBoulder() {
     const sc = this.scene;
     const targets = sc.party.filter((h) => h.alive && !h.downed);
     if (!targets.length) return;
-    const t = targets[Math.floor(Math.random() * targets.length)];
+    // whoever is keeping out of slam reach gets the rock (archers, casters, dodgers)
+    const far = targets.filter((h) => Math.hypot(h.x - this.x, h.y - this.y) > this.s.zr + 20);
+    const pool = far.length ? far : targets;
+    const t = pool[Math.floor(Math.random() * pool.length)];
     this.state = 'throw';
     this.t = 0;
-    this.throwT = this.phase === 3 ? 3 : 4.5;
+    this.throwT = this.phase === 3 ? 3 : this.phase === 2 ? 4.5 : 6;
     this.anim = ''; this.sprite.play('golem_throw'); this.anim = 'golem_throw';
     const tx = t.x, ty = t.y, r = 20;
     const zone = { x: tx, y: ty, r, until: 0.95 };
@@ -2277,8 +2362,12 @@ export class Golem extends Enemy {
   }
 
   strike() {
+    const z = this.zone, sc = this.scene;
+    const connected = z && sc.party.some((h) => h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r);
     super.strike();
-    const sc = this.scene;
+    // whiffed and the target's only a few strides off: lumber after them (one follow-up per slam)
+    const t = this.target;
+    this.lungeNext = !connected && !!t?.alive && !t.downed && Math.hypot(t.x - this.x, t.y - this.y) < 120;
     sc.shake(220, 0.01);
     sc.fx.dust(this.x - 14, this.y + 2); sc.fx.dust(this.x + 14, this.y + 2);
     audio.sfx('bash');
