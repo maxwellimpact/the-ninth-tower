@@ -117,6 +117,9 @@ export const FOLK = {
   ember: folk('ember', 'pip', { head: 'kerchief@3', body: 'robe_apprentice@4' }),
   rook: folk('rook', 'brann', { head: 'helm_iron@2', body: 'jacket_leather@4' }),
   dusty: folk('dusty', 'kesh', { body: 'furs_hide@2' }),
+  halloway: folk('halloway', 'brann', { head: 'helm_great@6', body: 'robe_scholar@6', weapon: 'sword_long@6' }), // master of the Trainers' Hall
+  brew: folk('brew', 'pip', { head: 'kerchief@2', body: 'apron_blue@4' }), // the alchemist
+  inka: folk('inka', 'wren', { head: 'cap_ranger@2', body: 'leathers_scout@5' }), // the cartographer
   vey: folk('vey', 'brann', { head: 'helm_iron@4', body: 'plate_guard@2', weapon: 'sword_iron@2' }), // Emberwatch's watch-captain
   tamsin: folk('tamsin', 'gizmo', { head: 'goggles_brass@2', body: 'apron_brown@5' }), // the Forgemaster's last apprentice
 };

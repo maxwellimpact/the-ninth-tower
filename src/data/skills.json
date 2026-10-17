@@ -92,7 +92,8 @@
   "name": "BULWARK",
   "short": "BULWARK",
   "icon": "icon_bulwark",
-  "desc": "SHIELDS THE WHOLE PARTY AND TAUNTS EVERYTHING NEARBY."
+  "desc": "SHIELDS THE WHOLE PARTY AND TAUNTS EVERYTHING NEARBY.",
+  "upgrade": "L20 TOME: WHEN THE SHIELD ENDS IT BURSTS, HEALING THE PARTY 15%."
  },
  "fireball": {
   "hero": "pip",
@@ -190,7 +191,8 @@
   "name": "METEOR",
   "short": "METEOR",
   "icon": "icon_meteor",
-  "desc": "CALLS DOWN A METEOR ON A CLUSTER OF FOES."
+  "desc": "CALLS DOWN A METEOR ON A CLUSTER OF FOES.",
+  "upgrade": "L20 TOME: LEAVES BURNING GROUND FOR 5S."
  },
  "step": {
   "hero": "sable",
@@ -286,7 +288,8 @@
   "name": "THOUSAND CUTS",
   "short": "CUTS",
   "icon": "icon_cuts",
-  "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH."
+  "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH.",
+  "upgrade": "L20 TOME: UP TO 10 FOES, AND IT RECASTS FREE IF THE LAST ONE FALLS."
  },
  "mend": {
   "discipline": "cleric",
@@ -392,7 +395,8 @@
   "name": "STORM OF TALONS",
   "short": "TALONS",
   "icon": "icon_talons",
-  "desc": "FOR 4S KESTREL AND A RAIN OF ARROWS STRIKE EVERY FOE NEARBY."
+  "desc": "FOR 4S KESTREL AND A RAIN OF ARROWS STRIKE EVERY FOE NEARBY.",
+  "upgrade": "L20 TOME: LASTS 8S, AND EVERY HIT STUNS."
  },
  "cleave": {
   "hero": "kesh",
@@ -487,7 +491,8 @@
   "name": "PRIMAL FORM",
   "short": "PRIMAL",
   "icon": "icon_primal",
-  "desc": "FOR 8S: +50% DAMAGE, 20% LIFESTEAL, IMMUNE TO STUN AND SLOW."
+  "desc": "FOR 8S: +50% DAMAGE, 20% LIFESTEAL, IMMUNE TO STUN AND SLOW.",
+  "upgrade": "L20 TOME: LASTS 12S, AND EVERY HIT SLAMS THE GROUND."
  },
  "sweep": {
   "discipline": "blade",
@@ -688,7 +693,8 @@
   "name": "DAWNBREAK",
   "short": "DAWN",
   "icon": "icon_dawnbreak",
-  "desc": "REVIVES EVERY FALLEN ALLY AND HEALS THE PARTY TO FULL OVER 3S."
+  "desc": "REVIVES EVERY FALLEN ALLY AND HEALS THE PARTY TO FULL OVER 3S.",
+  "upgrade": "L20 TOME: ALSO BLASTS NEARBY FOES WITH LIGHT."
  },
  "turret": {
   "hero": "gizmo",
@@ -783,7 +789,8 @@
   "name": "CLANK",
   "short": "CLANK",
   "icon": "icon_clank",
-  "desc": "SUMMONS CLANK, A MECH THAT TAUNTS AND SLAMS FOES FOR 12S."
+  "desc": "SUMMONS CLANK, A MECH THAT TAUNTS AND SLAMS FOES FOR 12S.",
+  "upgrade": "L20 TOME: CLANK STAYS 24S AND FIRES ROCKETS."
  },
  "arcmissile": {
   "discipline": "arcane",

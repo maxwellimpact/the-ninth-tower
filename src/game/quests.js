@@ -62,7 +62,7 @@ export class QuestManager {
     npc.mark = sc.add.image(npc.px, npc.py - 30, 'markQ').setDepth(100000 - 40).setVisible(false);
     sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', interact: () => this.talk(npc) });
-    if (n.hidden || (n.requires && !this.sc.flags[n.requires]) || (n.wards && this.brokenWards() < n.wards) || (n.recruitOf && this.state.recruited.includes(n.recruitOf))) this.setNpcVisible(npc, false);
+    if (n.hidden || (n.requires && !this.sc.flags[n.requires]) || (n.wards && this.brokenWards() < n.wards) || (n.recruitOf && this.state.recruited.includes(n.recruitOf)) || !this.unlocked(n)) this.setNpcVisible(npc, false);
     if (n.service === 'smith') npc.forge = this.sc.add.image(npc.px + 18, npc.py + 6, 'forge').setOrigin(0.5, 1).setDepth(npc.py).setVisible(!npc.hiddenNow);
     this.npcs.push(npc);
   }
@@ -85,6 +85,9 @@ export class QuestManager {
     });
   }
 
+  // services that arrive later: the Cartographer (rescued townsfolk), Gizmo's workshop (Gizmo)
+  unlocked(n) { return (!n.folk || this.sc.folkCount() >= n.folk) && (!n.needsHero || this.state.recruited.includes(n.needsHero)); }
+
   brokenWards() { return W.wards.filter((w) => this.sc.flags[w.flag]).length; }
 
   // an active step that wants to talk to this NPC
@@ -101,6 +104,9 @@ export class QuestManager {
     const oid = this.offerFor(npc);
     if (oid) { this.offer(oid, npc); return; }
     if (npc.trainer) { sc.trainerTalk(npc); return; }
+    if (npc.hall) { sc.hallTalk(npc); return; }
+    if (npc.cartographer) { sc.cartographerTalk(npc); return; }
+    if (npc.shop) { this.shopTalk(npc); return; }
     if (npc.vendor) { this.vendorTalk(npc); return; }
     if (npc.minigame) {
       // a game host: their pitch the first time, then straight to the offer
@@ -142,6 +148,24 @@ export class QuestManager {
       audio.sfx('coin'); sc.events.emit('party'); sc.autosave('vendor');
       sc.floatText(sc.leader.x, sc.leader.y - 30, `+1 ${name}`, 'fontGold');
     }], ['NOT NOW', () => {}]];
+    sc.events.emit('dialogue', lines);
+  }
+
+  // A shop with a few things: consumables by the one, gear and charms once each.
+  shopTalk(npc) {
+    const sc = this.sc, st = this.state;
+    const lines = [this.line(npc, npc.lines[Math.floor(Math.random() * npc.lines.length)])];
+    const wares = npc.shop.filter((w) => !(w.gear && (sc.flags[`bought_${w.gear}`])));
+    lines[0].choices = [...wares.map((w) => {
+      const name = w.gear ? items[w.gear].name : CRAFT.consumables[w.item].name;
+      return [`${name} ${w.price}G`, () => {
+        if (st.gold < w.price) { sc.events.emit('dialogue', [this.line(npc, "THAT'S NOT ENOUGH COIN, FRIEND.")]); return; }
+        st.gold -= w.price; audio.sfx('coin');
+        if (w.gear) { sc.flags[`bought_${w.gear}`] = true; gainItems(st, [w.gear]); sc.events.emit('loot', { ids: [w.gear] }); }
+        else { addPotions(st, { [w.item]: 1 }); sc.floatText(sc.leader.x, sc.leader.y - 30, `+1 ${name}`, 'fontGold'); }
+        sc.events.emit('party'); sc.autosave('shop');
+      }];
+    }), ['NOT NOW', () => {}]];
     sc.events.emit('dialogue', lines);
   }
 
@@ -421,7 +445,8 @@ export class QuestManager {
     // markers: "!" when an errand is on offer, "?" when they're waiting on you
     for (const n of this.npcs) {
       if (n.requires && n.hiddenNow && sc.flags[n.requires]) this.setNpcVisible(n, true);
-      if (n.wards && n.hiddenNow && !this.state.recruited.includes(n.recruitOf) && this.brokenWards() >= n.wards) this.setNpcVisible(n, true);
+      if (n.wards && n.hiddenNow && !this.state.recruited.includes(n.recruitOf) && this.brokenWards() >= n.wards && this.unlocked(n)) this.setNpcVisible(n, true);
+      if ((n.folk || n.needsHero) && !n.wards && n.hiddenNow && this.unlocked(n)) this.setNpcVisible(n, true);
       if (n.recruitOf && !n.hiddenNow && this.state.recruited.includes(n.recruitOf)) this.setNpcVisible(n, false); // joined the party: no double
       if (n.hiddenNow) { n.mark.setVisible(false); continue; }
       const ready = this.turnInFor(n), offer = this.offerFor(n);

@@ -1954,6 +1954,48 @@
     "xp": 420,
     "item": "hourglass_charm"
    }
+  },
+  "secondWind": {
+   "title": "A SECOND WIND",
+   "giver": "brew",
+   "region": "vale",
+   "offer": [
+    "I'M WORKING ON SOMETHING. A PHIAL THAT MAKES EVERY POTION KINDER - YOU DRINK, AND IT REMEMBERS TO HELP A LITTLE MORE.",
+    "I NEED MOONHERB, SLIME GEL AND BOGMOSS. THE GOOD STUFF, FROM OUT THERE, NOT THE SAD BUNCHES MARLA SELLS."
+   ],
+   "accept": "HERBS, GEL, BOGMOSS.",
+   "thanks": [
+    "IT WORKED! IT ONLY EXPLODED TWICE! THE PHIAL'S YOURS - KEEP IT CORKED, OR DON'T, BUT DON'T BLAME ME."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "PICK MOONHERB",
+     "mat": "herb",
+     "count": 6
+    },
+    {
+     "type": "gather",
+     "text": "COLLECT SLIME GEL",
+     "mat": "gel",
+     "count": 4
+    },
+    {
+     "type": "gather",
+     "text": "GATHER BOGMOSS",
+     "mat": "bogmoss",
+     "count": 3
+    },
+    {
+     "type": "talk",
+     "text": "BRING IT ALL TO BREW",
+     "npc": "brew"
+    }
+   ],
+   "reward": {
+    "xp": 300,
+    "item": "phial_second_wind"
+   }
   }
  },
  "npcs": [
@@ -2670,6 +2712,104 @@
    ],
    "errands": [
     "mastersTools"
+   ]
+  },
+  {
+   "id": "halloway",
+   "name": "MASTER HALLOWAY",
+   "x": 31,
+   "y": 34,
+   "look": "halloway",
+   "hall": true,
+   "wards": 3,
+   "voice": {
+    "pitch": 140,
+    "wave": "square",
+    "duty": 0.25,
+    "speed": 0.95
+   },
+   "lines": [
+    "THE TRAINERS' HALL IS OPEN AGAIN, NOW THREE STONES ARE DOWN.",
+    "ANY DISCIPLINE YOU'VE LEARNED OF, I CAN TEACH. I CAN UNTEACH, TOO. AND I SELL BOOKS. HEAVY ONES."
+   ]
+  },
+  {
+   "id": "brew",
+   "name": "BREW THE ALCHEMIST",
+   "x": 9,
+   "y": 34,
+   "look": "brew",
+   "wards": 4,
+   "voice": {
+    "pitch": 300,
+    "wave": "triangle",
+    "speed": 1.1
+   },
+   "shop": [
+    {
+     "item": "potion",
+     "price": 30
+    },
+    {
+     "item": "elixir",
+     "price": 70
+    },
+    {
+     "item": "antidote",
+     "price": 25
+    },
+    {
+     "item": "salve",
+     "price": 35
+    }
+   ],
+   "lines": [
+    "POTIONS! ELIXIRS! THINGS THAT FIZZ!",
+    "FOUR STONES DOWN AND THE HERBS GROW STRAIGHT AGAIN. BUSINESS IS BOOMING. SOMETIMES LITERALLY."
+   ],
+   "errands": [
+    "secondWind"
+   ]
+  },
+  {
+   "id": "workbench",
+   "name": "GIZMO'S WORKBENCH",
+   "x": 29,
+   "y": 31,
+   "look": "board",
+   "needsHero": "gizmo",
+   "voice": {
+    "pitch": 420,
+    "wave": "square",
+    "duty": 0.125,
+    "speed": 1.15
+   },
+   "shop": [
+    {
+     "gear": "traveler_compass",
+     "price": 400
+    }
+   ],
+   "lines": [
+    "A NOTE IN GIZMO'S HAND: 'FOR SALE! ASK NO QUESTIONS! LEAVE GOLD IN THE TIN!'"
+   ]
+  },
+  {
+   "id": "inka",
+   "name": "INKA THE CARTOGRAPHER",
+   "x": 17,
+   "y": 36,
+   "look": "inka",
+   "folk": 20,
+   "cartographer": true,
+   "voice": {
+    "pitch": 260,
+    "wave": "triangle",
+    "speed": 1.05
+   },
+   "lines": [
+    "TWENTY OF US HOME! ENOUGH TO NEED A PROPER MAP OF THE PLACE, AND I'M THE ONE TO DRAW IT.",
+    "I KNOW EVERY LOOKOUT TOWER IN THE LAND. OR I DID, BEFORE THE HEX MOVED HALF THE TREES."
    ]
   }
  ]

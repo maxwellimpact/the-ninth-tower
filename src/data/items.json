@@ -1005,5 +1005,41 @@
   },
   "perk": "wardcrown",
   "desc": "+30% DAMAGE TO HEXED FOES. THREE STONES' WORTH OF BROKEN MAGIC, HUMMING."
+ },
+ "traveler_compass": {
+  "name": "TRAVELER'S COMPASS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@3",
+  "stats": {
+   "def": 2
+  },
+  "perk": "compass",
+  "desc": "EVERY UNOPENED CHEST NEARBY SHOWS ON THE MINIMAP. GIZMO SWEARS IT ONLY POINTS AT TREASURE. MOSTLY."
+ },
+ "wanderers_charm": {
+  "name": "WANDERER'S CHARM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@6",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "wanderer",
+  "desc": "+8% MOVE SPEED. +10 HP. FOR SOMEONE WHO HAS CLIMBED EVERY TOWER."
+ },
+ "phial_second_wind": {
+  "name": "PHIAL OF SECOND WIND",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@2",
+  "stats": {
+   "hp": 15
+  },
+  "perk": "phial",
+  "desc": "POTIONS AND ELIXIRS HEAL 30% MORE. +15 HP. SMELLS LIKE MINT AND A SECOND CHANCE."
  }
 }

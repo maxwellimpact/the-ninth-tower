@@ -3183,6 +3183,16 @@ export class Gadget extends Unit {
         this.moveBy(nx * 46 * dt, ny * 46 * dt); this.flip = nx < 0; this.sprite.setFlipX(this.flip);
         if (this.sprite.anims.currentAnim?.key !== 'gadget_clank_walk' && this.t > 0.2) this.sprite.play('gadget_clank_walk');
       }
+      if (this.rockets) { // Ultimate Tome: shoulder rockets at whatever's furthest in range
+        this.rocketT = (this.rocketT ?? 1) - dt * rate;
+        const far = sc.enemies.filter((k) => sc.fairTarget(k) && !k.submerged && Math.hypot(k.x - this.x, k.y - this.y) < 150).sort((a, b) => Math.hypot(b.x - this.x, b.y - this.y) - Math.hypot(a.x - this.x, a.y - this.y))[0];
+        if (this.rocketT <= 0 && far) {
+          this.rocketT = 1.8;
+          const [nx, ny] = norm(far.x - this.x, far.y - 10 - (this.y - 34));
+          sc.spawnProjectile({ owner: o, target: far, x: this.x, y: this.y - 34, vx: nx * 180, vy: ny * 180, dmg: o.stats.atk * 1.1 * this.m, kind: 'fireball', aoe: 20, split: true, life: 1.2 });
+          audio.sfx('fireCast', { pitch: 1.3 });
+        }
+      }
       if (this.t <= 0 && e && Math.hypot(e.x - this.x, e.y - this.y) < 44) {
         this.t = 1.6;
         this.sprite.play('gadget_clank_attack');

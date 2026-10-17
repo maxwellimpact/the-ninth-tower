@@ -16,7 +16,7 @@ import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, gainItems, learnDiscipline, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
+import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
@@ -26,6 +26,7 @@ import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
 import W from '../data/world.json';
 import items from '../data/items.json';
+import skillData from '../data/skills.json';
 import tuning from '../data/tuning.json';
 
 const TOP = 100000;
@@ -592,7 +593,8 @@ export class Game extends Phaser.Scene {
     if (kind === 'potion') {
       const L = this.leader;
       if (L.downed || L.hp >= L.maxHp) { audio.sfx('click'); return false; }
-      const amt = Math.round(L.maxHp * c.heal * (L.hasTrait('tonic') ? 1.2 : 1));
+      const phial = this.party.some((h) => h.hasPerk('phial')) ? 1.3 : 1; // Phial of Second Wind
+      const amt = Math.round(L.maxHp * c.heal * (L.hasTrait('tonic') ? 1.2 : 1) * phial);
       L.hp = Math.min(L.maxHp, L.hp + amt);
       this.floatText(L.x, L.y - 28, `+${amt}`, 'font', 0x8cff8c);
       this.fx.heal(L.x, L.y);
@@ -604,7 +606,8 @@ export class Game extends Phaser.Scene {
       for (const h of this.party) { h.poison = null; h.antidoteT = 30; if (!h.downed) h.sprite.clearTint(); this.fx.heal(h.x, h.y); }
       this.floatText(this.leader.x, this.leader.y - 28, 'CURED', 'font', 0x8cff8c);
     } else {
-      for (const h of this.party) { if (h.downed) h.revive(c.heal); else h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * c.heal)); this.fx.heal(h.x, h.y); }
+      const phial = this.party.some((h) => h.hasPerk('phial')) ? 1.3 : 1;
+      for (const h of this.party) { if (h.downed) h.revive(c.heal); else h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * c.heal * phial)); this.fx.heal(h.x, h.y); }
     }
     st.potions[kind]--;
     audio.sfx('heal');
@@ -1070,7 +1073,8 @@ export class Game extends Phaser.Scene {
       else if (o.kind === 'warp') m.push({ ...t, kind: 'door' });
       else if (o.kind === 'frog') m.push({ ...t, kind: 'npc' });
       else if (o.kind === 'post') m.push({ ...t, kind: 'post' });
-      else if (o.kind === 'shrine' || o.kind === 'lookout') m.push({ ...t, kind: 'recruit' });
+      else if (o.kind === 'shrine') m.push({ ...t, kind: 'recruit' });
+      else if (o.kind === 'lookout') m.push({ ...t, kind: 'recruit', always: !!this.flags.cartoPins }); // the Cartographer's pins
     }
     for (const u of this.wardUnits()) m.push({ ...tile(u), kind: 'boss' });
     for (const n of this.npcs) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'npc' });
@@ -1079,6 +1083,10 @@ export class Game extends Phaser.Scene {
     if (pin) m.push({ ...pin, kind: 'quest', always: true });
     for (const n of this.nodes) if (n.ready) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
     if (this.dungeon) m.push(...this.dungeon.markers());
+    if (this.party.some((h) => h.hasPerk('compass'))) { // Traveler's Compass: every unopened chest here
+      const shut = this.dungeon ? this.dungeon.chests.filter((c) => !c.opened && !c.reveal) : W.chests.filter((c) => !this.flags[`chest_${c.id}`]);
+      for (const c of shut) m.push({ x: c.x, y: c.y, kind: 'chest', always: true });
+    }
     if (this.party.some((h) => !h.downed && h.hasPerk('clockwork'))) { // Clockwork Goggles: chests within 6 tiles show, explored or not
       const L = tile(this.leader), near = (c) => Math.hypot(c.x - L.x, c.y - L.y) <= 6;
       const shut = this.dungeon ? this.dungeon.chests.filter((c) => !c.opened) : W.chests.filter((c) => !this.flags[`chest_${c.id}`]);
@@ -1266,6 +1274,11 @@ export class Game extends Phaser.Scene {
     }
     if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
     if (hero && src.hasPerk('bloodfang') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.05);
+    if (hero && src.buffs?.primal && src.primalSlam && basic && this.time.now > (src.slamT || 0)) { // Primal Form (tome): every hit slams
+      src.slamT = this.time.now + 500;
+      this.fx.slam(target.x, target.y, 26);
+      for (const e of this.enemies) if (e.alive && e !== target && Math.hypot(e.x - target.x, e.y - target.y) < 28 + e.r) this.dealDamage(src, e, src.stats.atk * 0.5, { knock: 60, noProc: true });
+    }
     if (hero && src.hasPerk('kiss') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.02); // Vampire's Kiss
     if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
@@ -1408,6 +1421,7 @@ export class Game extends Phaser.Scene {
     audio.sfx('ult');
     this.events.emit('ult', h);
     this.hitStop(0.12);
+    const tome = !!h.hs.ultTome; // the level-20 Ultimate Tome upgrade (C3)
     switch (h.ultimate.id) {
       case 'bulwark': {
         sc.shake(200, 0.008);
@@ -1420,6 +1434,11 @@ export class Game extends Phaser.Scene {
         sc.taunt(h, 150, 5);
         for (const e of this.enemies) if (e.alive && dist(e, h) < 56) this.dealDamage(h, e, h.stats.atk * 1.2, { knock: 150 });
         sc.floatText(h.x, h.y - 36, 'BULWARK!', 'fontGold', 0xffffff, true);
+        if (tome) this.time.delayedCall(6000, () => { // the shields burst into healing light
+          for (const p of this.party) if (p.alive && !p.downed) { p.heal(Math.round(p.maxHp * 0.15)); this.fx.ring(p.x, p.y - 8, 'ringGold', 2); }
+          for (const e of this.enemies) if (e.alive && !h.downed && dist(e, h) < 56) this.dealDamage(h, e, h.stats.atk * 0.8, { knock: 90 });
+          audio.sfx('shatter');
+        });
         break;
       }
       case 'meteor': {
@@ -1443,6 +1462,11 @@ export class Game extends Phaser.Scene {
             audio.sfx('fireImpact'); audio.sfx('bash');
             this.fx.burst('ember', tx, ty, 50); this.fx.ring(tx, ty, 'ringGold', 7);
             for (const e of [...this.enemies, ...this.wardUnits()]) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 6, { crit: true, knock: 200 });
+            if (tome) { // the crater keeps burning
+              const pool = this.add.ellipse(tx, ty, 92, 56, 0xff7b2e, 0.32).setDepth(-25);
+              this.tweens.add({ targets: pool, alpha: 0, duration: 5000, onComplete: () => pool.destroy() });
+              this.time.addEvent({ delay: 500, repeat: 9, callback: () => { for (const e of this.enemies) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 0.35, { knock: 0, element: 'fire' }); } });
+            }
           },
         });
         sc.floatText(h.x, h.y - 36, 'METEOR!', 'fontGold', 0xffffff, true);
@@ -1454,16 +1478,17 @@ export class Game extends Phaser.Scene {
         if (!pool().length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         sc.floatText(h.x, h.y - 36, 'STORM OF TALONS!', 'fontGold', 0xffffff, true);
         const hawk = this.add.sprite(h.x, h.y - 60, 'hawk', '0').play('hawk').setDepth(TOP - 15).setScale(1.4);
-        for (let i = 0; i < 20; i++) this.time.delayedCall(i * 200, () => {
+        const shots = tome ? 40 : 20; // tome: 8s, and every hit stuns
+        for (let i = 0; i < shots; i++) this.time.delayedCall(i * 200, () => {
           const list = pool();
           if (!list.length) return;
           const e = list[Math.floor(Math.random() * list.length)];
           if (i % 3 === 0) this.tweens.add({ targets: hawk, x: e.x, y: e.y - 12, duration: 160, yoyo: true });
           const ar = this.add.image(e.x - 12, e.y - 70, 'arrow').setRotation(1.4).setDepth(TOP - 20);
-          this.tweens.add({ targets: ar, x: e.x, y: e.y - 6, duration: 150, onComplete: () => { ar.destroy(); if (e.alive) this.dealDamage(h, e, h.stats.atk * 0.8, { knock: 15 }); } });
+          this.tweens.add({ targets: ar, x: e.x, y: e.y - 6, duration: 150, onComplete: () => { ar.destroy(); if (e.alive) { this.dealDamage(h, e, h.stats.atk * 0.8, { knock: 15 }); if (tome && !e.boss) e.stun?.(0.4); } } });
           audio.sfx('swing', { pitch: 1.8 });
         });
-        this.time.delayedCall(4200, () => this.tweens.add({ targets: hawk, y: hawk.y - 120, alpha: 0, duration: 500, onComplete: () => hawk.destroy() }));
+        this.time.delayedCall(shots * 200 + 200, () => this.tweens.add({ targets: hawk, y: hawk.y - 120, alpha: 0, duration: 500, onComplete: () => hawk.destroy() }));
         break;
       }
       case 'dawnbreak': {
@@ -1473,6 +1498,7 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: light, scale: 10, alpha: 0, duration: 1200, onComplete: () => light.destroy() });
         this.cameras.main.flash(300, 255, 246, 200);
         for (const p of this.party) if (p.downed) p.revive(0.3);
+        if (tome) { for (const e of this.enemies) if (e.alive && dist(e, h) < 90) this.dealDamage(h, e, h.stats.atk * 3, { knock: 120, element: 'light', spell: true }); this.shake(200, 0.008); }
         this.time.addEvent({ delay: 500, repeat: 5, callback: () => { for (const p of this.party) if (p.alive && !p.downed) p.heal(Math.round(p.maxHp / 6)); } });
         audio.sfx('levelUp');
         sc.floatText(h.x, h.y - 36, 'DAWNBREAK!', 'fontGold', 0xffffff, true);
@@ -1481,23 +1507,25 @@ export class Game extends Phaser.Scene {
       case 'clank': {
         const [fx, fy] = h.facingVec();
         const x = h.x + fx * 20, y = h.y + fy * 14;
-        new Gadget(this, h, 'clank', this.nav.solidAtPx(x, y) ? h.x : x, this.nav.solidAtPx(x, y) ? h.y + 6 : y, 1);
+        const ck = new Gadget(this, h, 'clank', this.nav.solidAtPx(x, y) ? h.x : x, this.nav.solidAtPx(x, y) ? h.y + 6 : y, 1);
+        if (tome) { ck.life *= 2; ck.rockets = true; } // 24s, and rockets
         this.shake(260, 0.01); audio.sfx('bash');
         sc.floatText(h.x, h.y - 36, 'CLANK!', 'fontGold', 0xffffff, true);
         break;
       }
       case 'primal': {
-        h.buff('primal', 1, 8);
+        h.buff('primal', 1, tome ? 12 : 8);
+        h.primalSlam = tome;
         sc.fx.ring(h.x, h.y - 6, 'ringRed', 7);
         sc.shake(260, 0.01);
         audio.sfx('roar');
         h.sprite.setTint(0xffb0a0);
-        this.time.delayedCall(8000, () => { if (!h.flashT) h.sprite.clearTint(); });
+        this.time.delayedCall(tome ? 12000 : 8000, () => { if (!h.flashT) h.sprite.clearTint(); });
         sc.floatText(h.x, h.y - 36, 'PRIMAL FORM!', 'fontGold', 0xffffff, true);
         break;
       }
       case 'thousand_cuts': {
-        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, 6);
+        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, tome ? 10 : 6);
         if (!targets.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         const home = { x: h.x, y: h.y };
         h.invuln = 0.15 * targets.length + 0.4;
@@ -1514,6 +1542,8 @@ export class Game extends Phaser.Scene {
         this.time.delayedCall(130 * targets.length + 120, () => {
           this.fx.ghost(h); h.x = home.x; h.y = home.y; h.zipping = false; h.anim = '';
           this.fx.puff(h.x, h.y, 'sparkCurse');
+          if (tome && !h.cutsRecast && !targets[targets.length - 1].alive) { h.cutsRecast = true; h.ult = 100; this.floatText(h.x, h.y - 36, 'AGAIN!', 'fontGold'); } // once per charge
+          else h.cutsRecast = false;
         });
         break;
       }
@@ -1978,6 +2008,7 @@ export class Game extends Phaser.Scene {
   // A trainer teaches their discipline to one party member at a time (one
   // discipline per hero; switching refunds skill points but costs more gold).
   trainerTalk(npc) {
+    this.flags[`taught_${npc.trainer}`] = true; // the Trainers' Hall can teach it from now on
     const D = DISCIPLINES[npc.trainer];
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
     const intro = npc.metTrainer ? [] : npc.lines.map(line);
@@ -2001,6 +2032,66 @@ export class Game extends Phaser.Scene {
     this.events.emit('banner', `${h.def.name.toUpperCase()} LEARNED ${D.name}`, had ? `FORGOT ${DISCIPLINES[had].name} - SKILL POINTS REFUNDED` : 'OPEN SKILLS IN THE MENU TO EQUIP AND RANK UP');
     this.events.emit('party');
     this.autosave('discipline');
+  }
+
+  // The Trainers' Hall (C9, 3 stones): any discipline you've met a trainer for,
+  // respecs, Veteran's Tomes for benched heroes and Ultimate Tomes at level 20.
+  hallTalk(npc) {
+    const st = this.state, line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    const say = (t, choices) => { const l = line(t); if (choices) l.choices = [...choices, ['NOT NOW', () => {}]]; this.events.emit('dialogue', [l]); };
+    const heroes = (list) => list.map((id) => ({ id, hs: st.heroes[id], name: heroInfo(id).name.toUpperCase() }));
+    const pay = (g) => { if (st.gold < g) { say(`THAT'S ${g} GOLD. THE HALL DOESN'T RUN ON GOODWILL.`); return false; } st.gold -= g; audio.sfx('coin'); return true; };
+    const avg = () => Math.round(this.party.reduce((a, h) => a + h.level, 0) / Math.max(1, this.party.length));
+    const menu = () => say(npc.metHall ? 'WHAT WILL IT BE?' : npc.lines.join(' '), [
+      ['DISCIPLINES', () => {
+        const known = Object.keys(DISCIPLINES).filter((d) => this.flags[`taught_${d}`]);
+        if (!known.length) { say('YOU HAVEN\'T MET A SINGLE TRAINER. GO AND SHAKE SOME HANDS FIRST.'); return; }
+        say('WHICH DISCIPLINE?', known.slice(0, 5).map((d) => [DISCIPLINES[d].name, () => this.trainerTalk({ ...npc, trainer: d, metTrainer: true })]));
+      }],
+      ['RESPEC', () => say('WHO WANTS TO START OVER? EVERY SKILL POINT COMES BACK.', heroes(st.active).map((h) => [`${h.name} ${respecCost(h.hs)}G`, () => {
+        if (!pay(respecCost(h.hs))) return;
+        const n = respecHero(h.id, h.hs);
+        this.party.find((p) => p.def.id === h.id)?.buildSkills();
+        this.events.emit('banner', `${h.name} RESPECCED`, `${n} SKILL POINT${n === 1 ? '' : 'S'} BACK TO SPEND`); this.events.emit('party'); this.autosave('respec');
+      }]))],
+      ['VETERAN TOME', () => {
+        const a = avg(), bench = heroes(st.recruited.filter((id) => !st.active.includes(id) && st.heroes[id].level < a));
+        if (!bench.length) { say('NOBODY ON YOUR BENCH IS BEHIND. A VETERAN\'S TOME BRINGS A RESTING HERO UP TO THE PARTY.'); return; }
+        say(`A VETERAN'S TOME BRINGS A BENCHED HERO UP TO LEVEL ${a}.`, bench.slice(0, 4).map((h) => [`${h.name} ${60 * (a - h.hs.level)}G`, () => {
+          if (!pay(60 * (a - h.hs.level))) return;
+          h.hs.sp = (h.hs.sp || 0) + (a - h.hs.level); h.hs.level = a; h.hs.xp = 0;
+          this.events.emit('banner', `${h.name} STUDIED HARD`, `NOW LEVEL ${a}`); this.events.emit('party'); this.autosave('tome');
+        }]));
+      }],
+      ['ULTIMATE TOME', () => {
+        const ok = heroes(st.recruited.filter((id) => st.heroes[id].level >= 20 && !st.heroes[id].ultTome));
+        if (!ok.length) { say('ULTIMATE TOMES ARE FOR HEROES OF LEVEL 20. NOT A DAY BEFORE. I DON\'T MAKE THE RULES. (I DO.)'); return; }
+        say('READ THIS AND YOUR ULTIMATE GROWS. 1200 GOLD.', ok.slice(0, 4).map((h) => [h.name, () => {
+          if (!pay(1200)) return;
+          h.hs.ultTome = true;
+          this.events.emit('banner', `${h.name}'S ULTIMATE GROWS`, skillData[heroInfo(h.id).ultimate]?.upgrade?.replace('L20 TOME: ', '') || 'STRONGER THAN EVER'); this.events.emit('party'); this.autosave('tome');
+        }]));
+      }],
+    ]);
+    npc.metHall = true;
+    menu();
+  }
+
+  // The Cartographer (C9, 20 townsfolk home): pins every lookout tower on
+  // your map, and gives the Wanderer's Charm once you've climbed them all.
+  cartographerTalk(npc) {
+    const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    const intro = this.flags.cartoPins ? [] : npc.lines.map(line);
+    this.flags.cartoPins = true; // mapMarkers shows every lookout from now on
+    const climbed = W.lookouts.filter((k) => this.flags[`lookout_${k.id}`]).length, all = W.lookouts.length;
+    if (climbed >= all && !this.flags.wanderer) {
+      this.flags.wanderer = true;
+      gainItems(this.state, ['wanderers_charm']); // given now, shown after the talk, so a closed game can't lose it
+      this.autosave('carto');
+      this.events.emit('dialogue', [...intro, line(`EVERY TOWER I KNOW OF - ${all} OF ${all}! YOU WALK MORE THAN I DO, AND I DRAW MAPS FOR A LIVING. TAKE THIS.`)], () => this.events.emit('loot', { ids: ['wanderers_charm'] }));
+      return;
+    }
+    this.events.emit('dialogue', [...intro, line(this.flags.wanderer ? 'STILL WALKING? GOOD. THE MAP NEEDS FEET.' : `I'VE PINNED EVERY LOOKOUT TOWER ON YOUR MAP. YOU'VE CLIMBED ${climbed} OF ${all}. CLIMB THEM ALL AND I'LL HAVE SOMETHING FOR YOU.`)]);
   }
 
   rest() {

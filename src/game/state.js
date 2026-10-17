@@ -118,6 +118,19 @@ export function learnDiscipline(hs, disc) {
     if (i >= 0) list[i] = first;
   }
 }
+// Respec (Trainers' Hall): every skill point spent comes back; the hero keeps
+// their discipline, back at its free first skill.
+export function respecHero(id, hs) {
+  const cost = (r) => { let n = 0; for (let i = 1; i <= r; i++) n += tuning.skillRankCost[i] || 0; return n; };
+  const fresh = newSkillState(id).skills;
+  let refund = 0;
+  for (const [sid, r] of Object.entries(hs.skills.ranks)) refund += cost(r) - (fresh.ranks[sid] || sid === hs.discFree ? tuning.skillRankCost[1] : 0);
+  hs.skills = fresh;
+  hs.sp = (hs.sp || 0) + Math.max(0, refund);
+  if (hs.disc) { hs.skills.ranks[hs.discFree] = 1; const i = hs.skills.active.indexOf(null); if (i >= 0) hs.skills.active[i] = hs.discFree; }
+  return refund;
+}
+export const respecCost = (hs) => 20 * hs.level;
 export const switchCost = (hs, disc) => DISCIPLINES[disc].cost + (hs.disc ? 15 * hs.level : 0);
 // Rank multiplier: +15% per rank above 1.
 export const rankMul = (rank) => 1 + Math.max(0, rank - 1) * tuning.skillRankBonus;
@@ -224,6 +237,7 @@ export function computeStats(id, level, equip, hs = null) {
   s.traits = traits;
   if (traits.includes('cdr')) s.cdr += 0.1;
   if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
+  if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'wanderer')) s.speed = Math.round(s.speed * 1.08); // Wanderer's Charm
   if (hs?.skills?.passive.includes('clarity')) s.cdr += 0.1 + 0.02 * ((hs.skills.ranks.clarity || 1) - 1); // Clarity (Arcane)
   s.cdr = Math.min(0.3, s.cdr);
   // equipped stat passives
