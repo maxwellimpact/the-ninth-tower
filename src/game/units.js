@@ -887,9 +887,12 @@ export class Hero extends Unit {
       // melee: approach a flank slot (opposite the leader / tank, not stacked)
       const slot = this.flankSlot(t);
       const reach = st.range + t.r;
-      // don't walk back into an attack that's about to land: wait just outside it
+      // don't walk back into a big blow that's about to land: wait just outside it.
+      // Ordinary swings don't count: a foe's swing marker covers the very spot a
+      // melee fighter stands in, so waiting on them kept Sable hovering out of
+      // reach most of a fight (whether to sidestep one is the dodge logic's call)
       const [ax, ay] = norm(slot.x - this.x, slot.y - this.y);
-      if (sc.dangers.some((z) => !z.linger && Math.hypot(this.x + ax * 10 - z.x, this.y + ay * 10 - z.y) < z.r + 6)) {
+      if (sc.dangers.some((z) => !z.linger && (!z.src || z.big) && Math.hypot(this.x + ax * 10 - z.x, this.y + ay * 10 - z.y) < z.r + 6)) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         if (d <= reach + 6) this.startAttack(t);
