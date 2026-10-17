@@ -95,6 +95,20 @@ export const WEAPONS = {
       px(ctx, Math.round(hx - s * t - c * bend), Math.round(hy + c * t - s * bend), Math.abs(t) > 2 ? 'steelL' : 'steel');
     }
   },
+  // the pick seen end-on (facing you or facing away, swinging in line with the
+  // view): no crossbar, just a thick iron head with its point running on past
+  // the end of the haft, toward or away from you
+  pickaxeEnd(ctx, h, ang) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    ray(ctx, h.x - c * 2, h.y - s * 2, ang, 9, 'woodL');
+    ray(ctx, h.x - c * 2 + 1, h.y - s * 2, ang, 8, 'wood');
+    const hx = h.x + c * 7, hy = h.y + s * 7;
+    // the head, foreshortened: a broad iron collar across the haft end (darker at its edges)...
+    for (let t = -2; t <= 2; t++) px(ctx, Math.round(hx - s * t), Math.round(hy + c * t), Math.abs(t) === 2 ? 'steelD' : 'steel');
+    for (let t = -1; t <= 1; t++) px(ctx, Math.round(hx - s * t + c), Math.round(hy + c * t + s), 'steel');
+    // ...and its point coming on toward / away from you, tapering to a bright tip
+    for (let i = 2; i <= 3; i++) px(ctx, Math.round(hx + c * i), Math.round(hy + s * i), i === 3 ? 'white' : 'steelL');
+  },
   sickle(ctx, h, ang) {
     const c = Math.cos(ang), s = Math.sin(ang);
     ray(ctx, h.x, h.y, ang + Math.PI, 3, 'woodD');
@@ -351,15 +365,16 @@ export function buildPuppetFrames(def) {
   // behind the head, hold it high, bring it down fast, and the point bites the
   // ground in front with the knees bent. Six frames at 10fps (0.6 s, the swing
   // period): the lift and the strike are held two frames, the downswing one.
-  const pick = (x, y, ang, crouch = 0) => ({ handR: { x, y }, handL: { x: Math.round(x + Math.cos(ang) * 3), y: Math.round(y + Math.sin(ang) * 3) }, angR: ang, tool: 'pickaxe', crouch });
+  const pick = (x, y, ang, crouch = 0, tool = 'pickaxe') => ({ handR: { x, y }, handL: { x: Math.round(x + Math.cos(ang) * 3), y: Math.round(y + Math.sin(ang) * 3) }, angR: ang, tool, crouch });
+  const end = (x, y, ang, crouch = 0) => pick(x, y, ang, crouch, 'pickaxeEnd'); // facing you / away: the head is seen end-on
   const swing = (lift, top, down, hit) => [lift, lift, top, down, hit, hit];
   const MINE = {
     // facing right: up behind the head, over the top, forward, point into the ground ahead
     side: swing(pick(21, 19, -2.25), pick(21, 14, -1.95), pick(28, 20, -0.35), pick(28, 26, 1.1, 1)),
     // facing you: raised overhead, then straight down in front, head at the feet
-    down: swing(pick(22, 15, -1.85), pick(24, 13, -1.57), pick(24, 22, 1.57), pick(24, 27, 1.57, 1)),
+    down: swing(end(22, 15, -1.85), end(24, 13, -1.57), end(24, 22, 1.57), end(24, 27, 1.57, 1)),
     // facing away: raised overhead, then forward and down onto the ground ahead
-    up: swing(pick(26, 16, -1.35), pick(24, 13, -1.57), pick(24, 17, -1.6), pick(26, 21, -1.4, 1)),
+    up: swing(end(26, 16, -1.35), end(24, 13, -1.57), end(24, 17, -1.6), end(26, 21, -1.4, 1)),
   };
   const GATHER = {
     down: [{ handR: { x: 20, y: 30 }, angR: 2.5, tool: 'sickle', crouch: 2 }, { handR: { x: 25, y: 31 }, angR: 0.6, tool: 'sickle', crouch: 2 }],
