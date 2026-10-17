@@ -725,7 +725,7 @@ const WEAPON_DEFAULTS = {
   staff: { shaft: ['wood', 'woodD'], rim: 'gold', core: 'goldL', glow: 'fireL' },
   dagger: { blade: 'steelL', tip: 'white', guard: 'gold' },
 };
-const RINGS = { vigor: 'redL', might: 'fireL', warding: 'blueL', precision: 'grassXL' };
+const RINGS = { vigor: 'redL', might: 'fireL', warding: 'blueL', precision: 'grassXL', luck: 'goldL' };
 const rc = (ramp) => (k) => (typeof k === 'string' && ramp[k]) || k;
 const mapObj = (o, f) => Object.fromEntries(Object.entries(o).map(([c, k]) => [c, Array.isArray(k) ? k.map(f) : f(k)]));
 const lookCache = new Map();

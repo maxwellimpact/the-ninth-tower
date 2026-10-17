@@ -473,7 +473,7 @@ export class Game extends Phaser.Scene {
 
   tryWarp(w) {
     if (typeof w.tower === 'number') { this.towerStairs(w); return; }
-    if (w.tower === 'door' && this.flags.malgrimDefeated) { this.bark(this.leader, 'NOTHING LEFT OF THE TOWER BUT RUBBLE AND WIND.'); return; }
+    if (w.tower === 'door' && this.flags.malgrimDefeated && !this.flags.ruinBark) { this.flags.ruinBark = true; this.bark(this.leader, 'RUBBLE AND WIND... BUT THE STAIRS STILL CLIMB.'); } // the ruin stays open: nothing in it is lost for good
     if (w.tower === 'door' && this.flags.wardBroken && !this.flags.towerWarned && OUTER_REGIONS.some((r) => !this.flags[`ward_${r}`])) {
       this.flags.towerWarned = true;
       const M = (text) => ({ who: 'MALGRIM', text, voice: { pitch: 110, wave: 'sawtooth', speed: 0.8 } });
@@ -843,8 +843,16 @@ export class Game extends Phaser.Scene {
       }
       if (p.reflected) {
         const e = this.enemies.find((k) => k.alive && Math.hypot(k.x - p.x, k.y - 8 - p.y) < k.r + 4);
-        if (e) { this.dealDamage(this.party.find((h) => h.wallT > 0) || this.leader, e, p.dmg * 1.5, { knock: 40 }); p.dead = true; p.s.destroy(); continue; }
+        if (e) { this.dealDamage(this.party.find((h) => h.wallT > 0) || this.party.find((h) => h.truthsT > this.time.now) || this.leader, e, p.dmg * 1.5, { knock: 40 }); p.dead = true; p.s.destroy(); continue; }
         if (p.life <= 0) { p.dead = true; p.s.destroy(); }
+        continue;
+      }
+      if (hit?.hasPerk?.('truths') && !hit.downed && this.time.now > (hit.truthsT || 0) && p.from?.alive) { // Mirror of Truths: one shot back every 5s
+        hit.truthsT = this.time.now + 5000;
+        p.reflected = true; p.life = 1.1;
+        const [rx, ry] = norm(p.from.x - p.x, p.from.y - 8 - p.y);
+        p.vx = rx * 230; p.vy = ry * 230; p.s.setRotation(Math.atan2(ry, rx));
+        audio.sfx('block'); this.fx.burst('curse', p.x, p.y, 8); this.floatText(hit.x, hit.y - 28, 'REFLECT', 'fontPlain', 0xd9b8ff);
         continue;
       }
       if (hit?.hasPerk?.('bulwark') && hit.action?.type !== 'attack' && !hit.downed) { // Bulwark of Aldermere: blocks shots from the front
@@ -1349,6 +1357,9 @@ export class Game extends Phaser.Scene {
       const shut = this.dungeon ? this.dungeon.chests.filter((c) => !c.opened) : W.chests.filter((c) => !this.flags[`chest_${c.id}`]);
       for (const c of shut) if (near(c)) m.push({ x: c.x, y: c.y, kind: 'chest', always: true });
     }
+    if (!this.dungeon && this.party.some((h) => h.hasPerk('amber'))) { // Gold Fly in Amber: every uncollected fly
+      W.flies.forEach(([x, y], i) => { if (!this.state.flies.includes(i)) m.push({ x, y, kind: 'fly', always: true }); });
+    }
     const a = this.areaRect();
     return m.filter((k) => k.x >= a.x0 && k.x <= a.x1 && k.y >= a.y0 && k.y <= a.y1 && (k.always || this.minimap.isExplored(k.x, k.y)));
   }
@@ -1511,6 +1522,7 @@ export class Game extends Phaser.Scene {
       if (src.buffs?.might) amount *= src.buffs.might.mul; // Wolfskull Helm's Howl
       if (src.hasPerk('cufflink')) amount *= 1.25; // Malgrim's Cufflink
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
+      if (src.hasPerk('huntertooth') && (target.elite || target.named || target.bounty)) amount *= 1.15; // Hunter's Tooth
       if (target.s?.hexed) { const ws = src.hasPerk('wardcrown') ? 0.3 : src.hasPerk('wardprism') ? 0.2 : src.hasPerk('wardshard') ? 0.1 : 0; amount *= 1 + ws; } // Ward Shard / Prism / Crown
       // weapon gems: a little extra elemental damage on every hit
       for (const g of src.stats.gemElements || []) if (!g.armor) amount *= 1 + g.dmg * (target.elementMul ? target.elementMul(g.el) : 1);
@@ -2607,6 +2619,20 @@ export class Game extends Phaser.Scene {
     this.events.emit('dialogue', [...intro, line(this.flags.wanderer ? 'STILL WALKING? GOOD. THE MAP NEEDS FEET.' : `I'VE PINNED EVERY LOOKOUT TOWER ON YOUR MAP. YOU'VE CLIMBED ${climbed} OF ${all}. CLIMB THEM ALL AND I'LL HAVE SOMETHING FOR YOU.`)]);
   }
 
+  // The Ferryman (30 townsfolk): any landing to any other, thirty gold.
+  ferryTalk(npc) {
+    const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    const FARE = 30;
+    const stops = this.quests.npcs.filter((n) => n.ferry && n.id !== npc.id && this.quests.unlocked(n));
+    const l = line(npc.lines[0]);
+    l.choices = [...stops.map((n) => [`${this.placeName(n.x * TILE + 8, n.y * TILE + 8)} (${FARE}G)`, () => {
+      if (this.state.gold < FARE) { this.events.emit('dialogue', [line("THIRTY GOLD, FRIEND. THE BOAT DOESN'T ROW ITSELF.")]); return; }
+      this.state.gold -= FARE; audio.sfx('coin'); this.events.emit('party');
+      this.warp({ to: { x: n.x, y: n.y + 1 } });
+    }]), ['NOT NOW', () => {}]];
+    this.events.emit('dialogue', [l]);
+  }
+
   rest() {
     for (const h of this.party) { if (h.downed) h.revive(1); h.hp = h.maxHp; this.fx.heal(h.x, h.y); }
     audio.sfx('heal');
@@ -2992,7 +3018,7 @@ export class Game extends Phaser.Scene {
       audio.sfx('chest');
       this.events.emit('dialogue', [
         { ...K, text: `GOLDEN FLIES! ${st.flies.length} OF THEM! OH, MY ROYAL TONGUE IS TINGLING.` },
-        { ...K, text: next.blessing ? `${st.flies.length} FLIES! I GRANT YOU THE BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER. ALSO, ${next.gold} GOLD${next.items ? ', AND A HAT OF GREAT CHEER. IT WAS MY FATHER\'S' : ''}.` : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
+        { ...K, text: next.blessing ? `EVERY LAST FLY IN ALDERMERE. I GRANT YOU THE ROYAL BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER, AND NO CURSE WILL EVER MAKE A FROG OF YOU. TAKE IT FROM ONE WHO KNOWS. ALSO, ${next.gold} GOLD.` : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
       ], () => this.autosave('frog'));
       this.events.emit('party');
       return;

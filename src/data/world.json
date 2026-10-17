@@ -3280,6 +3280,82 @@
   [
    86,
    316
+  ],
+  [
+   40,
+   282
+  ],
+  [
+   370,
+   256
+  ],
+  [
+   262,
+   13
+  ],
+  [
+   32,
+   251
+  ],
+  [
+   186,
+   239
+  ],
+  [
+   176,
+   300
+  ],
+  [
+   150,
+   258
+  ],
+  [
+   132,
+   236
+  ],
+  [
+   165,
+   290
+  ],
+  [
+   492,
+   242
+  ],
+  [
+   498,
+   262
+  ],
+  [
+   444,
+   298
+  ],
+  [
+   8,
+   8
+  ],
+  [
+   150,
+   50
+  ],
+  [
+   186,
+   10
+  ],
+  [
+   80,
+   120
+  ],
+  [
+   150,
+   70
+  ],
+  [
+   94,
+   200
+  ],
+  [
+   186,
+   180
   ]
  ],
  "nodes": [
@@ -3729,7 +3805,6 @@
   {
    "n": 20,
    "gold": 500,
-   "blessing": true,
    "items": [
     "mitre_of_good_cheer"
    ]
@@ -3743,6 +3818,29 @@
    "items": [
     "bulwark_of_aldermere"
    ]
+  },
+  {
+   "n": 40,
+   "gold": 1000,
+   "potions": {
+    "elixir": 4
+   },
+   "mats": {
+    "starmetal": 2
+   }
+  },
+  {
+   "n": 50,
+   "gold": 1200,
+   "items": [
+    "gold_fly_amber"
+   ]
+  },
+  {
+   "n": 60,
+   "gold": 2000,
+   "blessing": true,
+   "royal": true
   }
  ],
  "shrines": [
@@ -3785,6 +3883,26 @@
    "id": "shrineBasinC",
    "x": 168,
    "y": 251
+  },
+  {
+   "id": "shrineSky",
+   "x": 29,
+   "y": 250
+  },
+  {
+   "id": "shrineSpire",
+   "x": 358,
+   "y": 244
+  },
+  {
+   "id": "shrineTower",
+   "x": 502,
+   "y": 252
+  },
+  {
+   "id": "shrineMeadow",
+   "x": 176,
+   "y": 52
   }
  ],
  "lookouts": [
@@ -4683,6 +4801,51 @@
    "y": 304,
    "quirk": "I SNEEZE SNOWFLAKES. EACH ONE IS UNIQUE. I'VE NAMED SEVERAL HUNDRED.",
    "home": "NO MORE SNOWFLAKES. I MISS GERALD. GERALD WAS MY FAVOURITE."
+  },
+  {
+   "id": "bramwell",
+   "name": "SER BRAMWELL",
+   "look": "oswin",
+   "x": 145,
+   "y": 313,
+   "quirk": "I CAN ONLY MARCH FORWARD. I'VE BEEN WALKING INTO THIS ROCK FOR A WEEK. HONOURABLY.",
+   "home": "I TURNED AROUND TODAY! ALL THE WAY AROUND! I FELL OVER, BUT STILL."
+  },
+  {
+   "id": "hedda",
+   "name": "HEDDA THE HERBALIST",
+   "look": "ada",
+   "x": 150,
+   "y": 316,
+   "quirk": "EVERY PLANT I TOUCH WILTS. I'M A HERBALIST. YOU SEE THE PROBLEM.",
+   "home": "I GREW A DAISY. A WHOLE DAISY. I'VE NAMED IT AND I TALK TO IT AND NO, I WON'T STOP."
+  },
+  {
+   "id": "corwin",
+   "name": "CORWIN",
+   "look": "tam",
+   "x": 140,
+   "y": 20,
+   "quirk": "MY SHADOW WANDERS OFF AT NIGHT. LAST WEEK IT CAME BACK WITH SOMEBODY ELSE'S HAT.",
+   "home": "MY SHADOW STAYS PUT NOW. IT SULKS A BIT. I'VE BOUGHT IT A HAT OF ITS OWN."
+  },
+  {
+   "id": "wenna",
+   "name": "WENNA",
+   "look": "greta",
+   "x": 100,
+   "y": 110,
+   "quirk": "WHENEVER I SIT DOWN, I SINK. NOT IN THE BOG. IN CHAIRS. IN ROCKS. ANYWHERE.",
+   "home": "I SAT ON A STOOL THIS MORNING AND STAYED ON TOP OF IT. MY HUSBAND CLAPPED."
+  },
+  {
+   "id": "forge_fergus",
+   "name": "FERGUS THE BELLOWS-BOY",
+   "look": "piet",
+   "x": 160,
+   "y": 160,
+   "quirk": "EVERY TIME I BREATHE OUT, IT'S A GUST. I'VE BLOWN OUT EVERY FIRE IN EMBERWATCH. TWICE.",
+   "home": "I BLEW ON MY SOUP AND IT DIDN'T LEAVE THE BOWL. THIS IS THE LIFE."
   }
  ],
  "huntsman": {

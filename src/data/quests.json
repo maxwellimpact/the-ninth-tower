@@ -2443,6 +2443,40 @@
      "starmetal": 3
     }
    }
+  },
+  "shatteredMirror": {
+   "title": "THE SHATTERED MIRROR",
+   "giver": "marek",
+   "region": "basin",
+   "offer": [
+    "MALGRIM'S MIRRORS. THE ONES THAT WALK ABOUT WEARING YOUR FACE. BREAK THEM AND THEY LEAVE A SHARD BEHIND THAT DOESN'T LIE.",
+    "BRING ME THREE. THERE'S A GLASSWRIGHT'S TRICK TO IT - I'LL MAKE SOMETHING THAT SHOWS ONLY THE TRUTH. A WITCH WOULD KNOW WHAT TO DO WITH IT."
+   ],
+   "accept": "THREE SHARDS.",
+   "thanks": [
+    "THREE TRUE SHARDS. HOLD STILL WHILE I... THERE. A MIRROR THAT SHOWS ONLY WHAT'S REALLY THERE. GIVE IT TO YOUR FROST WITCH. SHE LOOKED LIKE SHE NEEDED ONE."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "BREAK MALGRIM'S MIRRORS FOR THEIR SHARDS",
+     "mat": "mirrorshard",
+     "count": 3
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE SHARDS TO OLD MAREK",
+     "npc": "marek",
+     "take": {
+      "mirrorshard": 3
+     }
+    }
+   ],
+   "reward": {
+    "gold": 300,
+    "xp": 700,
+    "item": "mirror_truths"
+   }
   }
  },
  "npcs": [
@@ -3437,6 +3471,9 @@
    "lines": [
     "I'VE WATCHED THAT TOWER FOR NINE YEARS. IT HASN'T BLINKED. NEITHER HAVE I. MUCH.",
     "THE BARRIER COMES DOWN A LAYER EVERY TIME A WARD STONE BREAKS. I'VE SEEN IT THREE TIMES NOW. IT'S BEAUTIFUL. AND TERRIFYING."
+   ],
+   "errands": [
+    "shatteredMirror"
    ]
   },
   {
@@ -3453,6 +3490,91 @@
     "colossus",
     "glassking"
    ]
+  },
+  {
+   "id": "ferryman",
+   "name": "THE FERRYMAN",
+   "x": 24,
+   "y": 24,
+   "look": "ferryman",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "THIRTY OF YOU HOME, AND THE BOATS ARE RUNNING AGAIN. WHERE TO? THIRTY GOLD, ANY LANDING."
+   ],
+   "folk": 30
+  },
+  {
+   "id": "ferryFen",
+   "name": "FERRY LANDING",
+   "x": 126,
+   "y": 114,
+   "look": "board",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+   ],
+   "folk": 30
+  },
+  {
+   "id": "ferryGloam",
+   "name": "FERRY LANDING",
+   "x": 18,
+   "y": 161,
+   "look": "board",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+   ],
+   "folk": 30
+  },
+  {
+   "id": "ferryCinder",
+   "name": "FERRY LANDING",
+   "x": 128,
+   "y": 157,
+   "look": "board",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+   ],
+   "folk": 30
+  },
+  {
+   "id": "ferryFrost",
+   "name": "FERRY LANDING",
+   "x": 16,
+   "y": 244,
+   "look": "board",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+   ],
+   "folk": 30
   }
  ]
 }

@@ -1365,5 +1365,43 @@
    "type": "arcane",
    "at": "weapon"
   }
+ },
+ "gold_fly_amber": {
+  "name": "GOLD FLY IN AMBER",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_luck@6",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "amber",
+  "desc": "UNCOLLECTED GOLDEN FLIES SHOW ON THE MAP. A FLY FROM THE OLD DAYS, CAUGHT IN A BEAD OF HONEY-STONE. THE KING CAN'T STOP LOOKING AT IT."
+ },
+ "hunters_tooth": {
+  "name": "HUNTER'S TOOTH",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@5",
+  "stats": {
+   "atk": 4
+  },
+  "perk": "huntertooth",
+  "desc": "+15% DAMAGE AGAINST ELITES AND BOUNTIES. TEN BOUNTIES CLAIMED - THE BOARD'S OWN TROPHY, A TOOTH OFF SOMETHING NOBODY WILL NAME."
+ },
+ "mirror_truths": {
+  "name": "MIRROR OF TRUTHS",
+  "hero": "mirelle",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "mirror_truths",
+  "stats": {
+   "atk": 8,
+   "def": 6
+  },
+  "element": "shadow",
+  "perk": "truths",
+  "desc": "SHADOW. TURNS BACK ONE PROJECTILE EVERY 5S. MADE FROM THE SHARDS OF HIS MIRRORS, IT SHOWS ONLY WHAT'S REALLY THERE."
  }
 }

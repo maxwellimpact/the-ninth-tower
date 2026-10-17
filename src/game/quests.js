@@ -117,6 +117,7 @@ export class QuestManager {
     if (npc.cartographer) { sc.cartographerTalk(npc); return; }
     if (npc.shop) { this.shopTalk(npc); return; }
     if (npc.vendor) { this.vendorTalk(npc); return; }
+    if (npc.ferry) { sc.ferryTalk(npc); return; }
     if (npc.minigame) {
       // a game host: their pitch the first time, then straight to the offer
       const lines = (npc.metHost ? npc.lines.slice(-1) : npc.lines).map((t) => this.line(npc, t));
@@ -350,6 +351,12 @@ export class QuestManager {
       const got = this.reward(e.reward);
       audio.sfx('levelUp');
       sc.events.emit('banner', 'ERRAND COMPLETE', got);
+      // the tenth bounty claimed: the boards' own trophy
+      const bounties = Object.keys(ERRANDS).filter((k) => ERRANDS[k].title.startsWith('BOUNTY') && this.q(k)?.done).length;
+      if (e.title.startsWith('BOUNTY') && bounties >= 10 && !sc.flags.huntersTooth) {
+        sc.flags.huntersTooth = true;
+        sc.time.delayedCall(2200, () => { gainItems(this.state, ['hunters_tooth']); sc.events.emit('loot', { ids: ['hunters_tooth'] }); sc.events.emit('banner', 'TEN BOUNTIES CLAIMED', "THE BOARDS SEND THE HUNTER'S TOOTH"); sc.autosave('errand'); });
+      }
       sc.autosave('errand');
     };
     const who = npc || this.npc(e.giver);

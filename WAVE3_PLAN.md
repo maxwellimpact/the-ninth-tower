@@ -122,7 +122,7 @@ Drafted 2026-10-17 from DESIGN.md (sections 12, C1, C3, C4, C7, C8, C9, C10, C11
 - The broad consistency sweep of existing errands and lore (the user's next pass).
 
 ## Handoff (2026-10-17, before compaction)
-Stages 0-6 are committed, deployed and published (last: 0973f6b). **Stage 7 is in progress and uncommitted.** The data is written (see `git diff`): 5 townsfolk (now 30), 15 lore pages (now 40), 19 flies (now 58 + 2 minigames = 60), 4 shrines (now 12), new flyRewards tiers (40, 50 Gold Fly in Amber, 60 Royal Blessing), items gold_fly_amber / hunters_tooth / mirror_truths, the mirrorshard material, the Shattered Mirror errand (Marek), and Ferryman + 4 landing NPCs (folk: 30, ferry: true).
+Stages 0-7 are committed, deployed and published. **Wave 3 is complete.** (Historical note below.) The data is written (see `git diff`): 5 townsfolk (now 30), 15 lore pages (now 40), 19 flies (now 58 + 2 minigames = 60), 4 shrines (now 12), new flyRewards tiers (40, 50 Gold Fly in Amber, 60 Royal Blessing), items gold_fly_amber / hunters_tooth / mirror_truths, the mirrorshard material, the Shattered Mirror errand (Marek), and Ferryman + 4 landing NPCs (folk: 30, ferry: true).
 Still to do for Stage 7:
 - folk look `ferryman` in heroes.js FOLK
 - quests.js: route `npc.ferry` to a new `sc.ferryTalk(npc)` (30g, choose another landing, warp)

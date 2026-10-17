@@ -1210,7 +1210,8 @@
   "ai": "mirror",
   "weak": "light",
   "drops": {
-   "crystal": 0.5
+   "crystal": 0.5,
+   "mirrorshard": 1
   }
  },
  "malgrim": {
