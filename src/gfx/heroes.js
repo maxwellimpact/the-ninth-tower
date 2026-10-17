@@ -109,6 +109,8 @@ export const FOLK = {
   hew: folk('hew', 'kesh', { head: 'warhelm_hide@2', body: 'furs_hide@3', weapon: 'axe_bearded@2' }),
   tansy: folk('tansy', 'sable', { head: 'hood_shadow@4', body: 'leathers_scout@2', weapon: 'dagger_steel@3' }),
   moss: folk('moss', 'pip', { head: 'hat_apprentice@4', body: 'robe_scholar@3' }),
+  hermit: folk('hermit', 'oake', { head: 'hood_monk@5', body: 'robe_scholar@5', weapon: 'staff_oak@2' }), // the Arcane hermit
+  tolly: folk('tolly', 'oake', { head: 'hood_monk@4', body: 'habit_monk@2' }), // the belfry's ghost ringer
   // Cinderreach: Emberwatch and St. Cinder's
   coal: folk('coal', 'kesh', { head: 'warhelm_hide@4', body: 'apron_brown@5' }),
   ignatius: folk('ignatius', 'pip', { head: 'hat_star@5', body: 'robe_phoenix@2' }),

@@ -230,7 +230,7 @@ export class QuestManager {
     if (s.type === 'bells') {
       live.rung = [];
       live.bells = s.bells.map(([x, y, tone]) => {
-        const img = sc.add.image(px(x), px(y) + 6, 'bell').setOrigin(0.5, 1).setDepth(px(y));
+        const img = sc.add.image(px(x), px(y) + 6, s.art === 'rune' ? `rune_${tone}` : 'bell').setOrigin(0.5, 1).setDepth(px(y));
         live.objs.push(img);
         const o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'bell', interact: () => this.ring(id, tone, img) });
         live.objs.push({ destroy: () => sc.removeInteractable(o) });
@@ -357,15 +357,17 @@ export class QuestManager {
   ring(id, tone, img) {
     const live = this.live[id], s = this.step(id);
     if (!live || s?.type !== 'bells') return;
-    const pitch = { low: 0.6, mid: 0.85, high: 1.2 }[tone];
+    const pitch = { deep: 0.45, low: 0.6, mid: 0.85, high: 1.2, eye: 0.7, moon: 0.8, sun: 1.05, star: 1.4 }[tone];
     audio.sfx('bellTone', { pitch });
-    img.setTexture('bellRung');
-    this.sc.tweens.add({ targets: img, angle: { from: -12, to: 12 }, duration: 120, yoyo: true, repeat: 2, onComplete: () => img.setAngle(0) });
+    const rune = s.art === 'rune'; // the hermit's stones glow instead of swinging
+    img.setTexture(rune ? `rune_${tone}_lit` : 'bellRung');
+    if (rune) this.sc.fx.burst('foam', img.x, img.y - 12, 8);
+    else this.sc.tweens.add({ targets: img, angle: { from: -12, to: 12 }, duration: 120, yoyo: true, repeat: 2, onComplete: () => img.setAngle(0) });
     live.rung.push(tone);
     const ok = s.order.slice(0, live.rung.length).every((t, i) => t === live.rung[i]);
     if (!ok) {
       live.rung = [];
-      this.sc.time.delayedCall(500, () => { for (const b of live.bells) b.img.setTexture('bell'); this.sc.floatText(img.x, img.y - 30, 'THE CHIME FALLS FLAT...', 'fontPlain'); });
+      this.sc.time.delayedCall(500, () => { for (const b of live.bells) b.img.setTexture(rune ? `rune_${b.tone}` : 'bell'); this.sc.floatText(img.x, img.y - 30, rune ? 'THE GLOW GUTTERS OUT...' : 'THE CHIME FALLS FLAT...', 'fontPlain'); });
       return;
     }
     if (live.rung.length === s.order.length) this.sc.time.delayedCall(600, () => this.advance(id));

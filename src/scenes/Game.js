@@ -550,9 +550,22 @@ export class Game extends Phaser.Scene {
   // Key items (relics) stop the game with a card that stays up until it's
   // tapped away, so nobody misses picking one up. Anything queued on the game
   // clock (a chest's ambush, barks) waits until play resumes.
+  refreshFalseWalls() {
+    const px = (t) => t * TILE + TILE / 2;
+    for (const f of this.falseWalls || []) {
+      const on = this.state.relics.includes(f.relic);
+      if (on) {
+        this.nav.unblock(f.x, f.y);
+        f.o.hidden = true;
+        f.s ??= this.add.sprite(px(f.x), (f.y + 1) * TILE, 'dgFalseWall').setOrigin(0.5, 1).play('dgFalseWall').setAlpha(0.5).setDepth((f.y + 1) * TILE + 2);
+      } else { this.nav.block(f.x, f.y); f.o.hidden = false; f.s?.destroy(); f.s = null; }
+    }
+  }
+
   acquireRelic(id, delay = 0) {
     if (this.state.relics.includes(id)) return;
     this.state.relics.push(id);
+    this.refreshFalseWalls();
     this.autosave('relic');
     const show = () => {
       if (this.scene.isPaused()) { this.time.delayedCall(300, show); return; }
@@ -760,6 +773,12 @@ export class Game extends Phaser.Scene {
       this.nav.block(c.x, c.y);
       this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, img, h) });
     }
+    // overworld illusions (the hermit's door): solid wall until the party holds the relic
+    this.falseWalls = (W.falseWalls || []).map((f) => {
+      const o = this.addInteractable({ x: px(f.x), y: px(f.y), reach: 24, standOff: 14, h: 20, kind: 'sign', interact: () => this.events.emit('dialogue', [{ who: 'WALL', text: f.locked }]) });
+      return { ...f, o, s: null };
+    });
+    this.refreshFalseWalls();
     for (const p of W.posts) {
       const x = px(p.x), y = px(p.y);
       this.add.image(x, y + 4, 'post').setOrigin(0.5, 1).setDepth(y);

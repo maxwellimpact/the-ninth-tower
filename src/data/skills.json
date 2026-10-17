@@ -784,5 +784,34 @@
   "short": "CLANK",
   "icon": "icon_clank",
   "desc": "SUMMONS CLANK, A MECH THAT TAUNTS AND SLAMS FOES FOR 12S."
+ },
+ "arcmissile": {
+  "discipline": "arcane",
+  "unlock": 1,
+  "name": "MAGIC MISSILE",
+  "short": "MISSILE",
+  "icon": "icon_arcmissile",
+  "cd": 7,
+  "range": 140,
+  "desc": "THREE SEEKING BOLTS AT A FOE. THEY CURVE AROUND, BUT THEY ALWAYS ARRIVE. (ARCANE)"
+ },
+ "phasestep": {
+  "discipline": "arcane",
+  "unlock": 1,
+  "name": "BLINK STEP",
+  "short": "BLINK",
+  "icon": "icon_phasestep",
+  "cd": 10,
+  "range": 0,
+  "desc": "VANISH AND REAPPEAR A FEW STEPS AWAY FROM DANGER, UNTOUCHABLE FOR A MOMENT. (ARCANE)"
+ },
+ "clarity": {
+  "discipline": "arcane",
+  "unlock": 1,
+  "passive": true,
+  "name": "CLARITY",
+  "short": "CLARITY",
+  "icon": "icon_clarity",
+  "desc": "-10% SKILL COOLDOWNS (-2% PER RANK). COOLDOWNS STILL CAP AT -30%. (ARCANE)"
  }
 }

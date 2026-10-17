@@ -920,5 +920,17 @@
   },
   "perk": "signet",
   "desc": "+15% GOLD FROM COINS AND CHESTS. +8 HP. IT'S A LITTLE DAMP."
+ },
+ "echo_bell": {
+  "name": "ECHO BELL",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@6",
+  "stats": {
+   "atk": 2
+  },
+  "perk": "echobell",
+  "desc": "+20% ULTIMATE CHARGE. +2 ATK. IT RINGS, VERY FAINTLY, WHEN YOU'RE READY."
  }
 }

@@ -1231,6 +1231,36 @@ const ICONS = {
     '..sWsWsWs.....',
     '...sssss......',
   ],
+  arcmissile: [
+    '..........PP..',
+    '......P..PWWP.',
+    '...P.PWP..PP..',
+    '..PWP.P.......',
+    '...P....PP....',
+    '.......PWWP...',
+    '........PP....',
+    '..............',
+  ],
+  phasestep: [
+    '..p......PP...',
+    '.p.p....PWWP..',
+    '..p.....PWWP..',
+    '.p.p...PWWWWP.',
+    '..p.....PWWP..',
+    '.p.p....P..P..',
+    '..p....PP..PP.',
+    '..............',
+  ],
+  clarity: [
+    '.....BBBB.....',
+    '...BBWWWWBB...',
+    '..BWWbbbbWWB..',
+    '..BWbBWWBbWB..',
+    '..BWWbbbbWWB..',
+    '...BBWWWWBB...',
+    '.....BBBB.....',
+    '..............',
+  ],
 };
 
 export function buildIcons(scene) {

@@ -225,6 +225,7 @@ GROUPS.core.push(
     s.anims.create({ key: 'dog_run', frames: [2, 3].map((i) => ({ key: 'dog', frame: `${i}` })), frameRate: 8, repeat: -1 });
     frames(s, 'glint', Q.glintFrames(), 5);
     s.textures.addCanvas('bell', Q.bell()); s.textures.addCanvas('bellRung', Q.bell(true));
+    for (const g of ['eye', 'sun', 'moon', 'star']) { s.textures.addCanvas(`rune_${g}`, Q.runeStone(g)); s.textures.addCanvas(`rune_${g}_lit`, Q.runeStone(g, true)); }
     frames(s, 'cart', Q.cartFrames(), 6);
     s.textures.addCanvas('board', Q.noticeBoard());
     s.textures.addCanvas('forge', Q.forge());

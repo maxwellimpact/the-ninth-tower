@@ -1984,7 +1984,8 @@
    "y": 176,
    "lines": [
     "THE CHAPEL OF THE UNDIMMED.",
-    "WHOEVER TENDS THE FLAME, TENDS US ALL."
+    "WHOEVER TENDS THE FLAME, TENDS US ALL.",
+    "(BELOW, A HYMN IS CARVED:) 'SING LOW TO WAKE THE MORNING, THEN HIGHEST FOR THE LIGHT; THEN DEEPEST FOR THE SLEEPERS, AND MIDDLE FOR THE NIGHT.'"
    ]
   },
   {
@@ -2001,6 +2002,14 @@
    "lines": [
     "OLD SEAM NO. 4 - CLOSED.",
     "TOO HOT EVEN FOR DWARVES. THAT'S SAYING SOMETHING."
+   ]
+  },
+  {
+   "x": 32,
+   "y": 171,
+   "lines": [
+    "THE OLD BELFRY.",
+    "IT USED TO RING THE HOURS FOR THE WHOLE WOOD. NOW THE WOOD KEEPS ITS OWN HOURS."
    ]
   }
  ],
@@ -3553,5 +3562,13 @@
    "THE CURSED VINE BURNS AWAY... THE LAVA VENT BY THE WARD STONE BEGINS TO BOIL."
   ],
   "shadow": true
- }
+ },
+ "falseWalls": [
+  {
+   "x": 86,
+   "y": 149,
+   "relic": "lens",
+   "locked": "A WALL OF OLD STONE. IT FEELS... THIN, SOMEHOW. LIKE A PAINTING OF A WALL. IF ONLY WE COULD SEE WHAT'S REALLY THERE."
+  }
+ ]
 }

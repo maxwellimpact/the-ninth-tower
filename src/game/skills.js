@@ -865,6 +865,49 @@ export const SKILL_FX = {
   },
 
   // ------------------------------------------------ Ranger discipline
+  // ------------------------------------------------ Arcane discipline
+  arcmissile: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 140) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('arcmissile', 0.4, 'cast');
+      for (let i = 0; i < 3; i++) sc.time.delayedCall(i * 110, () => {
+        if (h.downed) return;
+        const t = target.alive ? target : sc.nearestEnemy(h, 140);
+        if (!t) return;
+        const a = Math.atan2(t.y - h.y, t.x - h.x) + (i - 1) * 0.6;
+        sc.spawnProjectile({ owner: h, x: h.x, y: h.y - 10, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, dmg: h.stats.atk * 0.45 * m, kind: 'missile', target: t, spell: true, life: 1.6 });
+        audio.sfx('frost', { pitch: 1.5 });
+      });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && dist(h, t) < 130 ? t : null; },
+  },
+  phasestep: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const threats = sc.enemies.filter((e) => sc.fairTarget(e) && dist(e, h) < 70);
+      const [nx, ny] = threats.length ? norm(h.x - threats.reduce((a, e) => a + e.x, 0) / threats.length, h.y - threats.reduce((a, e) => a + e.y, 0) / threats.length) : h.facingVec();
+      let tx = h.x, ty = h.y;
+      const a0 = Math.atan2(ny, nx);
+      // straight away from danger if there's room, else the nearest heading that has some
+      for (const da of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI]) {
+        const cx = Math.cos(a0 + da), cy = Math.sin(a0 + da);
+        for (let d = 72; d > 16; d -= 8) { const x = h.x + cx * d, y = h.y + cy * d; if (!sc.nav.solidAtPx(x, y) && sc.nav.lineClear(h.x, h.y, x, y)) { tx = x; ty = y; break; } }
+        if (tx !== h.x || ty !== h.y) break;
+      }
+      if (tx === h.x && ty === h.y) return false;
+      sc.fx.puff(h.x, h.y, 'sparkCurse');
+      h.x = tx; h.y = ty; h.clearPath();
+      h.invuln = Math.max(h.invuln, 0.4 * Math.min(1.5, m));
+      sc.fx.puff(h.x, h.y, 'sparkCurse');
+      audio.sfx('warp', { pitch: 1.2 });
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 28).length >= 2 || (attackers(h.scene, h, 28).length && h.hp / h.maxHp < 0.5) ? true : null; },
+  },
+
   quickshot: {
     cast(h, { target, m }) {
       const sc = h.scene;
@@ -986,4 +1029,4 @@ export const SKILL_FX = {
 };
 
 // Skills that need an enemy to aim at.
-export const TARGETED = new Set(['shadedash', 'poisoncloud', 'bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark', 'powershot', 'hawkstrike', 'volley', 'blastarrow', 'cleave', 'leap', 'rend']);
+export const TARGETED = new Set(['arcmissile', 'shadedash', 'poisoncloud', 'bash', 'charge', 'earthsplitter', 'fireball', 'chain', 'barrage', 'step', 'deathmark', 'powershot', 'hawkstrike', 'volley', 'blastarrow', 'cleave', 'leap', 'rend']);

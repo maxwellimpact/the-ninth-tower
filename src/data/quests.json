@@ -843,33 +843,33 @@
   "hawkTrail": {
    "title": "THE HAWK'S TRAIL",
    "giver": "kestrel",
-   "region": "vale",
+   "region": "gloam",
    "trigger": [
-    5,
-    38,
+    24,
+    138,
     3
    ],
    "offer": [
-    "A HAWK CIRCLES LOW, SCREECHING. IT DIPS TOWARD THE WESTERN WOODS, THEN BACK TO YOU.",
+    "A HAWK CIRCLES LOW, SCREECHING. IT DIPS TOWARD THE DARK TREES NORTH-WEST OF THE CAMP, THEN BACK TO YOU.",
     "IT WANTS YOU TO FOLLOW."
    ],
    "accept": "FOLLOW THE HAWK.",
    "steps": [
     {
      "type": "follow",
-     "text": "FOLLOW THE HAWK INTO THE WESTERN WOODS",
+     "text": "FOLLOW THE HAWK INTO THE GLOAMWOOD",
      "path": [
       [
-       5,
-       41
+       21,
+       137
       ],
       [
-       5,
-       44
+       18,
+       135
       ],
       [
-       6,
-       47
+       15,
+       132
       ]
      ],
      "r": 3
@@ -878,38 +878,38 @@
      "type": "spawn",
      "text": "DRIVE OFF THE GOBLINS",
      "at": [
-      6,
-      47
+      15,
+      131
      ],
      "r": 5,
      "units": [
       [
        "goblin",
-       8,
-       45
+       17,
+       129
       ],
       [
        "archer",
-       4,
-       44
+       12,
+       130
       ],
       [
        "goblin",
-       9,
-       49
+       18,
+       133
       ]
      ],
      "prop": {
       "kind": "net",
-      "x": 5,
-      "y": 47
+      "x": 15,
+      "y": 131
      }
     },
     {
      "type": "find",
      "text": "CUT WREN FREE",
-     "x": 5,
-     "y": 47,
+     "x": 15,
+     "y": 131,
      "kind": "net",
      "say": "THE NET PARTS. A RANGER ROLLS OUT, BOW ALREADY IN HAND."
     }
@@ -1745,6 +1745,120 @@
     "xp": 380,
     "item": "lantern_of_the_faithful"
    }
+  },
+  "hermitRiddle": {
+   "title": "THE HERMIT'S RIDDLE",
+   "giver": "hermit",
+   "region": "gloam",
+   "offer": [
+    "YOU WANT SOMETHING ELSE. EVERYONE DOES. VERY WELL: THE ORB ON MY SHELF ECHOES EVERY THIRD SPELL. IT IS YOURS IF YOU CAN WAKE MY STONES.",
+    "THE EYE OPENS FIRST, FOR NOTHING HAPPENS UNSEEN. THEN THE SUN, SO THE EYE HAS SOMETHING TO SEE. THE MOON FOLLOWS THE SUN, AS IT ALWAYS DOES. THE STAR COMES LAST - IT WAITS FOR DARK."
+   ],
+   "accept": "EYE, SUN, MOON, STAR.",
+   "thanks": [
+    "HM. THEY WOKE FOR YOU. THEY NEVER WAKE FOR ME. TAKE THE ORB BEFORE I CHANGE MY MIND - I CHANGE IT OFTEN."
+   ],
+   "steps": [
+    {
+     "type": "bells",
+     "art": "rune",
+     "text": "WAKE THE RUNE STONES IN THE HERMIT'S ORDER",
+     "bells": [
+      [
+       84,
+       145,
+       "moon"
+      ],
+      [
+       88,
+       145,
+       "star"
+      ],
+      [
+       84,
+       147,
+       "sun"
+      ],
+      [
+       88,
+       147,
+       "eye"
+      ]
+     ],
+     "order": [
+      "eye",
+      "sun",
+      "moon",
+      "star"
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "TELL THE HERMIT",
+     "npc": "hermit"
+    }
+   ],
+   "reward": {
+    "xp": 400,
+    "item": "orb_of_echoes"
+   }
+  },
+  "belfry": {
+   "title": "THE SILENT BELFRY",
+   "giver": "tolly",
+   "region": "gloam",
+   "offer": [
+    "BROTHER TOLLY, BELL-RINGER. FORMERLY. THE BELFRY WENT QUIET WHEN THE HEX CAME, AND I WENT... THIS.",
+    "THE OLD HYMN IS CARVED IN THE CHAPEL TO THE WEST - I CAN NEVER REMEMBER IT. READ IT, THEN RING IT FOR ME? I'D LIKE TO HEAR IT ONCE MORE."
+   ],
+   "accept": "I'LL READ THE HYMN.",
+   "thanks": [
+    "...OH. OH, THAT'S IT. THAT'S THE ONE.",
+    "TAKE THIS LITTLE BELL. IT RINGS WHEN YOU'RE READY TO DO SOMETHING BRAVE. YOU'LL FIND YOU'RE READY SOONER."
+   ],
+   "steps": [
+    {
+     "type": "bells",
+     "text": "RING THE BELFRY'S HYMN (THE CHAPEL SIGN HAS IT)",
+     "bells": [
+      [
+       24,
+       171,
+       "high"
+      ],
+      [
+       26,
+       171,
+       "deep"
+      ],
+      [
+       28,
+       171,
+       "low"
+      ],
+      [
+       30,
+       171,
+       "mid"
+      ]
+     ],
+     "order": [
+      "low",
+      "high",
+      "deep",
+      "mid"
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "TELL BROTHER TOLLY",
+     "npc": "tolly"
+    }
+   ],
+   "reward": {
+    "xp": 300,
+    "item": "echo_bell"
+   }
   }
  },
  "npcs": [
@@ -2033,8 +2147,8 @@
   {
    "id": "kestrel",
    "name": "KESTREL",
-   "x": 5,
-   "y": 38,
+   "x": 24,
+   "y": 138,
    "look": "hawk",
    "hidden": true,
    "lines": [
@@ -2383,6 +2497,45 @@
     "waterWheel"
    ],
    "recruitOf": "gizmo"
+  },
+  {
+   "id": "hermit",
+   "name": "THE HERMIT",
+   "x": 86,
+   "y": 145,
+   "look": "hermit",
+   "trainer": "arcane",
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "SO. THE WALL LET YOU IN. IT IS VERY PARTICULAR ABOUT THAT.",
+    "I TEACH THE ARCANE. NOT FOR FREE. NOTHING IS FREE. NOT EVEN SILENCE, AND I PAID A GREAT DEAL FOR THIS ONE."
+   ],
+   "errands": [
+    "hermitRiddle"
+   ]
+  },
+  {
+   "id": "tolly",
+   "name": "BROTHER TOLLY",
+   "x": 27,
+   "y": 174,
+   "look": "tolly",
+   "ghost": true,
+   "voice": {
+    "pitch": 180,
+    "wave": "sine",
+    "speed": 0.9
+   },
+   "lines": [
+    "THE BELLS HAVE NOT RUNG SINCE THE HEX. I CAN'T RING THEM. MY HANDS GO STRAIGHT THROUGH THE ROPES."
+   ],
+   "errands": [
+    "belfry"
+   ]
   }
  ]
 }

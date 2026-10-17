@@ -178,7 +178,7 @@ export class Hero extends Unit {
     if (!Number.isFinite(v)) { reportBad('ult', v, this); return; } // keep the meter as it was
     this.hs.ult = Math.max(0, Math.min(100, v));
   }
-  addUlt(n) { if (!this.downed) this.ult = this.ult + n * (this.stats?.traits?.includes('zeal') ? 1.15 : 1); }
+  addUlt(n) { if (!this.downed) this.ult = this.ult + n * (this.stats?.traits?.includes('zeal') ? 1.15 : 1) * (this.hasPerk('echobell') ? 1.2 : 1); } // Echo Bell: +20%
   hasTrait(t) { return !!this.stats.traits?.includes(t); }
   // unique-item perks (signature effects named on the item)
   hasPerk(p) { return Object.values(this.hs.equip).some((id) => id && itemsData[id]?.perk === p); }

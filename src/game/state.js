@@ -224,6 +224,7 @@ export function computeStats(id, level, equip, hs = null) {
   s.traits = traits;
   if (traits.includes('cdr')) s.cdr += 0.1;
   if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
+  if (hs?.skills?.passive.includes('clarity')) s.cdr += 0.1 + 0.02 * ((hs.skills.ranks.clarity || 1) - 1); // Clarity (Arcane)
   s.cdr = Math.min(0.3, s.cdr);
   // equipped stat passives
   const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);

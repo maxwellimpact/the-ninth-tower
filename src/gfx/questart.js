@@ -262,3 +262,31 @@ export function lorePage() {
   outline(c, 'ink');
   return c;
 }
+
+// The hermit's rune stones: a squat standing stone with a carved glyph that
+// glows once it's been touched in the right order.
+const GLYPHS = {
+  eye: ['.GGG.', 'G.g.G', '.GGG.'],
+  sun: ['G.G.G', '.GgG.', 'G.G.G'],
+  moon: ['.GG..', 'G....', '.GG..'],
+  star: ['..G..', 'GGgGG', '..G..'],
+};
+export function runeStone(glyph, lit = false) {
+  const [c, ctx] = makeCanvas(14, 20);
+  grid(ctx, [
+    '...ssssss.....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '..sSSSSSSs....',
+    '.ssSSSSSSss...',
+    'ddddddddddd...',
+  ], { s: 'slate', S: 'stone', d: 'leafD' }, 0, 8);
+  grid(ctx, GLYPHS[glyph], { G: lit ? 'crystalL' : 'night', g: lit ? 'white' : 'slate' }, 3, 11);
+  outline(c, 'ink');
+  return c;
+}
