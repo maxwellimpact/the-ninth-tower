@@ -68,20 +68,72 @@ export function bell(rung = false) {
   return c;
 }
 
-export function cartFrames() {
-  const rows = (wheel) => [
-    '..................',
-    '....ccbbcc........',
-    '...cCCbbCCc.......',
-    '...bbbbbbbbb......',
-    '..wWWWWWWWWWw.....',
-    '..wWWWWWWWWWwmm...',
-    '..wwwwwwwwwww.mm..',
-    `...${wheel}......${wheel}......`,
-    '..dsd......dsd....',
-    '...d........d.....',
-  ];
-  return ['s', 'S'].map((wh) => { const [c, ctx] = makeCanvas(20, 13); grid(ctx, rows(wh), { c: 'sand', C: 'dirtL', b: 'leatherD', w: 'woodD', W: 'wood', m: 'woodD', d: 'woodD', s: 'stone', S: 'mist' }, 1, 1); outline(c, 'ink'); return c; });
+// Marla's goods cart, pulled by its driver by two long shafts: grain sacks,
+// a crate and a cloth bundle on a planked bed, spoked wheels that turn.
+// Three views: 'side' (shafts point right, the way it's heading; flip for
+// left), 'down' (coming toward you, shafts toward the viewer) and 'up'
+// (going away, shafts up past the load). Two frames each for the wheels.
+const CART = { c: 'sand', C: 'dirtL', b: 'leatherD', w: 'woodD', W: 'wood', d: 'woodD', m: 'woodD', h: 'wood', s: 'stone', S: 'mist', X: 'steel', r: 'redL', R: 'red' };
+const WHEEL = [
+  ['..ddd..', '.d.s.d.', 'd..s..d', 'dssXssd', 'd..s..d', '.d.s.d.', '..ddd..'],
+  ['..ddd..', '.ds.sd.', 'd.s.s.d', 'd..X..d', 'd.s.s.d', '.ds.sd.', '..ddd..'],
+];
+export function cartFrames(view = 'side') {
+  return [0, 1].map((f) => {
+    if (view === 'side') {
+      const [c, ctx] = makeCanvas(33, 18);
+      grid(ctx, [ // the load
+        '......cCc.......dddddd.......',
+        '.....cCCCc.cCc..dWWWWd.......',
+        '....cCCCCCcCCCc.dWddWd.rrr...',
+        '....cCCbCCCCCCCcdWWWWdrRrrr..',
+      ], CART, 1, 1);
+      grid(ctx, [ // the bed, and the shafts reaching forward to a crossbar grip
+        '..wwwwwwwwwwwwwwwwwwwwwwww.....',
+        '..wWWWWWWWWWWWWWWWWWWWWWWw.....',
+        '..wWdWWWWWdWWWWWWWdWWWWWWwmmmmh',
+        '..wwwwwwwwwwwwwwwwwwwwwwww....h',
+      ], CART, 1, 5);
+      grid(ctx, WHEEL[f], CART, 7, 9);
+      grid(ctx, ['d', 'd', 'd', 'd'], CART, 23, 9); // the rest leg at the front
+      outline(c, 'ink');
+      return c;
+    }
+    const [c, ctx] = makeCanvas(24, 18);
+    const tread = f ? ['kk', 'Sk', 'kS', 'Sk', 'kk'] : ['kk', 'kS', 'Sk', 'kS', 'kk'];
+    const wl = tread.map((r) => r.replace(/k/g, 'd')), wr = tread.map((r) => [...r].reverse().join('').replace(/k/g, 'd'));
+    if (view === 'down') {
+      grid(ctx, [
+        '......cCCc.dddd......',
+        '.....cCCCCcdWWdrr....',
+        '....cCCbCCCdWWdrRr...',
+        '...wwwwwwwwwwwwwwww..',
+        '...wWWWWWWWWWWWWWWw..',
+        '...wWdWWWWWWWWdWWWw..',
+        '...wwwwwwwwwwwwwwww..',
+        '........m....m.......',
+        '........m....m.......',
+        '........m....m.......',
+        '........mhhhhm.......',
+      ], CART, 1, 1);
+      grid(ctx, wl, CART, 1, 5); grid(ctx, wr, CART, 20, 5);
+    } else {
+      grid(ctx, [
+        '........mhhhhm.......',
+        '........m....m.......',
+        '......cCm..dWm.......',
+        '.....cCCmCcdWmdrr....',
+        '....cCCCCCCdWWdrRr...',
+        '...wwwwwwwwwwwwwwww..',
+        '...wWWWWWWWWWWWWWWw..',
+        '...wWdWWWWWWWWdWWWw..',
+        '...wwwwwwwwwwwwwwww..',
+      ], CART, 1, 1);
+      grid(ctx, wl, CART, 1, 6); grid(ctx, wr, CART, 20, 6);
+    }
+    outline(c, 'ink');
+    return c;
+  });
 }
 
 export function noticeBoard() {

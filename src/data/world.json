@@ -1884,26 +1884,6 @@
     133,
     110
    ]
-  },
-  {
-   "id": "bridgeN",
-   "x": 21,
-   "y": 51,
-   "pair": "bridgeS",
-   "land": [
-    22,
-    57
-   ]
-  },
-  {
-   "id": "bridgeS",
-   "x": 22,
-   "y": 56,
-   "pair": "bridgeN",
-   "land": [
-    21,
-    50
-   ]
   }
  ],
  "campfires": [

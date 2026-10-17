@@ -226,7 +226,7 @@ GROUPS.core.push(
     frames(s, 'glint', Q.glintFrames(), 5);
     s.textures.addCanvas('bell', Q.bell()); s.textures.addCanvas('bellRung', Q.bell(true));
     for (const g of ['eye', 'sun', 'moon', 'star']) { s.textures.addCanvas(`rune_${g}`, Q.runeStone(g)); s.textures.addCanvas(`rune_${g}_lit`, Q.runeStone(g, true)); }
-    frames(s, 'cart', Q.cartFrames(), 6);
+    frames(s, 'cart', Q.cartFrames('side'), 6); frames(s, 'cartDown', Q.cartFrames('down'), 6); frames(s, 'cartUp', Q.cartFrames('up'), 6);
     s.textures.addCanvas('board', Q.noticeBoard());
     s.textures.addCanvas('forge', Q.forge());
     s.textures.addCanvas('shrine', Q.shrine(true)); s.textures.addCanvas('shrineUsed', Q.shrine(false));

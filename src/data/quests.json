@@ -87,32 +87,8 @@
      "text": "KEEP THE CART SAFE ON THE SOUTH ROAD",
      "startLine": "STAY CLOSE. GOBLINS SMELL SEED SACKS A MILE OFF.",
      "ambushLine": "THAT'S THEM! KEEP THEM OFF THE SACKS! AND ME!",
-     "path": [
-      [
-       16,
-       33
-      ],
-      [
-       20,
-       37
-      ],
-      [
-       20,
-       44
-      ],
-      [
-       21,
-       50
-      ],
-      [
-       24,
-       57
-      ],
-      [
-       27,
-       63
-      ]
-     ],
+     "path": [[16, 33], [20, 37], [20, 44], [21, 50], [22, 53], [23, 57], [24, 60], [25, 63]],
+     "stay": true,
      "hp": 120,
      "ambush": [
       {
@@ -136,7 +112,7 @@
        ]
       },
       {
-       "at": 4,
+       "at": 5,
        "units": [
         [
          "goblin",

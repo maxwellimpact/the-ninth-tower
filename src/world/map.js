@@ -194,8 +194,9 @@ export function buildWorld() {
       if (d < 1.9) set(x, y, y < MARSH_Y ? T.WATER : T.BOG);
       else if (d < 2.9 && y < MARSH_Y) set(x, y, T.SAND);
     }
-    // The Southwash: a river across the south of the Vale. Its bridge on the
-    // south road has collapsed (hook posts), so Mistfen opens with the Grapple.
+    // The Southwash: a river across the south of the Vale, crossed by a bridge
+    // on the south road (it was a broken one with hook posts, which stranded
+    // errands that cross it, like Piet's cart to Hobb's farm).
     if (x < OW_W && y > 46 && y < 62) {
       const d = Math.abs(y - southRiverY(x));
       if (d < 1.6 && x < riverX(y) - 1) set(x, y, T.WATER);
@@ -203,8 +204,7 @@ export function buildWorld() {
     }
     if (onPath(x, y)) {
       const t = at(x, y);
-      if (t === T.WATER && y > 46 && y < 62 && x < 60) { if (Math.abs(y - southRiverY(x)) > 0.9) set(x, y, T.BRIDGE); /* stubs on each bank, gap in the middle */ }
-      else if (t === T.WATER || t === T.LAVA || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
+      if (t === T.WATER || t === T.LAVA || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
       else if (t !== T.CAVEWALL) set(x, y, T.PATH);
     }
   }

@@ -14,6 +14,9 @@ import { addMats, addPotions, CRAFT, gainItems } from './state.js';
 import { makeStage } from './setpiece.js';
 
 const dirTo = (dx, dy) => { const l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+// the goods cart's three views and where each stands on its spot
+const CART_KEY = { side: 'cart', down: 'cartDown', up: 'cartUp' };
+const CART_OY = { side: 0.85, down: 0.62, up: 0.85 };
 
 const TILE = 16;
 const px = (t) => t * TILE + 8;
@@ -28,7 +31,9 @@ export class QuestManager {
     this.npcs = [];
     this.live = {}; // runtime objects per active errand step
     this.staged = {}; // errand id -> set-piece enemies waiting for you to step in
+    this.parked = {};
     for (const n of Q.npcs) this.addNpc(n);
+    for (const id of Object.keys(ERRANDS)) this.placeParkedCart(id); // carts delivered on earlier visits
     // chance-meeting errands can also be (re)taken by talking to their giver
     for (const [id, e] of Object.entries(ERRANDS)) {
       const g = e.trigger && this.npcs.find((n) => n.id === e.giver);
@@ -45,6 +50,8 @@ export class QuestManager {
   // ------------------------------------------------------------------ NPCs
   addNpc(n) {
     const sc = this.sc;
+    const at = sc.flags[`npcAt_${n.id}`]; // settled somewhere new (a driver who stayed with the cart)
+    if (at) n = { ...n, x: at[0], y: at[1] };
     const npc = { ...n, px: px(n.x), py: px(n.y) };
     if (n.look === 'board') {
       npc.s = sc.add.image(npc.px, npc.py + 6, 'board').setOrigin(0.5, 1).setDepth(npc.py);
@@ -418,33 +425,71 @@ export class QuestManager {
       } };
     live.cart = cart;
     live.ambushed = new Set();
-    // the errand's giver walks behind the cart, pushing it, so there's someone
-    // to protect (their usual spot stands empty until the run is over)
+    const p1 = s.path[1] || p0;
+    cart.dir = dirTo(px(p1[0]) - cart.x, px(p1[1]) - cart.y);
+    // the errand's giver pulls the cart by its shafts, so there's someone to
+    // protect (their usual spot stands empty until the run is over)
     const dn = this.npc(s.driver || ERRANDS[id].giver);
     if (dn?.s?.anims) {
-      const look = dn.s.texture.key, p1 = s.path[1] || p0;
+      const look = dn.s.texture.key;
       this.setNpcVisible(dn, false);
       const d = sc.add.sprite(cart.x, cart.y, look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${look}_idle_side`);
       live.objs.push(d);
       live.driverNpc = dn;
-      cart.driver = { spr: d, look, voice: dn.voice, dir: dirTo(px(p1[0]) - cart.x, px(p1[1]) - cart.y) };
-      this.placeDriver(cart, false);
-      sc.time.delayedCall(500, () => { if (cart.alive) sc.bark({ x: d.x, y: d.y, def: { voice: dn.voice } }, s.startLine || 'STAY CLOSE. I PUSH, YOU STAB.'); });
+      cart.driver = { spr: d, look, voice: dn.voice };
+      sc.time.delayedCall(500, () => { if (cart.alive) sc.bark({ x: d.x, y: d.y, def: { voice: dn.voice } }, s.startLine || 'STAY CLOSE. I PULL, YOU STAB.'); });
     }
+    this.placeDriver(cart, false);
     live.bar = sc.add.graphics().setDepth(100000 - 41);
     live.objs.push(live.bar);
     (sc.allies ??= []).push(cart);
   }
 
-  // The driver stands behind the cart (opposite the way it's heading) and walks while it rolls.
+  // The cart faces the way the road goes (side / toward you / away), its wheels
+  // turning while it rolls; the driver walks in front between the shafts.
   placeDriver(c, moving) {
+    const [nx, ny] = c.dir || [1, 0];
+    const view = Math.abs(nx) >= Math.abs(ny) ? 'side' : ny > 0 ? 'down' : 'up';
+    const ck = CART_KEY[view];
+    if (c.spr.texture.key !== ck) c.spr.setTexture(ck, '0').setOrigin(0.5, CART_OY[view]);
+    c.spr.setFlipX(view === 'side' && nx < 0);
+    if (moving) { if (!c.spr.anims.isPlaying || c.spr.anims.currentAnim?.key !== ck) c.spr.play(ck); } else c.spr.anims.stop();
     const d = c.driver;
     if (!d) return;
-    const [nx, ny] = d.dir, x = c.x - nx * 13, y = c.y - ny * 9 + 2;
-    const view = Math.abs(nx) > Math.abs(ny) ? 'side' : ny > 0 ? 'down' : 'up';
+    const [ox, oy] = view === 'side' ? [nx * 21, 1] : view === 'down' ? [0, 19] : [0, -17];
+    const x = c.x + ox, y = c.y + oy;
     const key = `${d.look}_${moving ? 'walk' : 'idle'}_${view}`;
     if (d.spr.anims.currentAnim?.key !== key) d.spr.play(key);
     d.spr.setFlipX(view === 'side' && nx < 0).setPosition(Math.round(x), Math.round(y)).setDepth(y);
+  }
+
+  // An escort marked `stay`: the driver settles where the cart arrived (and the
+  // cart stays parked beside them) instead of heading home. Saved in flags.
+  settleDriver(id, c, dn) {
+    const sc = this.sc, ds = c.driver.spr;
+    const tx = Math.floor(ds.x / TILE), ty = Math.floor(ds.y / TILE);
+    sc.flags[`npcAt_${dn.id}`] = [tx, ty];
+    sc.flags[`cartAt_${id}`] = { x: Math.round(c.x), y: Math.round(c.y), key: c.spr.texture.key, flip: c.spr.flipX };
+    this.moveNpc(dn, tx, ty);
+    this.placeParkedCart(id);
+  }
+
+  moveNpc(npc, tx, ty) {
+    npc.x = tx; npc.y = ty; npc.px = px(tx); npc.py = px(ty);
+    npc.s.setPosition(npc.px, npc.py).setDepth(npc.py);
+    npc.shadow?.setPosition(npc.px + 1, npc.py + 1);
+    this.sc.tweens.killTweensOf(npc.mark);
+    npc.mark.setPosition(npc.px, npc.py - 30);
+    this.sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    npc.o.x = npc.px; npc.o.y = npc.py;
+  }
+
+  // a delivered cart left where it arrived (see settleDriver)
+  placeParkedCart(id) {
+    const at = this.sc.flags[`cartAt_${id}`];
+    if (!at || this.parked[id]) return;
+    const view = Object.keys(CART_KEY).find((v) => CART_KEY[v] === at.key) || 'side';
+    this.parked[id] = this.sc.add.image(at.x, at.y, at.key, '0').setOrigin(0.5, CART_OY[view]).setFlipX(!!at.flip).setDepth(at.y);
   }
 
   // After a party wipe, an errand caught mid-fight (an escort, an ambush, a
@@ -576,11 +621,10 @@ export class QuestManager {
         if (wp && near && !fighting) {
           const tx = px(wp[0]), ty = px(wp[1]);
           const d = Math.hypot(tx - c.x, ty - c.y), sp = 26 * dt;
-          if (d <= sp) { c.idx++; } else { c.x += ((tx - c.x) / d) * sp; c.y += ((ty - c.y) / d) * sp; c.spr.setFlipX(tx < c.x); }
-          if (!c.spr.anims.isPlaying) c.spr.play('cart');
-          if (c.driver && d > 0.5) c.driver.dir = dirTo(tx - c.x, ty - c.y);
+          if (d <= sp) { c.idx++; } else { c.x += ((tx - c.x) / d) * sp; c.y += ((ty - c.y) / d) * sp; }
+          if (d > 0.5) c.dir = dirTo(tx - c.x, ty - c.y);
           this.placeDriver(c, true);
-        } else { c.spr.anims.stop(); this.placeDriver(c, false); }
+        } else this.placeDriver(c, false);
         c.spr.setPosition(Math.round(c.x), Math.round(c.y)).setDepth(c.y);
         for (const a of s.ambush) {
           if (c.idx >= a.at && !live.ambushed.has(a.at)) {
@@ -590,9 +634,17 @@ export class QuestManager {
             for (const [k, x, y] of a.units) { const e = sc.spawnEnemy(k, px(x), px(y), false); e.questSpawn = id; e.setTaunt(c, 6); e.engaged = true; }
           }
         }
-        const barY = c.y - (c.driver ? 36 : 22); // above the driver's head when there is one
+        const barY = c.y - 28; // above the load
         live.bar.clear().fillStyle(0x1a1423).fillRect(c.x - 13, barY, 26, 4).fillStyle(0x6fd3a0).fillRect(c.x - 12, barY + 1, Math.round(24 * Math.max(0, c.hp) / c.maxHp), 2);
-        if (c.idx >= s.path.length && !fighting) { sc.floatText(c.x, c.y - 26, 'MADE IT!', 'fontGold'); this.advance(id); }
+        if (c.idx >= s.path.length && !fighting) {
+          sc.floatText(c.x, c.y - 26, 'MADE IT!', 'fontGold');
+          if (s.stay && c.driver && live.driverNpc) this.settleDriver(id, c, live.driverNpc); // stays put, cart parked beside them
+          else if (c.driver) { // heads home: fade out rather than blink away
+            const ds = c.driver.spr; live.objs = live.objs.filter((o) => o !== ds);
+            sc.tweens.add({ targets: ds, alpha: 0, duration: 600, onComplete: () => ds.destroy() });
+          }
+          this.advance(id);
+        }
       }
       if (s.type === 'defend' && live.units?.length && live.units.every((e) => !e.alive)) { delete this.staged[id]; this.advance(id); }
     }
