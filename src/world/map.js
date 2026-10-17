@@ -39,6 +39,8 @@ export const AREAS = {
   // margins so the camera can centre any room clear of the HUD (C12 rule 1)
   undercroft: { x0: 322, y0: 0, x1: 415, y1: 80, interior: true },
   abbey: { x0: 418, y0: 0, x1: 511, y1: 90, interior: true },
+  // Wave 2: under the Gloamwood elder (dark: the Lantern earns its keep)
+  witchroot: { x0: 322, y0: 130, x1: 415, y1: 209, interior: true, dark: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -112,7 +114,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' ? T.DWALL : T.CAVEWALL); continue; }
     if (y >= OW_H) { set(x, y, T.PLATEAU); continue; } // the highlands beyond (Wave 3)
     if (b === 'gloam') {
       set(x, y, T.LOAM);
@@ -285,7 +287,9 @@ export function buildWorld() {
     d.rows.forEach((row, y) => [...row].forEach((ch, x) => {
       // a boss marked inside a pool (Murk) stands in water too
       const pooled = ch === 'G' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => water(cell(x + dx, y + dy)));
-      set(ox + x, oy + y, ch === '#' || ch === ' ' ? T.DWALL : ch === '~' ? T.CHASM : water(ch) || pooled ? T.WATER : ch === '^' ? T.STAIRS : T.DFLOOR);
+      // 'I' (illusory wall) is built as wall and '_' (hidden bridge) as chasm:
+      // the dungeon kit opens them once the party holds the Seer's Lens
+      set(ox + x, oy + y, ch === '#' || ch === ' ' || ch === 'I' ? T.DWALL : ch === '~' || ch === '_' ? T.CHASM : water(ch) || pooled ? T.WATER : ch === '^' ? T.STAIRS : T.DFLOOR);
     }));
   }
   // Shop + tavern: plank floors inside wall shells (top 2 rows show the wall face)

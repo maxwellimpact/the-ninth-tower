@@ -126,10 +126,18 @@ export const BANSHEE = { ...composeHero('pip', { head: null, body: 'robe_scholar
 // by brightness onto a ramp (keeping the ink outline and dark eyes), and the
 // hem fades out so the figure floats with no feet.
 const RAMP_GHOST = [[52, 58, 92], [150, 158, 190], [206, 214, 232], [244, 248, 255]];
-const ghosted = new WeakSet(); // frames can share a canvas: recolour each once
-export function ghostRecolor(canvas) {
-  if (ghosted.has(canvas)) return;
-  ghosted.add(canvas);
+const RAMP_PALE = [[30, 32, 46], [106, 112, 132], [178, 184, 200], [232, 236, 242]];
+export const ghostRecolor = recolorer(RAMP_GHOST, true);
+export const paleRecolor = recolorer(RAMP_PALE, false); // the Pale Huntsman: drained, but solid
+function recolorer(RAMP, fade) {
+  const done = new WeakSet(); // frames can share a canvas: recolour each once
+  return (canvas) => {
+    if (done.has(canvas)) return;
+    done.add(canvas);
+    recolorCanvas(canvas, RAMP, fade);
+  };
+}
+function recolorCanvas(canvas, RAMP_GHOST, fade) {
   const ctx = canvas.getContext('2d');
   const { width: w, height: h } = canvas;
   const img = ctx.getImageData(0, 0, w, h), d = img.data;
@@ -142,9 +150,12 @@ export function ghostRecolor(canvas) {
     const c = l < 0.16 ? RAMP_GHOST[0] : l < 0.38 ? RAMP_GHOST[1] : l < 0.62 ? RAMP_GHOST[2] : RAMP_GHOST[3];
     d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
     const fromBottom = bottom - y;
+    if (!fade) continue;
     if (fromBottom < 2) d[i + 3] = 0; // no feet
     else if (fromBottom < 6) d[i + 3] = Math.round(d[i + 3] * (fromBottom - 1) / 6); // a fading hem
   }
   ctx.putImageData(img, 0, 0);
 }
+// The Pale Huntsman: a ranger in a deep hood with a great bow, drained pale (paleRecolor)
+export const HUNTSMAN = { ...composeHero('wren', { head: 'hood_ranger@5', body: 'leathers_ranger@5', weapon: 'bow_long@5', offhand: 'quiver_fine@5' }), id: 'huntsman', name: 'Pale Huntsman' };
 export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

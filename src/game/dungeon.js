@@ -15,7 +15,7 @@
 // Sluices (the Abbey): a lever swaps the water between two basins ('w' / 'v'),
 // like red and blue pegs. Drained basin floor is walkable; flooded needs the
 // Tide Charm to swim.
-import { Unit, Breakable, Golem, Murk } from './units.js';
+import { Unit, Breakable, Golem, Murk, Huntsman } from './units.js';
 import { audio } from '../audio/synth.js';
 import DUNGEONS from '../data/dungeons.json';
 
@@ -23,7 +23,7 @@ const TILE = 16;
 const px = (t) => t * TILE + TILE / 2;
 const DOOR = { '=': 'shutter', k: 'key', K: 'boss', V: 'vault' };
 const FOES = { h: 'hollow', R: 'rats' }; // defaults; a dungeon can list its own (def.foes)
-const WALLISH = new Set(['#', ' ', '~']);
+const WALLISH = new Set(['#', ' ', '~', 'I', '_']); // illusory walls and hidden bridges divide rooms like walls and chasms
 const BASIN = { w: 'A', v: 'B' };
 const T_WATER = 3; // map.js T.WATER
 const key = (x, y) => `${x},${y}`;
@@ -47,6 +47,34 @@ class Crystal extends Unit {
     return 0;
   }
   update(dt) { this.cd = Math.max(0, this.cd - dt); }
+}
+
+// A brazier (Witchroot Hollow): lit by a fire hit, or by anyone carrying the
+// Lantern of Embers. A room's shutters stay shut until its braziers burn,
+// like plates; lit braziers are lights in the dark.
+class Brazier extends Unit {
+  constructor(scene, kit, tx, ty, room) {
+    super(scene, px(tx), px(ty), { key: 'dgBrazier', maxHp: 1, team: 'enemy', r: 6 });
+    this.kind = 'brazier'; this.kit = kit; this.tx = tx; this.ty = ty; this.room = room;
+    this.engaged = false; this.lit = false;
+    this.def = { kind: 'brazier' }; this.hinted = true;
+    this.sprite.setOrigin(0.5, 1).setPosition(this.x, this.y + 6).setDepth(this.y + 4);
+    this.shadow.setAlpha(0.25);
+  }
+  damage(amount, src) {
+    if (this.lit) return 0;
+    const sc = this.scene;
+    for (const h of sc.party) if (h.command?.target === this) h.command = null;
+    if (this.lastElement === 'fire' || sc.state.relics.includes('lantern')) this.kit.light(this);
+    else if (!this.kit.hinted.has('brazier')) { this.kit.hinted.add('brazier'); sc.bark(sc.leader, "IT WANTS A FLAME. A FIRE SPELL... OR THE LAMPLIGHTER'S LANTERN BACK IN BRIGHTWATER."); }
+    this.lastElement = null;
+    return 0;
+  }
+  setLit(on) {
+    this.lit = on;
+    if (on) this.sprite.play('dgBrazierLit'); else { this.sprite.stop(); this.sprite.setTexture('dgBrazier'); }
+  }
+  update() {}
 }
 
 export class DungeonKit {
@@ -80,6 +108,7 @@ export class DungeonKit {
     if (this.lab && scene.state.labStart === 'boss') this.skipToBoss();
     else this.load();
     this.refreshDoors(true);
+    this.refreshLens();
     this.buildVine();
     if (scene.area === this.def.area) this.emit();
   }
@@ -95,6 +124,7 @@ export class DungeonKit {
       p: this.plates.map((p, i) => (p.latched ? i : -1)).filter((i) => i >= 0),
       r: this.rooms.map((r, i) => (r.cleared ? i : -1)).filter((i) => i >= 0),
       z: this.zones.map((z) => [z.raised, z.flood]),
+      f: this.braziers.map((b, i) => (b.lit ? i : -1)).filter((i) => i >= 0),
       h: [...this.hinted],
     };
     if (autosave) this.sc.autosave('dungeon');
@@ -109,6 +139,7 @@ export class DungeonKit {
       for (const i of s.r || []) { const r = this.rooms[i]; if (r) { r.cleared = true; r.entered = true; } }
       (s.z || []).forEach(([raised, flood], i) => { const z = this.zones[i]; if (z) { z.raised = raised; z.flood = flood; this.applyPegs(z, true); this.applyWater(z, true); } });
       for (const h of s.h || []) this.hinted.add(h);
+      for (const i of s.f || []) if (this.braziers[i]) this.light(this.braziers[i], true);
     } else this.migrate();
     for (const c of this.chests) {
       if (f[`chest_${c.id}`]) { c.opened = true; c.img?.setTexture('chestOpen'); }
@@ -133,6 +164,7 @@ export class DungeonKit {
       for (const door of this.doors) if (door.kind === 'key' || door.kind === 'boss') door.unlocked = true;
       for (const p of this.plates) { p.latched = true; p.s.setTexture('dgPlateDown'); }
       for (const r of this.rooms) if (r.seal) { r.cleared = true; r.entered = true; }
+      for (const b of this.braziers) this.light(b, true);
     }
   }
 
@@ -146,6 +178,7 @@ export class DungeonKit {
     // and the rooms before it count as solved, so you can walk back out
     for (const p of this.plates) { p.latched = true; p.s.setTexture('dgPlateDown'); }
     for (const r of this.rooms) if (r.seal) { r.entered = true; r.cleared = true; }
+    for (const b of this.braziers) this.light(b, true);
     const s = dungeonStart(this.id, 'boss');
     this.respawn = { x: s.x, y: s.y };
     this.restock = { ...st.potions }; // every retry starts with the same supplies
@@ -200,7 +233,7 @@ export class DungeonKit {
 
   build() {
     const sc = this.sc;
-    this.doors = []; this.blocks = []; this.plates = []; this.chests = []; this.crystals = [];
+    this.doors = []; this.blocks = []; this.plates = []; this.chests = []; this.crystals = []; this.braziers = []; this.illusions = []; this.bridges = [];
     const seen = new Set();
     for (const [k, ch] of this.cells) {
       const [x, y] = k.split(',').map(Number);
@@ -225,6 +258,9 @@ export class DungeonKit {
           sc.nav.block(x, y); sc.breakables.push(b);
         }
       }
+      else if (ch === '*') { const b = new Brazier(sc, this, x, y, room); this.braziers.push(b); (room.braziers ??= []).push(b); sc.breakables.push(b); sc.nav.block(x, y); }
+      else if (ch === 'I') this.illusions.push({ x, y });
+      else if (ch === '_') this.bridges.push({ x, y });
       else if (/[1-9]/.test(ch)) this.addChest(x, y, ch, room);
       else if (this.foeKinds[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
       else if (ch === '!') room.seal = true;
@@ -309,8 +345,45 @@ export class DungeonKit {
     for (const r of d.rooms) if (r.active) return true;
     if (d.kind !== 'shutter') return !d.unlocked;
     for (const r of d.rooms) if (r.plates.length && !r.plates.every((p) => p.latched)) return true;
+    for (const r of d.rooms) if (r.braziers?.length && !r.braziers.every((b) => b.lit)) return true;
     return false;
   }
+
+  // ------------------------------------------------------------- braziers
+  light(b, silent = false) {
+    if (b.lit) return;
+    b.setLit(true);
+    const sc = this.sc;
+    if (!silent) {
+      audio.sfx('fireImpact'); sc.fx.burst('ember', b.x, b.y - 14, 14);
+      const left = b.room.braziers.filter((q) => !q.lit).length;
+      if (left) sc.floatText(b.x, b.y - 28, `${left} MORE`, 'fontPlain');
+      this.save(!left);
+    }
+    this.refreshDoors(silent);
+  }
+
+  // ------------------------------------------------------------- the Lens
+  // Illusory walls and hidden bridges: solid wall / open chasm until the party
+  // holds the Seer's Lens, then a walkable shimmer / a bridge of light.
+  refreshLens() {
+    const sc = this.sc, on = sc.state.relics.includes('lens');
+    if (on === this.lensOn) return;
+    this.lensOn = on;
+    for (const t of this.illusions) {
+      if (on) {
+        sc.nav.unblock(t.x, t.y);
+        t.s ??= sc.add.sprite(px(t.x), (t.y + 1) * TILE, 'dgFalseWall').setOrigin(0.5, 1).play('dgFalseWall').setAlpha(0.5).setDepth((t.y + 1) * TILE + 2);
+      } else { sc.nav.block(t.x, t.y); t.s?.destroy(); t.s = null; }
+    }
+    for (const t of this.bridges) {
+      if (on) { sc.nav.unblock(t.x, t.y); t.s ??= sc.add.image(px(t.x), px(t.y), 'dgSpiritBridge').setAlpha(0.85).setDepth(-30); }
+      else { sc.nav.block(t.x, t.y); t.s?.destroy(); t.s = null; }
+    }
+  }
+
+  // light sources in this (dark) dungeon for Game.updateDarkness
+  lights() { return this.braziers.filter((b) => b.lit); }
 
   refreshDoors(silent = false) {
     const sc = this.sc;
@@ -557,7 +630,9 @@ export class DungeonKit {
     const arena = { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
     const make = b.kind === 'murk'
       ? (x, y, o) => new Murk(sc, x, y, { ...o, shadow: true, arena, pool: b.pool })
-      : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
+      : b.kind === 'huntsman'
+        ? (x, y, o) => new Huntsman(sc, x, y, { ...o, shadow: true, arena })
+        : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
     return this._bossDef = { id: this.id, flag: this.bossFlag, style: b.style || 'shadow', cfg, rect: [arena.x0, arena.y0, arena.x1, arena.y1 - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
   }
 
@@ -588,6 +663,13 @@ export class DungeonKit {
       this.thinkT = 0.5;
       const nv = sc.nearVine(this.ward, L, 3);
       if (nv) { if (Math.hypot(this.vine.sigil.x - L.x, this.vine.sigil.y - L.y) < 11 * TILE) sc.think(this.id, 'source'); else sc.think(this.id, 'below'); }
+    }
+    // the Lens picked up: false walls and hidden bridges open at once
+    if (!this.lensOn && (this.illusions.length || this.bridges.length) && sc.state.relics.includes('lens')) this.refreshLens();
+    // bumping a false wall without the Lens: a nudge that something's off
+    if (!this.lensOn && this.illusions.length && !this.hinted.has('illusion')) {
+      const lx = Math.floor(L.x / TILE), ly = Math.floor(L.y / TILE);
+      if (this.illusions.some((t) => Math.abs(t.x - lx) <= 1 && Math.abs(t.y - ly) <= 1)) { this.hinted.add('illusion'); sc.bark(L, "THIS WALL LOOKS... WRONG. LIKE IT ISN'T QUITE THERE."); }
     }
     // the leader can stand on a plate too
     if (this.plates.some((p) => !p.latched)) this.checkPlates();

@@ -167,3 +167,45 @@ export function lever(side) {
   outline(c, 'ink');
   return c;
 }
+
+// ------------------------------------------------------------ Witchroot Hollow
+// Brazier: an iron bowl on a root-wrapped stone foot. Unlit it holds cold ash;
+// lit, a flame in three flicker frames (lit[] is the animation).
+export function brazier(lit = false, f = 0) {
+  const [c, ctx] = makeCanvas(16, 24);
+  px(ctx, 5, 15, 'slate', 6, 7); px(ctx, 6, 16, 'stone', 3, 5); px(ctx, 4, 21, 'night', 8, 2); // stone foot
+  px(ctx, 4, 17, 'bark', 1, 4); px(ctx, 11, 16, 'bark', 1, 5); px(ctx, 5, 19, 'barkD', 6, 1); // roots wrapped round it
+  px(ctx, 2, 11, 'steelD', 12, 4); px(ctx, 3, 11, 'steel', 10, 1); px(ctx, 3, 14, 'night', 10, 1); // the bowl
+  if (!lit) { px(ctx, 4, 10, 'slate', 8, 1); px(ctx, 6, 9, 'stone', 3, 1); }
+  else {
+    const flame = [
+      ['....f.....', '...fFf....', '..fFFFf...', '..fFwFFf..', '.fFFwwFf..', '.fFwwwFFf.', '..fFwwFf..'],
+      ['.....f....', '....fF....', '...fFFf...', '..fFwFFf..', '..fFwwFf..', '.fFwwwFFf.', '..fFwwFf..'],
+      ['...f......', '...Ff.f...', '..fFFFf...', '.fFFwFf...', '.fFwwFFf..', '.fFwwwFFf.', '..fFwwFf..'],
+    ][f % 3];
+    flame.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') px(ctx, 3 + x, 3 + y, ch === 'f' ? 'fire' : ch === 'F' ? 'fireL' : 'goldL'); }));
+  }
+  outline(c, 'ink');
+  return c;
+}
+
+// The Seer's Lens shows a false wall for what it is: a shimmering veil of
+// violet light over the stone (drawn over the wall tile, two shimmer frames).
+export function falseWall(f = 0) {
+  const [c, ctx] = makeCanvas(16, 32);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 16; x++) {
+    const n = hash(x, y + f * 7, 41);
+    if (n < 0.16) px(ctx, x, y, 'curseL');
+    else if (n < 0.3) px(ctx, x, y, 'purpL');
+  }
+  for (let y = (f * 5) % 6; y < 32; y += 6) px(ctx, 0, y, 'white', 16, 1);
+  return c;
+}
+
+// A bridge of light over a chasm, there only through the Lens (one tile).
+export function spiritBridge() {
+  const [c, ctx] = makeCanvas(16, 16);
+  for (let y = 1; y < 16; y += 5) { px(ctx, 0, y, 'blueL', 16, 3); px(ctx, 0, y, 'white', 16, 1); px(ctx, 0, y + 2, 'blue', 16, 1); }
+  px(ctx, 1, 0, 'crystal', 1, 16); px(ctx, 14, 0, 'crystal', 1, 16); // rails
+  return c;
+}

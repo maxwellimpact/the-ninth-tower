@@ -719,5 +719,50 @@
    "n": 2,
    "t": 4.5
   }
+ },
+ "huntsman": {
+  "name": "PALE HUNTSMAN",
+  "maxHp": 1500,
+  "speed": 44,
+  "aggro": 220,
+  "reach": 112,
+  "windup": 0.65,
+  "recover": 0.75,
+  "dmg": 26,
+  "xp": 240,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 72,
+  "scale": 1.45,
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "silk": 2,
+   "crystal": 1
+  }
+ },
+ "huntecho": {
+  "name": "ECHO OF THE HUNT",
+  "maxHp": 1,
+  "speed": 44,
+  "aggro": 300,
+  "reach": 112,
+  "windup": 0.8,
+  "recover": 1,
+  "dmg": 6,
+  "xp": 0,
+  "gold": [
+   0,
+   0
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 72,
+  "scale": 1.45,
+  "tint": 13623807
  }
 }

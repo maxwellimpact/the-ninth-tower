@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, Huntsman, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -330,7 +330,7 @@ export class Game extends Phaser.Scene {
 
   spawnEnemy(kind, x, y, engaged = false, elite = false) {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
-    if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
+    if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -567,6 +567,7 @@ export class Game extends Phaser.Scene {
     if (kind === 'orb') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(2).setDepth(TOP - 21); sp = 110; audio.sfx('frost', { pitch: 0.6 }); }
     else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
     else if (kind === 'thorn') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0x8a5c38).setScale(0.8); sp = 190; audio.sfx('swing', { pitch: 2 }); }
+    else if (kind === 'heavy') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setScale(1.8).setTint(0xff9a8a); sp = 270; audio.sfx('dash'); }
     else if (kind === 'web') { s = this.add.image(from.x, from.y - 8, 'web0').setDepth(TOP - 21).setScale(0.45); sp = 130; audio.sfx('squish', { pitch: 1.6 }); }
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
     (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' || kind === 'web' ? 1.8 : 1.1, from, kind });
@@ -837,6 +838,7 @@ export class Game extends Phaser.Scene {
     for (const h of this.party) if (h !== L) stamp(h.x, h.y - 10, 0.55);
     for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stamp(o.x, o.y - 6, 0.35);
     for (const i of this.interactables) if (i.needsLight) stamp(i.x, i.y - 10, 0.9);
+    for (const b of this.dungeon?.lights?.() || []) if (cam.worldView.contains(b.x, b.y)) stamp(b.x, b.y - 12, 1.3 + Math.sin(this.time.now / 90 + b.x) * 0.05); // lit braziers
   }
 
   // ============================================================== party
@@ -1471,7 +1473,7 @@ export class Game extends Phaser.Scene {
   groupsNear(tx, ty, area) {
     const out = [];
     if ((ty > MARSH_Y - 22 && ty < SOUTH_Y + 10 && area === 'overworld') || area === 'abbey') out.push('marsh');
-    if (ty > SOUTH_Y - 22 && tx < RIDGE_X + 22 && area === 'overworld') out.push('gloam');
+    if ((ty > SOUTH_Y - 22 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;
@@ -2300,7 +2302,12 @@ export class Game extends Phaser.Scene {
     at(250, () => audio.sfx('rumble'));
     at(1300, () => audio.sfx('rumble'));
     for (let i = 0; i < 9; i++) at(250 + i * 210, () => this.shake(230, 0.002 + i * 0.0011));
-    if (style === 'pool') {
+    if (style === 'fog') {
+      // hounds howl in the mist, then he steps out of it
+      at(300, () => audio.sfx('roar', { pitch: 2.2 }));
+      at(1100, () => audio.sfx('roar', { pitch: 2.5 }));
+      for (let i = 0; i < 16; i++) at(250 + i * 120, () => this.fx.burst(g.isShadow ? 'curse' : 'spark', bx + (Math.random() - 0.5) * 90, by - 10 + (Math.random() - 0.5) * 40, 6));
+    } else if (style === 'pool') {
       if (g.isShadow) for (let i = 0; i < 7; i++) at(450 + i * 230, () => this.fx.burst('curse', bx, by - 20, 10));
       for (let i = 0; i < 12; i++) at(350 + i * 140, () => this.fx.burst('foam', bx + (Math.random() - 0.5) * 80, by + (Math.random() - 0.5) * 34, 8));
     } else {
@@ -2324,8 +2331,11 @@ export class Game extends Phaser.Scene {
       cam.flash(180, 255, style === 'shadow' ? 200 : 255, 255);
       audio.sfx('bash'); this.shake(400, 0.012);
       this.fx.burst('curse', bx, by - 20, 30);
-      g.sprite.setAlpha(1).setScale(1, 0.4); g.shadow.setAlpha(0.28);
-      this.tweens.add({ targets: g.sprite, scaleY: 1, duration: 450, ease: 'Back.easeOut' });
+      if (style === 'fog') { g.shadow.setAlpha(0.28); g.sprite.setAlpha(0); this.tweens.add({ targets: g.sprite, alpha: 1, duration: 700 }); }
+      else {
+        g.sprite.setAlpha(1).setScale(1, 0.4); g.shadow.setAlpha(0.28);
+        this.tweens.add({ targets: g.sprite, scaleY: 1, duration: 450, ease: 'Back.easeOut' });
+      }
       if (style === 'pool') { const y0 = g.sprite.y; g.sprite.y = y0 + 30; this.tweens.add({ targets: g.sprite, y: y0, duration: 500, ease: 'Back.easeOut' }); }
     });
     // ...and roars
@@ -2359,7 +2369,7 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: g.sprite, alpha: 0, y: g.sprite.y + 20, duration: 600, onComplete: () => g.destroy() });
         this.golem = null;
         this.events.emit('boss', null);
-        this.events.emit('banner', `${g.wardBoss.name} SINKS ${g.wardBoss.kind === 'murk' ? 'BACK INTO THE BOG' : 'INTO THE EARTH'}`, 'IT WILL RISE AGAIN TO GUARD THE STONE');
+        this.events.emit('banner', g.wardBoss.kind === 'huntsman' ? `${g.wardBoss.name} FADES INTO THE FOG` : `${g.wardBoss.name} SINKS ${g.wardBoss.kind === 'murk' ? 'BACK INTO THE BOG' : 'INTO THE EARTH'}`, g.wardBoss.kind === 'huntsman' ? 'THE HUNT WILL COME FOR YOU AGAIN' : 'IT WILL RISE AGAIN TO GUARD THE STONE');
       }
       return;
     }
@@ -2371,14 +2381,14 @@ export class Game extends Phaser.Scene {
       const x = (w.def.x + wb.offset[0]) * TILE + 8, y = (w.def.y + wb.offset[1]) * TILE + 8;
       if (Math.hypot(L.x - x, L.y - y) > wb.trigger * TILE) continue;
       const opts = { level: this.enemyLevel(x, y) + 2, arena: wb.arena, pool: wb.pool };
-      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : new Golem(this, x, y, opts);
+      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : wb.kind === 'huntsman' ? new Huntsman(this, x, y, opts) : new Golem(this, x, y, opts);
       boss.maxHp = Math.round(boss.maxHp * wb.hpMul); boss.hp = boss.maxHp;
       boss.s = { ...boss.s, dmg: boss.s.dmg * wb.dmgMul };
       const B = { id: wb.id, flag: wb.flag, cfg: wb };
       boss.bossName = wb.name; boss.bossDef = B; boss.wardBoss = wb;
       this.golem = boss;
       this.enemies.push(boss);
-      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : 'stone', B);
+      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : wb.kind === 'huntsman' ? 'fog' : 'stone', B);
       return;
     }
   }

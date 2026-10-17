@@ -246,6 +246,25 @@ export const GLOAMWOOD_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 0.95, echo: 0.6, vibrato: 0.012 }, arp: { echo: 0.55, vol: 1.3 }, bass: { vol: 0.7 }, pad: { vol: 1.2, cutoff: 560 }, sub: { vol: 1.1 } },
 });
 
+// Witchroot Hollow: under the elder's roots - the forest's music box, slowed
+// and sunk an octave, dripping between long hollow notes
+export const WITCHROOT_THEME = buildTheme({
+  name: 'Witchroot Hollow', bpm: 62, key: -8, arp: 'drip', bass: 'hollow',
+  chords: [['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'], ['E2', 'G#2', 'B2'],
+    ['D2', 'F2', 'A2'], ['A2', 'C3', 'E3'], ['B2', 'D3', 'F3'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['-', 8], ['E4', 4], ['A4', 4],
+    ['C5', 6], ['B4', 2], ['A4', 8],
+    ['-', 4], ['G4', 4], ['B4', 4], ['D5', 4],
+    ['G#4', 12], ['-', 4],
+    ['-', 8], ['F4', 4], ['A4', 4],
+    ['E5', 6], ['D5', 2], ['C5', 8],
+    ['B4', 4], ['A4', 4], ['F4', 4], ['D4', 4],
+    ['E4', 12], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.0, echo: 0.65, vibrato: 0.01 }, arp: { echo: 0.6, vol: 1.5 }, bass: { vol: 0.8 }, pad: { vol: 1.3, cutoff: 520 } },
+});
+
 // Shops and the tavern: cosy and light — a bouncy jig over oom-pah bass and
 // lute strums, no drums until a brawl breaks out
 export const HEARTH_THEME = buildTheme({
@@ -266,7 +285,7 @@ export const HEARTH_THEME = buildTheme({
 });
 
 const REGION_THEMES = {
-  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME,
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME,
   cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };

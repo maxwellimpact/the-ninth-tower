@@ -106,6 +106,75 @@ export async function abbey() {
   return log;
 }
 
+// Witchroot Hollow (Gloamwood): braziers, the crystal grotto, the pack fight
+// for the Seer's Lens, false walls and the hidden bridge, the brazier alcove
+// for the Hunt Horn, then the Huntsman's Shadow. Boot with the Lantern:
+//   await W.boot({ relics: ['grapple', 'lantern'] }); await W.witchroot()
+export async function witchroot() {
+  const log = [];
+  const sc = window.__scene;
+  for (const h of sc.party) { h.maxHp *= 50; h.hp = h.maxHp; }
+  await enter('witchrootIn');
+  const c = ctx('witchroot');
+  log.push({ step: 'entered', area: sc.area, at: c.at(), dark: !!sc.areaRect().dark, music: sc.musicName?.() });
+  const hallDoor = c.door(31, 48);
+  log.push({ step: 'hall shutter waits for the braziers', shut: !!hallDoor.closed });
+  const lightAt = async (lx, ly) => { const b = c.k.braziers.find((q) => q.tx === c.k.ox + lx && q.ty === c.k.oy + ly); b.damage(1, sc.leader); await step(20); return b.lit; };
+  log.push({ step: 'light hall braziers (lantern)', lit: [await lightAt(24, 51), await lightAt(38, 51)], open: !hallDoor.closed });
+  log.push({ step: 'hub fight', ...(await c.enterFight(31, 44)) });
+  // west grotto: the crystal across the chasm works the pegs
+  c.tp(9, 37); await step(30);
+  const redUp = () => c.solid(8, 32), blueUp = () => c.solid(8, 42);
+  log.push({ step: 'grotto pegs', redUp: redUp(), blueUp: blueUp() });
+  if (redUp()) await c.crystal(3, 37);
+  c.tp(9, 30); log.push({ step: 'key 1', opened: await c.openChest('1'), keys: c.k.keys });
+  c.tp(9, 37); await c.crystal(3, 37);
+  c.tp(9, 44); log.push({ step: 'map', opened: await c.openChest('2'), map: c.k.map });
+  await c.killAll();
+  // east chamber: key door, the pack, the Lens
+  c.tp(49, 36); log.push({ step: 'east door', unlocked: await c.unlock(51, 36), keys: c.k.keys });
+  const fight = await c.enterFight(56, 39);
+  const greyjaw = c.room(56, 39).spawned?.find((e) => e.named);
+  log.push({ step: 'pack fight', ...fight, elite: greyjaw?.s.name });
+  log.push({ step: 'lens chest appears', placed: !!c.chest('3').placed });
+  c.tp(56, 43); await c.openChest('3'); await step(30);
+  log.push({ step: 'seer\'s lens', relics: [...sc.state.relics], falseWallOpen: !c.solid(15, 26), bridgeOpen: !c.solid(10, 12) });
+  // through the false wall, across the bridge of light
+  c.tp(15, 28); await c.tapTile(15, 22, 200); log.push({ step: 'through the false wall', at: c.at() });
+  await c.tapTile(16, 12, 200); await c.tapTile(4, 12, 300); log.push({ step: 'across the hidden bridge', at: c.at() });
+  await c.killAll();
+  c.tp(4, 8); log.push({ step: 'key 2', opened: await c.openChest('4'), keys: c.k.keys });
+  c.tp(4, 16); log.push({ step: 'compass', opened: await c.openChest('7'), compass: c.k.compass });
+  c.tp(3, 5); await c.tapTile(3, 2, 200); log.push({ step: 'secret shrine (false wall)', at: c.at() });
+  c.tp(3, 2); log.push({ step: 'shrine chest', opened: await c.openChest('6') });
+  // the top corridor to the second key door, and the brazier alcove
+  c.tp(42, 2); log.push({ step: 'north-east door', unlocked: await c.unlock(44, 2), keys: c.k.keys });
+  c.tp(47, 6); await step(40); await c.killAll();
+  const alcove = c.door(52, 17);
+  log.push({ step: 'alcove waits', shut: !!alcove.closed });
+  const lit = [await lightAt(47, 4), await lightAt(58, 4), await lightAt(52, 14)];
+  log.push({ step: 'alcove braziers', lit, open: !alcove.closed });
+  c.tp(52, 19); log.push({ step: 'hunt horn', opened: await c.openChest('5'), big: c.k.big });
+  await step(90); await c.killAll();
+  // vault: needs the Stone Gauntlets
+  c.tp(23, 52); log.push({ step: 'vault stays sealed', unlocked: await c.unlock(21, 52) });
+  // the root door and the Huntsman's Shadow
+  c.tp(31, 28); log.push({ step: 'boss door', unlocked: await c.unlock(31, 26) });
+  c.tp(31, 24); await c.tapTile(31, 16, 200);
+  for (let i = 0; i < 30 && !sc.golem; i++) await step(10);
+  for (let i = 0; i < 60 && sc.busy; i++) await step(10);
+  const g = sc.golem;
+  log.push({ step: 'the huntsman rises', boss: g?.bossName, level: g?.level, shadow: g?.isShadow });
+  let phases = new Set();
+  for (let i = 0; i < 300 && g?.alive; i++) { phases.add(g.phase); g.damage(300, sc.leader); await step(15); for (let k = 0; k < 20 && sc.busy; k++) await step(10); }
+  await step(240);
+  log.push({ step: 'the shadow breaks', dead: !g?.alive, phases: [...phases], flag: !!sc.flags.huntsmanDefeated, gate: !!sc.arenaGate, vineWithering: sc.vines.filter((v) => v.ward.def.id === 'gloam').map((v) => v.dead) });
+  const back = sc.interactables.find((o) => o.kind === 'warp' && o.warp.id === 'witchrootBack');
+  log.push({ step: 'back stairs', present: !!back });
+  log.push({ errs: window.__errs || [] });
+  return log;
+}
+
 // A fresh real game (not the lab): Brann, Pip and Sable at `level`, with the
 // given relics, at the start of the world. Clears the saved game first.
 export async function boot({ level = 6, relics = ['grapple'], state = null } = {}) {

@@ -4,7 +4,7 @@
 // chunks can be painted lazily as the camera streams through a large world.
 import { rgb, curseRGB } from './palette.js';
 import { hash, vnoise, bayer, makeCanvas } from './pixel.js';
-import { T, TILE, SOFT, MAP_W, MAP_H, SOUTH_Y, RIDGE_X } from '../world/map.js';
+import { T, TILE, SOFT, MAP_W, MAP_H, SOUTH_Y, RIDGE_X, AREAS } from '../world/map.js';
 
 export const CHUNK = 256;
 
@@ -12,7 +12,7 @@ const C = {};
 for (const k of ['grassD', 'grass', 'grassL', 'grassXL', 'leafD', 'leaf', 'dirtD', 'dirt', 'dirtL', 'sand', 'waterD', 'water', 'waterL', 'foam',
   'stone', 'slate', 'mist', 'bone', 'night', 'ink', 'white', 'gold', 'redL', 'blueL', 'purpL', 'woodD', 'wood', 'woodL',
   'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD',
-  'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark']) C[k] = rgb(k);
+  'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark', 'barkL']) C[k] = rgb(k);
 
 export function makeTerrainPainter(world) {
   const at = world.at;
@@ -53,6 +53,9 @@ export function makeTerrainPainter(world) {
     if (h < 0.032) return hash(x, y, 153) < 0.5 ? C.mudD : C.fernD; // fallen leaves
     return n < 0.3 ? C.gloomD : n < 0.66 ? C.gloom : C.gloomL;
   }
+
+  const WR = AREAS.witchroot;
+  const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
   function pixel(x, y) {
     const t = typeAt(x, y);
@@ -221,6 +224,16 @@ export function makeTerrainPainter(world) {
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
       case T.DFLOOR: {
+        if (inWitchroot(tx, ty)) {
+          // packed earth between the roots, with root tendrils crossing it
+          const up = tileAtPx(x, y - 6);
+          if (up === T.DWALL && bayer(x, y) < 0.75) return C.gloomD; // shadow under the root wall
+          const r = Math.abs(Math.sin(x * 0.11 + vnoise(x / 30, y / 30, 160) * 6) * 9 - (y % 37)) < 0.9;
+          if (r && hash(Math.floor(x / 9), Math.floor(y / 9), 161) < 0.5) return hash(x, y, 162) < 0.3 ? C.barkL : C.bark;
+          const n = vnoise(x / 18, y / 18, 163) + (bayer(x, y) - 0.5) * 0.18;
+          if (hash(x, y, 164) < 0.025) return C.fernD;
+          return n < 0.3 ? C.mudD : n < 0.7 ? C.mud : C.dirtD;
+        }
         // dungeon flagstones: big worn slabs, dark mortar, moss in the cracks
         const row = Math.floor(y / 10), ox = (row % 2) * 6;
         const cx = Math.floor((x + ox) / 12);
@@ -233,6 +246,20 @@ export function makeTerrainPainter(world) {
         return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
       }
       case T.DWALL: {
+        if (inWitchroot(tx, ty)) {
+          // a wall of tangled roots: dark mass on top, a face of braided roots
+          const faceBelowW = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+          if (!faceBelowW) { const n = vnoise(x / 6, y / 6, 165) + (bayer(x, y) - 0.5) * 0.3; return n > 0.7 ? C.barkD : n > 0.42 ? C.gloomD : C.ink; }
+          const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+          if (fy > 29) return C.ink;
+          // braided strands running down the face, each lit on its left edge
+          const strand = (x + Math.round(Math.sin(fy * 0.35 + Math.floor(x / 5)) * 1.5)) % 5;
+          if (fy < 3) return hash(x, 0, 166) < 0.4 ? C.fern : C.barkL; // moss on the lip
+          if (strand === 0) return C.ink;
+          if (strand === 1) return C.barkL;
+          if (hash(Math.floor(x / 5), Math.floor(fy / 4) + ty * 11, 167) < 0.08) return C.fernD;
+          return strand === 4 ? C.barkD : C.bark;
+        }
         const faceBelow = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
         if (!faceBelow) { const n = vnoise(x / 7, y / 7, 123) + (bayer(x, y) - 0.5) * 0.3; return n > 0.72 ? C.slate : n > 0.4 ? C.night : C.ink; }
         // two-tile face of heavy blocks with a lit capstone edge

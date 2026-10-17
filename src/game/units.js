@@ -950,8 +950,8 @@ export class Hero extends Unit {
 const ENEMY = enemyData;
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -2433,6 +2433,214 @@ export class Murk extends Enemy {
 
 // ------------------------------------------------------------- Breakables
 // Cracked walls / boulders hiding secrets. Anything that hits them counts.
+// The Pale Huntsman (Gloamwood): King Aldric's master of hounds, given a hunt
+// that never ends. He fights from range and won't be cornered.
+//   phase 1: arrows and three-arrow volleys, a Hunter's Mark (a reticle, then a
+//            heavy shot at where the hero stood: step out of it), spectral
+//            hounds, and a leap away when crowded
+//   phase 2 (60%): he vanishes. The Seer's Lens shows him faintly, footprints
+//            show in the leaves, and he flickers into sight when he shoots
+//   phase 3 (30%, true form only): six of him. Only the real one casts a shadow
+// His Shadow (Witchroot Hollow) has 60% health and never reaches phase 3.
+export class Huntsman extends Enemy {
+  constructor(scene, x, y, opts = {}) {
+    super(scene, 'huntsman', x, y, opts);
+    this.boss = true;
+    this.phase = 1;
+    this.home = { x, y };
+    this.arena = opts.arena || null; // tiles {x0,y0,x1,y1}
+    this.isShadow = !!opts.shadow;
+    if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; }
+    this.volleyT = 3; this.markT = 7; this.howlT = 5; this.leapT = 2; this.printT = 0; this.shuffleT = 8;
+    this.veil = 1; this.echoes = [];
+    this.restoreTint();
+  }
+
+  restoreTint() {
+    const t = this.statusColor();
+    if (t) this.sprite.setTint(t);
+    else if (this.isShadow) this.sprite.setTint(0x8a6cc4);
+    else this.sprite.clearTint();
+  }
+  knock(dx, dy, p) { super.knock(dx, dy, p * 0.15); }
+  stun(t) { super.stun(t * 0.3); }
+  setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
+  heroes() { return this.scene.party.filter((h) => h.alive && !h.downed); }
+
+  clampArena(x, y) {
+    const A = this.arena;
+    if (!A) return { x, y };
+    return { x: Math.max((A.x0 + 1) * 16, Math.min((A.x1) * 16, x)), y: Math.max((A.y0 + 1) * 16, Math.min((A.y1) * 16, y)) };
+  }
+
+  damage(amount, src, opts) {
+    const r = Enemy.prototype.damage.call(this, amount, src, opts);
+    if (!this.alive) return r;
+    const f = this.hp / this.maxHp;
+    if (this.phase === 1 && f < 0.6) this.enterPhase(2);
+    else if (this.phase === 2 && f < 0.3 && !this.isShadow) this.enterPhase(3);
+    return r;
+  }
+
+  enterPhase(n) {
+    const sc = this.scene;
+    this.phase = n;
+    audio.sfx('roar', { pitch: 1.3 });
+    sc.shake(400, 0.008);
+    this.clearZone(); this.state = 'chase'; this.t = 0;
+    if (n === 2) {
+      sc.floatText(this.x, this.y - 60, 'HE FADES INTO THE DARK!', 'fontGold');
+      sc.fx.burst('curse', this.x, this.y - 20, 24);
+      const lens = sc.state.relics.includes('lens');
+      const who = sc.party.find((h) => h.def.id === 'wren' && !h.downed) || sc.leader;
+      sc.time.delayedCall(900, () => sc.bark(who, lens ? 'THE LENS! I CAN SEE HIM - JUST.' : 'WATCH THE LEAVES - HE LEAVES TRACKS!'));
+      this.s = { ...this.s, speed: this.s.speed * 1.2 };
+    } else {
+      sc.floatText(this.x, this.y - 60, 'THE HUNT MULTIPLIES!', 'fontGold');
+      this.veil = 1;
+      this.spawnEchoes();
+      const who = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
+      sc.time.delayedCall(900, () => sc.bark(who, 'ONLY ONE OF THEM HAS A SHADOW!'));
+    }
+  }
+
+  spawnEchoes() {
+    const sc = this.scene;
+    for (const e of this.echoes) if (e.alive) { e.alive = false; e.destroy(); }
+    this.echoes = [];
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const p = this.clampArena(this.home.x + Math.cos(a) * 70, this.home.y + Math.sin(a) * 45);
+      const e = sc.spawnEnemy('huntecho', p.x, p.y, true, false);
+      e.level = this.level; e.echoOf = this;
+      e.shadow.setVisible(false); // the tell: echoes cast no shadow
+      sc.fx.burst('curse', p.x, p.y - 20, 10);
+      this.echoes.push(e);
+    }
+  }
+
+  // everyone (him and his echoes) blinks to new places, so the real one has to be found again
+  shuffle() {
+    const sc = this.scene;
+    const all = [this, ...this.echoes.filter((e) => e.alive)];
+    for (const u of all) {
+      const p = this.clampArena(this.home.x + (Math.random() - 0.5) * 200, this.home.y + (Math.random() - 0.5) * 120);
+      sc.fx.burst('curse', u.x, u.y - 20, 8);
+      u.x = p.x; u.y = p.y; u.state = 'chase'; u.clearZone();
+      sc.fx.burst('curse', u.x, u.y - 20, 8);
+    }
+    audio.sfx('warp');
+  }
+
+  // a three-arrow volley at a hero
+  volley(t) {
+    const sc = this.scene;
+    const base = Math.atan2(t.y - this.y, t.x - this.x);
+    for (const da of [-0.22, 0, 0.22]) sc.spawnEnemyArrow(this, { x: this.x + Math.cos(base + da) * 100, y: this.y - 8 + Math.sin(base + da) * 100 + 8 }, this.s.dmg * 0.7 * sc.difficulty.dmg);
+    this.reveal(0.5);
+    this.anim = ''; this.play('attack');
+  }
+
+  // Hunter's Mark: a reticle follows a hero, locks, then a heavy shot flies
+  // at where they stood
+  mark(t) {
+    const sc = this.scene;
+    const g = sc.add.graphics().setDepth(100000 - 30);
+    const st = { t: 0 };
+    let lock = null;
+    sc.floatText(t.x, t.y - 36, 'MARKED!', 'fontPlain', 0xff8a7a);
+    audio.sfx('hexCharge', { pitch: 1.4 });
+    const ev = sc.time.addEvent({ delay: 16, loop: true, callback: () => {
+      st.t += 0.016;
+      const p = lock || t;
+      const r = 10 - Math.min(1, st.t / 1.2) * 4;
+      g.clear().lineStyle(1, 0xff6a5e, 0.9).strokeCircle(p.x, p.y - 6, r).lineBetween(p.x - r - 3, p.y - 6, p.x + r + 3, p.y - 6).lineBetween(p.x, p.y - 6 - r - 3, p.x, p.y - 6 + r + 3);
+      if (st.t >= 1.2 && !lock) lock = { x: t.x, y: t.y };
+      if (st.t >= 1.55) {
+        ev.remove(); g.destroy();
+        if (!this.alive) return;
+        sc.spawnEnemyArrow(this, { x: lock.x, y: lock.y }, this.s.dmg * 2.2 * sc.difficulty.dmg, 'heavy');
+        this.reveal(0.6);
+        this.anim = ''; this.play('attack');
+      }
+    } });
+  }
+
+  howl() {
+    const sc = this.scene;
+    const hounds = sc.enemies.filter((e) => e.alive && e.summonedBy === this).length;
+    if (hounds >= 3) return;
+    audio.sfx('roar', { pitch: 2.2 });
+    sc.floatText(this.x, this.y - 50, 'THE HOUNDS ANSWER!', 'fontPlain', 0x9fd8ff);
+    for (const dx of [-50, 50].slice(0, 3 - hounds)) { // never more than three at his heel
+      const p = this.clampArena(this.x + dx, this.y + 30);
+      const h = sc.spawnEnemy('hound', p.x, p.y, true);
+      h.summonedBy = this; h.summoned = true; h.noLeash = true;
+      sc.fx.burst('curse', p.x, p.y - 8, 10);
+    }
+  }
+
+  leapAway() {
+    const sc = this.scene;
+    const near = this.heroes().sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))[0];
+    if (!near) return;
+    const [nx, ny] = norm(this.x - near.x, this.y - near.y);
+    const p = this.clampArena(this.x + nx * 80, this.y + ny * 60);
+    sc.fx.ghost?.(this);
+    sc.fx.dust(this.x, this.y);
+    sc.tweens.add({ targets: this, x: p.x, y: p.y, duration: 260, ease: 'Sine.easeOut' });
+    audio.sfx('dash');
+  }
+
+  reveal(t) { this.revealT = Math.max(this.revealT || 0, t); }
+
+  update(dt) {
+    if (!this.alive) return;
+    if (this.introT > 0) { super.update(dt); return; } // the entrance owns his fade-in
+    const sc = this.scene;
+    this.revealT = Math.max(0, (this.revealT || 0) - dt);
+    // phase 2: veiled, with footprints in the leaves
+    if (this.phase === 2) {
+      const lens = sc.state.relics.includes('lens');
+      const want = this.revealT > 0 || this.stunT > 0 ? 1 : lens ? 0.45 : 0.06;
+      this.veil += (want - this.veil) * Math.min(1, dt * 8);
+      this.printT -= dt;
+      if (this.printT <= 0 && this.state !== 'windup') {
+        this.printT = 0.32;
+        const fp = sc.add.ellipse(this.x + (Math.random() < 0.5 ? -2 : 2), this.y + 2, 3, 2, 0x1a1423, 0.75).setDepth(-20);
+        sc.tweens.add({ targets: fp, alpha: 0, duration: 2600, onComplete: () => fp.destroy() });
+      }
+    } else this.veil += (1 - this.veil) * Math.min(1, dt * 6);
+    this.sprite.setAlpha(this.veil);
+    this.shadow.setAlpha(this.phase === 2 ? this.veil * 0.28 : 0.28);
+    this.hidden = this.veil < 0.3;
+    if (this.phase === 3) { this.shuffleT -= dt; if (this.shuffleT <= 0) { this.shuffleT = 8; this.shuffle(); } }
+    // special moves, only from the ready state
+    if (this.engaged && !(this.introT > 0)) { this.volleyT -= dt; this.markT -= dt; this.howlT -= dt; this.leapT -= dt; }
+    if (this.state === 'chase' && this.engaged && !(this.stunT > 0) && !(this.introT > 0)) {
+      const t = this.target?.alive && !this.target.downed ? this.target : this.heroes()[0];
+      if (t) {
+        const crowd = this.heroes().some((h) => Math.hypot(h.x - this.x, h.y - this.y) < 40);
+        if (crowd && this.leapT <= 0) { this.leapT = this.phase === 1 ? 4.5 : 3.5; this.leapAway(); }
+        else if (this.markT <= 0) { this.markT = this.phase === 1 ? 9 : 7; this.mark(t); }
+        else if (this.volleyT <= 0) { this.volleyT = this.phase === 1 ? 5 : 4; this.volley(t); }
+        else if (this.howlT <= 0) { this.howlT = this.phase === 1 ? 12 : 14; this.howl(); }
+      }
+    }
+    super.update(dt);
+    if (this.state === 'windup') this.reveal(0.3); // drawing his bow shows him
+  }
+
+  die(src) {
+    this.alive = false;
+    this.clearZone();
+    for (const e of this.echoes) if (e.alive) { this.scene.fx.burst('curse', e.x, e.y - 20, 10); e.alive = false; e.destroy(); }
+    for (const e of this.scene.enemies) if (e.alive && e.summonedBy === this) { e.alive = false; e.destroy(); }
+    this.scene.onBossKilled(this, src);
+    this.destroy();
+  }
+}
+
 export class Breakable extends Unit {
   constructor(scene, def) {
     const x = def.x * 16 + 8, y = def.y * 16 + 8;

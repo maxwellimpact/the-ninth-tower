@@ -13,5 +13,10 @@
   "name": "LANTERN OF EMBERS",
   "icon": "icon_lantern",
   "text": "DARK CAVES ARE NOW LIT AROUND YOU."
+ },
+ "lens": {
+  "name": "SEER'S LENS",
+  "icon": "icon_lens",
+  "text": "FALSE WALLS SHIMMER AND HIDDEN BRIDGES APPEAR. SHADES CAN'T HIDE FROM YOU."
  }
 }

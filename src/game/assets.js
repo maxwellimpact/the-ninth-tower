@@ -2,7 +2,7 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, ghostRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, ghostRecolor, paleRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound } from '../gfx/creatures.js';
@@ -144,6 +144,7 @@ export const GROUPS = {
       creature(s, 'spiderling', buildSpider(0.6), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'hound', buildHound(), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'banshee', BANSHEE, ghostRecolor);
+      registerPuppet(s, 'huntsman', HUNTSMAN, paleRecolor);
       creature(s, 'mab', buildMab(), { idle: 2, walk: 9, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       s.textures.addCanvas('eggsac', eggSac());
     }],
@@ -214,6 +215,8 @@ GROUPS.core.push(
     s.textures.addCanvas('dgPlate', DG.plate(false)); s.textures.addCanvas('dgPlateDown', DG.plate(true));
     for (const col of ['blue', 'red']) { s.textures.addCanvas(`dgCrystal_${col}`, DG.crystal(col)); s.textures.addCanvas(`dgPeg_${col}_up`, DG.peg(col, true)); s.textures.addCanvas(`dgPeg_${col}_down`, DG.peg(col, false)); }
     s.textures.addCanvas('dgCrackFace', DG.crackedWall(true)); s.textures.addCanvas('dgCrackTop', DG.crackedWall(false));
+    s.textures.addCanvas('dgBrazier', DG.brazier(false)); frames(s, 'dgBrazierLit', [0, 1, 2].map((f) => DG.brazier(true, f)), 9);
+    frames(s, 'dgFalseWall', [0, 1].map((f) => DG.falseWall(f)), 3); s.textures.addCanvas('dgSpiritBridge', DG.spiritBridge());
     for (const k of ['shutter', 'key', 'boss', 'vault']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],
