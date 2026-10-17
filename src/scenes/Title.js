@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
-import { HEROES } from '../gfx/heroes.js';
+import { HEROES as ALL_HEROES } from '../gfx/heroes.js';
+// Starting heroes: the core three plus Wren. Kesh, Oake and Gizmo are met
+// and recruited out in the world (The Pit, Excessive Optimism, The Water Wheel).
+const STARTERS = ['brann', 'pip', 'sable', 'wren'];
+const HEROES = ALL_HEROES.filter((h) => STARTERS.includes(h.id));
 import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
 import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
@@ -37,9 +41,10 @@ export class Title extends Phaser.Scene {
     const save = loadState();
     if (save) this.saveMenu(save);
     else this.heroSelect();
-    this.add.bitmapText(W / 2, H - 10, 'fontPlain', 'OPEN /LAB.HTML FOR THE SPRITE + SOUND LAB').setOrigin(0.5).setAlpha(0.6);
+    // the lab hint is for testing; the hero picker needs the room (its cards reach H - 24)
+    if (save) this.add.bitmapText(W / 2, H - 10, 'fontPlain', 'OPEN /LAB.HTML FOR THE SPRITE + SOUND LAB').setOrigin(0.5).setAlpha(0.6);
     // whether this device can keep the save between visits (the Claude app wipes local storage)
-    const cs = this.add.bitmapText(W / 2, H - 20, 'fontPlain', '').setOrigin(0.5).setAlpha(0.6);
+    const cs = this.add.bitmapText(W / 2, save ? H - 20 : H - 10, 'fontPlain', '').setOrigin(0.5).setAlpha(0.6);
     const showCloud = () => cs.setText(`CLOUD SAVE: ${cloudStatus().toUpperCase().replace(/[^A-Z0-9 .,!?:/()-]/g, " ")}`);
     showCloud(); this.time.addEvent({ delay: 1000, loop: true, callback: showCloud });
     // Dungeon lab: try a test dungeon with a ready-made party. Never saves,

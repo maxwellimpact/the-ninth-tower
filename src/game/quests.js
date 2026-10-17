@@ -464,6 +464,7 @@ export class QuestManager {
     // chance meetings
     for (const [id, e] of Object.entries(ERRANDS)) {
       if (!e.trigger || this.q(id)) continue;
+      if (e.reward?.recruit && this.state.recruited.includes(e.reward.recruit)) continue; // e.g. no hawk leading you to rescue Wren when you started as Wren
       // already met (e.g. after a reload): they wait where you left them
       if (sc.flags[`met_${id}`]) {
         const g = this.npc(e.giver); if (g?.hiddenNow) this.setNpcVisible(g, true);
