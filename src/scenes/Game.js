@@ -77,6 +77,8 @@ export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog R
 // the clock runs only while the party is over a screen's width off (480px),
 // and the group reappears only out of view (300px).
 const RESPAWN_SECS = 180, RESPAWN_AWAY = 480, RESPAWN_HIDDEN = 300;
+// a brief white flash on whatever you tap (people, levers, chests, foes); false keeps just the rings
+const TAP_FLASH = true;
 
 const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
@@ -1155,7 +1157,7 @@ export class Game extends Phaser.Scene {
     if (L.action?.type === 'harvest') this.cancelHarvest(L);
     // boss plates take priority over the boss behind them
     const plate = this.interactables.find((o) => o.kind === 'plate' && Math.hypot(o.x - wx, o.y - 24 - wy) < 16);
-    if (plate) { plate.interact(L, plate); audio.sfx('click'); return; }
+    if (plate) { plate.interact(L, plate); this.tapFeedback(plate.x, plate.y, 'ringGold', plate); audio.sfx('click'); return; }
     const all = [...this.enemies.filter((e) => e.alive && !e.submerged), ...this.wardUnits(), ...this.breakables.filter((b) => b.alive)];
     let best = null, bd = 16;
     for (const e of all) {
@@ -1170,13 +1172,13 @@ export class Game extends Phaser.Scene {
       // crystal switches: shoot them from range, or (with the Grapple) hook
       // them from across a chasm or a row of pegs
       const d = Math.hypot(best.x - L.x, best.y - L.y);
-      if (L.ranged && d < L.stats.range + 12) { L.command = null; L.clearPath(); L.face(best.x - L.x, best.y - L.y); L.startAttack(best); audio.sfx('click'); return; }
-      if (!L.ranged && d > L.stats.range + 14 && d < 150 && this.state.relics.includes('grapple')) { L.command = null; L.clearPath(); best.kit.hook(best); return; }
+      if (L.ranged && d < L.stats.range + 12) { L.command = null; L.clearPath(); L.face(best.x - L.x, best.y - L.y); L.startAttack(best); this.tapFeedback(best.x, best.y, 'ringRed', best); audio.sfx('click'); return; }
+      if (!L.ranged && d > L.stats.range + 14 && d < 150 && this.state.relics.includes('grapple')) { L.command = null; L.clearPath(); best.kit.hook(best); this.tapFeedback(best.x, best.y, 'ringGold', best); return; }
     }
     if (best) {
       L.command = { type: 'attack', target: best };
       L.clearPath();
-      this.fx.ring(best.x, best.y, 'ringRed', best.boss ? 3 : 1.6);
+      this.tapFeedback(best.x, best.y, 'ringRed', best, best.boss ? 3 : 1.6);
       audio.sfx('click');
       return;
     }
@@ -1188,6 +1190,7 @@ export class Game extends Phaser.Scene {
       if (Math.hypot(o.x - wx, o.y - (o.h || 12) / 2 - wy) < 16 + (o.h || 12) / 2) {
         L.command = { type: 'interact', obj: o };
         L.clearPath();
+        this.tapFeedback(o.x, o.y, 'ringGold', o);
         audio.sfx('click');
         return;
       }
@@ -1201,7 +1204,35 @@ export class Game extends Phaser.Scene {
       L.pathGoal = { x: wx, y: wy };
       const end = path[path.length - 1];
       this.fx.ring(end.x, end.y, 'ringWhite', 1.4);
+    } else this.fx.ring(wx, wy, 'ringWhite', 1.1); // nowhere to walk (a wall, or already there): still show the tap landed
+  }
+
+  // Every tap answers: a ring where it landed (white to walk, gold for things
+  // you use, red for foes), and the tapped thing itself flashes for a moment.
+  tapFeedback(x, y, ring, target, size = 1.4) {
+    this.fx.ring(x, y, ring, size);
+    if (!TAP_FLASH) return;
+    const spr = target?.sprite?.active ? target.sprite : this.spriteAt(x, y - (target?.h || 12) / 2);
+    if (!spr) return;
+    // a white copy of its current frame laid over it, fading out: the real sprite (its tint, its animation) is untouched
+    const f = this.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name).setOrigin(spr.originX, spr.originY)
+      .setFlipX(spr.flipX).setScale(spr.scaleX, spr.scaleY).setDepth(spr.depth + 0.5).setTintFill(0xffffff).setAlpha(0.6);
+    this.tweens.add({ targets: f, alpha: 0, duration: 220, ease: 'Quad.easeOut', onComplete: () => f.destroy() });
+  }
+
+  // The world sprite drawn at a spot (props, NPCs, levers): the topmost small one there, never a hero.
+  spriteAt(x, y) {
+    const heroes = new Set(this.party.map((h) => h.sprite));
+    let best = null;
+    for (const o of this.children.list) {
+      if ((o.type !== 'Sprite' && o.type !== 'Image') || !o.visible || o.alpha < 0.2 || o.depth < -20 || heroes.has(o) || !o.frame) continue;
+      const w = o.displayWidth, h = o.displayHeight;
+      if (w > 96 || h > 96) continue; // ground, terrain chunks, big overlays
+      const left = o.x - w * o.originX, top = o.y - h * o.originY;
+      if (x < left - 3 || x > left + w + 3 || y < top - 3 || y > top + h + 3) continue;
+      if (!best || o.depth > best.depth) best = o;
     }
+    return best;
   }
 
   // ============================================================== combat api
