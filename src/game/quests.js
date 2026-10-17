@@ -447,6 +447,32 @@ export class QuestManager {
     d.spr.setFlipX(view === 'side' && nx < 0).setPosition(Math.round(x), Math.round(y)).setDepth(y);
   }
 
+  // After a party wipe, an errand caught mid-fight (an escort, an ambush, a
+  // defense, the hawk's chase) goes back to the start of that step: its foes
+  // cleared, the cart back at the start with its driver, the raiders restaged.
+  // Steps already done (and anything gathered) stay done. Returns what reset.
+  onWipe() {
+    const sc = this.sc, reset = [];
+    for (const id of this.active()) {
+      const s = this.step(id);
+      if (!s || !this.live[id] || !['escort', 'spawn', 'defend', 'follow'].includes(s.type)) continue;
+      for (const e of sc.enemies) if (e.alive && e.questSpawn === id) { e.alive = false; e.clearZone(); e.destroy(); }
+      delete this.staged[id];
+      this.enterStep(id);
+      reset.push(id);
+    }
+    sc.enemies = sc.enemies.filter((e) => e.alive);
+    return reset;
+  }
+
+  // the banner after regrouping: where the reset errand picks up again
+  wipeNote(id) {
+    const e = ERRANDS[id], s = this.step(id), who = this.npc(s?.driver || e.giver)?.name;
+    if (s?.type === 'escort') return [e.title, `${who || 'THE DRIVER'} WAITS WITH THE CART AT THE START OF THE ROAD`];
+    if (s?.type === 'defend') return [e.title, 'THE RAIDERS ARE BACK. TRY AGAIN'];
+    return [e.title, 'PICK UP WHERE THE FIGHT STARTED'];
+  }
+
   failEscort(id) {
     const sc = this.sc;
     sc.events.emit('banner', 'THE CART IS WRECKED', `TALK TO ${this.npc(ERRANDS[id].giver)?.name || 'THEM'} TO TRY AGAIN`);
@@ -539,7 +565,14 @@ export class QuestManager {
       if (s.type === 'escort' && live.cart) {
         const c = live.cart, wp = s.path[c.idx];
         const near = sc.party.some((h) => !h.downed && Math.hypot(h.x - c.x, h.y - c.y) < 70);
-        const fighting = sc.enemies.some((e) => e.alive && e.questSpawn === id);
+        const foes = sc.enemies.filter((e) => e.alive && e.questSpawn === id);
+        const fighting = foes.length > 0;
+        // ambushers that lost interest (reset, wandered off) come back for the cart rather than leave it waiting on foes nobody can see;
+        // their home moves to the cart so the leash doesn't tug them away again
+        for (const e of foes) {
+          e.idleT = e.engaged ? 0 : (e.idleT || 0) + dt;
+          if (e.idleT > 2) { e.idleT = 0; e.spawn = { x: c.x, y: c.y }; e.setTaunt(c, 6); e.engaged = true; if (e.state === 'idle' || e.state === 'return') e.state = 'chase'; }
+        }
         if (wp && near && !fighting) {
           const tx = px(wp[0]), ty = px(wp[1]);
           const d = Math.hypot(tx - c.x, ty - c.y), sp = 26 * dt;

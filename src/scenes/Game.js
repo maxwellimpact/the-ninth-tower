@@ -1917,11 +1917,15 @@ export class Game extends Phaser.Scene {
       for (const h of this.party) { h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; }
       for (const e of this.enemies) if (e.alive) { e.x = e.spawn.x; e.y = e.spawn.y; e.state = 'idle'; e.target = null; e.engaged = false; e.hp = e.maxHp; e.clearZone(); }
       this.dungeon?.onWipe();
+      const errands = this.quests?.onWipe() || []; // an errand caught mid-fight starts that step over
       if (this.golem) { for (const p of this.golem.plates || []) { p.img.destroy(); this.removeInteractable(p.o); } this.golem.alive = false; this.golem.destroy(); this.golem = null; this.events.emit('boss', null); this.sealArena(false); }
       this.setLeader(this.party[0], true);
       this.events.emit('party');
       // back to the nearest campfire you've found, behind the loading curtain (it may be a different area entirely)
-      this.teleportParty({ to: this.respawnCamp() }, () => { this.cameras.main.fadeIn(700); this.busy = false; }, 0, true);
+      this.teleportParty({ to: this.respawnCamp() }, () => {
+        this.cameras.main.fadeIn(700); this.busy = false;
+        if (errands.length) this.time.delayedCall(900, () => this.events.emit('banner', ...this.quests.wipeNote(errands[0])));
+      }, 0, true);
     });
   }
 
