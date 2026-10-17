@@ -73,6 +73,10 @@ const THOUGHTS = {
 
 // Golden Flies in the world, plus the ones won at the minigames
 export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
+// Cleared overworld groups come back after a few minutes away, never in sight:
+// the clock runs only while the party is over a screen's width off (480px),
+// and the group reappears only out of view (300px).
+const RESPAWN_SECS = 180, RESPAWN_AWAY = 480, RESPAWN_HIDDEN = 300;
 
 const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
@@ -330,11 +334,15 @@ export class Game extends Phaser.Scene {
       const blocked = (g.until && this.flags[g.until]) || (g.once && this.state.cleared[g.id]) || (!g.active && quiet.length && inQuiet(g)); // kept off an errand set piece's stage
       const res = this.streamer.resident.has(g.chunk);
       if (!g.active) {
-        if (blocked || !res) continue;
-        if (g.deadT > 0) { g.deadT -= dt; continue; }
+        if (blocked) continue;
         const def = W.groups.find((x) => x.id === g.id).units;
+        const far = Math.hypot(def[0][1] * TILE - L.x, def[0][2] * TILE - L.y);
+        // a cleared group's clock only runs while the party is well away (it
+        // counts even once its chunk unloads), so lingering nearby never brings it back
+        if (g.deadT > 0) { if (far > RESPAWN_AWAY) g.deadT -= dt; continue; }
+        if (!res) continue;
         // never respawn a cleared group in plain sight
-        if (g.spawnedOnce && Math.hypot(def[0][1] * TILE - L.x, def[0][2] * TILE - L.y) < 260) continue;
+        if (g.spawnedOnce && far < RESPAWN_HIDDEN) continue;
         const eliteIdx = !g.guards && Math.random() < 0.3 ? Math.floor(Math.random() * def.length) : -1;
         g.units = def.map(([k, x, y], i) => this.spawnEnemy(k, x * TILE + 8, y * TILE + 8, false, i === eliteIdx));
         g.active = true;
@@ -344,7 +352,7 @@ export class Game extends Phaser.Scene {
         if (!alive.length) {
           g.active = false;
           if (g.once) this.state.cleared[g.id] = true;
-          g.deadT = 45;
+          g.deadT = RESPAWN_SECS;
           continue;
         }
         if (!res && !alive.some((u) => u.engaged)) {
