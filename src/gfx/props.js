@@ -809,3 +809,82 @@ export function elderTree() {
   outline(c, 'ink');
   return c;
 }
+
+// ------------------------------------------------------------ Cinderreach
+// Charred tree: a burnt trunk and a few crooked bare limbs, ember-lit at the
+// breaks (like the fen's dead trees, in ash and basalt tones).
+export function ashTree(seed = 0) {
+  const [c, ctx] = makeCanvas(32, 44);
+  const r = (i) => hash(seed, i, 91);
+  px(ctx, 14, 20, 'basaltD', 5, 22); px(ctx, 15, 20, 'ashD', 2, 22); px(ctx, 16, 24, 'ash', 1, 10);
+  px(ctx, 12, 40, 'basaltD', 2, 2); px(ctx, 19, 40, 'basaltD', 2, 2);
+  const limb = (x, y, dx, dy, n) => { for (let i = 0; i < n; i++) px(ctx, Math.round(x + dx * i), Math.round(y + dy * i), i % 3 ? 'ashD' : 'basaltD', 2, 1); px(ctx, Math.round(x + dx * n), Math.round(y + dy * n), 'lavaL'); };
+  limb(16, 24, -1, -0.8, 8 + Math.floor(r(1) * 3));
+  limb(17, 21, 1, -1, 7 + Math.floor(r(2) * 3));
+  limb(16, 14, -0.5, -1, 5);
+  limb(16, 12, 0.6, -0.9, 6);
+  px(ctx, 15, 8, 'basaltD', 2, 14);
+  for (let i = 0; i < 3; i++) px(ctx, 14 + Math.floor(r(10 + i) * 4), 26 + Math.floor(r(20 + i) * 12), 'lavaD'); // smouldering cracks
+  outline(c, 'ink');
+  return c;
+}
+
+// Obsidian: a glossy black rock with a sharp highlight.
+export function obsidian(seed = 0, big = false) {
+  const w = big ? 20 : 14, h = big ? 15 : 11;
+  const [c, ctx] = makeCanvas(w + 2, h + 2);
+  shadedBlob(ctx, w / 2 + 1, h / 2 + 1, w / 2, h / 2, ['basaltD', 'basalt', 'basaltL', 'mist']);
+  const cx = Math.floor(w * (0.3 + hash(seed, 1) * 0.3));
+  for (let i = 0; i < 4; i++) px(ctx, cx + i, 3 + i, 'purpL'); // a glassy facet catching the light
+  px(ctx, 2, h - 1, 'ashD', w - 3, 1);
+  outline(c, 'ink');
+  return c;
+}
+
+// Brimstone vent: a cracked mound crusted yellow, glowing in its throat
+// (smoke puffs rise from it in play). Two glow frames.
+export function vent(seed = 0) {
+  return [0, 1].map((f) => {
+    const [c, ctx] = makeCanvas(18, 14);
+    shadedBlob(ctx, 9, 9, 8, 5, ['ashD', 'ash', 'ashL', 'ashXL']);
+    for (let i = 0; i < 5; i++) px(ctx, 3 + Math.floor(hash(seed, i) * 12), 7 + Math.floor(hash(seed, i, 2) * 4), 'brim');
+    px(ctx, 7, 5, 'ink', 4, 2); px(ctx, 8, 5, f ? 'lavaXL' : 'lavaL', 2, 1);
+    outline(c, 'ink');
+    return c;
+  });
+}
+
+// Emberbloom: a hardy badlands plant whose flowers glow like coals.
+export function emberbloom(seed = 0) {
+  const [c, ctx] = makeCanvas(14, 12);
+  for (let i = 0; i < 4; i++) {
+    const x = 2 + Math.floor(hash(seed, i) * 9), h = 4 + Math.floor(hash(seed, i, 1) * 5);
+    px(ctx, x, 11 - h, 'ashD', 1, h);
+    px(ctx, x - 1, 11 - h - 1, 'lava', 3, 2); px(ctx, x, 11 - h - 1, 'lavaXL');
+  }
+  outline(c, 'basaltD');
+  return c;
+}
+
+// Cinders: glowing embers scattered on the ground near the lava (flat decal).
+export function cinders(seed = 0) {
+  const [c, ctx] = makeCanvas(16, 10);
+  for (let i = 0; i < 7; i++) px(ctx, Math.floor(hash(seed, i) * 15), Math.floor(hash(seed, i, 1) * 9), i % 3 ? 'lavaD' : 'lavaL');
+  return c;
+}
+
+// A canvas tent with a dark doorway (Emberwatch, the miners' camp): ridge
+// pole, sagging canvas lit on its left slope, guy ropes.
+export function tent(seed = 0) {
+  const [c, ctx] = makeCanvas(32, 26);
+  const cols = [['woodD', 'dirtD', 'dirt', 'dirtL'], ['redD', 'redD', 'red', 'redL'], ['slate', 'stone', 'mist', 'bone']][seed % 3];
+  for (let y = 0; y < 18; y++) {
+    const half = Math.round(2 + y * 0.8);
+    for (let x = 16 - half; x <= 15 + half; x++) px(ctx, x, 5 + y, x < 16 ? (y % 6 === 5 ? cols[1] : cols[3]) : (y % 6 === 5 ? cols[0] : cols[2]));
+  }
+  for (let y = 9; y < 23; y++) { const w = Math.round((y - 9) * 0.45); px(ctx, 16 - w, y, 'ink', w * 2, 1); } // doorway
+  px(ctx, 15, 2, 'woodD', 2, 4); // ridge pole
+  for (let k = 0; k < 6; k++) { px(ctx, 2 + k, 22 - k * 2, 'bone'); px(ctx, 29 - k, 22 - k * 2, 'bone'); } // guy ropes
+  outline(c, 'ink');
+  return c;
+}

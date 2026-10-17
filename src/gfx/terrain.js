@@ -12,7 +12,8 @@ const C = {};
 for (const k of ['grassD', 'grass', 'grassL', 'grassXL', 'leafD', 'leaf', 'dirtD', 'dirt', 'dirtL', 'sand', 'waterD', 'water', 'waterL', 'foam',
   'stone', 'slate', 'mist', 'bone', 'night', 'ink', 'white', 'gold', 'redL', 'blueL', 'purpL', 'woodD', 'wood', 'woodL',
   'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD',
-  'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark', 'barkL']) C[k] = rgb(k);
+  'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark', 'barkL',
+  'ashD', 'ash', 'ashL', 'ashXL', 'basaltD', 'basalt', 'basaltL', 'lavaD', 'lava', 'lavaL', 'lavaXL', 'brim']) C[k] = rgb(k);
 
 export function makeTerrainPainter(world) {
   const at = world.at;
@@ -62,10 +63,55 @@ export function makeTerrainPainter(world) {
     const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
     const lx = x - tx * TILE, ly = y - ty * TILE;
     const gloam = ty >= SOUTH_Y && tx < RIDGE_X;
-    if (t === T.LOAM || (gloam && t === T.GRASS)) {
+    if (t === T.LOAM || (gloam && (t === T.GRASS || t === T.HOUSE))) { // under the elder's trunk too
       // a dark rim where the floor meets a road
       if (typeAt(x, y + 2) === T.PATH || typeAt(x, y - 2) === T.PATH || typeAt(x - 2, y) === T.PATH || typeAt(x + 2, y) === T.PATH) return C.gloomD;
       return gloamColor(x, y, t === T.GRASS);
+    }
+    const cinder = ty >= SOUTH_Y && tx >= RIDGE_X && tx < 192;
+    if (t === T.ASH || (cinder && t === T.GRASS)) {
+      // ash flats: grey-brown drifts with cinders and the odd brimstone fleck
+      const near = (k) => typeAt(x + 2, y) === k || typeAt(x - 2, y) === k || typeAt(x, y + 2) === k || typeAt(x, y - 2) === k;
+      if (near(T.PATH)) return C.ashD;
+      if (near(T.LAVA)) return bayer(x, y) < 0.5 ? C.lavaD : C.basaltD; // scorched lip
+      const n = vnoise(x / 34, y / 34, 180) * 0.7 + vnoise(x / 8, y / 8, 181) * 0.3 + (bayer(x, y) - 0.5) * 0.12;
+      const h = hash(x, y, 182);
+      if (h < 0.006) return C.brim;
+      if (h < 0.02) return C.basaltD;
+      return n < 0.3 ? C.ashD : n < 0.66 ? C.ash : C.ashL;
+    }
+    if (t === T.BASALT) {
+      // cooled flow: broad dark slabs, a few thin cracks, ash settling in the low spots
+      if (Math.abs(vnoise(x / 11, y / 11, 183) - 0.5) < 0.018) return C.basaltD; // thin cracks
+      const n = vnoise(x / 26, y / 26, 184) * 0.75 + vnoise(x / 7, y / 7, 192) * 0.25 + (bayer(x, y) - 0.5) * 0.1;
+      if (hash(x, y, 193) < 0.012) return C.ashL;
+      return n < 0.34 ? C.basaltD : n < 0.72 ? C.basalt : C.basaltL;
+    }
+    if (t === T.LAVA) {
+      // molten: bright seams that move through a darker crust
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (typeAt(x + dx, y + dy) !== T.LAVA) return C.lavaD;
+      const n = vnoise(x / 7, y / 7, 185) + vnoise(x / 3, y / 3, 186) * 0.35;
+      if (n > 1.05) return C.lavaXL;
+      if (n > 0.85) return C.lavaL;
+      return n > 0.5 ? C.lava : bayer(x, y) < 0.4 ? C.lavaD : C.lava;
+    }
+    if (cinder && t === T.PAVED) { // basalt pavers, dark, with ash in the joints
+      const row = Math.floor(y / 8), ox = (row % 2) * 5;
+      if (y % 8 === 7 || (x + ox) % 10 === 9) return C.ashD;
+      return hash(Math.floor((x + ox) / 10), row, 191) < 0.5 ? C.basalt : C.basaltL;
+    }
+    if (cinder && (t === T.PLATEAU || t === T.CLIFF || t === T.BRIDGE)) {
+      if (t === T.BRIDGE) { // a stone span over the lava
+        if (ly < 2 || ly > 13) return C.basaltD;
+        return (x + (ly < 8 ? 0 : 4)) % 8 === 0 ? C.basaltD : ly % 7 === 0 ? C.ashL : C.ash;
+      }
+      if (t === T.PLATEAU) { const n = vnoise(x / 16, y / 16, 187) + (bayer(x, y) - 0.5) * 0.2; return hash(x, y, 188) < 0.03 ? C.ashL : n < 0.4 ? C.basaltD : n < 0.75 ? C.basalt : C.basaltL; }
+      const top = at(tx, ty - 1) !== T.CLIFF, fy = top ? ly : ly + TILE;
+      if (fy < 3) return C.ashL;
+      if (fy > 28) return C.ink;
+      const band = Math.floor((fy + vnoise(x / 6, 0, 189) * 4) / 6);
+      if (hash(x, 0, 190) < 0.05 && fy > 8) return C.lavaD; // a glowing seam
+      return band % 2 ? C.basalt : C.basaltD;
     }
     switch (t) {
       case T.GRASS:
@@ -94,6 +140,15 @@ export function makeTerrainPainter(world) {
         return c;
       }
       case T.PATH: {
+        if (cinder) {
+          // a road of trodden ash and grit
+          const edgeC = typeAt(x + 2, y) !== T.PATH || typeAt(x - 2, y) !== T.PATH || typeAt(x, y + 2) !== T.PATH || typeAt(x, y - 2) !== T.PATH;
+          if (edgeC) return C.ashD;
+          const hc = hash(x, y, 194);
+          if (hc < 0.04) return C.ash;
+          const nc = vnoise(x / 14, y / 14, 195) + (bayer(x, y) - 0.5) * 0.2;
+          return nc > 0.62 ? C.ashXL : C.ashL;
+        }
         if (gloam) {
           // a trodden forest track: dark mud with root ridges, not sandy dirt
           const edgeG = typeAt(x + 2, y) !== T.PATH || typeAt(x - 2, y) !== T.PATH || typeAt(x, y + 2) !== T.PATH || typeAt(x, y - 2) !== T.PATH;

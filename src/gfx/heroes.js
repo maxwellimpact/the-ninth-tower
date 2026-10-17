@@ -109,6 +109,12 @@ export const FOLK = {
   hew: folk('hew', 'kesh', { head: 'warhelm_hide@2', body: 'furs_hide@3', weapon: 'axe_bearded@2' }),
   tansy: folk('tansy', 'sable', { head: 'hood_shadow@4', body: 'leathers_scout@2', weapon: 'dagger_steel@3' }),
   moss: folk('moss', 'pip', { head: 'hat_apprentice@4', body: 'robe_scholar@3' }),
+  // Cinderreach: Emberwatch and St. Cinder's
+  coal: folk('coal', 'kesh', { head: 'warhelm_hide@4', body: 'apron_brown@5' }),
+  ignatius: folk('ignatius', 'pip', { head: 'hat_star@5', body: 'robe_phoenix@2' }),
+  ember: folk('ember', 'pip', { head: 'kerchief@3', body: 'robe_apprentice@4' }),
+  rook: folk('rook', 'brann', { head: 'helm_iron@2', body: 'jacket_leather@4' }),
+  dusty: folk('dusty', 'kesh', { body: 'furs_hide@2' }),
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.
@@ -129,6 +135,8 @@ const RAMP_GHOST = [[52, 58, 92], [150, 158, 190], [206, 214, 232], [244, 248, 2
 const RAMP_PALE = [[30, 32, 46], [106, 112, 132], [178, 184, 200], [232, 236, 242]];
 export const ghostRecolor = recolorer(RAMP_GHOST, true);
 export const paleRecolor = recolorer(RAMP_PALE, false); // the Pale Huntsman: drained, but solid
+const RAMP_SCALE = [[52, 18, 16], [142, 46, 26], [214, 102, 38], [255, 196, 104]];
+export const scaleRecolor = recolorer(RAMP_SCALE, false); // Salamander Warriors: red scales
 function recolorer(RAMP, fade) {
   const done = new WeakSet(); // frames can share a canvas: recolour each once
   return (canvas) => {
@@ -158,4 +166,6 @@ function recolorCanvas(canvas, RAMP_GHOST, fade) {
 }
 // The Pale Huntsman: a ranger in a deep hood with a great bow, drained pale (paleRecolor)
 export const HUNTSMAN = { ...composeHero('wren', { head: 'hood_ranger@5', body: 'leathers_ranger@5', weapon: 'bow_long@5', offhand: 'quiver_fine@5' }), id: 'huntsman', name: 'Pale Huntsman' };
+// Salamander Warrior: a scaled fighter with a horned helm, a long blade and a kite shield
+export const SALAMANDER = { ...composeHero('kesh', { head: 'warhelm_horn@4', body: 'plate_hex@3', weapon: 'sword_long@4', offhand: 'shield_kite@4' }), id: 'salamander', name: 'Salamander Warrior' };
 export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

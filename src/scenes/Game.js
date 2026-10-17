@@ -59,21 +59,31 @@ const THOUGHTS = {
     stir: 'HOUNDS... I HEAR HOUNDS IN THE FOG BY THE STONE. AND NO DOGS.',
     open: 'THE HUNT IS OVER. NOTHING GUARDS THE STONE NOW. BREAK IT!',
   },
+  cinder: {
+    stone: "A WARD STONE IN THE ASH... ITS VINE IS SCORCHED BLACK. IT RUNS TOWARD THE MOUNTAIN.",
+    vine: "THE VINE GOES STRAIGHT FOR THAT GATE IN THE MOUNTAIN. A DWARVEN FORGE?",
+    below: "IT'S HOTTER IN HERE THAN OUTSIDE. THE VINE KEEPS GOING DOWN, TOWARD THE HEAT.",
+    source: "IT'S FEEDING ON THE DWARVES' HEARTHSTONE. THE FIRE THAT WARMS THE WHOLE REACH.",
+    withered: 'THE VINE IS BURNING AWAY! THE HEARTHSTONE BLAZES AGAIN. BACK TO THE STONE!',
+    stir: 'THE LAVA VENT BY THE STONE IS BUBBLING... SOMETHING HUGE IS CLIMBING OUT.',
+    open: "THE FORGEMASTER'S DOWN. NOTHING GUARDS THE STONE NOW. BREAK IT!",
+  },
 };
 
 // Golden Flies in the world, plus the ones won at the minigames
 export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
 
-const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
+const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
 const NODE_KINDS = {
   herb: { base: 'herb', dur: 1.5 }, bogmoss: { base: 'herb', dur: 1.8, tint: 0xc9b46a },
   ore: { base: 'ore', dur: 2.4 }, silver: { base: 'ore', dur: 2.9, tint: 0xd8e4ff },
   crystal: { base: 'crystal', dur: 3.2 },
   ghostcap: { base: 'herb', dur: 1.6, tint: 0x9ff2c8 },
+  brimstone: { base: 'ore', dur: 2.2, tint: 0xffe070 },
 };
 const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
-const PROP_GROUP = { gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
+const PROP_GROUP = { ashtree: 'cinder', obsidian: 'cinder', vent: 'cinder', emberbloom: 'cinder', cinders: 'cinder', gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
 const BARKS = {
   start: { brann: "THE KING'S TOWN... WHAT'S LEFT OF IT.", pip: 'OOH, A RUIN! I MEAN... HOW TRAGIC.', sable: 'QUIET OUT HERE. TOO QUIET. ALSO: GOBLINS.' },
@@ -224,6 +234,12 @@ export class Game extends Phaser.Scene {
     for (let i = 0; i < 10; i++) {
       const x = cx * CHUNK + Math.floor(hash(cx, cy * 31 + i, 5) * CHUNK), y = cy * CHUNK + Math.floor(hash(cx * 17 + i, cy, 6) * CHUNK);
       const t = this.painter.typeAt(x, y);
+      if (t === T.LAVA && this.painter.typeAt(x + 6, y) === t) { // bubbling lava glints
+        const s = this.add.image(x, y, 'px2_fireL').setDepth(-49).setAlpha(0);
+        this.tweens.add({ targets: s, alpha: 1, y: y - 2, duration: 400 + i * 50, yoyo: true, repeat: -1, delay: i * 250, repeatDelay: 600 + i * 150 });
+        objs.push(s);
+        continue;
+      }
       if ((t !== T.WATER && t !== T.SHALLOW) || this.painter.typeAt(x + 10, y) !== t || this.painter.typeAt(x - 10, y) !== t) continue;
       const s = this.add.image(x, y, i % 3 ? 'px_white' : 'px_foam').setDepth(-49).setScale(i % 4 ? 2 : 3, 1).setAlpha(0);
       this.tweens.add({ targets: s, alpha: t === T.SHALLOW ? 0.5 : 0.9, duration: 500 + i * 60, yoyo: true, repeat: -1, delay: i * 300, hold: 200, repeatDelay: 900 + i * 200 });
@@ -255,6 +271,25 @@ export class Game extends Phaser.Scene {
         img = this.add.image(x, y + 6, `gloomtree${p.seed}`).setOrigin(0.5, 1);
         out.push(this.add.image(x + 2, y + 4, 'shadowL').setAlpha(0.3).setDepth(-4).setScale(1.2, 1.1));
         break;
+      case 'ashtree':
+        img = this.add.image(x, y + 6, `ashtree${p.seed}`).setOrigin(0.5, 1);
+        out.push(this.add.image(x + 1, y + 4, 'shadow').setAlpha(0.22).setDepth(-4));
+        break;
+      case 'obsidian': img = this.add.image(x, y + 4, `${p.big ? 'obsidianB' : 'obsidian'}${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'vent': {
+        img = this.add.sprite(x, y + 4, `vent${p.seed % 4}`).setOrigin(0.5, 1).play(`vent${p.seed % 4}`);
+        // a lazy column of smoke
+        const puff = this.time.addEvent({ delay: 700 + (p.seed % 5) * 140, loop: true, callback: () => {
+          if (!this.cameras.main.worldView.contains(x, y)) return;
+          const s = this.add.circle(x + (Math.random() - 0.5) * 4, y - 4, 3, 0x9c8c84, 0.45).setDepth(y + 20);
+          this.tweens.add({ targets: s, y: y - 30, scale: 2.2, alpha: 0, duration: 1600, onComplete: () => s.destroy() });
+        } });
+        out.push({ destroy: () => puff.remove(), x, y });
+        break;
+      }
+      case 'tent': img = this.add.image(x, y + 8, `tent${p.seed % 3}`).setOrigin(0.5, 1); break;
+      case 'emberbloom': img = this.add.image(x, y + 4, `emberbloom${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'cinders': img = this.add.image(x, y, `cinders${p.seed % 4}`).setDepth(-50); break;
       case 'fern': img = this.add.sprite(x, y + 4, `fern${p.seed % 4}`).setOrigin(0.5, 1).play({ key: `fern${p.seed % 4}`, startFrame: p.seed % 3 }); break;
       case 'glowcap': img = this.add.sprite(x, y + 4, `glowcap${p.seed % 4}`).setOrigin(0.5, 1).play(`glowcap${p.seed % 4}`); img.isLight = true; break;
       case 'stump': img = this.add.image(x, y + 4, `stump${p.seed % 4}`).setOrigin(0.5, 1); break;
@@ -331,6 +366,7 @@ export class Game extends Phaser.Scene {
   spawnEnemy(kind, x, y, engaged = false, elite = false) {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
+    if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -547,6 +583,10 @@ export class Game extends Phaser.Scene {
       L.hp = Math.min(L.maxHp, L.hp + amt);
       this.floatText(L.x, L.y - 28, `+${amt}`, 'font', 0x8cff8c);
       this.fx.heal(L.x, L.y);
+    } else if (kind === 'salve') {
+      st.salveT = 300; // five minutes in the heat
+      for (const h of this.party) if (!h.downed) this.fx.heal(h.x, h.y);
+      this.floatText(this.leader.x, this.leader.y - 28, 'COOL AS A CELLAR', 'font', 0x9fd8ff);
     } else if (kind === 'antidote') {
       for (const h of this.party) { h.poison = null; h.antidoteT = 30; if (!h.downed) h.sprite.clearTint(); this.fx.heal(h.x, h.y); }
       this.floatText(this.leader.x, this.leader.y - 28, 'CURED', 'font', 0x8cff8c);
@@ -559,6 +599,43 @@ export class Game extends Phaser.Scene {
     return true;
   }
 
+  // ============================================================ heat
+  // Cinderreach's soft gate: out in the badlands the heat wears the party
+  // down (more beside the lava) unless an Ember Salve is on, or a hero's gear
+  // is heatproof. It never takes anyone below 15% health on its own. Cool
+  // spots: the outpost and the monastery court, the hot springs, campfires.
+  inHeat(x, y) {
+    const tx = x / TILE, ty = y / TILE;
+    if (this.areaRect() !== AREAS.overworld || biomeAt(Math.floor(tx), Math.floor(ty)) !== 'cinder') return 0;
+    for (const z of W.coolZones || []) if (Math.hypot(tx - z.x, ty - z.y) < z.r) return 0;
+    for (const c of W.campfires) if (Math.hypot(tx - c.x, ty - c.y) < 4) return 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (this.world.at(Math.floor(tx) + dx, Math.floor(ty) + dy) === T.LAVA) return 2;
+    return 1;
+  }
+
+  updateHeat(dt) {
+    const st = this.state, L = this.leader;
+    const heat = this.busy || this.onLookout ? 0 : this.inHeat(L.x, L.y);
+    this.heat = { level: heat, salve: st.salveT || 0 };
+    if (!heat) return;
+    if (st.salveT > 0) { st.salveT = Math.max(0, st.salveT - dt); if (st.salveT === 0) this.bark(L, "THE SALVE'S WORN OFF. THE HEAT'S BACK."); return; }
+    if (!this.flags.heatWarned) { this.flags.heatWarned = true; this.bark(L, "IT'S SWELTERING. WE WON'T LAST LONG OUT HERE WITHOUT SOMETHING FOR THE HEAT."); }
+    this.heatT = (this.heatT ?? 1.5) - dt;
+    if (this.heatT > 0) return;
+    this.heatT = 3;
+    for (const h of this.party) {
+      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.stats?.passives?.includes('heatproof')) continue;
+      const lvl = Math.max(heat, this.inHeat(h.x, h.y));
+      const floor = h.maxHp * 0.15;
+      if (h.hp <= floor) continue;
+      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.05 : 0.03)));
+      h.hp -= amt;
+      h.flash?.(80);
+      this.floatText(h.x, h.y - 30, lvl === 2 ? 'SCORCHED' : 'HEAT', 'fontPlain', 0xffa060);
+    }
+    this.cameras.main.flash(120, 255, 120, 40, false, null);
+  }
+
   // ============================================================ enemy arrows
   // kind: arrow (default), orb (slow curse orb that slows), bolt (hex bolt)
   spawnEnemyArrow(from, to, dmg, kind = 'arrow') {
@@ -567,6 +644,7 @@ export class Game extends Phaser.Scene {
     if (kind === 'orb') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(2).setDepth(TOP - 21); sp = 110; audio.sfx('frost', { pitch: 0.6 }); }
     else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
     else if (kind === 'thorn') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0x8a5c38).setScale(0.8); sp = 190; audio.sfx('swing', { pitch: 2 }); }
+    else if (kind === 'ember') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 150; audio.sfx('fireCast', { pitch: 1.4 }); }
     else if (kind === 'heavy') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setScale(1.8).setTint(0xff9a8a); sp = 270; audio.sfx('dash'); }
     else if (kind === 'web') { s = this.add.image(from.x, from.y - 8, 'web0').setDepth(TOP - 21).setScale(0.45); sp = 130; audio.sfx('squish', { pitch: 1.6 }); }
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
@@ -911,6 +989,7 @@ export class Game extends Phaser.Scene {
     kb.on('keydown-H', () => this.usePotion('potion'));
     kb.on('keydown-J', () => this.usePotion('elixir'));
     kb.on('keydown-K', () => this.usePotion('antidote'));
+    kb.on('keydown-L', () => this.usePotion('salve'));
     kb.on('keydown-BACKTICK', () => this.ui?.toggleDebug());
     kb.on('keydown-ENTER', () => { if (this.ui?.dialogOpen) this.ui.advanceDialog(); });
     kb.addCapture('TAB,SPACE');
@@ -1223,6 +1302,11 @@ export class Game extends Phaser.Scene {
             const crit = Math.random() < p.owner.stats.crit + (p.critBonus || 0);
             this.dealDamage(p.owner, hit, p.dmg * (crit ? tuning.critMult : 1) * (0.9 + Math.random() * 0.2), { crit, knock: 25, basic: p.basic, element: p.element });
             if (p.element === 'frost') hit.applyElement?.('frost', p.owner);
+            if (p.blast) { // an ember arrow bursts
+              this.fx.burst('ember', p.x, p.y, 14); audio.sfx('fireImpact');
+              for (const e of targets) if (e.alive && e !== hit && this.strayHits(e, p) && Math.hypot(e.x - p.x, e.y - 8 - p.y) < 26 + e.r) this.dealDamage(p.owner, e, p.dmg * 0.6, { knock: 30, element: 'fire' });
+              hit.applyElement?.('fire', p.owner);
+            }
           }
           continue;
         }
@@ -1474,6 +1558,7 @@ export class Game extends Phaser.Scene {
     const out = [];
     if ((ty > MARSH_Y - 22 && ty < SOUTH_Y + 10 && area === 'overworld') || area === 'abbey') out.push('marsh');
     if ((ty > SOUTH_Y - 22 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
+    if (ty > SOUTH_Y - 22 && tx > RIDGE_X - 22 && area === 'overworld') out.push('cinder');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;
@@ -2876,6 +2961,7 @@ export class Game extends Phaser.Scene {
     this.updateThoughts(dt);
     this.updateWarps();
     this.quests.update(dt);
+    this.updateHeat(dt);
     this.dungeon?.update(dt);
     this.groupT = (this.groupT || 0) - dt;
     if (this.groupT <= 0) { this.groupT = 0.4; this.updateGroups(0.4); }

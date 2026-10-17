@@ -633,5 +633,41 @@
    "type": "phoenix",
    "at": "weapon"
   }
+ },
+ "gnasher": {
+  "name": "GNASHER",
+  "hero": "kesh",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "hatchet_bearded@5",
+  "stats": {
+   "atk": 7,
+   "crit": 0.03
+  },
+  "perk": "gnasher",
+  "element": "fire",
+  "desc": "FIRE. LEAP LEAVES A BURNING CRATER. A DRAKE'S TOOTH, HAFTED.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
+ },
+ "quiver_of_embers": {
+  "name": "QUIVER OF EMBERS",
+  "hero": "wren",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "quiver_fine@5",
+  "stats": {
+   "atk": 4,
+   "crit": 0.04
+  },
+  "perk": "embers",
+  "element": "fire",
+  "desc": "FIRE. EVERY 4TH ARROW BURSTS INTO FLAME. SMELLS OF OLD SMOKESTACK.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
  }
 }

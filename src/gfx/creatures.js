@@ -600,3 +600,174 @@ export function buildHound() {
     hurt: [houndFrame({ blink: true })],
   };
 }
+
+// ============================================================== Cinderreach
+// ---------------------------------------------------------------- Ember Imp
+// A small horned fire-sprite with a flame for hair and a spark of a tail,
+// hovering (built like the wisp: shaded body, ink outline).
+const IMP = ['lavaD', 'lava', 'lavaL', 'lavaXL'];
+function impFrame({ bob = 0, arms = 0, eye = 'goldL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const y = 14 + bob;
+  for (const [x, h] of [[12, 4], [15, 6], [18, 5], [20, 3]]) px(ctx, x, y - 6 - h, h > 4 ? 'lavaXL' : 'lavaL', 2, h); // flame hair
+  shadedBlob(ctx, 16, y, 5, 4.5, IMP); // head
+  px(ctx, 11, y - 4, 'basaltD', 1, 2); px(ctx, 10, y - 5, 'basaltD'); px(ctx, 21, y - 4, 'basaltD', 1, 2); px(ctx, 22, y - 5, 'basaltD'); // horns
+  px(ctx, 13, y - 1, 'ink', 2, 2); px(ctx, 18, y - 1, 'ink', 2, 2); px(ctx, 14, y - 1, eye); px(ctx, 19, y - 1, eye);
+  px(ctx, 14, y + 2, 'lavaD', 4, 1);
+  shadedBlob(ctx, 16, y + 7, 3.5, 3, IMP); // body
+  for (let i = 0; i < 4; i++) px(ctx, 19 + i, y + 9 + (i % 2) - bob, i === 3 ? 'lavaXL' : 'lava'); // tail
+  const ay = arms === 1 ? y + 2 : arms === 2 ? y + 3 : y + 6;
+  px(ctx, 10, ay, 'lava', 3, 1); px(ctx, 19, ay - (arms === 1 ? 3 : 0), 'lava', 3, 1);
+  if (arms === 1) { px(ctx, 21, y - 3, 'lavaXL', 2, 2); px(ctx, 22, y - 4, 'goldL'); } // a bolt in its palm
+  outline(c, 'ink');
+  return c;
+}
+export function buildImp() {
+  return {
+    idle: [impFrame({ bob: 0 }), impFrame({ bob: 1 })],
+    walk: [impFrame({ bob: 0 }), impFrame({ bob: 1 }), impFrame({ bob: 2 }), impFrame({ bob: 1 })],
+    windup: [impFrame({ arms: 1 }), impFrame({ arms: 1, bob: 1 })],
+    attack: [impFrame({ arms: 2 }), impFrame({})],
+    hurt: [impFrame({ eye: 'white' })],
+  };
+}
+
+// --------------------------------------------------------------- Magma Slug
+// A fat slug of cooling rock, molten in the cracks, glowing spots on its back.
+function slugFrame({ stretch = 0, rear = 0, eye = 'goldL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  shadedBlob(ctx, 15 - stretch, 21 - rear, 10 + stretch, 5 + rear * 0.5, ['basaltD', 'basalt', 'basaltL', 'ashXL']);
+  for (const [x, y] of [[9, 19], [14, 17], [19, 19], [12, 22], [17, 22]]) { px(ctx, x - stretch, y - rear, 'lavaL', 2, 1); px(ctx, x - stretch, y + 1 - rear, 'lava', 2, 1); }
+  shadedBlob(ctx, 25, 18 - rear * 2, 3.5, 3.5, ['basaltD', 'basalt', 'basaltL', 'ashXL']); // head
+  px(ctx, 24, 12 - rear * 2, 'basaltL', 1, 4); px(ctx, 27, 12 - rear * 2, 'basaltL', 1, 4); // eye stalks
+  px(ctx, 24, 11 - rear * 2, eye); px(ctx, 27, 11 - rear * 2, eye);
+  px(ctx, 5 - stretch * 2, 25, 'lavaD', 22 + stretch * 2, 1); // a glowing sole
+  outline(c, 'ink');
+  return c;
+}
+export function buildSlug() {
+  return {
+    idle: [slugFrame({}), slugFrame({ stretch: 1 })],
+    walk: [slugFrame({}), slugFrame({ stretch: 1 }), slugFrame({ stretch: 2 }), slugFrame({ stretch: 1 })],
+    windup: [slugFrame({ rear: 2 }), slugFrame({ rear: 3 })],
+    attack: [slugFrame({ stretch: 2 }), slugFrame({})],
+    hurt: [slugFrame({ eye: 'white' })],
+  };
+}
+
+// -------------------------------------------------------------- Basalt Brute
+// A squat rock golem (the Golem's little cousin) with lava in its seams. Its
+// armour plates fall away when cracked (`cracked` frames show the glow).
+const BRUTE = ['basaltD', 'basalt', 'basaltL', 'ashXL'];
+function bruteFrame({ fl = 0, fr = 0, bob = 0, cracked = false, eye = 'lavaXL' }) {
+  const [c, ctx] = makeCanvas(40, 40);
+  const by = bob;
+  shadedBlob(ctx, 15, 34, 4, 3.5, BRUTE); shadedBlob(ctx, 25, 34, 4, 3.5, BRUTE); // legs
+  shadedBlob(ctx, 8, 24 + by + fl, 4.5, 5.5, BRUTE); shadedBlob(ctx, 32, 24 + by + fr, 4.5, 5.5, BRUTE); // fists
+  shadedBlob(ctx, 20, 23 + by, 10, 9, BRUTE); // body
+  shadedBlob(ctx, 20, 12 + by, 5.5, 4.5, BRUTE); // head
+  px(ctx, 17, 11 + by, 'ink', 6, 2); px(ctx, 17, 11 + by, eye, 2, 1); px(ctx, 21, 11 + by, eye, 2, 1);
+  const seams = [[14, 18], [16, 21], [18, 24], [24, 19], [23, 23], [21, 27]];
+  for (const [x, y] of seams) px(ctx, x, y + by, cracked ? 'lavaXL' : 'lavaD', 2, 1);
+  if (!cracked) for (const [x, y, w] of [[12, 16, 7], [22, 16, 7], [14, 26, 12]]) { px(ctx, x, y + by, 'ashL', w, 1); px(ctx, x, y + 1 + by, 'basaltL', w, 2); } // armour plates
+  outline(c, 'ink');
+  return c;
+}
+export function buildBrute(cracked = false) {
+  const f = (o) => bruteFrame({ cracked, ...o });
+  return {
+    idle: [f({}), f({ bob: 1 })],
+    walk: [f({ fl: -1 }), f({ fr: -1, bob: 1 }), f({ fl: 1 }), f({ fr: 1, bob: 1 })],
+    windup: [f({ fl: -6, fr: -6 }), f({ fl: -7, fr: -7, bob: -1 })],
+    attack: [f({ fl: 4, fr: 4, bob: 1 }), f({})],
+    hurt: [f({ eye: 'white' })],
+  };
+}
+
+// --------------------------------------------------------------- Fire Beetle
+// Seen from above like the crab: a domed shell striped with glowing seams
+// that swell before it bursts.
+const BEETLE = { R: 'lavaD', r: 'lava', L: 'lavaL', W: 'lavaXL', k: 'basaltD', b: 'basalt', E: 'goldL' };
+function beetleFrame({ step = 0, swell = 0 }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const legs = step % 2 ? ['k.k......k.k', '.k........k.', 'k.k......k.k'] : ['.k........k.', 'k.k......k.k', '.k........k.'];
+  grid(ctx, legs, BEETLE, 10, 17);
+  const shell = swell
+    ? ['...bbbbbb...', '..bRLWWLRb..', '.bRrLWWLrRb.', '.bRrLWWLrRb.', '.bRrLWWLrRb.', '..bRLWWLRb..', '...bbbbbb...']
+    : ['...bbbbbb...', '..bRrLLrRb..', '.bRrrLLrrRb.', '.bRrrLLrrRb.', '.bRrrLLrrRb.', '..bRrLLrRb..', '...bbbbbb...'];
+  grid(ctx, shell, BEETLE, 10, 14);
+  grid(ctx, ['..kkkk..', '.kEkkEk.', '..kkkk..'], BEETLE, 12, 11);
+  px(ctx, 13, 10, 'basaltD', 1, 2); px(ctx, 18, 10, 'basaltD', 1, 2); // feelers
+  outline(c, 'ink');
+  return c;
+}
+export function buildBeetle() {
+  return {
+    idle: [beetleFrame({}), beetleFrame({ step: 1 })],
+    walk: [beetleFrame({}), beetleFrame({ step: 1 })],
+    windup: [beetleFrame({ swell: 1 }), beetleFrame({ swell: 1, step: 1 })],
+    attack: [beetleFrame({ swell: 1 }), beetleFrame({})],
+    hurt: [beetleFrame({ swell: 1 })],
+  };
+}
+
+// --------------------------------------------------------------- Cinder Drake
+// A young dragon in profile: a long arched neck lifting a horned, snouted
+// head, a big wing folded along its back (spread to take off), a spined
+// ridge, a tail tapering to an ember, and a throat that glows before it
+// breathes (64x52 frames, feet near y=48).
+const DRAKE = ['lavaD', 'redD', 'red', 'redL'];
+function drakeFrame({ step = 0, wings = 0, breath = 0, lift = 0 }) {
+  const [c, ctx] = makeCanvas(64, 52);
+  const y = -lift;
+  const dot = (x, yy, col, w = 1, h = 1) => px(ctx, Math.round(x), Math.round(yy + y), col, w, h);
+  // far wing (spread) behind everything
+  if (wings) {
+    for (let i = 0; i < 18; i++) { const top = 22 - i * 0.9; dot(26 - i * 0.4, top, 'redD', 2, 8 + i * 0.5); }
+    for (let i = 0; i < 18; i += 5) dot(26 - i * 0.4, 22 - i * 0.9, 'basaltD', 1, 12);
+  }
+  // tail: tapering from the hip to an ember tip
+  for (let i = 0; i < 14; i++) { const w = Math.max(1, 4 - Math.floor(i / 4)); dot(16 - i, 36 + i * 0.35 + Math.sin(i / 3) * 1, i > 11 ? 'lavaL' : 'redD', 2, w); }
+  dot(2, 41, 'lavaXL', 2, 2);
+  // legs (back and front), stepping
+  const lg = step % 2 ? [0, 2] : [2, 0];
+  shadedBlob(ctx, 22, 44 + y - lg[0], 3.5, 4.5, DRAKE); dot(19, 47 - lg[0], 'bone', 1, 1); dot(23, 47 - lg[0], 'bone', 1, 1);
+  shadedBlob(ctx, 38, 44 + y - lg[1], 3, 4.5, DRAKE); dot(36, 47 - lg[1], 'bone', 1, 1); dot(39, 47 - lg[1], 'bone', 1, 1);
+  // body
+  shadedBlob(ctx, 30, 35 + y, 13, 8, DRAKE);
+  shadedBlob(ctx, 32, 39 + y, 9, 3.5, ['lavaD', 'lava', 'lavaL', 'lavaL']); // pale-ember belly plates
+  for (let i = 0; i < 4; i++) dot(26 + i * 3, 38, 'lavaD', 1, 3);
+  // neck: an arch from the shoulder up to the head
+  for (let i = 0; i < 9; i++) shadedBlob(ctx, 40 + i * 1.3, 30 + y - i * 1.4, 3.6 - i * 0.12, 3.2, DRAKE);
+  // head with a long snout, horns and a brow
+  shadedBlob(ctx, 52, 16 + y, 5, 4, DRAKE);
+  shadedBlob(ctx, 57, 18 + y, 4, 2.5, DRAKE); // snout
+  dot(49, 9, 'bone', 1, 4); dot(50, 8, 'bone'); dot(53, 10, 'bone', 1, 3); // horns
+  dot(52, 14, 'ink', 2, 2); dot(53, 14, 'goldL');
+  dot(60, 17, 'ink'); // nostril
+  if (breath) { dot(55, 20, 'lavaXL', 6, 2); dot(61, 19, 'lavaXL', 2, 1); for (let i = 0; i < 5; i++) dot(43 + i * 1.3, 33 - i * 1.4, 'lavaL', 2, 2); } // glowing throat
+  else dot(55, 20, 'redD', 6, 1);
+  // back ridge spines
+  for (let i = 0; i < 6; i++) dot(20 + i * 4, 27 - (i % 2), 'basaltD', 2, 3);
+  // near wing: folded along the back, or spread
+  if (wings) {
+    for (let i = 0; i < 20; i++) { const top = 20 - i * 0.8; dot(30 + i * 0.5, top, 'red', 2, 9 + i * 0.4); }
+    for (let i = 0; i < 20; i += 5) dot(30 + i * 0.5, 20 - i * 0.8, 'redD', 1, 13);
+    dot(30, 19, 'basaltD', 12, 1);
+  } else {
+    for (let i = 0; i < 14; i++) dot(18 + i, 26 + Math.abs(i - 9) * 0.5, i % 4 ? 'redD' : 'basaltD', 1, 5 - Math.floor(Math.abs(i - 7) / 3));
+    dot(18, 26, 'basaltD', 15, 1);
+  }
+  outline(c, 'ink');
+  return c;
+}
+export function buildDrake() {
+  return {
+    idle: [drakeFrame({}), drakeFrame({ step: 1 })],
+    walk: [drakeFrame({ step: 0 }), drakeFrame({ step: 1 })],
+    windup: [drakeFrame({ breath: 1 }), drakeFrame({ breath: 1, step: 1 })],
+    attack: [drakeFrame({ breath: 1 }), drakeFrame({})],
+    fly: [drakeFrame({ wings: 1, lift: 5 }), drakeFrame({ wings: 1, lift: 7 })],
+    hurt: [drakeFrame({})],
+  };
+}

@@ -510,6 +510,11 @@ export const SKILL_FX = {
         h.zipping = false;
         sc.fx.slam(h.x, h.y, 30); sc.shake(140, 0.008); audio.sfx('bash');
         for (const e of sc.enemies) if (e.alive && !e.submerged && Math.hypot(e.x - h.x, e.y - h.y) < 32 + e.r) { sc.dealDamage(h, e, h.stats.atk * 1.5 * m, { knock: 120 }); if (!e.boss) e.stun?.(0.5); }
+        if (h.hasPerk('gnasher')) { // Gnasher: the landing leaves a burning crater
+          const cx = h.x, cy = h.y, g = sc.add.ellipse(cx, cy, 60, 36, 0xff7b2e, 0.3).setDepth(-25);
+          sc.tweens.add({ targets: g, alpha: 0, duration: 3000, onComplete: () => g.destroy() });
+          sc.time.addEvent({ delay: 500, repeat: 5, callback: () => { for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - cx, e.y - cy) < 30 + e.r) { sc.dealDamage(h, e, h.stats.atk * 0.25 * m, { knock: 0, element: 'fire' }); e.applyElement?.('fire', h); } } });
+        }
         if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
       } });
       return true;
@@ -595,6 +600,21 @@ export const SKILL_FX = {
       return true;
     },
     ai(h) { return h.scene.party.some((p) => p.downed || (p.alive && p.hp / p.maxHp < 0.5)) ? true : null; },
+  },
+
+  clericward: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const t = sc.party.filter((p) => p.alive && !p.downed && dist(p, h) < 160).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+      if (!t) return false;
+      h.act('clericward', 0.4, 'cast');
+      t.shield = Math.max(t.shield || 0, Math.round(t.maxHp * 0.25 * m)); t.shieldT = 6;
+      sc.fx.ring(t.x, t.y - 6, 'ringGold', 2.4);
+      sc.floatText(t.x, t.y - 32, 'WARDED', 'fontPlain', 0xfff0a0);
+      audio.sfx('heal', { pitch: 1.3 });
+      return true;
+    },
+    ai(h) { return h.scene.party.some((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.6 && !(p.shield > 0)) ? true : null; },
   },
 
   // ------------------------------------------------ Ranger discipline

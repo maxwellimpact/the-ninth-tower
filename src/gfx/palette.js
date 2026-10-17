@@ -107,6 +107,20 @@ export const PAL = {
   barkD: '#221c28',
   bark: '#3a2f40',
   barkL: '#57485a',
+
+  // Cinderreach (volcanic badlands): ash, basalt, lava, brimstone
+  ashD: '#2f2729',
+  ash: '#4b4040',
+  ashL: '#6f6260',
+  ashXL: '#9c8c84',
+  basaltD: '#19171f',
+  basalt: '#2b2833',
+  basaltL: '#433e4c',
+  lavaD: '#7e1c14',
+  lava: '#d9481a',
+  lavaL: '#ff9a2e',
+  lavaXL: '#ffe58a',
+  brim: '#d8c24a',
 };
 
 export const hex = (k) => PAL[k] ?? k;

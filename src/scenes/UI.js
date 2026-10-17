@@ -47,6 +47,9 @@ export class UI extends Phaser.Scene {
     this.potBtn = this.makeButton('icon_potion', () => this.g.usePotion('potion'), 'H', null, 18);
     this.elxBtn = this.makeButton('icon_elixir', () => this.g.usePotion('elixir'), 'J', null, 18);
     this.antBtn = this.makeButton('icon_antidote', () => this.g.usePotion('antidote'), 'K', null, 18);
+    this.salveBtn = this.makeButton('icon_salve', () => this.g.usePotion('salve'), 'L', null, 18); // shown once you've had a salve or felt the heat
+    this.salveTxt = this.add.bitmapText(0, 0, 'font', '0');
+    this.heatTxt = this.add.bitmapText(0, 0, 'font', '').setOrigin(1, 1);
     this.potTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.elxTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.antTxt = this.add.bitmapText(0, 0, 'font', '0');
@@ -235,6 +238,9 @@ export class UI extends Phaser.Scene {
     this.potTxt.setPosition(this.potBtn.x + 12, this.potBtn.y + 11);
     this.elxTxt.setPosition(this.elxBtn.x + 12, this.elxBtn.y + 11);
     this.antTxt.setPosition(this.antBtn.x + 12, this.antBtn.y + 11);
+    this.salveBtn.x = W - 120; this.salveBtn.y = H - 26;
+    this.salveTxt.setPosition(this.salveBtn.x + 12, this.salveBtn.y + 11);
+    this.heatTxt.setPosition(W - 6, H - 30);
     this.dbgBtn.x = W - 40; this.dbgBtn.y = 6 + T0;
     this.speedDown.x = 8; this.speedDown.y = H - 100;
     this.speedUp.x = 34; this.speedUp.y = H - 100;
@@ -592,6 +598,16 @@ export class UI extends Phaser.Scene {
     this.potTxt.setText(`${game.state.potions.potion || 0}`).setTint(game.state.potions.potion ? 0xffffff : 0x777777);
     this.elxTxt.setText(`${game.state.potions.elixir || 0}`).setTint(game.state.potions.elixir ? 0xffffff : 0x777777);
     this.antTxt.setText(`${game.state.potions.antidote || 0}`).setTint(game.state.potions.antidote ? 0xffffff : 0x777777);
+    // Ember Salve: the flask appears once the heat or a salve has been met
+    const sv = game.state.potions.salve || 0, heat = game.heat?.level || 0, salveT = game.state.salveT || 0;
+    const showSalve = sv > 0 || salveT > 0 || game.flags.heatWarned;
+    this.salveBtn.visible = showSalve;
+    this.salveBtn.icon.setVisible(showSalve); this.salveBtn.key.setVisible(showSalve && !this.sys.game.device.input.touch); this.salveTxt.setVisible(showSalve);
+    if (showSalve) this.drawBtn(g, this.salveBtn, 0);
+    this.salveTxt.setText(`${sv}`).setTint(sv ? 0xffffff : 0x777777);
+    const mm = Math.floor(salveT / 60), ss = String(Math.floor(salveT % 60)).padStart(2, '0');
+    this.heatTxt.setText(salveT > 0 && heat ? `SALVE ${mm}:${ss}` : heat && !salveT ? (heat === 2 ? 'SCORCHING!' : 'TOO HOT!') : '')
+      .setTint(salveT > 0 ? 0x9fd8ff : Math.floor(time / 300) % 2 ? 0xffa060 : 0xffd04a);
     this.muteBtn.icon.setTexture(audio.muted ? 'icon_soundOff' : 'icon_soundOn');
     this.drawBtn(g, this.muteBtn, 0);
     this.drawBtn(g, this.dbgBtn, 0);

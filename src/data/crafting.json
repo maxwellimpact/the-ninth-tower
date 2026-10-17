@@ -47,6 +47,14 @@
   "silk": {
    "name": "GLOOMSILK",
    "short": "SILK"
+  },
+  "brimstone": {
+   "name": "BRIMSTONE",
+   "short": "BRIM"
+  },
+  "scale": {
+   "name": "SALAMANDER SCALE",
+   "short": "SCALE"
   }
  },
  "consumables": {
@@ -64,6 +72,10 @@
   "antidote": {
    "name": "ANTIDOTE",
    "desc": "CURES POISON FOR THE WHOLE PARTY, WHO STAY IMMUNE FOR 30S."
+  },
+  "salve": {
+   "name": "EMBER SALVE",
+   "desc": "KEEPS THE BADLANDS' HEAT OFF THE PARTY FOR 5 MINUTES."
   }
  },
  "recipes": [
@@ -90,6 +102,14 @@
    "needs": {
     "bogmoss": 1,
     "herb": 1
+   }
+  },
+  {
+   "id": "salve",
+   "makes": "salve",
+   "needs": {
+    "brimstone": 2,
+    "gel": 1
    }
   }
  ],

@@ -213,6 +213,8 @@ export class Hero extends Unit {
 
   heal(amt) {
     if (this.downed || amt <= 0) return;
+    const bl = this.passive?.('blessed');
+    if (bl) amt = Math.round(amt * (1.2 + 0.04 * (bl - 1))); // Blessed (Cleric): heals land harder
     const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amt);
     if (this.hp > before) { this.scene.floatText(this.x, this.y - 26, `+${this.hp - before}`, 'font', 0x8cff8c); this.scene.fx.heal(this.x, this.y); }
@@ -333,7 +335,9 @@ export class Hero extends Unit {
       // arrows: physical, so they crit and backstab like blades; Eagle Eye favours long shots
       const [nx, ny] = norm(target.x - this.x, target.y - (this.y - 6));
       const far = this.passive('eagleeye') && dist(this, target) > 70;
-      sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: far ? 0.15 : 0, life: 0.8 });
+      // Quiver of Embers: every 4th arrow bursts into fire
+      const blast = this.hasPerk('embers') && (this.emberShots = (this.emberShots || 0) + 1) % 4 === 0;
+      sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: far ? 0.15 : 0, life: 0.8, blast, element: blast ? 'fire' : undefined });
       return;
     }
     if (this.def.id === 'pip') {
@@ -950,8 +954,8 @@ export class Hero extends Unit {
 const ENEMY = enemyData;
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -1163,7 +1167,7 @@ export class Enemy extends Unit {
 
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
-    if (this.submerged || this.introT > 0) return 0;
+    if (this.submerged || this.introT > 0 || this.invulnT > 0) return 0; // invulnT: aloft (the drake's dive)
     if (this.staged && src?.team === 'party') {
       // only a deliberate hit starts an errand fight: the leader's (you), or a
       // companion's aimed at us. Strays from a fight nearby glance off.
@@ -1171,12 +1175,22 @@ export class Enemy extends Unit {
       this.engageStaged(src instanceof Hero && !src.downed ? src : this.scene.leader);
     }
     // Armored: a frontal guard. Hit it from the side or behind, while it's stunned, or Shock it
-    if (this.affix === 'armored' && src && !dot && !(this.stunT > 0) && !this.status?.shock) {
+    if ((this.affix === 'armored' || this.s.guard) && src && !dot && !(this.stunT > 0) && !this.status?.shock) {
       const f = this.view === 'side' ? [this.flip ? -1 : 1, 0] : [0, this.view === 'down' ? 1 : -1];
       const [dx, dy] = norm(src.x - this.x, src.y - this.y);
       if (f[0] * dx + f[1] * dy > 0.3) {
         amount *= 0.35;
         if (!this.guardMsgT || this.scene.time.now > this.guardMsgT) { this.guardMsgT = this.scene.time.now + 1500; this.scene.floatText(this.x, this.y - 30, 'GUARDED - FLANK IT', 'fontPlain', 0xbfd0e6); audio.sfx('block'); }
+      }
+    }
+    // Basalt Brute: rock armour turns most of a blow until it cracks - to Storm,
+    // a shock, the Gauntlets' slam, or simply enough hits chipping it away
+    if (this.s.ai === 'brute' && !this.cracked && src) {
+      this.chips = (this.chips || 0) + (dot ? 0 : 1);
+      if (this.lastElement === 'storm' || this.status?.shock || src.gauntletSlam || this.chips >= 8) this.crackArmour();
+      else {
+        amount *= 0.2;
+        if (!this.guardMsgT || this.scene.time.now > this.guardMsgT) { this.guardMsgT = this.scene.time.now + 1800; this.scene.floatText(this.x, this.y - 34, 'ROCK ARMOUR', 'fontPlain', 0xbfb0a8); audio.sfx('block'); }
       }
     }
     if (this.s.ai === 'shell' && src && !dot) {
@@ -1314,6 +1328,7 @@ export class Enemy extends Unit {
     }
     if (this.marked) { const sk = this.marked.sk; if (sk) sk.t = 0; this.scene.floatText(this.x, this.y - 40, 'MARK RESET', 'fontPlain', 0xff6a6a); }
     if (this.affix === 'volatile') this.volatileBlast();
+    if (this.s.ai === 'bomber' && !this.burst) this.beetleBurst(14); // it pops when it dies, too
     this.clearZone();
     this.scene.onEnemyKilled(this, src);
     this.destroy();
@@ -1383,6 +1398,9 @@ export class Enemy extends Unit {
     if (s.ai === 'banshee' && this.engaged && this.aiBanshee(dt)) { this.sync(dt); return; }
     if (s.ai === 'mab' && this.engaged) this.aiMab(dt);
     if (s.ai === 'web') this.webCd = Math.max(0, (this.webCd ?? 0.3) - dt);
+    if (s.ai === 'trail' && this.engaged) this.aiTrail(dt);
+    if (s.ai === 'bomber' && this.engaged && this.aiBomber(dt)) { this.sync(dt); return; }
+    if (s.ai === 'drake' && this.engaged && this.aiDrake(dt)) { this.sync(dt); return; }
     if (this.affix) this.affixTick(dt);
     // elites read the party's telegraphed area attacks (Meteor, Volley) and step out
     if ((this.elite || this.named) && !this.boss && this.state !== 'charging' && sc.partyZones?.length) {
@@ -1793,6 +1811,134 @@ export class Enemy extends Unit {
       sc.floatText(this.x, this.y - 44, 'SHE LAYS EGGS!', 'fontPlain', 0xd9b8ff);
       audio.sfx('squish', { pitch: 0.7 });
     }
+  }
+
+  // ---- Cinderreach
+  crackArmour() {
+    const sc = this.scene;
+    this.cracked = true;
+    this.tex = 'bruteCracked'; this.anim = '';
+    this.sprite.setTexture('bruteCracked', 'idle_0');
+    sc.floatText(this.x, this.y - 36, 'ARMOUR CRACKED!', 'fontGold');
+    sc.fx.burst('ember', this.x, this.y - 16, 18); sc.shake(160, 0.006); audio.sfx('bash');
+  }
+
+  // Magma Slug: wherever it crawls it leaves burning rock for a few seconds
+  aiTrail(dt) {
+    const sc = this.scene;
+    this.trailT = (this.trailT ?? 0.5) - dt;
+    if (this.trailT > 0 || Math.hypot(this.x - (this.lastTrail?.x ?? -99), this.y - (this.lastTrail?.y ?? -99)) < 10) return;
+    this.trailT = 0.45;
+    const x = this.x, y = this.y + 2;
+    this.lastTrail = { x, y };
+    const zone = { x, y, r: 10, until: 3 };
+    sc.dangers.push(zone);
+    const g = sc.add.ellipse(x, y, 20, 12, 0xff9a2e, 0.35).setDepth(-25);
+    sc.tweens.add({ targets: g, alpha: 0, duration: 3000, onComplete: () => g.destroy() });
+    const dmg = this.s.dmg * 0.25 * sc.difficulty.dmg;
+    let ticks = 0;
+    const ev = sc.time.addEvent({ delay: 500, repeat: 5, callback: () => {
+      ticks++;
+      for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - x, h.y - y) < 12) { h.damage(dmg, null); sc.floatText(h.x, h.y - 30, 'BURN', 'fontPlain', 0xffa060); }
+      if (ticks >= 6) sc.dangers = sc.dangers.filter((z) => z !== zone);
+    } });
+    void ev;
+  }
+
+  // Fire Beetle: rushes in, swells, and bursts. Kill it before it reaches you.
+  aiBomber(dt) {
+    const sc = this.scene, t = this.target;
+    if (this.fuseT !== undefined) {
+      this.fuseT -= dt;
+      this.play('windup');
+      this.sprite.setScale(1 + (0.6 - this.fuseT) * 0.6);
+      if (this.fuseT <= 0) { this.beetleBurst(34); this.hp = 0; this.alive = false; this.clearZone(); sc.onEnemyKilled(this, null); this.destroy(); }
+      return true;
+    }
+    if (t && this.onScreen() && Math.hypot(t.x - this.x, t.y - this.y) < 22) {
+      this.fuseT = 0.6;
+      this.zone = { x: this.x, y: this.y, r: 34, until: 0.6 };
+      sc.dangers.push(this.zone);
+      this.zoneGfx = sc.fx.telegraph(this.x, this.y, 34, 0.6);
+      audio.sfx('hexCharge', { pitch: 1.8 });
+      return true;
+    }
+    return false;
+  }
+
+  beetleBurst(r) {
+    const sc = this.scene, x = this.x, y = this.y;
+    this.burst = true;
+    sc.fx.slam(x, y, r); sc.fx.burst('ember', x, y - 6, 20); sc.shake(180, 0.007); audio.sfx('bash');
+    const dmg = this.s.dmg * (r > 20 ? 1 : 0.4) * sc.difficulty.dmg;
+    for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - x, h.y - y) <= r + h.r) h.damage(dmg, { x, y });
+  }
+
+  // Cinder Drake: sweeps fire breath across a marked arc, and takes off to dive
+  // on a marked spot. Bites when you're close.
+  aiDrake(dt) {
+    const sc = this.scene, t = this.target;
+    this.breathT = (this.breathT ?? 4) - dt;
+    this.diveT = (this.diveT ?? 9) - dt;
+    if (this.dive) {
+      const D = this.dive;
+      D.t += dt;
+      if (D.t < 0.5) { this.play('fly'); this.sprite.y -= D.t * 40; return true; }
+      if (D.t < 1.6) { // aloft: out of reach, the shadow slides to the mark
+        this.sprite.setAlpha(0.15); this.invulnT = 1;
+        const p = Math.min(1, (D.t - 0.5) / 1.1);
+        this.x = D.from.x + (D.to.x - D.from.x) * p; this.y = D.from.y + (D.to.y - D.from.y) * p;
+        return true;
+      }
+      // the dive
+      this.sprite.setAlpha(1); this.dive = null; this.invulnT = 0;
+      this.clearZone();
+      sc.fx.slam(this.x, this.y, 44); sc.shake(400, 0.012); audio.sfx('bash');
+      for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - this.x, h.y - this.y) <= 44 + h.r) { h.damage(this.s.dmg * 1.4 * sc.difficulty.dmg, this); h.knock(h.x - this.x, h.y - this.y, 120); }
+      this.state = 'recover'; this.t = 0;
+      return true;
+    }
+    if (this.breath) {
+      const B = this.breath;
+      B.t += dt;
+      this.play('windup');
+      if (B.t >= 0.8 && !B.done) {
+        B.done = true;
+        audio.sfx('fireCast', { pitch: 0.6 }); sc.shake(250, 0.006);
+        for (const z of B.zones) { sc.fx.burst('ember', z.x, z.y - 4, 10); for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.9 * sc.difficulty.dmg, this); h.status ??= {}; } }
+      }
+      if (B.t >= 1.1) { for (const g of B.gfx) g.destroy(); sc.dangers = sc.dangers.filter((z) => !B.zones.includes(z)); this.breath = null; this.state = 'recover'; this.t = 0; }
+      return true;
+    }
+    if (!t || this.state !== 'chase' || !this.onScreen()) return false;
+    const d = Math.hypot(t.x - this.x, t.y - this.y);
+    if (this.diveT <= 0 && d > 50) {
+      this.diveT = 10;
+      const to = { x: t.x, y: t.y };
+      this.dive = { t: 0, from: { x: this.x, y: this.y }, to };
+      this.zone = { x: to.x, y: to.y, r: 44, until: 1.6 };
+      sc.dangers.push(this.zone);
+      this.zoneGfx = sc.fx.telegraph(to.x, to.y, 44, 1.6);
+      sc.floatText(this.x, this.y - 50, 'IT TAKES WING!', 'fontPlain', 0xffa060);
+      audio.sfx('dash');
+      return true;
+    }
+    if (this.breathT <= 0 && d < 110) {
+      this.breathT = 6;
+      // a fan of marked circles sweeping out from its jaws toward the target
+      const base = Math.atan2(t.y - this.y, t.x - this.x);
+      this.face(t.x - this.x, t.y - this.y);
+      const zones = [], gfx = [];
+      for (let k = -2; k <= 2; k++) for (const dd of [34, 62, 90]) {
+        const a = base + k * 0.22;
+        const z = { x: this.x + Math.cos(a) * dd, y: this.y + Math.sin(a) * dd * 0.8, r: 13, until: 0.8 };
+        zones.push(z); sc.dangers.push(z); gfx.push(sc.fx.telegraph(z.x, z.y, z.r, 0.8));
+      }
+      this.breath = { t: 0, zones, gfx };
+      sc.floatText(this.x, this.y - 50, 'ITS THROAT GLOWS...', 'fontPlain', 0xffa060);
+      return true;
+    }
+    return false;
   }
 
   // Croaker: a tongue that drags you in for a bite.

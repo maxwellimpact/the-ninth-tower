@@ -17,9 +17,12 @@ export const T = {
   MARSH: 10, SHALLOW: 11, BOG: 12, CHASM: 13, CAVEFLOOR: 14, CAVEWALL: 15, BRIDGE: 16, MOUTH: 17,
   FLOOR: 18, IWALL: 19, HOUSE: 20, DFLOOR: 21, DWALL: 22,
   LOAM: 23, // Gloamwood forest floor
+  ASH: 24, // Cinderreach ash flats
+  LAVA: 25, // Cinderreach lava (solid; scorches anyone near it)
+  BASALT: 26, // Cinderreach basalt pavement
 };
-export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL]);
-export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM]);
+export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL, T.LAVA]);
+export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM, T.ASH, T.LAVA]);
 
 export const MARSH_Y = 64;
 export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
@@ -69,7 +72,16 @@ export const LANDMARKS = {
   mirrorPool: { x: 17, y: 167 },
   hermitTower: { x: 86, y: 146 },
   spiderLair: { x: 20, y: 196 },
+  // Cinderreach landmarks (tiles)
+  emberwatch: { x: 138, y: 150 }, // the outpost
+  monastery: { x: 172, y: 140 },
+  springs: { x: 128, y: 163 },
+  minersCamp: { x: 117, y: 188 },
+  drakeLair: { x: 111, y: 135 },
+  forgeGate: { x: 177, y: 185 }, // the Forge of Ash: a dwarven gate in the mountain's face
 };
+// the lava river, from the volcano's flank down into a pool by the ridge
+export const LAVA_RIVER = [[166, 178], [156, 173], [146, 168], [134, 171], [122, 177], [110, 175]];
 
 const PATHS = [
   { w: 1.15, pts: [[2, 37], [14, 37], [24, 36], [33, 33], [44, 31], [44, 26]] },
@@ -89,7 +101,15 @@ const PATHS = [
   { w: 0.7, pts: [[27, 158], [20, 176], [18, 186], [20, 193]] }, // a deer trail to the spider lair
   { w: 0.9, pts: [[84, 149], [96, 152], [106, 152], [116, 150]] }, // the ridge pass into Cinderreach
   // ... and its east road into Cinderreach
-  { w: 1.0, pts: [[124, 104], [138, 114], [148, 124], [150, 136], [146, 146]] },
+  { w: 1.0, pts: [[124, 104], [138, 114], [148, 124], [150, 136], [146, 142], [140, 144]] },
+  // Cinderreach roads (bridges where they cross the lava)
+  { w: 0.95, pts: [[116, 150], [131, 150]] }, // the ridge pass to Emberwatch's west gate
+  { w: 0.95, pts: [[139, 156], [140, 162], [146, 166], [148, 176], [150, 186]] }, // south to the Ward Stone
+  { w: 0.85, pts: [[150, 186], [160, 189], [172, 188], [177, 187]] }, // to the forge gate
+  { w: 0.8, pts: [[140, 162], [131, 163]] }, // the hot springs
+  { w: 0.8, pts: [[131, 163], [124, 170], [119, 180], [117, 186]] }, // the burned miners' camp
+  { w: 0.85, pts: [[146, 150], [160, 150], [172, 149]] }, // to the monastery stairs
+  { w: 0.75, pts: [[116, 150], [112, 142], [111, 137]] }, // up into the drake's crags
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
@@ -120,6 +140,12 @@ export function buildWorld() {
       set(x, y, T.LOAM);
       // mossy clearings where the canopy breaks
       if (vnoise(x / 11, y / 11, 140) > 0.64) set(x, y, T.GRASS);
+    } else if (b === 'cinder') {
+      // ash flats, with basalt pavement where old flows cooled
+      set(x, y, vnoise(x / 9, y / 9, 170) > 0.6 ? T.BASALT : T.ASH);
+      const d = distToLine(x, y, LAVA_RIVER);
+      if (d < 1.3 + vnoise(x / 4, y / 4, 171) * 0.9) set(x, y, T.LAVA);
+      else if (d < 2.6 + vnoise(x / 4, y / 4, 172) * 0.8) set(x, y, T.BASALT);
     } else if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
@@ -152,7 +178,7 @@ export function buildWorld() {
     if (onPath(x, y)) {
       const t = at(x, y);
       if (t === T.WATER && y > 46 && y < 62 && x < 60) { if (Math.abs(y - southRiverY(x)) > 0.9) set(x, y, T.BRIDGE); /* stubs on each bank, gap in the middle */ }
-      else if (t === T.WATER || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
+      else if (t === T.WATER || t === T.LAVA || (t === T.BOG && y < MARSH_Y + 6 && x > 120)) set(x, y, T.BRIDGE);
       else if (t !== T.CAVEWALL) set(x, y, T.PATH);
     }
   }
@@ -224,7 +250,7 @@ export function buildWorld() {
   for (let y = 178; y <= 192; y++) for (let x = 42; x <= 58; x++) {
     if (Math.hypot((x - 50) / 7.5, (y - 186) / 6) < 1 && at(x, y) !== T.PATH) set(x, y, T.GRASS);
   }
-  rect(47, 182, 53, 185, T.HOUSE);
+  rect(48, 183, 52, 185, T.HOUSE); // as wide as the trunk's foot
   set(50, 186, T.STAIRS);
   // the hermit's tower: a squat ruin whose doorway is a false wall (Seer's Lens)
   for (let y = 142; y <= 150; y++) for (let x = 82; x <= 90; x++) {
@@ -234,6 +260,52 @@ export function buildWorld() {
   // Queen Mab's lair: a hollow under the canopy, choked with webs
   for (let y = 190; y <= 203; y++) for (let x = 12; x <= 29; x++) {
     if (Math.hypot((x - 20) / 6.5, (y - 196.5) / 5) + (vnoise(x / 3, y / 3, 144) - 0.5) * 0.3 < 1) set(x, y, T.LOAM);
+  }
+
+  // Cinderreach ------------------------------------------------------------
+  // the lava pool the river drains into, under the ridge
+  for (let y = 170; y <= 181; y++) for (let x = 104; x <= 115; x++) {
+    const d = Math.hypot((x - 109) / 4.2, (y - 176) / 3.4) + (vnoise(x / 3, y / 3, 173) - 0.5) * 0.25;
+    if (d < 1) set(x, y, T.LAVA); else if (d < 1.5 && at(x, y) !== T.LAVA) set(x, y, T.BASALT);
+  }
+  // Emberwatch: a palisade outpost where the roads meet (gates west, north, south, east)
+  rect(132, 145, 146, 155, T.ASH); // a trodden yard...
+  rect(133, 149, 145, 151, T.PAVED); rect(138, 146, 140, 154, T.PAVED); // ...with paving where the roads cross it
+  for (let x = 132; x <= 146; x++) { if (Math.abs(x - 140) > 1) set(x, 145, T.WALL); if (Math.abs(x - 139) > 1) set(x, 155, T.WALL); }
+  for (let y = 145; y <= 155; y++) { if (Math.abs(y - 150) > 1) { set(132, y, T.WALL); set(146, y, T.WALL); } }
+  // the hot springs: steaming pools, the one cool spot in the badlands
+  for (let y = 158; y <= 168; y++) for (let x = 122; x <= 134; x++) {
+    const d = Math.hypot((x - 128) / 4.4, (y - 163) / 3.2) + (vnoise(x / 3, y / 3, 174) - 0.5) * 0.25;
+    if (d < 1) set(x, y, T.WATER); else if (d < 1.4 && at(x, y) !== T.PATH) set(x, y, T.BASALT);
+  }
+  // St. Cinder's monastery on its crag: a walled court up a flight of steps
+  rect(164, 132, 181, 145, T.PLATEAU);
+  rect(164, 146, 181, 147, T.CLIFF);
+  for (let y = 131; y <= 147; y++) { set(163, y, T.RIM); set(182, y, T.RIM); }
+  rect(163, 131, 182, 131, T.RIM);
+  rect(171, 146, 173, 147, T.STAIRS);
+  rect(167, 134, 178, 143, T.PAVED);
+  for (let x = 166; x <= 179; x++) { set(x, 133, T.WALL); if (Math.abs(x - 172) > 1) set(x, 144, T.WALL); }
+  for (let y = 133; y <= 144; y++) { set(166, y, T.WALL); set(179, y, T.WALL); }
+  // the burned miners' camp, by the old mine's boarded mouth
+  for (let y = 183; y <= 194; y++) for (let x = 110; x <= 124; x++) {
+    if (Math.hypot((x - 117) / 6.5, (y - 188.5) / 5) < 1 && at(x, y) !== T.PATH) set(x, y, T.ASH);
+  }
+  // the drake's crags: a broken shelf of basalt in the north-west
+  for (let y = 130; y <= 142; y++) for (let x = 104; x <= 120; x++) {
+    if (Math.hypot((x - 111) / 7, (y - 135.5) / 5) + (vnoise(x / 4, y / 4, 175) - 0.5) * 0.3 < 1) set(x, y, T.BASALT);
+  }
+  // the volcano's shoulder: a raised mass with a cliff face to the south,
+  // and the dwarven gate of the Forge of Ash cut into it
+  rect(164, 168, 190, 184, T.PLATEAU);
+  rect(164, 185, 190, 186, T.CLIFF);
+  for (let y = 168; y <= 186; y++) set(163, y, T.RIM);
+  rect(163, 167, 190, 167, T.RIM);
+  rect(176, 185, 178, 186, T.MOUTH);
+  rect(172, 187, 182, 190, T.BASALT); // the gate's apron
+  // the lava vent by the Ward Stone (the true Forgemaster climbs out of it)
+  for (let y = 182; y <= 187; y++) for (let x = 146; x <= 154; x++) {
+    if (Math.hypot((x - 150) / 2.6, (y - 184.5) / 1.8) < 1) set(x, y, T.LAVA);
   }
 
   // Interiors ---------------------------------------------------------------
@@ -329,10 +401,12 @@ export function buildWorld() {
   reserve(LANDMARKS.gloamCamp.x, LANDMARKS.gloamCamp.y, 7); reserve(LANDMARKS.elderTree.x, LANDMARKS.elderTree.y - 2, 9);
   reserve(LANDMARKS.mirrorPool.x, LANDMARKS.mirrorPool.y, 8); reserve(LANDMARKS.hermitTower.x, LANDMARKS.hermitTower.y, 6);
   reserve(LANDMARKS.spiderLair.x, LANDMARKS.spiderLair.y, 5);
+  for (const k of ['emberwatch', 'springs', 'minersCamp', 'drakeLair']) reserve(LANDMARKS[k].x, LANDMARKS[k].y, 8);
+  reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
-  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM;
+  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH;
   const free = (x, y, pad = 1) => {
     for (let dy = -pad; dy <= pad; dy++) for (let dx = -pad; dx <= pad; dx++) {
       const tx = x + dx, ty = y + dy;
@@ -355,8 +429,9 @@ export function buildWorld() {
     if (!forest || hash(jx, jy, 13) < (b === 'gloam' ? 0.22 : 0.15)) continue;
     if (!free(jx, jy, 1) || isReserved(jx, jy)) continue;
     if (W.wards.some((wd) => Math.hypot(jx - wd.x, jy - wd.y) < 9)) continue;
-    const kind = b === 'gloam' && jy >= SOUTH_Y + 2 ? 'gloomtree' : b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree';
-    add(kind, jx, jy, { seed: Math.floor(hash(jx, jy, 14) * (kind === 'gloomtree' ? 6 : 8)) });
+    if (b === 'cinder' && grove < 0.82 && edge >= 4 + vnoise(jx / 5, jy / 5, 2) * 3) continue; // the badlands are mostly bare
+    const kind = b === 'cinder' ? 'ashtree' : b === 'gloam' && jy >= SOUTH_Y + 2 ? 'gloomtree' : b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree';
+    add(kind, jx, jy, { seed: Math.floor(hash(jx, jy, 14) * (kind === 'gloomtree' || kind === 'ashtree' ? 6 : 8)) });
     claim(jx, jy);
   }
 
@@ -373,6 +448,16 @@ export function buildWorld() {
     }
     if (at(x, y) === T.SHALLOW && r < 0.08) { add('lily', x, y, { seed: x + y * 7 }); continue; }
     if (!free(x, y, 0) || isReserved(x, y)) continue;
+    if (b === 'cinder') {
+      const t0 = at(x, y);
+      if (t0 !== T.ASH && t0 !== T.BASALT) continue;
+      const nearLava = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0]].some(([dx, dy]) => at(x + dx, y + dy) === T.LAVA);
+      if (r < 0.022) { add('obsidian', x, y, { seed: x + y * 3, big: hash(x, y, 33) < 0.35 }); claim(x, y); }
+      else if (r < 0.032 && !nearLava) { add('vent', x, y, { seed: x * 7 + y }); claim(x, y); }
+      else if (r < 0.05 && t0 === T.ASH) add('emberbloom', x, y, { seed: x * 13 + y });
+      else if (r < 0.07 && nearLava) add('cinders', x, y, { seed: x + y * 5 });
+      continue;
+    }
     if (b === 'gloam') {
       if (at(x, y) !== T.LOAM && at(x, y) !== T.GRASS) continue;
       if (r < 0.06) add('fern', x, y, { seed: x * 13 + y });
@@ -399,6 +484,13 @@ export function buildWorld() {
     if (at(x, y) === T.WATER) add('lily', x, y, { seed: i });
   }
 
+  // Emberwatch dressing: tents along the palisade, barrels, crates
+  for (const [x, y, k] of [[134, 147, 0], [144, 147, 1], [134, 153, 2], [143, 153, 0]]) add('tent', x, y, { seed: k });
+  for (const [x, y] of [[136, 146], [145, 152], [133, 151], [141, 154]]) add('barrel', x, y);
+  // St. Cinder's: braziers by the door, the cold hearthstone's altar
+  add('pillar', 168, 142, { broken: false }); add('pillar', 176, 142, { broken: false });
+  // the miners' camp: tents and the boarded mine mouth's timbers
+  for (const [x, y, k] of [[113, 186, 2], [121, 186, 1], [114, 191, 0]]) add('tent', x, y, { seed: k });
   // smugglers' den dressing on the isle
   add('barrel', 79, 84); add('barrel', 82, 86);
   // ruins dressing

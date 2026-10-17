@@ -2,10 +2,10 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, ghostRecolor, paleRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, ghostRecolor, paleRecolor, scaleRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -77,6 +77,7 @@ export const GROUPS = {
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
       s.textures.addCanvas('house_elder', P.elderTree());
+      for (let k = 0; k < 3; k++) s.textures.addCanvas(`tent${k}`, P.tent(k));
       s.textures.addCanvas('boulder_cracked', P.crackedBoulder());
       s.textures.addCanvas('wall_cracked', P.crackedWall());
       frames(s, 'fly', P.goldenFly(), 8);
@@ -156,6 +157,26 @@ export const GROUPS = {
         frames(s, `glowcap${k}`, P.glowcap(k), 1.4 + k * 0.2);
         s.textures.addCanvas(`stump${k}`, P.stump(k));
         s.textures.addCanvas(`web${k}`, P.web(k));
+      }
+    }],
+  ],
+  // Cinderreach (Wave 2)
+  cinder: [
+    ['cinder foes', (s) => {
+      creature(s, 'imp', buildImp(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'slug', buildSlug(), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'brute', buildBrute(false), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'bruteCracked', buildBrute(true), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'beetle', buildBeetle(), { idle: 4, walk: 12, windup: 10, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'drake', buildDrake(), { idle: 2, walk: 6, windup: 6, attack: 8, fly: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'fly']);
+      registerPuppet(s, 'salamander', SALAMANDER, scaleRecolor);
+    }],
+    ['badlands', (s) => {
+      for (let k = 0; k < 6; k++) s.textures.addCanvas(`ashtree${k}`, P.ashTree(k));
+      for (let k = 0; k < 4; k++) {
+        s.textures.addCanvas(`obsidian${k}`, P.obsidian(k)); s.textures.addCanvas(`obsidianB${k}`, P.obsidian(k, true));
+        frames(s, `vent${k}`, P.vent(k), 2 + k * 0.3);
+        s.textures.addCanvas(`emberbloom${k}`, P.emberbloom(k)); s.textures.addCanvas(`cinders${k}`, P.cinders(k));
       }
     }],
   ],

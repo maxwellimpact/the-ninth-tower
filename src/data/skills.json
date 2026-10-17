@@ -575,5 +575,24 @@
   "short": "FLEET",
   "icon": "icon_fleet",
   "desc": "+8% MOVE SPEED (+2% PER RANK). (RANGER)"
+ },
+ "clericward": {
+  "discipline": "cleric",
+  "unlock": 1,
+  "name": "WARD",
+  "short": "WARD",
+  "icon": "icon_clericward",
+  "cd": 12,
+  "range": 0,
+  "desc": "SHIELDS THE MOST HURT ALLY FOR 25% OF THEIR HEALTH FOR 6S. (CLERIC)"
+ },
+ "blessed": {
+  "discipline": "cleric",
+  "unlock": 1,
+  "passive": true,
+  "name": "BLESSED",
+  "short": "BLESS",
+  "icon": "icon_blessed",
+  "desc": "+20% HEALING RECEIVED (+4% PER RANK). (CLERIC)"
  }
 }

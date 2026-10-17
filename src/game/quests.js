@@ -96,6 +96,7 @@ export class QuestManager {
     const oid = this.offerFor(npc);
     if (oid) { this.offer(oid, npc); return; }
     if (npc.trainer) { sc.trainerTalk(npc); return; }
+    if (npc.vendor) { this.vendorTalk(npc); return; }
     if (npc.minigame) {
       // a game host: their pitch the first time, then straight to the offer
       const lines = (npc.metHost ? npc.lines.slice(-1) : npc.lines).map((t) => this.line(npc, t));
@@ -114,6 +115,29 @@ export class QuestManager {
     const doing = (npc.errands || []).find((id) => this.q(id) && !this.q(id).done);
     const text = doing ? `${ERRANDS[doing].title}: ${this.step(doing).text}.` : npc.lines[Math.floor(Math.random() * npc.lines.length)];
     sc.events.emit('dialogue', [this.line(npc, text)]);
+  }
+
+  // A one-item seller (Emberwatch's quartermaster: Ember Salve). The first
+  // visit comes with a couple free, so the heat never strands a new arrival.
+  vendorTalk(npc) {
+    const sc = this.sc, st = this.state, v = npc.vendor;
+    const name = CRAFT.consumables[v.item]?.name || v.item.toUpperCase();
+    const giftKey = `gift_${npc.id}`;
+    if (v.gift && !sc.flags[giftKey]) {
+      sc.flags[giftKey] = true;
+      addPotions(st, { [v.item]: v.gift });
+      sc.events.emit('dialogue', [this.line(npc, v.giftLine || `FIRST TIME? TAKE ${v.gift}. YOU'LL WANT MORE.`)], () => sc.events.emit('party'));
+      sc.autosave('vendor');
+      return;
+    }
+    const lines = [this.line(npc, npc.lines[Math.floor(Math.random() * npc.lines.length)])];
+    lines[0].choices = [[`BUY ${name} (${v.price}G)`, () => {
+      if (st.gold < v.price) { sc.events.emit('dialogue', [this.line(npc, "THAT'S NOT ENOUGH COIN, FRIEND.")]); return; }
+      st.gold -= v.price; addPotions(st, { [v.item]: 1 });
+      audio.sfx('coin'); sc.events.emit('party'); sc.autosave('vendor');
+      sc.floatText(sc.leader.x, sc.leader.y - 30, `+1 ${name}`, 'fontGold');
+    }], ['NOT NOW', () => {}]];
+    sc.events.emit('dialogue', lines);
   }
 
   offer(id, npc) {
@@ -433,7 +457,13 @@ export class QuestManager {
       if (s.type === 'spawn') {
         if (!live.spawned && s.delay && (live.wait = (live.wait ?? s.delay) - dt) > 0) continue;
         if (!live.spawned && Math.hypot(L.x - px(s.at[0]), L.y - px(s.at[1])) < s.r * TILE) {
-          live.spawned = s.units.map(([k, x, y]) => { const e = sc.spawnEnemy(k, px(x), px(y), true); e.questSpawn = id; return e; });
+          live.spawned = s.units.map(([k, x, y], i) => {
+            // a bounty's named foe: an elite with its own name (Old Smokestack)
+            const named = s.elite === i;
+            const e = sc.spawnEnemy(k, px(x), px(y), true, named);
+            if (named && s.name) { e.named = true; e.s = { ...e.s, name: s.name }; e.maxHp = Math.round(e.maxHp * 2.2); e.hp = e.maxHp; e.sprite.setScale((e.s.scale || 1) * 1.25); }
+            e.questSpawn = id; return e;
+          });
           if (live.prop) sc.bark({ x: live.prop.x, y: live.prop.y + 6, def: { voice: { pitch: 600, wave: 'square', duty: 0.25 } } }, 'WOOF! WOOF!');
         }
         if (live.spawned && live.spawned.every((e) => !e.alive)) this.advance(id);

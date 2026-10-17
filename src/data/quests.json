@@ -1261,6 +1261,343 @@
      "slot": "head"
     }
    }
+  },
+  "excessiveOptimism": {
+   "title": "EXCESSIVE OPTIMISM",
+   "giver": "oake",
+   "region": "cinder",
+   "offer": [
+    "OAKE: AH, HELLO! I'M BROTHER OAKE. THE MONASTERY GAVE THESE MINERS UP FOR LOST. I DISAGREED. LOUDLY. THEN QUIETLY. THEN I JUST STAYED.",
+    "THEIR BURNS NEED COOL SPRING WATER, AND THE IMPS KEEP RAIDING US. HELP ME? IT'LL ALL WORK OUT. I'M ALMOST SURE."
+   ],
+   "accept": "WE'LL HELP.",
+   "thanks": [
+    "OAKE: LOOK AT THEM. SITTING UP, COMPLAINING ABOUT MY COOKING. MIRACULOUS.",
+    "THE ABBOT WAS WRONG ABOUT THEM. I THINK HE MIGHT BE WRONG ABOUT YOU, TOO - HE CALLED YOU 'HOPELESS ADVENTURERS'. MIND IF I COME ALONG?"
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "FILL A FLASK AT THE HOT SPRINGS",
+     "x": 131,
+     "y": 160,
+     "kind": "glint",
+     "say": "THE SPRING WATER IS COOL HERE, WHERE IT BUBBLES UP. YOU FILL OAKE'S FLASK."
+    },
+    {
+     "type": "spawn",
+     "text": "BRING THE WATER BACK TO THE MINERS' CAMP",
+     "at": [
+      117,
+      188
+     ],
+     "r": 6,
+     "units": [
+      [
+       "imp",
+       112,
+       184
+      ],
+      [
+       "imp",
+       122,
+       184
+      ],
+      [
+       "beetle",
+       117,
+       182
+      ],
+      [
+       "imp",
+       117,
+       194
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "GIVE THE WATER TO BROTHER OAKE",
+     "npc": "oake"
+    }
+   ],
+   "reward": {
+    "xp": 320,
+    "recruit": "oake"
+   }
+  },
+  "drakeBounty": {
+   "title": "BOUNTY: THE CINDER DRAKE",
+   "giver": "emberboard",
+   "region": "cinder",
+   "offer": [
+    "BOUNTY: A YOUNG CINDER DRAKE NESTING IN THE CRAGS NORTH-WEST OF EMBERWATCH. IT HAS EATEN THREE GOATS, A CART AND, REGRETTABLY, THE CART'S DRIVER.",
+    "WATCH FOR ITS THROAT GLOWING - THAT'S THE BREATH. WHEN IT TAKES WING, GET OUT FROM UNDER ITS SHADOW."
+   ],
+   "accept": "HUNT THE DRAKE.",
+   "thanks": [
+    "COAL: THE DRAKE'S DEAD? PIN THAT TOOTH UP OVER THE BAR. NO - YOU KEEP IT. YOU EARNED IT."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE CINDER DRAKE IN THE NORTH-WEST CRAGS",
+     "at": [
+      111,
+      135
+     ],
+     "r": 7,
+     "units": [
+      [
+       "drake",
+       111,
+       134
+      ],
+      [
+       "imp",
+       107,
+       137
+      ],
+      [
+       "imp",
+       115,
+       137
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM QUARTERMASTER COAL",
+     "npc": "coal"
+    }
+   ],
+   "reward": {
+    "gold": 240,
+    "xp": 480,
+    "item": "gnasher"
+   }
+  },
+  "smokestack": {
+   "title": "BOUNTY: OLD SMOKESTACK",
+   "giver": "emberboard",
+   "region": "cinder",
+   "requires": "drakeBounty",
+   "offer": [
+    "BOUNTY: OLD SMOKESTACK, A BASALT BRUTE THE SIZE OF A CHAPEL, ROAMING THE OBSIDIAN FIELDS EAST OF THE MONASTERY ROAD.",
+    "ITS ROCK HIDE TURNS SWORDS. STORM CRACKS IT. SO DOES HITTING IT VERY, VERY OFTEN."
+   ],
+   "accept": "BREAK THE BRUTE.",
+   "thanks": [
+    "COAL: SMOKESTACK? DOWN? I'D SHAKE YOUR HAND BUT IT LOOKS SORE.",
+    "SOME RANGER LEFT THIS QUIVER HERE YEARS AGO. IT'S BEEN SMOULDERING EVER SINCE. FEELS LIKE IT WANTS TO GO WITH YOU."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND OLD SMOKESTACK IN THE OBSIDIAN FIELDS",
+     "at": [
+      186,
+      150
+     ],
+     "r": 7,
+     "units": [
+      [
+       "brute",
+       186,
+       150
+      ],
+      [
+       "beetle",
+       184,
+       153
+      ],
+      [
+       "beetle",
+       189,
+       152
+      ]
+     ],
+     "elite": 0,
+     "name": "OLD SMOKESTACK"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM QUARTERMASTER COAL",
+     "npc": "coal"
+    }
+   ],
+   "reward": {
+    "gold": 260,
+    "xp": 500,
+    "item": "quiver_of_embers"
+   }
+  },
+  "brimstoneHaul": {
+   "title": "BRIMSTONE RUN",
+   "giver": "coal",
+   "region": "cinder",
+   "offer": [
+    "I'M OUT OF BRIMSTONE, WHICH MEANS I'M ABOUT TO BE OUT OF SALVE, WHICH MEANS A LOT OF COOKED VISITORS.",
+    "SIX LUMPS OF BRIMSTONE. THE YELLOW-CRUSTED VENTS. HIT THEM."
+   ],
+   "accept": "SIX LUMPS.",
+   "thanks": [
+    "THAT SMELL MEANS PROFIT. AND SAFETY. MOSTLY PROFIT. HERE - SALVE, FRESH."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "CHIP BRIMSTONE FROM THE VENTS",
+     "mat": "brimstone",
+     "count": 6
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE BRIMSTONE TO COAL",
+     "npc": "coal",
+     "take": {
+      "brimstone": 6
+     }
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 220,
+    "potions": {
+     "salve": 3
+    }
+   }
+  },
+  "caravan": {
+   "title": "THE MONASTERY RUN",
+   "giver": "coal",
+   "region": "cinder",
+   "requires": "brimstoneHaul",
+   "offer": [
+    "THE MONKS ARE OUT OF EVERYTHING. I'VE LOADED A CART. THE SALAMANDERS HAVE OPINIONS ABOUT CARTS.",
+    "WALK IT TO THE MONASTERY STEPS. KEEP IT IN ONE PIECE."
+   ],
+   "accept": "WE'LL WALK IT.",
+   "thanks": [
+    "ABBOT IGNATIUS: SUPPLIES! AND IN ONE PIECE. THE HEARTHSTONE MAY BE COLD, BUT THIS HELPS. BLESS YOU. YES, ALL OF YOU. HOLD STILL."
+   ],
+   "steps": [
+    {
+     "type": "escort",
+     "text": "KEEP THE CART SAFE ON THE MONASTERY ROAD",
+     "path": [
+      [
+       146,
+       150
+      ],
+      [
+       152,
+       150
+      ],
+      [
+       158,
+       150
+      ],
+      [
+       164,
+       150
+      ],
+      [
+       170,
+       149
+      ]
+     ],
+     "hp": 140,
+     "ambush": [
+      {
+       "at": 1,
+       "units": [
+        [
+         "salamander",
+         152,
+         154
+        ],
+        [
+         "imp",
+         156,
+         146
+        ]
+       ]
+      },
+      {
+       "at": 3,
+       "units": [
+        [
+         "salamander",
+         166,
+         153
+        ],
+        [
+         "beetle",
+         162,
+         146
+        ],
+        [
+         "imp",
+         168,
+         146
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "REPORT TO ABBOT IGNATIUS",
+     "npc": "ignatius"
+    }
+   ],
+   "reward": {
+    "gold": 110,
+    "xp": 300,
+    "sp": 1,
+    "gear": {
+     "rarity": "fine"
+    }
+   }
+  },
+  "monkTrial": {
+   "title": "SALAMANDERS ON HOLY GROUND",
+   "giver": "ignatius",
+   "region": "cinder",
+   "offer": [
+    "SALAMANDERS HAVE BEEN CLIMBING OUR CRAG, TRYING THE GATE, SPITTING IN THE FONT. IT IS VERY HARD TO PRAY THROUGH.",
+    "DRIVE OFF FOUR OF THEM. SISTER EMBER WILL TEACH YOU OUR WAYS IF YOU WISH."
+   ],
+   "accept": "FOUR SALAMANDERS.",
+   "thanks": [
+    "PEACE, AT LAST. YOU HAVE OUR GRATITUDE, AND OUR SECOND-BEST VESTMENTS. THE BEST ONES ARE LOCKED IN THE VAULT. LONG STORY."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "DRIVE OFF SALAMANDER WARRIORS",
+     "kind": "salamander",
+     "count": 4
+    },
+    {
+     "type": "talk",
+     "text": "RETURN TO ABBOT IGNATIUS",
+     "npc": "ignatius"
+    }
+   ],
+   "reward": {
+    "gold": 90,
+    "xp": 280,
+    "potions": {
+     "elixir": 1,
+     "salve": 2
+    },
+    "gear": {
+     "rarity": "fine",
+     "slot": "body"
+    }
+   }
   }
  },
  "npcs": [
@@ -1751,6 +2088,130 @@
     "pitch": 1100,
     "wave": "sine"
    }
+  },
+  {
+   "id": "coal",
+   "name": "QUARTERMASTER COAL",
+   "x": 137,
+   "y": 148,
+   "look": "coal",
+   "voice": {
+    "pitch": 140,
+    "wave": "square",
+    "duty": 0.5
+   },
+   "vendor": {
+    "item": "salve",
+    "price": 60,
+    "gift": 2,
+    "giftLine": "NEW HERE? THE HEAT WILL KILL YOU SLOWER THAN THE IMPS, BUT IT WILL. TAKE TWO SALVES ON THE HOUSE."
+   },
+   "lines": [
+    "EMBER SALVE. KEEPS THE HEAT OFF FIVE MINUTES. SIXTY GOLD.",
+    "MADE FROM BRIMSTONE AND SLIME. DON'T THINK ABOUT IT."
+   ],
+   "errands": [
+    "brimstoneHaul",
+    "caravan"
+   ]
+  },
+  {
+   "id": "emberboard",
+   "name": "BOUNTY BOARD",
+   "x": 143,
+   "y": 148,
+   "look": "board",
+   "lines": [
+    "NOTICES, MOSTLY SCORCHED."
+   ],
+   "errands": [
+    "drakeBounty",
+    "smokestack"
+   ]
+  },
+  {
+   "id": "ignatius",
+   "name": "ABBOT IGNATIUS",
+   "x": 172,
+   "y": 136,
+   "look": "ignatius",
+   "voice": {
+    "pitch": 170,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "THE HEARTHSTONE BURNS COLD NOW. WE PRAY. IT DOES NOT ANSWER.",
+    "WE GAVE UP ON THE MINERS. I AM NOT PROUD OF IT."
+   ],
+   "errands": [
+    "monkTrial"
+   ]
+  },
+  {
+   "id": "ember",
+   "name": "SISTER EMBER",
+   "x": 169,
+   "y": 140,
+   "look": "ember",
+   "trainer": "cleric",
+   "voice": {
+    "pitch": 320,
+    "wave": "triangle"
+   },
+   "lines": [
+    "HEALING IS JUST STUBBORNNESS WITH GOOD MANNERS.",
+    "I TEACH THE CLERIC WAY: MEND THE HURT, WARD THE BRAVE, AND LET KINDNESS LAND."
+   ]
+  },
+  {
+   "id": "rook",
+   "name": "ROOK THE PROSPECTOR",
+   "x": 131,
+   "y": 167,
+   "look": "rook",
+   "voice": {
+    "pitch": 190,
+    "wave": "square",
+    "duty": 0.25
+   },
+   "lines": [
+    "THE SPRINGS ARE THE ONLY PLACE OUT HERE YOU CAN THINK.",
+    "BRIMSTONE'S EVERYWHERE IF YOU KNOW WHERE TO HIT."
+   ]
+  },
+  {
+   "id": "oake",
+   "name": "BROTHER OAKE",
+   "x": 118,
+   "y": 187,
+   "look": "oake",
+   "voice": {
+    "pitch": 210,
+    "wave": "triangle",
+    "speed": 0.95
+   },
+   "lines": [
+    "EVERYTHING WILL BE FINE. PROBABLY. ALMOST CERTAINLY. LARGELY."
+   ],
+   "errands": [
+    "excessiveOptimism"
+   ]
+  },
+  {
+   "id": "dusty",
+   "name": "DUSTY",
+   "x": 115,
+   "y": 190,
+   "look": "dusty",
+   "voice": {
+    "pitch": 150,
+    "wave": "square",
+    "duty": 0.5
+   },
+   "lines": [
+    "THE MONKS SAID WE WERE TOO FAR GONE. BROTHER OAKE SAID 'NONSENSE' AND STAYED."
+   ]
   }
  ]
 }

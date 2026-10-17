@@ -64,6 +64,11 @@ const ARP = {
     const tones = [ch[0] + 36, ch[2] + 36, ch[1] + 48, ch[2] + 36, ch[0] + 48, ch[1] + 36];
     [0, 3, 5, 8, 11, 13].forEach((st, i) => ev.push([b * 16 + st, tones[(i + b) % 6], 1, i === 0 ? 0.85 : 0.45 + (i % 2) * 0.15]));
   },
+  // an anvil: a bright ring on the off-beats with a quieter tap after (Cinderreach)
+  anvil: (ch, b, ev) => {
+    for (const st of [2, 6, 10, 14]) ev.push([b * 16 + st, ch[0] + 48, 1, st === 6 || st === 14 ? 0.9 : 0.55]);
+    ev.push([b * 16 + 7, ch[2] + 36, 1, 0.35]);
+  },
   // lute strums on the beat (interiors)
   lute: (ch, b, ev) => {
     const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[2] + 24];
@@ -246,6 +251,25 @@ export const GLOAMWOOD_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 0.95, echo: 0.6, vibrato: 0.012 }, arp: { echo: 0.55, vol: 1.3 }, bass: { vol: 0.7 }, pad: { vol: 1.2, cutoff: 560 }, sub: { vol: 1.1 } },
 });
 
+// Cinderreach: a low, hot drone with an anvil ringing on the off-beats, a
+// stern melody in the Phrygian minor, like a smith's work song
+export const CINDERREACH_THEME = buildTheme({
+  name: 'Cinderreach', bpm: 84, key: -7, arp: 'anvil', bass: 'march',
+  chords: [['E2', 'G2', 'B2'], ['F2', 'A2', 'C3'], ['E2', 'G2', 'B2'], ['D2', 'F2', 'A2'],
+    ['C2', 'E2', 'G2'], ['F2', 'A2', 'C3'], ['G2', 'B2', 'D3'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['E4', 4], ['F4', 4], ['E4', 8],
+    ['C5', 6], ['B4', 2], ['A4', 8],
+    ['G4', 4], ['F4', 4], ['E4', 4], ['D4', 4],
+    ['E4', 12], ['-', 4],
+    ['C4', 4], ['E4', 4], ['G4', 8],
+    ['F4', 4], ['A4', 4], ['C5', 8],
+    ['B4', 6], ['A4', 2], ['G4', 4], ['F4', 4],
+    ['E4', 12], ['-', 4],
+  ],
+  inst: { lead: { duty: 0.25, vibrato: 0.01, echo: 0.3, vol: 0.95 }, arp: { vol: 0.8, echo: 0.2 }, bass: { vol: 1.15 }, pad: { vol: 1.1, cutoff: 480 }, sub: { vol: 1.5 } },
+});
+
 // Witchroot Hollow: under the elder's roots - the forest's music box, slowed
 // and sunk an octave, dripping between long hollow notes
 export const WITCHROOT_THEME = buildTheme({
@@ -285,7 +309,7 @@ export const HEARTH_THEME = buildTheme({
 });
 
 const REGION_THEMES = {
-  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME,
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME,
   cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };

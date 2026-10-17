@@ -764,5 +764,152 @@
   "keepAway": 72,
   "scale": 1.45,
   "tint": 13623807
+ },
+ "imp": {
+  "name": "EMBER IMP",
+  "maxHp": 70,
+  "speed": 46,
+  "aggro": 115,
+  "reach": 80,
+  "windup": 0.7,
+  "recover": 1.0,
+  "dmg": 17,
+  "xp": 14,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 4,
+  "ranged": true,
+  "keepAway": 50,
+  "shot": "ember",
+  "ai": "blink",
+  "flying": true,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.4
+  }
+ },
+ "slug": {
+  "name": "MAGMA SLUG",
+  "maxHp": 160,
+  "speed": 22,
+  "aggro": 100,
+  "reach": 24,
+  "windup": 0.6,
+  "recover": 1.0,
+  "dmg": 18,
+  "xp": 15,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 7,
+  "zone": "front",
+  "zr": 17,
+  "ai": "trail",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.45
+  }
+ },
+ "salamander": {
+  "name": "SALAMANDER WARRIOR",
+  "maxHp": 200,
+  "speed": 40,
+  "aggro": 115,
+  "reach": 26,
+  "windup": 0.5,
+  "recover": 0.75,
+  "dmg": 28,
+  "xp": 20,
+  "gold": [
+   3,
+   6
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 18,
+  "ai": "charge",
+  "guard": true,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 0.4
+  }
+ },
+ "brute": {
+  "name": "BASALT BRUTE",
+  "maxHp": 300,
+  "speed": 24,
+  "aggro": 100,
+  "reach": 30,
+  "windup": 0.85,
+  "recover": 1.1,
+  "dmg": 32,
+  "xp": 28,
+  "gold": [
+   4,
+   8
+  ],
+  "r": 9,
+  "zone": "self",
+  "zr": 30,
+  "ai": "brute",
+  "weak": "storm",
+  "resist": "fire",
+  "drops": {
+   "silver": 0.5
+  }
+ },
+ "beetle": {
+  "name": "FIRE BEETLE",
+  "maxHp": 50,
+  "speed": 66,
+  "aggro": 130,
+  "reach": 20,
+  "windup": 0.6,
+  "recover": 0.6,
+  "dmg": 40,
+  "xp": 10,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 5,
+  "ai": "bomber",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.3
+  }
+ },
+ "drake": {
+  "name": "CINDER DRAKE",
+  "maxHp": 1200,
+  "speed": 38,
+  "aggro": 140,
+  "reach": 34,
+  "windup": 0.6,
+  "recover": 0.85,
+  "dmg": 36,
+  "xp": 220,
+  "gold": [
+   40,
+   60
+  ],
+  "r": 13,
+  "zone": "front",
+  "zr": 30,
+  "ai": "drake",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 3,
+   "brimstone": 2
+  },
+  "named": true
  }
 }

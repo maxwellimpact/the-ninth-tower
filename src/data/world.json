@@ -1205,6 +1205,207 @@
      201
     ]
    ]
+  },
+  {
+   "id": "cG1",
+   "units": [
+    [
+     "imp",
+     122,
+     142
+    ],
+    [
+     "imp",
+     125,
+     140
+    ],
+    [
+     "imp",
+     120,
+     145
+    ]
+   ]
+  },
+  {
+   "id": "cG2",
+   "units": [
+    [
+     "salamander",
+     156,
+     156
+    ],
+    [
+     "salamander",
+     159,
+     158
+    ],
+    [
+     "imp",
+     153,
+     159
+    ]
+   ]
+  },
+  {
+   "id": "cG3",
+   "units": [
+    [
+     "slug",
+     134,
+     182
+    ],
+    [
+     "slug",
+     137,
+     180
+    ],
+    [
+     "beetle",
+     132,
+     185
+    ]
+   ]
+  },
+  {
+   "id": "cG4",
+   "units": [
+    [
+     "brute",
+     182,
+     152
+    ],
+    [
+     "beetle",
+     178,
+     150
+    ],
+    [
+     "beetle",
+     184,
+     155
+    ]
+   ]
+  },
+  {
+   "id": "cG5",
+   "units": [
+    [
+     "salamander",
+     156,
+     163
+    ],
+    [
+     "salamander",
+     152,
+     165
+    ],
+    [
+     "salamander",
+     158,
+     166
+    ]
+   ]
+  },
+  {
+   "id": "cG6",
+   "units": [
+    [
+     "imp",
+     143,
+     190
+    ],
+    [
+     "slug",
+     157,
+     197
+    ],
+    [
+     "salamander",
+     150,
+     201
+    ],
+    [
+     "imp",
+     145,
+     199
+    ]
+   ],
+   "until": "ward_cinder"
+  },
+  {
+   "id": "cG7",
+   "units": [
+    [
+     "beetle",
+     110,
+     160
+    ],
+    [
+     "beetle",
+     113,
+     158
+    ],
+    [
+     "beetle",
+     108,
+     163
+    ]
+   ]
+  },
+  {
+   "id": "cG8",
+   "units": [
+    [
+     "goblin",
+     118,
+     200
+    ],
+    [
+     "archer",
+     121,
+     202
+    ],
+    [
+     "warlock",
+     116,
+     203
+    ],
+    [
+     "goblin",
+     120,
+     198
+    ]
+   ]
+  },
+  {
+   "id": "cG9",
+   "units": [
+    [
+     "brute",
+     186,
+     196
+    ],
+    [
+     "imp",
+     183,
+     199
+    ]
+   ]
+  },
+  {
+   "id": "cG10",
+   "units": [
+    [
+     "imp",
+     138,
+     201
+    ],
+    [
+     "salamander",
+     134,
+     203
+    ]
+   ]
   }
  ],
  "chests": [
@@ -1310,6 +1511,25 @@
    "mats": {
     "heartwood": 2,
     "crystal": 2
+   }
+  },
+  {
+   "id": "cinderCrags",
+   "x": 117,
+   "y": 131,
+   "gold": 80,
+   "mats": {
+    "brimstone": 3,
+    "silver": 1
+   }
+  },
+  {
+   "id": "cinderSprings",
+   "x": 134,
+   "y": 159,
+   "gold": 60,
+   "potions": {
+    "salve": 2
    }
   }
  ],
@@ -1599,6 +1819,14 @@
   {
    "x": 64,
    "y": 164
+  },
+  {
+   "x": 139,
+   "y": 152
+  },
+  {
+   "x": 166,
+   "y": 194
   }
  ],
  "signs": [
@@ -1656,6 +1884,21 @@
    "y": 124,
    "lines": [
     "SOUTH: CINDERREACH. ASH ROADS, HOT WINDS, WORSE MANNERS."
+   ]
+  },
+  {
+   "x": 129,
+   "y": 152,
+   "lines": [
+    "EMBERWATCH. EMBER SALVE SOLD HERE.",
+    "OUT IN THE ASH THE HEAT WILL COOK YOU SLOWLY. BUY SALVE. TRUST US."
+   ]
+  },
+  {
+   "x": 170,
+   "y": 150,
+   "lines": [
+    "ST. CINDER'S. UP THE STEPS. MIND THE MONKS, THEY BLESS YOU WHETHER YOU LIKE IT OR NOT."
    ]
   }
  ],
@@ -2007,6 +2250,30 @@
   [
    341,
    140
+  ],
+  [
+   106,
+   131
+  ],
+  [
+   189,
+   134
+  ],
+  [
+   130,
+   205
+  ],
+  [
+   186,
+   163
+  ],
+  [
+   122,
+   156
+  ],
+  [
+   190,
+   205
   ]
  ],
  "nodes": [
@@ -2249,6 +2516,56 @@
    "kind": "herb",
    "x": 66,
    "y": 172
+  },
+  {
+   "kind": "brimstone",
+   "x": 126,
+   "y": 150
+  },
+  {
+   "kind": "brimstone",
+   "x": 154,
+   "y": 162
+  },
+  {
+   "kind": "brimstone",
+   "x": 171,
+   "y": 160
+  },
+  {
+   "kind": "brimstone",
+   "x": 112,
+   "y": 166
+  },
+  {
+   "kind": "brimstone",
+   "x": 140,
+   "y": 189
+  },
+  {
+   "kind": "brimstone",
+   "x": 180,
+   "y": 161
+  },
+  {
+   "kind": "brimstone",
+   "x": 124,
+   "y": 197
+  },
+  {
+   "kind": "silver",
+   "x": 187,
+   "y": 150
+  },
+  {
+   "kind": "silver",
+   "x": 108,
+   "y": 140
+  },
+  {
+   "kind": "silver",
+   "x": 160,
+   "y": 204
   }
  ],
  "shop": {
@@ -2346,6 +2663,11 @@
    "id": "shrineGloam",
    "x": 7,
    "y": 186
+  },
+  {
+   "id": "shrineCinder",
+   "x": 187,
+   "y": 140
   }
  ],
  "lookouts": [
@@ -2369,6 +2691,13 @@
    "y": 174,
    "r": 46,
    "name": "GLOAMWATCH LOOKOUT"
+  },
+  {
+   "id": "lookoutCinder",
+   "x": 164,
+   "y": 200,
+   "r": 46,
+   "name": "ASHFALL LOOKOUT"
   }
  ],
  "wards": [
@@ -2567,6 +2896,41 @@
      [
       369,
       149.4
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "cinder",
+   "x": 150,
+   "y": 194,
+   "r": 12,
+   "flag": "ward_cinder",
+   "guardian": "vulkDefeated",
+   "region": "cinder",
+   "lifts": "THE CURSE LIFTS FROM CINDERREACH",
+   "warden": "vulkWardenDefeated",
+   "vines": [
+    [
+     [
+      150,
+      194
+     ],
+     [
+      158,
+      192
+     ],
+     [
+      166,
+      190
+     ],
+     [
+      172,
+      189
+     ],
+     [
+      177,
+      186.6
      ]
     ]
    ]
@@ -2884,6 +3248,75 @@
      -1
     ]
    ]
+  },
+  {
+   "id": "flint",
+   "name": "FLINT THE SMELTER",
+   "look": "greta",
+   "x": 126,
+   "y": 145,
+   "quirk": "EVERYTHING I SAY COMES OUT AS SMOKE SIGNALS. ...THAT PUFF WAS 'HELLO'.",
+   "home": "I CAN TALK AGAIN! I'VE KEPT A FEW PUFFS FOR SPECIAL OCCASIONS."
+  },
+  {
+   "id": "ashby",
+   "name": "MOTHER ASHBY",
+   "look": "ada",
+   "x": 160,
+   "y": 172,
+   "quirk": "MY HAIR IS ON FIRE. HAS BEEN FOR A WEEK. IT DOESN'T HURT. IT'S JUST VERY HARD TO SLEEP.",
+   "home": "MY HAIR IS JUST HAIR NOW. A BIT SINGED. VERY FASHIONABLE IN BRIGHTWATER, APPARENTLY."
+  },
+  {
+   "id": "tinder",
+   "name": "TOBIAS TINDER",
+   "look": "piet",
+   "x": 112,
+   "y": 152,
+   "quirk": "I SNEEZE SPARKS. I'VE BURNED DOWN TWO TENTS AND A VERY GOOD HAT.",
+   "home": "I SNEEZED THIS MORNING. NOTHING CAUGHT FIRE. I WEPT.",
+   "guard": [
+    [
+     "imp",
+     -2,
+     1
+    ],
+    [
+     "imp",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "bellows",
+   "name": "OLD BELLOWS",
+   "look": "hobb",
+   "x": 176,
+   "y": 196,
+   "quirk": "I CAN ONLY WHISPER. WHENEVER I RAISE MY VOICE, SOMETHING CATCHES FIRE.",
+   "home": "I CAN SHOUT AGAIN. I SHOUTED ALL THE WAY HERE. NOTHING BURNED. GLORIOUS."
+  },
+  {
+   "id": "cinderly",
+   "name": "PRIM CINDERLY",
+   "look": "orla",
+   "x": 184,
+   "y": 178,
+   "quirk": "I'M MADE OF GLASS FROM THE ELBOWS DOWN. PLEASE DON'T TOUCH. PLEASE DON'T BREATHE TOO HARD.",
+   "home": "FLESH AND BLOOD AGAIN. I'VE BEEN HUGGING EVERYONE. THEY'VE BEEN VERY PATIENT.",
+   "guard": [
+    [
+     "salamander",
+     -2,
+     1
+    ],
+    [
+     "salamander",
+     2,
+     1
+    ]
+   ]
   }
  ],
  "huntsman": {
@@ -2900,5 +3333,22 @@
    "THE CURSED VINE WITHERS... HOUNDS HOWL IN THE FOG BY THE WARD STONE."
   ],
   "shadow": true
- }
+ },
+ "coolZones": [
+  {
+   "x": 139,
+   "y": 150,
+   "r": 8
+  },
+  {
+   "x": 172,
+   "y": 139,
+   "r": 7
+  },
+  {
+   "x": 128,
+   "y": 163,
+   "r": 6.5
+  }
+ ]
 }
