@@ -394,9 +394,20 @@ export class Game extends Phaser.Scene {
 
   enterArea(id) {
     this.area = id;
-    const a = this.areaRect(id);
-    this.cameras.main.setBounds(a.x0 * TILE, a.y0 * TILE, (a.x1 - a.x0 + 1) * TILE, (a.y1 - a.y0 + 1) * TILE);
+    this.fitCameraBounds();
     this.events.emit('area', id);
+  }
+
+  // Camera bounds = the area. An area smaller than the screen is centred:
+  // Phaser pins short bounds to their top-left corner, which put small caves
+  // under the HUD portraits where nothing could be tapped.
+  fitCameraBounds() {
+    const a = this.areaRect(), cam = this.cameras.main;
+    let x = a.x0 * TILE, y = a.y0 * TILE, w = (a.x1 - a.x0 + 1) * TILE, h = (a.y1 - a.y0 + 1) * TILE;
+    const dw = cam.width / cam.zoom, dh = cam.height / cam.zoom;
+    if (w < dw) { x -= Math.floor((dw - w) / 2); w = Math.ceil(dw); }
+    if (h < dh) { y -= Math.floor((dh - h) / 2); h = Math.ceil(dh); }
+    cam.setBounds(x, y, w, h);
   }
 
   tryWarp(w) {
@@ -935,7 +946,7 @@ export class Game extends Phaser.Scene {
     }
     this.textures.addCanvas('lightMask', c);
     this.darkRT = this.add.renderTexture(0, 0, this.scale.width + 2, this.scale.height + 2).setOrigin(0).setScrollFactor(0).setDepth(TOP + 40).setVisible(false);
-    this.scale.on('resize', () => this.darkRT.resize(this.scale.width + 2, this.scale.height + 2));
+    this.scale.on('resize', () => { this.darkRT.resize(this.scale.width + 2, this.scale.height + 2); if (this.area) this.fitCameraBounds(); });
   }
 
   updateDarkness() {

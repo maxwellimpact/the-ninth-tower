@@ -61,9 +61,11 @@ export class UI extends Phaser.Scene {
     this.antTxt = this.add.bitmapText(0, 0, 'font', '0');
     this.muteBtn = this.makeButton('icon_soundOn', () => this.g.toggleMute(), 'M', null, 14);
     this.dbgBtn = this.makeButton('icon_bug', () => this.toggleDebug(), '`', null, 14);
+    this.pauseBtn = this.makeButton('icon_pause', () => this.togglePause(), 'P', null, 14);
+    this.input.keyboard?.on('keydown-P', () => this.togglePause());
 
     // minimap (2px per tile window centred on the leader); tap for the world map
-    this.MM = { w: 72, h: 48, s: 1 }; // 1px per tile: about 3x the screen's width of land around you
+    this.MM = { w: 56, h: 36, s: 1 }; // 1px per tile: about twice the screen's width of land around you (kept small: it sat in the way)
     this.mmFrame = this.add.graphics();
     this.mmImg = this.add.image(0, 0, 'minimap').setOrigin(0).setScale(this.MM.s);
     this.mmG = this.add.graphics();
@@ -247,7 +249,8 @@ export class UI extends Phaser.Scene {
     this.salveBtn.x = W - 120; this.salveBtn.y = H - 26;
     this.salveTxt.setPosition(this.salveBtn.x + 12, this.salveBtn.y + 11);
     this.heatTxt.setPosition(W - 6, H - 30);
-    this.dbgBtn.x = W - 40; this.dbgBtn.y = 6 + T0;
+    this.pauseBtn.x = W - 40; this.pauseBtn.y = 6 + T0;
+    this.dbgBtn.x = W - 58; this.dbgBtn.y = 6 + T0;
     this.speedDown.x = 8; this.speedDown.y = H - 100;
     this.speedUp.x = 34; this.speedUp.y = H - 100;
     for (const b of this.buttons) this.placeButton(b);
@@ -255,8 +258,8 @@ export class UI extends Phaser.Scene {
     this.mmZone.setPosition(this.mmX, this.mmY);
     this.mmFrame.clear();
     panel(this.mmFrame, this.mmX - 1, this.mmY - 1, this.MM.w + 2, this.MM.h + 2, 0x2b2140, 0x6e6a87);
-    this.coin.setPosition(W - 84, 8 + T0);
-    this.goldTxt.setPosition(W - 74, 9 + T0);
+    this.coin.setPosition(W - 102, 8 + T0);
+    this.goldTxt.setPosition(W - 92, 9 + T0);
     this.toast.setPosition(W - 8, 72);
     const tw = Math.max(this.MM.w + 30, Math.min(160, W - 100));
     this.trackTitle.setPosition(W - 6, this.mmY + this.MM.h + 4);
@@ -289,6 +292,29 @@ export class UI extends Phaser.Scene {
     this.tweens.add({ targets: this.bannerT, alpha: 1, y: by, duration: 400 });
     this.tweens.add({ targets: this.bannerS, alpha: 1, duration: 400, delay: 200 });
     this.tweens.add({ targets: [this.bannerT, this.bannerS], alpha: 0, duration: 600, delay: 3200 });
+  }
+
+  // Pause (button by the volume, or P): the world and music stop under a card;
+  // a tap anywhere carries on. Not while another card or menu already holds the game.
+  togglePause() {
+    const gs = this.g.scene;
+    if (this.pauseCard) {
+      this.pauseCard.destroy(true); this.pauseCard = null;
+      this.pauseZone.destroy(); this.pauseZone = null;
+      gs.resume(); audio.ctx?.resume();
+      return;
+    }
+    if (gs.isPaused() || this.dialogOpen || this.g.busy) return;
+    gs.pause(); audio.ctx?.suspend();
+    const W = this.W, H = this.H, w = 150, h = 44, x = Math.round((W - w) / 2), y = Math.round((H - h) / 2) - 10;
+    const g = this.add.graphics();
+    g.fillStyle(0x0a0710, 0.6).fillRect(-2, -2, W + 4, H + 4);
+    panel(g, x, y, w, h, C.night, C.gold);
+    const t1 = this.add.bitmapText(Math.round(W / 2), y + 9, 'fontGold', 'PAUSED').setOrigin(0.5, 0).setScale(2);
+    const t2 = this.add.bitmapText(Math.round(W / 2), y + h - 12, 'fontPlain', 'TAP ANYWHERE TO RESUME').setOrigin(0.5, 0).setTint(0x9d93b3);
+    this.pauseCard = this.add.container(0, 0, [g, t1, t2]).setDepth(85);
+    this.pauseZone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(86).setInteractive();
+    this.pauseZone.on('pointerdown', () => { this.tapUI?.(); this.togglePause(); });
   }
 
   // Key item card: the game is paused behind it until it's tapped away.
@@ -620,6 +646,7 @@ export class UI extends Phaser.Scene {
     this.muteBtn.icon.setTexture(audio.muted ? 'icon_soundOff' : 'icon_soundOn');
     this.drawBtn(g, this.muteBtn, 0);
     this.drawBtn(g, this.dbgBtn, 0);
+    this.drawBtn(g, this.pauseBtn, 0);
     this.goldTxt.setText(`${game.state.gold}`);
     this.drawMinimap(time);
 

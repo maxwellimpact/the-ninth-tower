@@ -261,6 +261,16 @@ const ICONS = {
     '.S.kKKKKk.S...',
     '....kkkk......',
   ],
+  pause: [
+    '..............',
+    '...kkk..kkk...',
+    '...kWk..kWk...',
+    '...kWk..kWk...',
+    '...kWk..kWk...',
+    '...kWk..kWk...',
+    '...kWk..kWk...',
+    '...kkk..kkk...',
+  ],
   soundOn: [
     '......k.......',
     '.....kk...W...',
