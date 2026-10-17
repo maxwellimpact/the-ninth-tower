@@ -1138,7 +1138,8 @@ export class Game extends Phaser.Scene {
     for (const e of all) {
       // set-piece foes (staged for an errand) need a tap right on them: hitting
       // one starts the fight, so a tap meant for the NPC they crowd mustn't
-      const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' || e.kind === 'breakable' ? 10 : e.boss ? 16 : 0) + (e.staged ? 7 : 0);
+      if (e.kind === 'breakable' && e.breakableNow && !e.breakableNow()) continue; // an iron door you can't break yet isn't a target (see below)
+      const d = Math.hypot(e.x - wx, e.y - (e.boss ? 24 : 8) - wy) - (e.kind === 'ward' ? 10 : e.kind === 'breakable' ? 4 : e.boss ? 16 : 0) + (e.staged ? 7 : 0);
       if (d < bd) { bd = d; best = e; }
     }
     if (best?.staged && this.interactables.some((o) => o.kind === 'npc' && !o.hidden && Math.hypot(o.x - wx, o.y - (o.h || 12) / 2 - wy) < Math.min(18, bd))) best = null; // nearer the NPC: talk to them
@@ -1156,6 +1157,9 @@ export class Game extends Phaser.Scene {
       audio.sfx('click');
       return;
     }
+    // tapped right on something that won't break yet: say so, then treat the tap as a move
+    const shut = this.breakables.find((b) => b.alive && b.breakableNow && !b.breakableNow() && Math.hypot(b.x - wx, b.y - 8 - wy) < 12);
+    if (shut && this.time.now > (this.shutHintT || 0)) { this.shutHintT = this.time.now + 2500; this.bark(L, "IT WON'T BUDGE. WE'D NEED SOMETHING FAR STRONGER THAN A BLADE."); }
     for (const o of this.interactables) {
       if (o.hidden) continue;
       if (Math.hypot(o.x - wx, o.y - (o.h || 12) / 2 - wy) < 16 + (o.h || 12) / 2) {

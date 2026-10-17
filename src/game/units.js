@@ -732,7 +732,7 @@ export class Hero extends Unit {
     const c = this.command;
     if (c && c.type === 'attack') {
       const t = c.target;
-      if (!t.alive) { this.command = null; this.clearPath(); return; }
+      if (!t.alive || (t.breakableNow && !t.breakableNow())) { this.command = null; this.clearPath(); return; } // gone, or an iron door that won't give
       const d = dist(this, t);
       const range = this.stats.range + t.r;
       const slack = this.ranged ? 0 : 6; // melee: close enough counts
@@ -1091,6 +1091,7 @@ export class Hero extends Unit {
     }
     // never wander off after the ward stone unless the leader is hitting it
     if (t && (t.kind === 'ward' || t.kind === 'breakable') && leaderT !== t) t = null;
+    if (t?.kind === 'breakable' && t.breakableNow && !t.breakableNow()) t = null; // no hacking at an iron door that won't give
     this.target = t;
   }
 
@@ -3293,6 +3294,9 @@ export class Breakable extends Unit {
     this.sprite.setOrigin(0.5, 1).setPosition(x, y + 8).setDepth(y + 4);
     this.shadow.setVisible(def.kind === 'boulder').setAlpha(0.25);
   }
+  // whether the party can break it at all right now (iron-strapped needs the Gauntlets)
+  breakableNow() { return !this.def.reinforced || this.scene.state.relics.includes('gauntlets'); }
+
   damage(amount, src) {
     if (!this.alive) return 0;
     if (this.def.reinforced) { // iron-strapped: only the Stone Gauntlets break it
