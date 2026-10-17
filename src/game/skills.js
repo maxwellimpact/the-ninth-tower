@@ -290,20 +290,55 @@ export const SKILL_FX = {
   },
 
   // ----------------------------------------------------------------- Sable
+  // Sable melts into shadow, a dark streak crosses to the foe, she rises behind
+  // it and backstabs (a sure crit). Paced (~0.5 s) so it reads on a phone;
+  // untouchable while she's out of sight. Same damage as before: one crit hit.
   step: {
     cast(h, { target }) {
       const sc = h.scene;
       if (!target || dist(h, target) > 85) return false;
-      sc.fx.puff(h.x, h.y, 'sparkCurse');
       const [nx, ny] = norm(target.x - h.x, target.y - h.y);
-      const bx = target.x + nx * 8, by = target.y + ny * 8;
-      if (!sc.nav.solidAtPx(bx, by)) { h.x = bx; h.y = by; } else { h.x = target.x - nx * 8; h.y = target.y - ny * 8; }
-      h.face(target.x - h.x, target.y - h.y);
-      sc.fx.puff(h.x, h.y, 'sparkCurse');
-      audio.sfx('dash');
-      h.nextCrit = true;
-      h.atkT = 0;
+      let bx = target.x + nx * 8, by = target.y + ny * 8;
+      if (sc.nav.solidAtPx(bx, by)) { bx = target.x - nx * 8; by = target.y - ny * 8; }
+      const ox = h.x, oy = h.y, lift = h.sprite.y - h.y;
+      const VANISH = 0.12, ARRIVE = 0.26, SHOWN = 0.34, STAB = 0.34;
       h.clearPath();
+      h.face(nx, ny);
+      h.invuln = Math.max(h.invuln, SHOWN);
+      sc.fx.puff(ox, oy, 'sparkCurse');
+      audio.sfx('dash', { pitch: 0.7 });
+      const steps = { moved: false, puffed: false, stabbed: false };
+      h.act('step', 0.48, 'cast', {
+        tick: (a) => {
+          if (a.t < VANISH) h.sprite.setAlpha(1 - a.t / VANISH);
+          else if (!steps.moved) {
+            steps.moved = true;
+            // the streak: dark silhouettes from where she stood to behind the foe, in order
+            // (faint where she left, solid where she's going; the tail clears first)
+            for (let k = 1; k <= 5; k++) sc.fx.ghost(h, { x: ox + (bx - ox) * (k / 6), y: oy + (by - oy) * (k / 6) + lift, tint: 0x2a1840, alpha: 0.3 + 0.1 * k, dur: 180 + 40 * k });
+            h.x = bx; h.y = by;
+            h.face(target.x - h.x, target.y - h.y);
+            h.sprite.setAlpha(0);
+          }
+          if (a.t >= ARRIVE - 0.04 && !steps.puffed) { steps.puffed = true; sc.fx.puff(bx, by, 'sparkCurse'); audio.sfx('dash', { pitch: 1.3 }); }
+          if (a.t >= ARRIVE) h.sprite.setAlpha(Math.min(1, (a.t - ARRIVE) / (SHOWN - ARRIVE)));
+          if (a.t >= STAB && !steps.stabbed) {
+            steps.stabbed = true;
+            h.play('attack');
+            if (target.alive && !target.submerged) {
+              h.nextCrit = true;
+              h.resolveAttack(target);
+              h.nextCrit = false;
+              sc.fx.ring(target.x, target.y - 4, 'ringGold', 2.5);
+              sc.floatText(target.x, target.y - 34, 'BACKSTAB!', 'fontGold');
+              audio.sfx('stab', { pitch: 0.8 });
+            }
+            h.atkT = 0; // her blades keep going straight after (the old instant step's pace, so her damage holds)
+          }
+        },
+      });
+      // never leave her see-through if the step is cut short (downed, knocked away)
+      sc.time.delayedCall(800, () => { if (h.action?.id !== 'step' && h.sprite?.active) h.sprite.setAlpha(1); });
       if (h.isLeader) h.command = { type: 'attack', target }; else h.target = target;
       return true;
     },

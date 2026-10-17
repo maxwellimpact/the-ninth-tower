@@ -2281,6 +2281,7 @@ export class Enemy extends Unit {
       sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg * this.affixDmg(), this.s.shot);
       return;
     }
+    if (!z) return; // its marker was already cleared mid-windup (interrupted): the swing lands on nothing
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
     else if (this.kind === 'golem') { this.sprite.play('golem_slam'); this.anim = 'golem_slam'; sc.fx.slam(z.x, z.y, z.r); }
     else { this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`; audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }

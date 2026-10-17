@@ -20,7 +20,11 @@ function fit() {
   const w = window.innerWidth || 800, h = window.innerHeight || 450;
   let zoom = Math.max(1, Math.round(h / BASE_H));
   while (zoom > 1 && w / zoom < 190) zoom--; // portrait phones still get chunky pixels
-  return { zoom, width: Math.ceil(w / zoom), height: Math.ceil(h / zoom) };
+  // the height is kept even: with an odd height (and roundPixels) WebGL draws
+  // everything a pixel low, so row 0 never gets covered and the world shows
+  // through the top of every overlay. The spare row is cropped off the bottom.
+  const height = Math.ceil(h / zoom);
+  return { zoom, width: Math.ceil(w / zoom), height: height + (height % 2) };
 }
 
 const f = fit();

@@ -33,11 +33,11 @@ export class FX {
     this.burst('spark', x, y, crit ? 10 : 5);
   }
 
-  // Afterimage for dodges.
-  ghost(u) {
-    const g = this.scene.add.sprite(u.sprite.x, u.sprite.y, u.sprite.texture.key, u.sprite.frame.name)
-      .setOrigin(0.5, 0.75).setFlipX(u.flip).setDepth(u.y - 1).setTintFill(0x8fb6ff).setAlpha(0.55);
-    this.scene.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
+  // Afterimage for dodges (and, placed and tinted, Sable's shadow trail).
+  ghost(u, { x = u.sprite.x, y = u.sprite.y, tint = 0x8fb6ff, alpha = 0.55, dur = 200 } = {}) {
+    const g = this.scene.add.sprite(x, y, u.sprite.texture.key, u.sprite.frame.name)
+      .setOrigin(0.5, 0.75).setFlipX(u.flip).setDepth(y - (u.sprite.y - u.y) - 1).setTintFill(tint).setAlpha(alpha);
+    this.scene.tweens.add({ targets: g, alpha: 0, duration: dur, onComplete: () => g.destroy() });
   }
 
   puff(x, y, tex = 'spark') {
