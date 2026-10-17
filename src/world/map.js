@@ -55,12 +55,36 @@ export function areaAt(tx, ty) {
   return 'void';
 }
 
+// Region borders meander instead of running along straight rows and columns:
+// a broad wave of a few tiles, plus finer noise so the ground of one region
+// fingers into the next. The ridge itself bends (only ever westward, clear of
+// the lava pool on its east foot).
+export const marshEdge = (x) => MARSH_Y + (vnoise(x / 22, 0.5, 801) - 0.5) * 30 + (vnoise(x / 7, 0.5, 811) - 0.5) * 8;
+export const southEdge = (x) => SOUTH_Y + (vnoise(x / 22, 0.5, 802) - 0.5) * 30 + (vnoise(x / 7, 0.5, 812) - 0.5) * 8;
+export const meadowEdge = (y) => 96 + (vnoise(0.5, y / 14, 804) - 0.5) * 24;
+export const ridgeAt = (y) => {
+  const off = Math.round((vnoise(0.5, y / 14, 803) - 0.5) * 16);
+  return RIDGE_X + (y > 158 && y < 192 ? Math.min(0, off) : off); // never east into the lava pool at its foot
+};
+const fray = (x, y, seed) => (vnoise(x / 5, y / 5, seed) - 0.5) * 9 + (vnoise(x / 2.5, y / 2.5, seed + 50) - 0.5) * 4;
+
+// Landmarks and everything authored near a border keep the region they were
+// built for: inside these circles the old straight-line rule decides.
+const PINS = [
+  [172, 139, 13], [126, 120, 9], [111, 135, 10], [160, 112, 11], [171, 99, 9], [139, 150, 9], [30, 141, 8], [86, 146, 6],
+  [80, 85, 8], [96, 88, 8], [60, 104, 9], [44, 23, 10], [57, 20, 4], [161, 20, 8], [69, 10, 12], [185, 99, 7],
+  ...W.wards.map((w) => [w.x, w.y, 9]), ...W.chests.map((c) => [c.x, c.y, 2.5]), ...W.campfires.map((c) => [c.x, c.y, 3]),
+  ...W.groups.flatMap((g) => g.units.map(([, x, y]) => [x, y, 2])), ...QD.npcs.map((n) => [n.x, n.y, 2]),
+];
+const straightBiome = (tx, ty) => (ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
+
 export function biomeAt(tx, ty) {
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
-  if (ty >= SOUTH_Y) return tx < RIDGE_X ? 'gloam' : 'cinder';
-  if (ty >= MARSH_Y) return 'marsh';
-  return tx >= 96 ? 'meadow' : 'vale';
+  for (const [px, py, r] of PINS) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
+  if (ty >= southEdge(tx) + fray(tx, ty, 805)) return tx < ridgeAt(ty) + 2 + (ty < SOUTH_Y + 4 ? fray(tx, ty, 806) : 0) ? 'gloam' : 'cinder';
+  if (ty >= marshEdge(tx) + fray(tx, ty, 807)) return 'marsh';
+  return tx >= meadowEdge(ty) + fray(tx, ty, 808) ? 'meadow' : 'vale';
 }
 
 export const LANDMARKS = {
@@ -151,7 +175,7 @@ export function buildWorld() {
     } else if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
-      const edge = Math.min(y - MARSH_Y, SOUTH_Y - 1 - y);
+      const edge = Math.min(y - marshEdge(x), southEdge(x) - 1 - y);
       if (edge > 3 && n > 0.74) set(x, y, T.BOG);
       else if (edge > 2 && n > 0.62) set(x, y, T.SHALLOW);
     } else set(x, y, T.GRASS);
@@ -236,8 +260,8 @@ export function buildWorld() {
   // pass through it (the road at y 150-154)
   for (let y = SOUTH_Y + 3; y < OW_H - 1; y++) {
     if (y >= 149 && y <= 155) continue;
-    const w = Math.round(1 + vnoise(0, y / 7, 141) * 2);
-    for (let x = RIDGE_X - w; x <= RIDGE_X + 3 + w; x++) set(x, y, x === RIDGE_X - w || x === RIDGE_X + 3 + w ? T.RIM : T.PLATEAU);
+    const w = Math.round(1 + vnoise(0, y / 7, 141) * 2), rx = ridgeAt(y);
+    for (let x = rx - w; x <= rx + 3 + w; x++) set(x, y, x === rx - w || x === rx + 3 + w ? T.RIM : T.PLATEAU);
   }
   // Gloamwood edge camp: a trodden clearing where the hunters gather
   for (let y = 136; y <= 147; y++) for (let x = 24; x <= 37; x++) {
@@ -433,7 +457,7 @@ export function buildWorld() {
     if (jx >= OW_W || jy >= OW_H - 1) continue;
     const b = biomeAt(jx, jy);
     const edge = Math.min(jx, jy, OW_W - 1 - jx, OW_H - 1 - jy);
-    const belt = Math.abs(jy - MARSH_Y + 1) < 2.5 + vnoise(jx / 5, 0, 9) * 2 || Math.abs(jy - SOUTH_Y + 0.5) < 2.5 + vnoise(jx / 5, 0, 19) * 2;
+    const belt = Math.abs(jy - marshEdge(jx) + 1) < 2.5 + vnoise(jx / 5, 0, 9) * 2 || Math.abs(jy - southEdge(jx) + 0.5) < 2.5 + vnoise(jx / 5, 0, 19) * 2;
     const grove = vnoise(jx / 9, jy / 9, 21);
     // Gloamwood is the deep forest: trees everywhere the canopy doesn't break
     const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : b === 'gloam' ? 0.3 : 0.72) || belt;

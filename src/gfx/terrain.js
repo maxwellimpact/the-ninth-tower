@@ -4,7 +4,7 @@
 // chunks can be painted lazily as the camera streams through a large world.
 import { rgb, curseRGB } from './palette.js';
 import { hash, vnoise, bayer, makeCanvas } from './pixel.js';
-import { T, TILE, SOFT, MAP_W, MAP_H, SOUTH_Y, RIDGE_X, AREAS } from '../world/map.js';
+import { T, TILE, SOFT, MAP_W, MAP_H, AREAS, biomeAt } from '../world/map.js';
 
 export const CHUNK = 256;
 
@@ -60,17 +60,26 @@ export function makeTerrainPainter(world) {
   const WR = AREAS.witchroot;
   const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
+  const BIOMES = ['gloam', 'cinder', 'other'], biomeCache = new Int8Array(192 * MAP_H).fill(-1);
+  const biomeOf = (tx, ty) => { // per tile, once: the meandering borders cost a few noise lookups
+    if (tx < 0 || tx >= 192 || ty < 0 || ty >= MAP_H) return null;
+    const i = ty * 192 + tx;
+    if (biomeCache[i] < 0) { const b = biomeAt(tx, ty); biomeCache[i] = b === 'gloam' ? 0 : b === 'cinder' ? 1 : 2; }
+    return BIOMES[biomeCache[i]];
+  };
+
   function pixel(x, y) {
     const t = typeAt(x, y);
     const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
     const lx = x - tx * TILE, ly = y - ty * TILE;
-    const gloam = ty >= SOUTH_Y && tx < RIDGE_X;
+    const bm = biomeOf(tx, ty); // follows the meandering region borders
+    const gloam = bm === 'gloam';
     if (t === T.LOAM || (gloam && (t === T.GRASS || t === T.HOUSE))) { // under the elder's trunk too
       // a dark rim where the floor meets a road
       if (typeAt(x, y + 2) === T.PATH || typeAt(x, y - 2) === T.PATH || typeAt(x - 2, y) === T.PATH || typeAt(x + 2, y) === T.PATH) return C.gloomD;
       return gloamColor(x, y, t === T.GRASS);
     }
-    const cinder = ty >= SOUTH_Y && tx >= RIDGE_X && tx < 192;
+    const cinder = bm === 'cinder';
     if (t === T.ASH || (cinder && t === T.GRASS)) {
       // ash flats: grey-brown drifts with cinders and the odd brimstone fleck
       const near = (k) => typeAt(x + 2, y) === k || typeAt(x - 2, y) === k || typeAt(x, y + 2) === k || typeAt(x, y - 2) === k;

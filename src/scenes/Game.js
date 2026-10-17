@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X } from '../world/map.js';
+import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, southEdge, ridgeAt } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
@@ -929,7 +929,7 @@ export class Game extends Phaser.Scene {
     // Gloamwood's canopy dims the overworld: fades in over ~10 tiles as you
     // walk in from the fen, never as dark as a cave
     const ltx = L.x / TILE, lty = L.y / TILE;
-    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < RIDGE_X + 2 ? Math.max(0, Math.min(1, (lty - (SOUTH_Y - 4)) / 10)) : 0;
+    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < ridgeAt(lty) + 2 ? Math.max(0, Math.min(1, (lty - (southEdge(ltx) - 4)) / 10)) : 0; // follows the meandering border
     this.darkRT.setVisible(inCave || gloom > 0);
     if (!inCave && gloom <= 0) return;
     const cam = this.cameras.main;
@@ -3089,8 +3089,11 @@ export class Game extends Phaser.Scene {
     for (const g of this.groupsNear(tx, ty, area)) loadGroup(this, g);
     this.calmT = Math.max(0, (this.calmT || 0) - dt);
 
-    // region banner
-    const region = biomeAt(Math.floor(tx), Math.floor(ty));
+    // region banner: borders fray, so a new region has to hold for a moment
+    // (walking along an edge would otherwise flip banners and music back and forth)
+    const here = biomeAt(Math.floor(tx), Math.floor(ty));
+    if (here !== this.region && here === this.regionCand) this.regionCandT += dt; else { this.regionCand = here; this.regionCandT = 0; }
+    const region = this.region === null || areaAt(Math.floor(tx), Math.floor(ty)) !== 'overworld' || this.regionCandT > 1 ? here : this.region;
     if (region !== this.region) {
       if (this.region !== null) { const r = W.regions.find((x) => x.id === region); this.events.emit('banner', r.name, r.sub); }
       else { const r = W.regions.find((x) => x.id === region); this.time.delayedCall(600, () => this.events.emit('banner', r.name, r.sub)); }
