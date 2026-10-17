@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { audio } from './audio/synth.js';
 import { Boot } from './scenes/Boot.js';
 import { Loading } from './scenes/Loading.js';
 import { Title } from './scenes/Title.js';
@@ -78,3 +79,40 @@ export function safeInsets() {
 }
 window.__safeInsets = safeInsets;
 window.__game = game;
+
+// Phones play in landscape only. iOS Safari can't lock the orientation (no
+// lock API, manifest ignored), so held upright the game pauses behind a
+// "turn sideways" card and carries on when the phone is turned back. Where the
+// browser does allow a lock (Android, fullscreen), take it as well.
+const UPRIGHT = window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 520px)');
+const turnCard = document.createElement('div');
+turnCard.id = 'turn';
+turnCard.innerHTML = '<div class="ph"><i></i></div>TURN YOUR PHONE SIDEWAYS<span>THE NINTH TOWER PLAYS IN LANDSCAPE</span><b>PLAY UPRIGHT ANYWAY</b>';
+const turnCss = document.createElement('style');
+turnCss.textContent = `
+  #turn { position:fixed; inset:0; z-index:20; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:#16121f; color:#fff0a0; font:bold 14px/1.4 ui-monospace, Menlo, monospace; letter-spacing:.15em; text-align:center; padding:0 24px; }
+  #turn span { color:#9d93b3; font-size:11px; letter-spacing:.1em; }
+  #turn b { margin-top:28px; color:#6e6a87; font-size:10px; letter-spacing:.1em; padding:10px 14px; border:1px solid #45405e; }
+  #turn .ph { width:34px; height:58px; border:4px solid #f2c14e; border-radius:6px; position:relative; animation:turnph 2.4s steps(1) infinite; }
+  #turn .ph i { position:absolute; left:50%; bottom:4px; width:8px; height:4px; margin-left:-4px; background:#f2c14e; }
+  @keyframes turnph { 0%, 45% { transform:rotate(0); } 50%, 95% { transform:rotate(-90deg); } }
+  body.upright #turn { display:flex; }`;
+document.head.appendChild(turnCss);
+document.body.appendChild(turnCard);
+let upright = false, anyway = false;
+// escape hatch for a viewer that can't rotate: the portrait layouts still work
+turnCard.querySelector('b').addEventListener('click', () => { anyway = true; checkUpright(); });
+function checkUpright() {
+  const now = UPRIGHT.matches && !anyway;
+  if (now === upright) return;
+  upright = now;
+  document.body.classList.toggle('upright', now);
+  // sleep stops the frame loop outright (game.pause only shifts the clock and
+  // relies on the browser to stop frames, which it doesn't for a rotation)
+  if (now) { if (game.loop.running) game.loop.sleep(); audio.ctx?.suspend(); } else { if (game.loop.started) game.loop.wake(); audio.ctx?.resume(); }
+}
+UPRIGHT.addEventListener?.('change', checkUpright);
+game.events.once('poststep', () => { if (upright) game.loop.sleep(); }); // held upright from the start: sleep once the loop is running
+checkUpright();
+// a real lock where one exists (needs fullscreen on most browsers; harmless to try on the first tap)
+window.addEventListener('pointerdown', () => { screen.orientation?.lock?.('landscape').catch(() => {}); }, { once: true });
