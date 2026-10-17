@@ -212,7 +212,7 @@ export class Hero extends Unit {
   // Burning (fire shots, breath, molten ground): a short fire DoT. Flameproof
   // gear and Purify keep it off.
   addBurn(dps, t = 3) {
-    if (this.downed || this.purifyT > 0 || this.hasPerk('flameproof') || this.hasTrait('heatproof')) return;
+    if (this.downed || this.purifyT > 0 || this.hasPerk('flameproof') || this.hasPerk('emberheart') || this.hasTrait('heatproof')) return;
     this.burn = { dps: Math.max(dps, this.burn?.dps || 0), t: Math.max(t, this.burn?.t || 0), next: this.burn?.next ?? 0.5 };
     this.sprite.setTint(0xffb08a);
   }

@@ -637,7 +637,7 @@ export class Game extends Phaser.Scene {
     if (this.heatT > 0) return;
     this.heatT = 3;
     for (const h of this.party) {
-      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.stats?.passives?.includes('heatproof')) continue;
+      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.hasPerk?.('emberheart') || h.stats?.passives?.includes('heatproof')) continue;
       const lvl = Math.max(heat, this.inHeat(h.x, h.y));
       const floor = h.maxHp * 0.15;
       if (h.hp <= floor) continue;
@@ -1211,6 +1211,7 @@ export class Game extends Phaser.Scene {
       if (src.passive('steadyaim') && src.stillT > 1) amount *= 1.2;
       if (src.buffs?.primal) amount *= 1.5;
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
+      if (target.s?.hexed) { const ws = src.hasPerk('wardcrown') ? 0.3 : src.hasPerk('wardprism') ? 0.2 : src.hasPerk('wardshard') ? 0.1 : 0; amount *= 1 + ws; } // Ward Shard / Prism / Crown
       // weapon gems: a little extra elemental damage on every hit
       for (const g of src.stats.gemElements || []) if (!g.armor) amount *= 1 + g.dmg * (target.elementMul ? target.elementMul(g.el) : 1);
       const bs = src.passive('backstab');
@@ -1239,7 +1240,7 @@ export class Game extends Phaser.Scene {
     if (!dealt) return;
     if (!noProc && target.applyElement) {
       if (element) target.applyElement(element, src);
-      else if (weaponEl && (!basic || Math.random() < 0.25)) target.applyElement(weaponEl, src);
+      else if (weaponEl && (!basic || Math.random() < 0.25 || src.hasPerk?.('thunder'))) target.applyElement(weaponEl, src); // Thunderwrench: every hit
       if (hero && src.envenom > 0 && !spell) { src.envenom--; target.applyElement('venom', src); }
       if (hero && src.surgeT > 0 && spell) for (const e of ['fire', 'frost', 'storm']) if (e !== element) target.applyElement(e, src);
       // Shock: this hit arcs to two nearby foes for 40%
@@ -2353,6 +2354,19 @@ export class Game extends Phaser.Scene {
     this.events.emit('dialogue', lines);
   }
 
+  // Ward Shard (C4 charm): the first stone gives a shard; later stones grow it
+  // into a Prism, then a Crown - wherever it is (bag or worn).
+  growWardShard() {
+    const st = this.state, tiers = ['ward_shard', 'ward_prism', 'ward_crown'];
+    const where = (id) => { const i = st.inventory.indexOf(id); if (i >= 0) return { bag: i }; for (const h of Object.values(st.heroes)) for (const [k, v] of Object.entries(h.equip)) if (v === id) return { h, k }; return null; };
+    const have = tiers.findIndex((id) => where(id));
+    if (have === tiers.length - 1) return;
+    const next = tiers[have + 1];
+    if (have < 0) gainItems(st, [next]);
+    else { const w = where(tiers[have]); if (w.bag !== undefined) st.inventory[w.bag] = next; else { w.h.equip[w.k] = next; for (const p of this.party) p.refreshStats?.(); } }
+    this.events.emit('loot', { ids: [next] });
+  }
+
   onWardDestroyed(unit) {
     const w = this.wards.find((k) => k.unit === unit) || this.wards[0];
     const def = w.def;
@@ -2363,6 +2377,7 @@ export class Game extends Phaser.Scene {
     this.removeVines(w);
     if (def.id === 'vale') this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
     const down = this.wards.filter((k) => this.flags[k.def.flag]).length;
+    this.time.delayedCall(5200, () => this.growWardShard());
     if (down >= 2) this.flags.enchanter = true; // two stones: the Enchanter comes home
     if (down >= 3) this.flags.smithRank = Math.max(this.flags.smithRank || 0, 2);
     this.hitStop(0.3);

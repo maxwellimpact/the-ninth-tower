@@ -195,6 +195,8 @@ export function buildWorld() {
   rect(20, 27, 22, 29, T.HOUSE);
   wall(38, 20, 39, 21); wall(48, 21, 50, 21); // collapsed house corners in the ruins
   set(47, 25, T.STAIRS); // steps down to the Undercroft
+  // the old King's tomb east of the ruins: an iron-strapped door (Stone Gauntlets)
+  rect(55, 17, 59, 22, T.WALL); rect(56, 18, 58, 21, T.PAVED); set(57, 22, T.PAVED);
 
   // NE plateau with cliff + stairs
   rect(58, 3, 80, 14, T.PLATEAU);
@@ -347,6 +349,12 @@ export function buildWorld() {
     if (d < 7) set(x, y, T.PAVED);
     else if (d < 8 && !(y > 109 && Math.abs(x - 60) < 2)) set(x, y, T.WALL);
   }
+  // the drowned Fenmill: a ruined mill on an islet in a deep pool (swim out with the Tide Charm)
+  for (let y = 114; y <= 126; y++) for (let x = 119; x <= 133; x++) {
+    const d = Math.hypot((x - 126) / 5.2, (y - 120) / 4.2) + (vnoise(x / 3, y / 3, 52) - 0.5) * 0.15;
+    if (d < 0.34) set(x, y, T.MARSH); else if (d < 1) set(x, y, T.WATER); else if (d < 1.25) set(x, y, T.SHALLOW);
+  }
+  set(125, 119, T.WALL); set(127, 121, T.WALL); // what's left of the mill walls
   // the deep pool east of the abbey, where the bell clapper sank
   for (let y = 94; y <= 104; y++) for (let x = 181; x <= 190; x++) {
     const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;

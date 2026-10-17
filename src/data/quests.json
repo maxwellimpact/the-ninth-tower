@@ -1859,6 +1859,101 @@
     "xp": 300,
     "item": "echo_bell"
    }
+  },
+  "signalFires": {
+   "title": "THE SIGNAL FIRES",
+   "giver": "vey",
+   "region": "cinder",
+   "offer": [
+    "THE BEACONS ON THE THREE HIGH POINTS WENT OUT WHEN THE HEX CAME. WITHOUT THEM THE CARAVANS DON'T KNOW WE'RE HERE, AND NOTHING COMES UP THE ROAD.",
+    "RELIGHT THEM: THE RIDGE NORTH OF HERE, THE BLUFF OVER THE LAVA RIVER, AND THE EAST RISE BY THE OBSIDIAN. TAKE SALVE. TAKE TWO."
+   ],
+   "accept": "THREE BEACONS.",
+   "thanks": [
+    "I SAW THEM FROM THE WALL. ALL THREE. FIRST TIME IN A YEAR SOMEONE CHEERED UP THERE.",
+    "HERE - THE OLD WATCH-CAPTAIN'S EMBER HEART. KEEPS THE HEAT OFF. I'VE BEEN SAVING IT FOR SOMEONE WHO'D GO OUT THERE AND COME BACK."
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "LIGHT THE RIDGE BEACON (NORTH)",
+     "x": 156,
+     "y": 134,
+     "kind": "beacon",
+     "say": "THE BEACON ROARS ALIGHT!"
+    },
+    {
+     "type": "find",
+     "text": "LIGHT THE BLUFF BEACON (OVER THE LAVA RIVER)",
+     "x": 150,
+     "y": 180,
+     "kind": "beacon",
+     "say": "THE BEACON ROARS ALIGHT!"
+    },
+    {
+     "type": "find",
+     "text": "LIGHT THE EAST RISE BEACON (BY THE OBSIDIAN)",
+     "x": 185,
+     "y": 159,
+     "kind": "beacon",
+     "say": "THE BEACON ROARS ALIGHT!"
+    },
+    {
+     "type": "talk",
+     "text": "REPORT TO CAPTAIN VEY AT EMBERWATCH",
+     "npc": "vey"
+    }
+   ],
+   "reward": {
+    "xp": 420,
+    "gold": 120,
+    "item": "ember_heart"
+   }
+  },
+  "mastersTools": {
+   "title": "THE MASTER'S HOURGLASS",
+   "giver": "tamsin",
+   "region": "cinder",
+   "offer": [
+    "THE FORGEMASTER KEPT AN HOURGLASS ON HIS BENCH. HE SAID A SMITH WHO WATCHES THE SAND NEVER RUSHES A WELD. WHEN THE HEX TOOK HIM, HE THREW IT ON THE SLAG HEAP.",
+    "I WANT TO MEND IT. I NEED SCALE FOR THE FRAME, BRIMSTONE FOR THE GLASS, AND THE HOURGLASS ITSELF - OUT EAST, ON THE HEAP BY THE OLD ORE CARTS."
+   ],
+   "accept": "SCALE, BRIMSTONE, HOURGLASS.",
+   "thanks": [
+    "THERE. LISTEN - YOU CAN HEAR THE SAND. IT SOUNDS LIKE HIM, BEFORE.",
+    "TAKE IT. A CHARM NOW, NOT A TOOL. IT'LL MAKE YOU QUICKER AT WHATEVER YOU DO. HE'D WANT IT USED."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "BRING DRAKE SCALE",
+     "mat": "scale",
+     "count": 3
+    },
+    {
+     "type": "gather",
+     "text": "BRING BRIMSTONE",
+     "mat": "brimstone",
+     "count": 4
+    },
+    {
+     "type": "find",
+     "text": "FIND THE FORGEMASTER'S HOURGLASS ON THE SLAG HEAP (EAST)",
+     "x": 186,
+     "y": 190,
+     "kind": "glint",
+     "say": "A BRASS HOURGLASS, CRACKED, THE SAND STILL TRICKLING."
+    },
+    {
+     "type": "talk",
+     "text": "BRING IT ALL TO TAMSIN",
+     "npc": "tamsin"
+    }
+   ],
+   "reward": {
+    "xp": 420,
+    "item": "hourglass_charm"
+   }
   }
  },
  "npcs": [
@@ -2535,6 +2630,46 @@
    ],
    "errands": [
     "belfry"
+   ]
+  },
+  {
+   "id": "vey",
+   "name": "CAPTAIN VEY",
+   "x": 134,
+   "y": 149,
+   "look": "vey",
+   "voice": {
+    "pitch": 170,
+    "wave": "square",
+    "duty": 0.25,
+    "speed": 1.0
+   },
+   "lines": [
+    "EMBERWATCH STANDS. NOT WELL. BUT IT STANDS.",
+    "IF YOU SEE A BEACON BURNING, THAT MEANS WE'RE STILL HERE. IF YOU DON'T... DON'T ASK."
+   ],
+   "errands": [
+    "signalFires"
+   ]
+  },
+  {
+   "id": "tamsin",
+   "name": "TAMSIN",
+   "x": 174,
+   "y": 190,
+   "look": "tamsin",
+   "voice": {
+    "pitch": 380,
+    "wave": "square",
+    "duty": 0.125,
+    "speed": 1.15
+   },
+   "lines": [
+    "I WAS THE FORGEMASTER'S APPRENTICE. BEFORE HE WAS... THAT.",
+    "EVERYTHING HE MADE STILL KEEPS PERFECT TIME. EXCEPT HIM."
+   ],
+   "errands": [
+    "mastersTools"
    ]
   }
  ]

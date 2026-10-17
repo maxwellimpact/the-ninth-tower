@@ -117,6 +117,8 @@ export const FOLK = {
   ember: folk('ember', 'pip', { head: 'kerchief@3', body: 'robe_apprentice@4' }),
   rook: folk('rook', 'brann', { head: 'helm_iron@2', body: 'jacket_leather@4' }),
   dusty: folk('dusty', 'kesh', { body: 'furs_hide@2' }),
+  vey: folk('vey', 'brann', { head: 'helm_iron@4', body: 'plate_guard@2', weapon: 'sword_iron@2' }), // Emberwatch's watch-captain
+  tamsin: folk('tamsin', 'gizmo', { head: 'goggles_brass@2', body: 'apron_brown@5' }), // the Forgemaster's last apprentice
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.

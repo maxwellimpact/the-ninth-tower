@@ -222,6 +222,7 @@ export class QuestManager {
         audio.sfx(s.kind === 'dog' ? 'blip' : 'coin');
         if (s.kind === 'dog' && spr) { spr.play('dog_run').setFlipX(true); sc.tweens.add({ targets: spr, x: spr.x + 140, alpha: 0, duration: 1600, onComplete: () => spr.destroy() }); }
         else if ((s.kind === 'cage' || s.kind === 'net') && spr) { spr.over?.destroy(); sc.fx.puff(spr.x, spr.y, 'spark'); spr.destroy(); audio.sfx('block'); }
+        else if (s.kind === 'beacon' && spr) { spr.play('dgBrazierLit'); sc.fx.burst('ember', spr.x, spr.y - 14, 16); audio.sfx('fireImpact'); sc.time.delayedCall(2500, () => spr.destroy()); }
         else spr?.destroy();
         delete this.live[`${id}:prop`];
         this.advance(id);
@@ -267,6 +268,7 @@ export class QuestManager {
       return spr;
     }
     if (p.kind === 'dog') spr = sc.add.sprite(px(p.x), px(p.y) + 4, 'dog', '0').setOrigin(0.5, 1).play('dog_sit').setDepth(px(p.y));
+    else if (p.kind === 'beacon') spr = sc.add.sprite(px(p.x), px(p.y) + 6, 'dgBrazier').setOrigin(0.5, 1).setDepth(px(p.y)); // a cold signal brazier
     else spr = sc.add.sprite(px(p.x), px(p.y), 'glint', '0').play('glint').setDepth(px(p.y) + 2);
     live.objs.push(spr);
     return spr;

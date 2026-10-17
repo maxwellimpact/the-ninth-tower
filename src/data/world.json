@@ -1419,10 +1419,11 @@
    "id": "plateau",
    "x": 72,
    "y": 8,
-   "items": [
-    "lionheart_helm"
-   ],
-   "gold": 50
+   "items": [],
+   "gold": 120,
+   "mats": {
+    "crystal": 2
+   }
   },
   {
    "id": "watchtower",
@@ -1568,6 +1569,38 @@
    "gold": 70,
    "mats": {
     "brimstone": 2
+   }
+  },
+  {
+   "id": "kingsTomb",
+   "x": 57,
+   "y": 19,
+   "items": [
+    "lionheart_helm"
+   ],
+   "gold": 80
+  },
+  {
+   "id": "monasteryVault",
+   "x": 169,
+   "y": 135,
+   "needs": "tide",
+   "locked": "A CISTERN VAULT UNDER THE CHAPEL FLOOR, FLOODED TO THE BRIM. SOMETHING GLINTS AT THE BOTTOM. WE'D HAVE TO SWIM DOWN.",
+   "items": [
+    "aegis_of_dawn"
+   ],
+   "gold": 90
+  },
+  {
+   "id": "fenmill",
+   "x": 126,
+   "y": 120,
+   "items": [
+    "thunderwrench"
+   ],
+   "gold": 70,
+   "mats": {
+    "pearl": 1
    }
   }
  ],
@@ -2011,6 +2044,22 @@
     "THE OLD BELFRY.",
     "IT USED TO RING THE HOURS FOR THE WHOLE WOOD. NOW THE WOOD KEEPS ITS OWN HOURS."
    ]
+  },
+  {
+   "x": 60,
+   "y": 23,
+   "lines": [
+    "HERE LIES THE KING'S CHAMPION.",
+    "HE STOOD AT THE GATE SO OTHERS COULD RUN. THE DOOR IS IRON SO NO ONE CAN TAKE HIS HELM. (SOMEONE STRONG COULD.)"
+   ]
+  },
+  {
+   "x": 126,
+   "y": 126,
+   "lines": [
+    "OLD FENMILL.",
+    "DROWNED IN THE BIG FLOOD. THE MILLER SWAM. THE MILL DIDN'T."
+   ]
   }
  ],
  "buildings": [
@@ -2069,6 +2118,21 @@
     [
      165,
      19
+    ]
+   ]
+  },
+  {
+   "id": "kingsTombDoor",
+   "x": 57,
+   "y": 22,
+   "kind": "wall",
+   "hp": 120,
+   "reinforced": true,
+   "tex": "dgReinforcedFace",
+   "tiles": [
+    [
+     57,
+     22
     ]
    ]
   }

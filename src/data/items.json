@@ -932,5 +932,78 @@
   },
   "perk": "echobell",
   "desc": "+20% ULTIMATE CHARGE. +2 ATK. IT RINGS, VERY FAINTLY, WHEN YOU'RE READY."
+ },
+ "thunderwrench": {
+  "name": "THUNDERWRENCH",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "wrench_steel@4",
+  "stats": {
+   "atk": 10,
+   "crit": 0.04
+  },
+  "perk": "thunder",
+  "element": "storm",
+  "desc": "STORM. EVERY HIT SHOCKS. IT HUMS IN THE RAIN AND, ALARMINGLY, IN THE BATH."
+ },
+ "ember_heart": {
+  "name": "EMBER HEART",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@3",
+  "stats": {
+   "hp": 12
+  },
+  "perk": "emberheart",
+  "desc": "IMMUNE TO THE CINDERREACH HEAT AND TO BURNING. +12 HP. A COAL THAT NEVER GOES OUT."
+ },
+ "hourglass_charm": {
+  "name": "HOURGLASS CHARM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@4",
+  "stats": {
+   "cdr": 0.12
+  },
+  "desc": "-12% SKILL COOLDOWNS. THE SAND FALLS UP, IF YOU'RE NOT WATCHING."
+ },
+ "ward_shard": {
+  "name": "WARD SHARD",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@5",
+  "stats": {
+   "def": 2
+  },
+  "perk": "wardshard",
+  "desc": "+10% DAMAGE TO HEXED FOES. IT GROWS WITH EVERY WARD STONE THAT FALLS."
+ },
+ "ward_prism": {
+  "name": "WARD PRISM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@4",
+  "stats": {
+   "def": 4
+  },
+  "perk": "wardprism",
+  "desc": "+20% DAMAGE TO HEXED FOES. ONE MORE STONE, AND IT WILL BE A CROWN."
+ },
+ "ward_crown": {
+  "name": "WARD CROWN",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@6",
+  "stats": {
+   "def": 6
+  },
+  "perk": "wardcrown",
+  "desc": "+30% DAMAGE TO HEXED FOES. THREE STONES' WORTH OF BROKEN MAGIC, HUMMING."
  }
 }
