@@ -118,4 +118,33 @@ export const HOLLOW = { ...composeHero('brann', { head: 'helm_great@3', body: 'p
 export const WARLOCK = { ...composeHero('pip', { head: 'hat_apprentice@5', body: 'robe_apprentice@5', weapon: 'staff_oak@5', offhand: null }), id: 'warlock', name: 'Hex Warlock' };
 // Mistfen: the Drowned (waterlogged dead) and Marsh Witchlings (Malgrim's swamp cultists).
 export const DROWNED = { ...composeHero('sable', { head: 'hood_shadow@3', body: 'jacket_leather@3', weapon: 'dagger_steel@1', offhand: null }), id: 'drowned', name: 'Drowned' };
+// Gloamwood: Shades (hooded wraiths, drawn dark and veiled in play) and
+// Wailing Banshees (pale drifting ghosts; washed out and hovering in play).
+export const SHADE = { ...composeHero('sable', { head: 'hood_shadow@5', body: 'coat_nightsilk@5', weapon: 'dagger_kris@5', offhand: 'parry_kris@5' }), id: 'shade', name: 'Shade' };
+export const BANSHEE = { ...composeHero('pip', { head: null, body: 'robe_scholar@1', weapon: 'none', offhand: null }), id: 'banshee', name: 'Wailing Banshee' };
+// Ghost palettes, applied to a puppet's baked frames: every colour is mapped
+// by brightness onto a ramp (keeping the ink outline and dark eyes), and the
+// hem fades out so the figure floats with no feet.
+const RAMP_GHOST = [[52, 58, 92], [150, 158, 190], [206, 214, 232], [244, 248, 255]];
+const ghosted = new WeakSet(); // frames can share a canvas: recolour each once
+export function ghostRecolor(canvas) {
+  if (ghosted.has(canvas)) return;
+  ghosted.add(canvas);
+  const ctx = canvas.getContext('2d');
+  const { width: w, height: h } = canvas;
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  let bottom = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3]) bottom = y;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    if (!d[i + 3]) continue;
+    const l = (0.3 * d[i] + 0.55 * d[i + 1] + 0.15 * d[i + 2]) / 255;
+    const c = l < 0.16 ? RAMP_GHOST[0] : l < 0.38 ? RAMP_GHOST[1] : l < 0.62 ? RAMP_GHOST[2] : RAMP_GHOST[3];
+    d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
+    const fromBottom = bottom - y;
+    if (fromBottom < 2) d[i + 3] = 0; // no feet
+    else if (fromBottom < 6) d[i + 3] = Math.round(d[i + 3] * (fromBottom - 1) / 6); // a fading hem
+  }
+  ctx.putImageData(img, 0, 0);
+}
 export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

@@ -550,7 +550,8 @@
   "resist": "shadow",
   "drops": {
    "ghostcap": 0.4
-  }
+  },
+  "tint": 7108784
  },
  "rootling": {
   "name": "ROOTLING",
@@ -666,7 +667,10 @@
   "resist": "shadow",
   "drops": {
    "crystal": 0.3
-  }
+  },
+  "tint": 13626623,
+  "alpha": 0.82,
+  "hover": 7
  },
  "mab": {
   "name": "QUEEN MAB",

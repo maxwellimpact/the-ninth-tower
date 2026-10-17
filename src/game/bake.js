@@ -18,8 +18,11 @@ export function packFrames(scene, key, frames) {
   return tex;
 }
 
-export function registerPuppet(scene, key, def) {
+// recolor (optional): a pass over every frame canvas before packing, e.g. the
+// Banshee's ghost palette
+export function registerPuppet(scene, key, def, recolor = null) {
   const fr = buildPuppetFrames(def);
+  if (recolor) for (const views of Object.values(fr)) for (const frames of Object.values(views)) frames.forEach(recolor);
   const list = [];
   for (const [anim, views] of Object.entries(fr)) for (const [v, frames] of Object.entries(views)) frames.forEach((canvas, i) => list.push({ name: `${anim}_${v}_${i}`, canvas }));
   packFrames(scene, key, list);

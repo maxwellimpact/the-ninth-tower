@@ -84,7 +84,9 @@ export class Unit {
     }
     // lift: standing up on something (a lookout platform) — drawn higher, sorted as if on the ground
     const lift = this.lift || 0;
-    this.sprite.setPosition(Math.round(this.x), Math.round(this.y - lift));
+    // hovering ghosts float a little above their shadow, bobbing
+    const hover = this.s?.hover ? this.s.hover + Math.sin(this.scene.time.now / 320 + this.spawn.x) * 1.5 : 0;
+    this.sprite.setPosition(Math.round(this.x), Math.round(this.y - lift - hover));
     this.sprite.setFlipX(this.flip);
     this.sprite.setDepth(this.y + (lift ? 4 : 0));
     this.shadow.setPosition(Math.round(this.x) + 1, Math.round(this.y - lift) + 1);
@@ -949,7 +951,7 @@ const ENEMY = enemyData;
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
 const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling']);
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -995,6 +997,7 @@ export class Enemy extends Unit {
     if (s.ai === 'lurk') this.submerge(true);
     if (s.rise) { this.riseT = 0.7; this.sprite.setAlpha(0); scene.fx.burst('foam', x, y, 10); }
     if (s.named) { this.elite = true; this.named = true; }
+    if (s.alpha) this.sprite.setAlpha(s.alpha);
     this.restoreTint();
   }
 
@@ -1003,6 +1006,7 @@ export class Enemy extends Unit {
     if (t) this.sprite.setTint(t);
     else if (this.frenzy) this.sprite.setTint(0xff8a7a);
     else if (this.elite) this.sprite.setTint(0xffd889);
+    else if (this.s.tint) this.sprite.setTint(this.s.tint); // ghosts keep their pallor
     else if (this.puppet && this.cursed) this.sprite.setTint(0xd9b8ff);
     else this.sprite.clearTint();
   }

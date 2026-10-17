@@ -1499,6 +1499,11 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
    - **The bug:** in the boss fight, running away or tapping an attack felt stuck while a swing played out. Dodge and skills were refused mid-swing, and frequent freeze-frames on hits stalled input too.
    - **The rule:** moving, choosing a different target or pressing a skill cancels the leader's swing at once. A swing cut before it lands doesn't hit, and its cooldown is refunded, so you can step in and back out. Skill animations can be cut once their effect is out. Freeze-frames come only from the leader's own hits, are short and spaced out, and never fire while you're steering.
 
+6. **New art matches the existing cast.**
+   - **The bug:** the first Gloamwood enemies were drawn quickly as flat shapes with spindly lines (a triangle wraith, stick-legged hounds and spiders) and looked cheap beside the shaded, outlined Vale and Mistfen creatures and the gear-built heroes.
+   - **The rule:** humanoid foes are puppets built from the heroes' parts (like the Drowned and Witchlings), recoloured if needed (`registerPuppet(..., recolor)`, e.g. the Banshee's ghost palette). Creatures use the same technique as the existing ones: chunky grids or shaded blobs with a lit top-left, a dark underside and the shared ink outline.
+   - **Check:** render every new sprite side by side with existing ones at 3x (a sprite sheet snapshot) before moving on.
+
 ---
 
 ## 16. Open Questions
