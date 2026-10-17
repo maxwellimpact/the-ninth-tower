@@ -786,7 +786,7 @@
    "crit": 0.06
   },
   "perk": "clockwork",
-  "desc": "HIDDEN CHESTS AND TRAPS NEARBY SHOW ON THE MINIMAP. +6% CRIT. GIZMO'S PRIDE AND JOY.",
+  "desc": "HIDDEN CHESTS NEARBY SHOW ON THE MINIMAP. +6% CRIT. GIZMO'S PRIDE AND JOY.",
   "fx": {
    "type": "phoenix",
    "at": "head"

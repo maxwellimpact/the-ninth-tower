@@ -422,10 +422,12 @@ export class QuestManager {
     }
   }
 
-  onGather(mat, n = 1) {
+  // Gather steps count what's in the bag, not just what was picked since
+  // accepting: herbs you already carry count, and the turn-in takes them.
+  onGather(mat) {
     for (const id of this.active()) {
       const s = this.step(id);
-      if (s?.type === 'gather' && s.mat === mat) { this.q(id).n += n; if (this.q(id).n >= s.count) this.advance(id); }
+      if (s?.type === 'gather' && (!mat || s.mat === mat)) { this.q(id).n = Math.min(s.count, this.state.materials[s.mat] || 0); if (this.q(id).n >= s.count) this.advance(id); }
     }
   }
 
@@ -619,6 +621,7 @@ export class QuestManager {
         this.offer(id, npc);
       }
     }
+    if (recheck) this.onGather(); // materials can also arrive from chests, rewards or crafting
     for (const id of this.active()) {
       const s = this.step(id), live = this.live[id];
       if (!s || !live) continue;

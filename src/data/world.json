@@ -4540,7 +4540,7 @@
   },
   {
    "id": "fenwick",
-   "name": "FENWICK",
+   "name": "OLD WADE",
    "look": "wick",
    "x": 9,
    "y": 117,
@@ -4700,8 +4700,8 @@
    "look": "piet",
    "x": 112,
    "y": 152,
-   "quirk": "I SNEEZE SPARKS. I'VE BURNED DOWN TWO TENTS AND A VERY GOOD HAT.",
-   "home": "I SNEEZED THIS MORNING. NOTHING CAUGHT FIRE. I WEPT.",
+   "quirk": "EVERYTHING I COOK TURNS TO CHARCOAL. EVERYTHING. I TRIED TO MAKE A SALAD.",
+   "home": "I MADE A SALAD THIS MORNING. IT WAS GREEN. I ATE THE WHOLE THING STANDING UP.",
    "guard": [
     [
      "imp",
@@ -4765,12 +4765,12 @@
   },
   {
    "id": "pell",
-   "name": "PELL THE PEDLAR",
+   "name": "SVEN THE PEDLAR",
    "look": "piet",
    "x": 104,
    "y": 260,
    "quirk": "EVERYTHING I TOUCH TURNS TO SNOW. I USED TO SELL SPOONS. NOW I SELL SMALL PILES OF SNOW.",
-   "home": "I SOLD A SPOON TODAY! IT STAYED A SPOON! I CRIED A LITTLE.",
+   "home": "I SOLD A SPOON TODAY! IT STAYED A SPOON ALL THE WAY TO THE CUSTOMER'S HOUSE!",
    "guard": [
     [
      "frostwolf",
@@ -4790,8 +4790,8 @@
    "look": "greta",
    "x": 10,
    "y": 296,
-   "quirk": "I CAN ONLY WHISPER, OR I START AN AVALANCHE. (THAT WAS A WHISPER.)",
-   "home": "I SHOUTED TODAY. NOTHING FELL ON ANYONE. I SHOUTED SOME MORE, JUST TO BE SURE."
+   "quirk": "MY TEETH WON'T STOP CHATTERING. NOT FROM THE COLD - THEY'RE TAPPING OUT MESSAGES. RUDE ONES.",
+   "home": "MY TEETH ARE QUIET. I STILL DON'T KNOW WHO THEY WERE TALKING TO."
   },
   {
    "id": "hobnail",
@@ -4804,7 +4804,7 @@
   },
   {
    "id": "bramwell",
-   "name": "SER BRAMWELL",
+   "name": "SER ANSELM",
    "look": "oswin",
    "x": 145,
    "y": 313,
@@ -4826,8 +4826,8 @@
    "look": "tam",
    "x": 140,
    "y": 20,
-   "quirk": "MY SHADOW WANDERS OFF AT NIGHT. LAST WEEK IT CAME BACK WITH SOMEBODY ELSE'S HAT.",
-   "home": "MY SHADOW STAYS PUT NOW. IT SULKS A BIT. I'VE BOUGHT IT A HAT OF ITS OWN."
+   "quirk": "EVERY DOOR I OPEN LEADS BACK OUTSIDE. I HAVEN'T BEEN INDOORS IN A MONTH. I MISS CEILINGS.",
+   "home": "I WALKED INTO A HOUSE TODAY AND I WAS IN A HOUSE. I SAT UNDER THE CEILING FOR AN HOUR."
   },
   {
    "id": "wenna",

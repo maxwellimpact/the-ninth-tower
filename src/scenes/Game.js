@@ -3052,10 +3052,22 @@ export class Game extends Phaser.Scene {
       this.events.emit('dialogue', [{ ...K, text: `YOU HAVE ${st.flies.length} GOLDEN FLIES. BRING ME ${next.n} AND I SHALL REWARD YOU. THEY HIDE IN THE STRANGEST PLACES...` }]);
       return;
     }
-    const lines = this.flags.wardBroken
+    // what the King says follows how far you've come
+    const left = OUTER_REGIONS.filter((r) => !this.flags[`ward_${r}`]).length;
+    const lines = this.flags.kingRestored
       ? [
-        { ...K, text: 'YOU DID IT! LOOK AT THOSE COLOURS! I HAD FORGOTTEN WHAT GREEN LOOKED LIKE. ...OTHER THAN ME.' },
-        { ...K, text: 'FOUR MORE WARD STONES HOLD THE NINTH TOWER. BRING THEM DOWN, AND MALGRIM WITH THEM.' },
+        { ...K, text: 'MY KINGDOM, AND ME IN IT, TALL AND DRY. I STILL SIT BY THE POND SOME EVENINGS. FORCE OF HABIT.' },
+        { ...K, text: 'IF YOU FIND ANY MORE GOLDEN FLIES, YOU KNOW WHERE I AM. FOR OLD TIMES.' },
+      ]
+      : this.flags.wardBroken && left === 0
+      ? [
+        { ...K, text: 'ALL FIVE STONES! THE BARRIER IS GONE. NOTHING STANDS BETWEEN YOU AND THE NINTH TOWER NOW.' },
+        { ...K, text: 'GO TO THE BLIGHT BASIN AND END THIS. AND IF MALGRIM ASKS, TELL HIM THE KING SAID "RIBBIT". HE\'LL KNOW WHAT I MEAN.' },
+      ]
+      : this.flags.wardBroken
+      ? [
+        { ...K, text: left === 4 ? 'YOU DID IT! LOOK AT THOSE COLOURS! I HAD FORGOTTEN WHAT GREEN LOOKED LIKE. ...OTHER THAN ME.' : 'ANOTHER STONE DOWN! I FELT IT IN MY WEBBED LITTLE TOES.' },
+        { ...K, text: `${left === 1 ? 'ONE MORE WARD STONE HOLDS' : `${['', '', 'TWO', 'THREE', 'FOUR'][left]} MORE WARD STONES HOLD`} THE NINTH TOWER. BRING ${left === 1 ? 'IT' : 'THEM'} DOWN, AND MALGRIM WITH ${left === 1 ? 'IT' : 'THEM'}.` },
         { ...K, text: 'ALSO, IF YOU SEE ANY FLIES... NO. NO. A KING HAS STANDARDS.' },
       ]
       : [
