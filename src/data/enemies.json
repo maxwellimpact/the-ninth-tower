@@ -1212,5 +1212,27 @@
   "drops": {
    "crystal": 0.5
   }
+ },
+ "malgrim": {
+  "name": "MALGRIM THE UNKIND",
+  "maxHp": 3200,
+  "speed": 44,
+  "aggro": 260,
+  "reach": 110,
+  "windup": 0.6,
+  "recover": 0.8,
+  "dmg": 34,
+  "xp": 600,
+  "gold": [
+   120,
+   160
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 70,
+  "shot": "bolt",
+  "scale": 1.5,
+  "weak": "light",
+  "resist": "shadow"
  }
 }

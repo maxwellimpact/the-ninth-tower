@@ -413,7 +413,8 @@ export class Game extends Phaser.Scene {
     if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll', 'isolde'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
     if (['voidling', 'gargoyle', 'chainwarden'].includes(kind) && !loaded.has('basin')) loadGroupNow(this, 'basin');
     // the Blight Basin: the Hex Legion comes as Hexborn (elite, with an affix)
-    const hexborn = HEXBORN.has(kind) && biomeAt(Math.floor(x / TILE), Math.floor(y / TILE)) === 'basin';
+    const bAt = biomeAt(Math.floor(x / TILE), Math.floor(y / TILE));
+    const hexborn = HEXBORN.has(kind) && (bAt === 'basin' || bAt.startsWith('tower'));
     if (hexborn) elite = true;
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
@@ -446,7 +447,38 @@ export class Game extends Phaser.Scene {
     cam.setBounds(x, y, w, h);
   }
 
+  // Malgrim's curse: the leader becomes a frog for 6s (unless the Frog King blessed them)
+  frogify(h) {
+    if (!h?.alive || h.downed || h.frogT > 0) return;
+    if (this.state.flags.blessing) { this.floatText(h.x, h.y - 34, "THE FROG KING'S BLESSING!", 'fontGold'); this.fx.ring(h.x, h.y - 6, 'ringGold', 2.5); return; }
+    h.frogT = 6; h.anim = ''; h.play('idle'); h.clearPath?.();
+    this.fx.puff(h.x, h.y - 8, 'sparkCurse'); audio.sfx('squish', { pitch: 0.7 });
+    this.floatText(h.x, h.y - 34, 'RIBBIT', 'fontGold', 0x8cff8c);
+  }
+
+  // The Ninth Tower: the door (open once the Vale stone is down; Malgrim warns
+  // an early party off, but lets them in) and each floor's stairs up, which
+  // pass by any floor whose outer Ward Stone has fallen.
+  towerSealed(n) { const d = DUNGEONS[`tower${n}`]; return !!(d?.seal && this.flags[d.seal]); }
+  towerStairs(w) {
+    const n = w.tower, here = DUNGEONS[`tower${n}`];
+    if (here?.boss && !this.towerSealed(n) && !this.flags[here.boss.flag]) { this.bark(this.leader, "THE STAIRS WON'T OPEN WHILE THE ECHO STILL STANDS."); return; }
+    let next = n + 1;
+    const sealed = [];
+    while (next < 9 && this.towerSealed(next)) sealed.push(next++);
+    const to = dungeonStart(`tower${next}`);
+    this.warp({ ...w, to: { x: to.x, y: to.y }, tower: undefined });
+    this.time.delayedCall(800, () => this.events.emit('banner', next === 9 ? "MALGRIM'S CHAMBER" : `FLOOR ${next}`, sealed.length ? `FLOOR${sealed.length > 1 ? 'S' : ''} ${sealed.join(', ')} SEALED - A WARD STONE YOU BROKE` : 'THE NINTH TOWER'));
+  }
+
   tryWarp(w) {
+    if (typeof w.tower === 'number') { this.towerStairs(w); return; }
+    if (w.tower === 'door' && this.flags.wardBroken && !this.flags.towerWarned && OUTER_REGIONS.some((r) => !this.flags[`ward_${r}`])) {
+      this.flags.towerWarned = true;
+      const M = (text) => ({ who: 'MALGRIM', text, voice: { pitch: 110, wave: 'sawtooth', speed: 0.8 } });
+      this.events.emit('dialogue', [M('AH. VISITORS. HOW... OPTIMISTIC.'), M('MY STONES STILL STAND, LITTLE ONES. EVERY ONE OF THEM IS A WALL BETWEEN YOU AND ME. COME BACK WHEN YOU ARE LESS... SMALL.'), M('OR COME IN NOW. I COULD USE THE ENTERTAINMENT.')], () => this.tryWarp(w));
+      return;
+    }
     if (w.requires && !this.flags[w.requires]) { this.bark(this.leader, 'BARRED FROM THE OTHER SIDE.'); return; }
     if (w.lockedBy && !this.flags[`broke_${w.lockedBy}`]) {
       this.bark(this.leader, { brann: 'THIS ROCK IS CRACKED. ONE GOOD HIT...', pip: "THERE'S A DRAFT BEHIND THAT ROCK. SUSPICIOUS.", sable: 'HOLLOW BEHIND THERE. I CAN SMELL TREASURE.' }[this.leader.def.id]);
@@ -783,6 +815,7 @@ export class Game extends Phaser.Scene {
     else if (kind === 'ember') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 150; audio.sfx('fireCast', { pitch: 1.4 }); }
     else if (kind === 'heavy') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setScale(1.8).setTint(0xff9a8a); sp = 270; audio.sfx('dash'); }
     else if (kind === 'web') { s = this.add.image(from.x, from.y - 8, 'web0').setDepth(TOP - 21).setScale(0.45); sp = 130; audio.sfx('squish', { pitch: 1.6 }); }
+    else if (kind === 'frogcurse') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(3).setTint(0x8cff8c).setDepth(TOP - 21); sp = 120; audio.sfx('hexCharge', { pitch: 1.4 }); }
     else if (kind === 'snowball') { s = this.add.circle(from.x, from.y - 14, 4, 0xf4f8ff).setStrokeStyle(1, 0x7d8bb4).setDepth(TOP - 21); sp = 150; audio.sfx('swing', { pitch: 0.6 }); }
     else if (kind === 'shard') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0xb8e8ff).setScale(1.2); sp = 190; audio.sfx('frost', { pitch: 1.4 }); }
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
@@ -824,6 +857,7 @@ export class Game extends Phaser.Scene {
         if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
         if (p.kind === 'web' && hit.buff) { hit.buff('slow', 0.05, 1.4); this.floatText(hit.x, hit.y - 34, 'WEBBED', 'fontPlain', 0xc9cfe0); }
         if (p.kind === 'snowball') { freezeHero(hit, 1.2); this.fx.burst('foam', p.x, p.y, 10); }
+        if (p.kind === 'frogcurse') this.frogify(hit);
         if (p.kind === 'shard') chillHero(hit, 1.6);
       }
       if (hit || wall || p.life <= 0) { p.dead = true; p.s.destroy(); }
@@ -1137,7 +1171,7 @@ export class Game extends Phaser.Scene {
 
   updateDarkness() {
     const L = this.leader;
-    const inCave = !!this.areaRect().dark;
+    const inCave = !!this.areaRect().dark || !!this.malgrimDark; // (Malgrim's dark phase)
     // Gloamwood's canopy dims the overworld: fades in over ~10 tiles as you
     // walk in from the fen, never as dark as a cave
     const ltx = L.x / TILE, lty = L.y / TILE;
@@ -1472,6 +1506,7 @@ export class Game extends Phaser.Scene {
       if (src.passive('steadyaim') && src.stillT > 1) amount *= 1.2;
       if (src.buffs?.primal) amount *= 1.5;
       if (src.buffs?.might) amount *= src.buffs.might.mul; // Wolfskull Helm's Howl
+      if (src.hasPerk('cufflink')) amount *= 1.25; // Malgrim's Cufflink
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
       if (target.s?.hexed) { const ws = src.hasPerk('wardcrown') ? 0.3 : src.hasPerk('wardprism') ? 0.2 : src.hasPerk('wardshard') ? 0.1 : 0; amount *= 1 + ws; } // Ward Shard / Prism / Crown
       // weapon gems: a little extra elemental damage on every hit
@@ -1496,6 +1531,14 @@ export class Game extends Phaser.Scene {
       const [dx, dy] = norm(src.x - target.x, src.y - target.y);
       const st = src.skills.find((k) => k.id === 'step');
       if (st && st.t > 0 && f[0] * dx + f[1] * dy < -0.3) { st.t = 0; src.ravenT = this.time.now + 1000; this.floatText(src.x, src.y - 34, 'STEP READY', 'fontPlain', 0xb48cff); }
+    }
+    // Malgrim's mirror-shield: the next spell comes straight back
+    if (hero && spell && target.reflectNext) {
+      target.reflectNext = false; target.restoreTint?.();
+      src.damage(amount * 0.6, target);
+      this.fx.burst('curse', target.x, target.y - 20, 12); audio.sfx('block', { pitch: 1.4 });
+      this.floatText(target.x, target.y - 50, 'REFLECTED!', 'fontGold', 0xe7a6ff);
+      return;
     }
     // the Hex Sentinel turns spells cast at its face back on the caster
     if (hero && spell && target.s?.reflect && target.view && !(target.stunT > 0) && !target.status?.shock) {
@@ -1723,31 +1766,36 @@ export class Game extends Phaser.Scene {
       case 'meteor': {
         const pool = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 190);
         if (!pool.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
-        const t = pool.map((e) => [e, pool.filter((o) => dist(o, e) < 44).length]).sort((a, b) => b[1] - a[1])[0][0];
-        const tx = t.x, ty = t.y;
-        h.face(tx - h.x, ty - h.y);
+        const ranked = pool.map((e) => [e, pool.filter((o) => dist(o, e) < 44).length]).sort((a, b) => b[1] - a[1]).map((r) => r[0]);
+        const t = ranked[0];
+        h.face(t.x - h.x, t.y - h.y);
         h.action = { type: 'skill', id: 'meteor', t: 0, dur: 0.6 }; h.anim = ''; h.play('cast');
-        const g = this.fx.telegraph(tx, ty, 46, 0.8);
-        g.setDepth(-2);
-        (this.partyZones ??= []).push({ x: tx, y: ty, r: 46, until: this.time.now + 800 }); // elites read it and step out
-        const m = this.add.sprite(tx - 60, ty - 180, 'firebolt').play('firebolt').setScale(3.2).setDepth(TOP - 15).setRotation(Math.atan2(180, 60));
-        audio.sfx('fireCast');
-        this.tweens.add({
-          targets: m, x: tx, y: ty - 8, duration: 800, ease: 'Quad.easeIn',
-          onUpdate: () => this.fx.burst('ember', m.x, m.y, 2),
-          onComplete: () => {
-            m.destroy(); g.destroy();
-            this.shake(350, 0.014); this.cameras.main.flash(120, 255, 200, 120);
-            audio.sfx('fireImpact'); audio.sfx('bash');
-            this.fx.burst('ember', tx, ty, 50); this.fx.ring(tx, ty, 'ringGold', 7);
-            for (const e of [...this.enemies, ...this.wardUnits()]) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 6, { crit: true, knock: 200 });
-            if (tome) { // the crater keeps burning
-              const pool = this.add.ellipse(tx, ty, 92, 56, 0xff7b2e, 0.32).setDepth(-25);
-              this.tweens.add({ targets: pool, alpha: 0, duration: 5000, onComplete: () => pool.destroy() });
-              this.time.addEvent({ delay: 500, repeat: 9, callback: () => { for (const e of this.enemies) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 0.35, { knock: 0, element: 'fire' }); } });
-            }
-          },
-        });
+        // the Staff of the Ninth Apprentice: three meteors, on the three biggest clusters
+        const spots = [t, ...(h.hasPerk('ninthstaff') ? [ranked[1] || t, ranked[2] || ranked[1] || t] : [])];
+        spots.forEach((tg, si) => this.time.delayedCall(si * 260, () => {
+          const tx = tg.x + (si && tg === t ? (si === 1 ? -30 : 30) : 0), ty = tg.y;
+          const g = this.fx.telegraph(tx, ty, 46, 0.8);
+          g.setDepth(-2);
+          (this.partyZones ??= []).push({ x: tx, y: ty, r: 46, until: this.time.now + 800 }); // elites read it and step out
+          const m = this.add.sprite(tx - 60, ty - 180, 'firebolt').play('firebolt').setScale(3.2).setDepth(TOP - 15).setRotation(Math.atan2(180, 60));
+          audio.sfx('fireCast');
+          this.tweens.add({
+            targets: m, x: tx, y: ty - 8, duration: 800, ease: 'Quad.easeIn',
+            onUpdate: () => this.fx.burst('ember', m.x, m.y, 2),
+            onComplete: () => {
+              m.destroy(); g.destroy();
+              this.shake(350, 0.014); this.cameras.main.flash(120, 255, 200, 120);
+              audio.sfx('fireImpact'); audio.sfx('bash');
+              this.fx.burst('ember', tx, ty, 50); this.fx.ring(tx, ty, 'ringGold', 7);
+              for (const e of [...this.enemies, ...this.wardUnits()]) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 6, { crit: true, knock: 200 });
+              if (tome) { // the crater keeps burning
+                const pool = this.add.ellipse(tx, ty, 92, 56, 0xff7b2e, 0.32).setDepth(-25);
+                this.tweens.add({ targets: pool, alpha: 0, duration: 5000, onComplete: () => pool.destroy() });
+                this.time.addEvent({ delay: 500, repeat: 9, callback: () => { for (const e of this.enemies) if (e.alive && Math.hypot(e.x - tx, e.y - ty) < 46 + e.r) this.dealDamage(h, e, h.stats.atk * 0.35, { knock: 0, element: 'fire' }); } });
+              }
+            },
+          });
+        }));
         sc.floatText(h.x, h.y - 36, 'METEOR!', 'fontGold', 0xffffff, true);
         break;
       }

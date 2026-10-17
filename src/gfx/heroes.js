@@ -4,6 +4,7 @@
 import heroData from '../data/heroes.json';
 import items from '../data/items.json';
 import { composeHero } from './gear.js';
+import { hex } from './palette.js';
 import { spearAttack, bowAttack } from './poses.js';
 
 export const HERO_DATA = heroData;
@@ -155,15 +156,18 @@ const RAMP_ICE = [[34, 62, 112], [104, 160, 214], [168, 214, 244], [232, 248, 25
 export const iceRecolor = recolorer(RAMP_ICE, true); // Ice Wraiths: glassy blue, footless
 const RAMP_RIME = [[30, 40, 72], [92, 122, 170], [170, 200, 232], [240, 248, 255]];
 export const rimeRecolor = recolorer(RAMP_RIME, false); // Isolde: armour of frosted steel
-function recolorer(RAMP, fade) {
+const RAMP_MALGRIM = [[22, 14, 34], [62, 44, 92], [120, 100, 150], [214, 196, 236]];
+export const malgrimRecolor = recolorer(RAMP_MALGRIM, false, ['skin', 'skinL', 'skinD', 'curse', 'curseL', 'ink']); // Malgrim: his coat and hat in grey-violet; his pale face and the hex light kept
+function recolorer(RAMP, fade, keep = null) {
   const done = new WeakSet(); // frames can share a canvas: recolour each once
+  const kept = keep && new Set(keep.map((k) => hex(k).toLowerCase()));
   return (canvas) => {
     if (done.has(canvas)) return;
     done.add(canvas);
-    recolorCanvas(canvas, RAMP, fade);
+    recolorCanvas(canvas, RAMP, fade, kept);
   };
 }
-function recolorCanvas(canvas, RAMP_GHOST, fade) {
+function recolorCanvas(canvas, RAMP_GHOST, fade, kept = null) {
   const ctx = canvas.getContext('2d');
   const { width: w, height: h } = canvas;
   const img = ctx.getImageData(0, 0, w, h), d = img.data;
@@ -172,6 +176,7 @@ function recolorCanvas(canvas, RAMP_GHOST, fade) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = (y * w + x) * 4;
     if (!d[i + 3]) continue;
+    if (kept && kept.has(`#${[d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('')}`)) continue;
     const l = (0.3 * d[i] + 0.55 * d[i + 1] + 0.15 * d[i + 2]) / 255;
     const c = l < 0.16 ? RAMP_GHOST[0] : l < 0.38 ? RAMP_GHOST[1] : l < 0.62 ? RAMP_GHOST[2] : RAMP_GHOST[3];
     d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
@@ -192,6 +197,8 @@ export const VULK = { ...composeHero('lizard', { head: 'crown_forge', body: 'apr
 export const ISOLDE = { ...composeHero('mirelle', { head: 'helm_great', body: 'plate_guard', weapon: 'lance_rime', offhand: 'shield_kite' }), id: 'isolde', name: 'Isolde' };
 // Ice Wraith: a hooded, footless shape of frost that drifts through walls (iceRecolor)
 export const WRAITH = { ...composeHero('pip', { head: 'hood_shadow@3', body: 'robe_scholar@1', weapon: 'none', offhand: null }), id: 'icewraith', name: 'Ice Wraith' };
+// Malgrim the Unkind: a tall wizard in a star-pointed hat and a long coat, with a hex staff
+export const MALGRIM = { ...composeHero('brann', { head: 'hat_star', body: 'robe_scholar', weapon: 'staff_hex', offhand: null }), id: 'malgrim', name: 'Malgrim' };
 // Chain Warden: Malgrim's jailer, a hulking plated hex knight swinging a shackle-mace (hexRecolor-free: dark steel)
 export const WARDEN = { ...composeHero('brann', { head: 'helm_hex', body: 'plate_hex', weapon: 'hammer_war@1', offhand: null }), id: 'chainwarden', name: 'Chain Warden' };
 export const WITCHLING = { ...composeHero('hag', { head: 'hat_hag', body: 'shawl_hag', weapon: 'staff_bog', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

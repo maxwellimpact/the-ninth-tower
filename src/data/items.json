@@ -1335,5 +1335,35 @@
    "type": "sun",
    "at": "weapon"
   }
+ },
+ "malgrim_cufflink": {
+  "name": "MALGRIM'S CUFFLINK",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@6",
+  "stats": {},
+  "perk": "cufflink",
+  "cursed": true,
+  "desc": "+25% DAMAGE, -25% MAX HP. CURSED: IT CAN'T BE SOLD. A SILVER HEX, STILL WARM FROM HIS WRIST."
+ },
+ "staff_ninth": {
+  "name": "STAFF OF THE NINTH APPRENTICE",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "legendary",
+  "legend": true,
+  "look": "staff_hex@6",
+  "stats": {
+   "atk": 22,
+   "crit": 0.08
+  },
+  "element": "fire",
+  "perk": "ninthstaff",
+  "desc": "FIRE. METEOR CALLS DOWN THREE METEORS. MALGRIM KEPT IT FOR THE APPRENTICE WHO WOULD ONE DAY OUTGROW HIM. PIP, AS IT TURNS OUT.",
+  "fx": {
+   "type": "arcane",
+   "at": "weapon"
+  }
  }
 }

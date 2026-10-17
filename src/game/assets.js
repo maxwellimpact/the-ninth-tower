@@ -2,7 +2,7 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, WARDEN, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, WARDEN, MALGRIM, malgrimRecolor, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
@@ -216,6 +216,7 @@ export const GROUPS = {
       creature(s, 'voidling', buildVoidling(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'gargoyle', buildGargoyle(), { idle: 1, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'chainwarden', WARDEN);
+      registerPuppet(s, 'malgrim', MALGRIM, malgrimRecolor);
     }],
     ['blight', (s) => {
       for (let k = 0; k < 4; k++) { s.textures.addCanvas(`hexcrystal${k}`, P.hexCrystal(k)); s.textures.addCanvas(`hexcrystalB${k}`, P.hexCrystal(k, true)); s.textures.addCanvas(`bones${k}`, P.bones(k)); }

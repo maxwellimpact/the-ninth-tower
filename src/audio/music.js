@@ -337,6 +337,43 @@ export const BASIN_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 0.8, echo: 0.6, vibrato: 0.02 }, arp: { vol: 0.9, echo: 0.6 }, bass: { vol: 1.2 }, pad: { vol: 1.4, cutoff: 420 }, sub: { vol: 1.5 } },
 });
 
+// The Ninth Tower: a march up endless stairs - a heavy two-note bass, the
+// anvil's off-beat ring turned to a bell of doom, a melody in the minor that
+// climbs a step each bar
+export const TOWER_THEME = buildTheme({
+  name: 'The Ninth Tower', bpm: 76, key: -5, arp: 'clock', bass: 'march',
+  chords: [['A2', 'C3', 'E3'], ['B2', 'D3', 'F3'], ['C3', 'E3', 'G3'], ['B2', 'D3', 'F3'],
+    ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['A4', 4], ['B4', 4], ['C5', 8],
+    ['B4', 4], ['C5', 4], ['D5', 8],
+    ['C5', 4], ['D5', 4], ['E5', 8],
+    ['F5', 6], ['E5', 2], ['D5', 8],
+    ['E5', 4], ['C5', 4], ['A4', 8],
+    ['F4', 4], ['A4', 4], ['C5', 8],
+    ['D5', 4], ['C5', 4], ['B4', 4], ['A4', 4],
+    ['G#4', 12], ['-', 4],
+  ],
+  inst: { lead: { duty: 0.25, vol: 0.95, echo: 0.4, vibrato: 0.01 }, arp: { vol: 0.8, echo: 0.3 }, bass: { vol: 1.2 }, pad: { vol: 1.2, cutoff: 520 }, sub: { vol: 1.4 } },
+});
+// Malgrim: the Tower's march sped up and soured, a mocking waltz-step in it
+export const MALGRIM_THEME = buildTheme({
+  name: 'Malgrim the Unkind', bpm: 96, key: -6, arp: 'anvil', bass: 'gallop',
+  chords: [['A2', 'C3', 'E3'], ['A#2', 'D3', 'F3'], ['A2', 'C3', 'E3'], ['G#2', 'B2', 'E3'],
+    ['F2', 'A2', 'C3'], ['E2', 'G#2', 'B2'], ['D2', 'F2', 'A#2'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['E5', 2], ['F5', 2], ['E5', 4], ['A4', 8],
+    ['A#4', 4], ['D5', 4], ['F5', 8],
+    ['E5', 2], ['D#5', 2], ['E5', 4], ['C5', 4], ['A4', 4],
+    ['B4', 12], ['-', 4],
+    ['C5', 4], ['A4', 4], ['F4', 4], ['A4', 4],
+    ['G#4', 4], ['B4', 4], ['E5', 8],
+    ['F5', 4], ['D5', 4], ['A#4', 4], ['F4', 4],
+    ['E4', 12], ['-', 4],
+  ],
+  inst: { lead: { duty: 0.125, vol: 1, echo: 0.3, vibrato: 0.015 }, arp: { vol: 0.9, echo: 0.2 }, bass: { vol: 1.2 }, pad: { vol: 1.1, cutoff: 600 }, sub: { vol: 1.5 } },
+});
+
 // The Forge of Ash: the work song gone underground - slower, the anvil
 // echoing off stone, a hollow drone where the hearth used to roar
 export const FORGE_THEME = buildTheme({
@@ -396,7 +433,8 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME, frost: FROSTHELM_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, spire: SPIRE_THEME, basin: BASIN_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, spire: SPIRE_THEME, basin: BASIN_THEME,
+  tower1: TOWER_THEME, tower2: TOWER_THEME, tower3: TOWER_THEME, tower4: TOWER_THEME, tower5: TOWER_THEME, tower6: TOWER_THEME, tower7: TOWER_THEME, tower8: TOWER_THEME, tower9: MALGRIM_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

@@ -176,7 +176,7 @@ export class Hero extends Unit {
   }
 
   get name() { return this.def.name; }
-  get spd() { return this.stats.speed * (this.buffs?.primal ? 1 : this.buffMul('slow')); }
+  get spd() { return this.stats.speed * (this.buffs?.primal ? 1 : this.buffMul('slow')) * (this.frogT > 0 ? 0.8 : 1); }
   get ranged() { return this.stats.role === 'caster' || this.stats.role === 'ranged'; }
   get level() { return this.hs.level; }
   get ult() { return this.hs.ult || 0; }
@@ -257,6 +257,7 @@ export class Hero extends Unit {
   }
 
   play(anim) {
+    if (this.frogT > 0) { if (this.anim !== 'frog') { this.anim = 'frog'; this.sprite.setTexture('frog'); this.sprite.play('frog_idle'); } return; } // cursed into a frog
     const key = `${this.texKey}_${anim}_${this.view}`;
     if (this.anim !== key) { this.anim = key; this.sprite.play(key); }
   }
@@ -637,6 +638,13 @@ export class Hero extends Unit {
     this.taunting = Math.max(0, this.taunting - dt);
     this.provokeT = Math.max(0, (this.provokeT || 0) - dt);
     this.chainedT = Math.max(0, (this.chainedT || 0) - dt);
+    if (this.frogT > 0) { // Malgrim's curse: a frog can hop about and dodge, but not fight
+      this.frogT -= dt;
+      this.atkT = Math.max(this.atkT, 0.3);
+      for (const s of this.skills) s.t = Math.max(s.t, 0.3);
+      if (this.action?.type === 'skill' || this.action?.type === 'attack') this.action = null;
+      if (this.frogT <= 0) { this.anim = ''; this.sprite.setTexture(this.texKey); this.play('idle'); this.scene.fx.puff(this.x, this.y - 8, 'sparkCurse'); this.scene.floatText(this.x, this.y - 30, 'NOT A FROG ANY MORE', 'fontPlain'); }
+    }
     if (this.shieldT > 0) { this.shieldT -= dt; if (this.shieldT <= 0) this.shield = 0; }
     this.wallT = Math.max(0, (this.wallT || 0) - dt);
     this.riposteT = Math.max(0, (this.riposteT || 0) - dt);
@@ -1171,8 +1179,8 @@ export function freezeHero(h, t = 1.2) {
 
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann', malgrim: 'malgrim' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror', 'malgrim']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -1390,6 +1398,14 @@ export class Enemy extends Unit {
 
   damage(amount, src, { crit = false, knock = 40, dot = false } = {}) {
     if (!this.alive) return 0;
+    if (this.decoy) { // one of Malgrim's mirrors: it shatters, and spits a bolt back
+      this.alive = false; this.clearZone();
+      this.scene.fx.burst('curse', this.x, this.y - 20, 16); audio.sfx('shatter', { pitch: 1.5 });
+      if (src?.alive) this.scene.spawnEnemyArrow(this, { x: src.x, y: src.y - 6 }, this.s.dmg, 'bolt');
+      this.scene.floatText(this.x, this.y - 40, 'A MIRROR!', 'fontPlain', 0xe7a6ff);
+      this.destroy();
+      return 0;
+    }
     if (this.submerged || this.introT > 0 || this.invulnT > 0) return 0; // invulnT: aloft (the drake's dive)
     if (this.staged && src?.team === 'party') {
       // only a deliberate hit starts an errand fight: the leader's (you), or a
@@ -3712,6 +3728,214 @@ export class Isolde extends Enemy {
     this.clearZone();
     for (const v of this.vents) { v.s.destroy(); this.scene.removeInteractable(v.o); }
     this.plat?.destroy(); this.blizzard?.destroy();
+    this.scene.onBossKilled(this, src);
+    this.destroy();
+  }
+}
+
+// ------------------------------------------------------ Malgrim the Unkind
+// The court mage who cursed the realm, at the top of his Tower. His phases
+// share out his health: the Unkind Duelist, the Nine Mirrors, one elemental
+// phase for each outer Ward Stone still standing (flood, darkness, lava,
+// ice), and the Tower Heart.
+//  Duelist: blinks about the arena, throws volleys of hex bolts, calls
+//    hexlings, and every few seconds raises a mirror-shield that turns the
+//    next spell back on its caster.
+//  Nine Mirrors: eight copies and the real one in a ring. Copies shatter
+//    when struck (and spit a bolt back); only the real one casts a shadow -
+//    and the Seer's Lens makes him shimmer. Hurt him and the ring shuffles.
+//  Tower Heart: the floor breaks into platforms over the void, and he hurls
+//    a curse that turns the leader into a frog for 6s (dodge it; the Frog
+//    King's blessing makes you immune).
+const MALGRIM_EL = { marsh: 'flood', gloam: 'dark', cinder: 'lava', frost: 'ice' };
+export class Malgrim extends Enemy {
+  constructor(scene, x, y, opts = {}) {
+    super(scene, 'malgrim', x, y, opts);
+    this.boss = true;
+    this.home = { x, y };
+    this.arena = opts.arena || null;
+    const standing = ['marsh', 'gloam', 'cinder', 'frost'].filter((r) => !scene.flags[`ward_${r}`]);
+    this.phases = ['duelist', 'mirrors', ...standing.map((r) => MALGRIM_EL[r]), 'heart'];
+    this.pi = 0;
+    this.blinkT = 3.5; this.boltT = 2.5; this.summonT = 8; this.reflectT = 4; this.curseT = 4; this.hazT = 2;
+    this.decoys = []; this.broken = [];
+    this.restoreTint();
+  }
+  get phase() { return this.phases[this.pi]; }
+  restoreTint() { const t = this.statusColor(); if (t) this.sprite.setTint(t); else if (this.reflectNext) this.sprite.setTint(0xe7a6ff); else this.sprite.clearTint(); }
+  knock(dx, dy, p) { super.knock(dx, dy, p * 0.08); }
+  stun(t) { super.stun(t * 0.25); }
+  setTaunt(by, t) { super.setTaunt(by, t * 0.4); }
+  heroes() { return this.scene.party.filter((h) => h.alive && !h.downed); }
+  clampArena(x, y) {
+    const A = this.arena;
+    if (!A) return { x, y };
+    return { x: Math.max((A.x0 + 1) * 16, Math.min(A.x1 * 16, x)), y: Math.max((A.y0 + 1) * 16, Math.min(A.y1 * 16, y)) };
+  }
+  say(t) { this.scene.floatText(this.x, this.y - 70, t, 'fontPlain', 0xe7a6ff); }
+
+  damage(amount, src, opts) {
+    if (this.introT > 0) return 0;
+    const r = Enemy.prototype.damage.call(this, amount, src, opts);
+    if (!this.alive) return r;
+    if (this.phase === 'mirrors' && (this.hurtInRing = (this.hurtInRing || 0) + r) > this.maxHp * 0.06) this.shuffle();
+    const N = this.phases.length;
+    while (this.pi < N - 1 && this.hp / this.maxHp < 1 - (this.pi + 1) / N) this.enterPhase(this.pi + 1);
+    return r;
+  }
+
+  enterPhase(i) {
+    const sc = this.scene, was = this.phase;
+    if (was === 'mirrors') this.clearDecoys();
+    if (was === 'dark') sc.malgrimDark = false;
+    if (was === 'ice') { this.snow?.destroy(); this.snow = null; }
+    this.pi = i;
+    this.clearZone(); this.state = 'chase'; this.t = 0;
+    sc.shake(500, 0.012); audio.sfx('hexCharge', { pitch: 0.6 });
+    const line = { mirrors: 'THE NINE MIRRORS', flood: 'THE FLOOD', dark: 'THE DARK', lava: 'THE FIRE', ice: 'THE COLD', heart: 'THE TOWER HEART' }[this.phase];
+    sc.events.emit('banner', line, { mirrors: 'ONLY THE REAL ONE CASTS A SHADOW', flood: 'THE MISTFEN STONE STILL FEEDS HIM', dark: 'THE GLOAMWOOD STONE STILL FEEDS HIM', lava: 'THE CINDERREACH STONE STILL FEEDS HIM', ice: 'THE FROSTHELM STONE STILL FEEDS HIM', heart: 'MIND THE CURSE - DODGE IT' }[this.phase]);
+    if (this.phase === 'mirrors') this.makeDecoys();
+    if (this.phase === 'dark') sc.malgrimDark = true;
+    if (this.phase === 'ice') this.snow = sc.add.rectangle(0, 0, sc.scale.width + 4, sc.scale.height + 4, 0xe8f4ff, 0.16).setOrigin(0).setScrollFactor(0).setDepth(100000 - 45);
+    if (this.phase === 'heart') this.breakFloor();
+    this.say({ mirrors: 'WHICH OF ME IS REAL? EVEN I FORGET.', flood: 'THE FEN REMEMBERS ME FONDLY.', dark: 'LET US DIM THE LIGHTS.', lava: 'A LITTLE WARMTH, PERHAPS.', ice: 'AND NOW, THE COLD.', heart: 'ENOUGH. BE SMALL AGAIN.' }[this.phase]);
+  }
+
+  // ---------------------------------------------------- the Nine Mirrors
+  makeDecoys() {
+    const sc = this.scene, c = this.clampArena(this.home.x, this.home.y);
+    for (let k = 0; k < 8; k++) {
+      const d = new Enemy(sc, 'malgrim', c.x, c.y, { level: this.level });
+      d.decoy = true; d.boss = false; d.owner = this;
+      d.s = { ...d.s, dmg: this.s.dmg * 0.35, speed: 0, keepAway: 0, name: 'MALGRIM?' };
+      d.maxHp = d.hp = 1; d.shadow.setVisible(false); // only the real one casts a shadow
+      d.engaged = true; d.target = sc.leader; d.state = 'chase';
+      if (this.sprite.scale) d.sprite.setScale(this.sprite.scaleX);
+      sc.enemies.push(d); this.decoys.push(d);
+    }
+    this.shuffle();
+  }
+  shuffle() {
+    const sc = this.scene, c = this.clampArena(this.home.x, this.home.y);
+    this.hurtInRing = 0;
+    const all = [this, ...this.decoys.filter((d) => d.alive)];
+    const off = Math.random() * Math.PI * 2;
+    all.sort(() => Math.random() - 0.5).forEach((u, i) => {
+      const a = off + (i / all.length) * Math.PI * 2;
+      sc.fx.puff(u.x, u.y, 'sparkCurse');
+      u.x = c.x + Math.cos(a) * 80; u.y = c.y + Math.sin(a) * 56; u.clearZone(); u.state = 'chase';
+    });
+    audio.sfx('warp', { pitch: 0.7 });
+  }
+  clearDecoys() { for (const d of this.decoys) if (d.alive) { d.alive = false; d.clearZone(); this.scene.fx.burst('curse', d.x, d.y - 20, 10); d.destroy(); } this.decoys = []; }
+
+  // ---------------------------------------------------- the Tower Heart
+  breakFloor() {
+    const sc = this.scene, A = this.arena;
+    if (!A) return;
+    const c = { x: Math.round(this.home.x / 16), y: Math.round(this.home.y / 16) };
+    const g = this.voidG = sc.add.graphics().setDepth(-30);
+    this.voidTiles = [];
+    for (let y = A.y0; y <= A.y1; y++) for (let x = A.x0; x <= A.x1; x++) {
+      if (sc.nav.isSolid(x, y)) continue;
+      const d = Math.hypot(x - c.x, (y - c.y) * 1.25), a = Math.atan2(y - c.y, x - c.x);
+      const ring = (d > 3.5 && d < 5.5) || (d > 8 && d < 9.5);
+      const bridge = Math.abs(Math.sin(a * 2)) < 0.22; // four bridges across the rings
+      if (!ring || bridge) continue;
+      if (this.heroes().some((h) => Math.floor(h.x / 16) === x && Math.floor(h.y / 16) === y)) continue;
+      sc.nav.block(x, y); this.voidTiles.push([x, y]);
+      g.fillStyle(0x05030a, 1).fillRect(x * 16, y * 16, 16, 16).fillStyle(0x6b3fa0, 0.5).fillRect(x * 16, y * 16 + 13, 16, 3);
+    }
+    sc.fx.burst('curse', this.x, this.y - 10, 40); audio.sfx('bash', { pitch: 0.5 });
+  }
+
+  frogCurse() {
+    const sc = this.scene, L = sc.leader;
+    if (!L || L.downed) return;
+    this.say('BE SMALL!');
+    sc.spawnEnemyArrow(this, { x: L.x, y: L.y - 6 }, this.s.dmg * 0.2, 'frogcurse');
+  }
+
+  // ---------------------------------------------------- elemental hazards
+  hazard() {
+    const sc = this.scene, ph = this.phase, hs = this.heroes();
+    if (ph === 'flood') {
+      for (const h of hs.slice(0, 2)) {
+        const z = { x: h.x, y: h.y, r: 26, until: 1.1 }; sc.dangers.push(z);
+        const g = sc.fx.telegraph(z.x, z.y, z.r, 1.1);
+        sc.time.delayedCall(1100, () => {
+          g.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z); if (!this.alive) return;
+          const pool = sc.add.ellipse(z.x, z.y, 52, 32, 0x2f6aa3, 0.45).setDepth(-25); sc.tweens.add({ targets: pool, alpha: 0, duration: 2500, onComplete: () => pool.destroy() });
+          sc.fx.burst('foam', z.x, z.y - 4, 14); audio.sfx('squish');
+          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - z.x, k.y - z.y) < z.r + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this); k.buff('slow', 0.5, 2); }
+        });
+      }
+    } else if (ph === 'lava') {
+      for (let i = 0; i < 3 && hs.length; i++) {
+        const t = hs[i % hs.length], p = this.clampArena(t.x + (Math.random() - 0.5) * 36, t.y + (Math.random() - 0.5) * 24);
+        const z = { x: p.x, y: p.y, r: 18, until: 1.2 }; sc.dangers.push(z);
+        const g = sc.fx.telegraph(p.x, p.y, 18, 1.2);
+        sc.time.delayedCall(1200, () => {
+          g.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z); if (!this.alive) return;
+          sc.fx.burst('ember', p.x, p.y - 4, 14); audio.sfx('fireImpact');
+          const pud = sc.add.ellipse(p.x, p.y, 30, 18, 0xff7b2e, 0.4).setDepth(-25); sc.tweens.add({ targets: pud, alpha: 0, duration: 3000, onComplete: () => pud.destroy() });
+          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - p.x, k.y - p.y) < 18 + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this); k.addBurn(this.s.dmg * 0.08, 3); }
+        });
+      }
+    } else if (ph === 'ice') {
+      for (const k of hs) { chillHero(k, 2); k.damage(this.s.dmg * 0.18 * sc.difficulty.dmg, null); }
+      sc.fx.burst('foam', this.x, this.y - 20, 16);
+    } else if (ph === 'dark') {
+      if (this.scene.enemies.filter((e) => e.alive && e.summonedBy === this).length < 3) for (const dx of [-24, 24]) { const e = sc.spawnEnemy('shade', this.x + dx, this.y + 10, true); e.summonedBy = this; e.summoned = true; }
+    }
+  }
+
+  update(dt) {
+    if (!this.alive) return;
+    if (this.introT > 0) { super.update(dt); return; }
+    const sc = this.scene, ph = this.phase;
+    // the Seer's Lens shows which Malgrim is real
+    if (ph === 'mirrors' && sc.state.relics.includes('lens')) this.sprite.setAlpha(0.75 + Math.sin(sc.time.now / 120) * 0.25);
+    else this.sprite.setAlpha(1);
+    if (this.engaged && !(this.stunT > 0)) {
+      this.blinkT -= dt; this.boltT -= dt; this.summonT -= dt; this.reflectT -= dt; this.hazT -= dt; this.curseT -= dt;
+      if (ph !== 'mirrors' && this.blinkT <= 0 && this.state === 'chase') {
+        this.blinkT = ph === 'heart' ? 5 : 4;
+        const A = this.arena, hs = this.heroes();
+        for (let k = 0; k < 10 && A; k++) {
+          const x = (A.x0 + 2 + Math.random() * (A.x1 - A.x0 - 3)) * 16, y = (A.y0 + 2 + Math.random() * (A.y1 - A.y0 - 3)) * 16;
+          if (sc.nav.solidAtPx(x, y) || hs.some((h) => Math.hypot(h.x - x, h.y - y) < 60)) continue;
+          sc.fx.puff(this.x, this.y, 'sparkCurse'); this.x = x; this.y = y; sc.fx.puff(x, y, 'sparkCurse'); audio.sfx('warp', { pitch: 0.8 }); this.clearZone(); this.state = 'chase';
+          break;
+        }
+      }
+      if (this.boltT <= 0 && this.onScreen(-40)) {
+        this.boltT = ph === 'duelist' ? 2.4 : 3.2;
+        for (const [i, h] of this.heroes().slice(0, 3).entries()) sc.time.delayedCall(i * 160, () => { if (this.alive && h.alive) sc.spawnEnemyArrow(this, { x: h.x, y: h.y - 6 }, this.s.dmg * 0.55 * sc.difficulty.dmg, 'bolt'); });
+        this.anim = ''; this.play('attack');
+      }
+      if (ph === 'duelist' && this.summonT <= 0) {
+        this.summonT = 10;
+        if (sc.enemies.filter((e) => e.alive && e.summonedBy === this).length < 4) for (const dx of [-22, 22]) { const e = sc.spawnEnemy('hexling', this.x + dx, this.y + 12, true); e.summonedBy = this; e.summoned = true; }
+      }
+      if ((ph === 'duelist' || ph === 'heart') && this.reflectT <= 0 && !this.reflectNext) {
+        this.reflectT = 6; this.reflectNext = true; this.restoreTint();
+        sc.fx.ring(this.x, this.y - 10, 'ringBlue', 3); this.say('A SHIELD OF MIRRORS!');
+      }
+      if (['flood', 'lava', 'ice', 'dark'].includes(ph) && this.hazT <= 0) { this.hazT = ph === 'ice' ? 4 : ph === 'dark' ? 9 : 3; this.hazard(); }
+      if (ph === 'heart' && this.curseT <= 0) { this.curseT = 8; this.frogCurse(); }
+    }
+    super.update(dt);
+  }
+
+  die(src) {
+    this.alive = false;
+    this.clearZone();
+    this.clearDecoys();
+    this.snow?.destroy(); this.scene.malgrimDark = false;
+    for (const [x, y] of this.voidTiles || []) this.scene.nav.unblock(x, y);
+    this.voidG?.destroy();
+    for (const e of this.scene.enemies) if (e.alive && e.summonedBy === this) { e.alive = false; e.clearZone(); e.destroy(); }
     this.scene.onBossKilled(this, src);
     this.destroy();
   }

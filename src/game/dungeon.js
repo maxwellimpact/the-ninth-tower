@@ -15,7 +15,7 @@
 // Sluices (the Abbey): a lever swaps the water between two basins ('w' / 'v'),
 // like red and blue pegs. Drained basin floor is walkable; flooded needs the
 // Tide Charm to swim.
-import { Unit, Breakable, Golem, Murk, Huntsman, Vulk, Isolde } from './units.js';
+import { Unit, Breakable, Golem, Murk, Huntsman, Vulk, Isolde, Malgrim } from './units.js';
 import HERO_DATA from '../data/heroes.json';
 import { audio } from '../audio/synth.js';
 import DUNGEONS from '../data/dungeons.json';
@@ -709,18 +709,24 @@ export class DungeonKit {
     const pts = room.tiles.map((k) => k.split(',').map(Number)).filter(([, y]) => y < this.gateAt.y);
     const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
     const b = this.def.boss || {};
-    const cfg = { ...(W[b.cfg || 'boss'] || W.boss), ...b, arena: [this.bossAt.x, this.bossAt.y], shadow: true, ward: null, drops: [] };
+    const echo = !!b.echo; // a Ward Echo in the Ninth Tower: the true lieutenant, empowered, not a Shadow
+    const cfg = { ...(W[b.cfg || 'boss'] || W.boss), ...b, arena: [this.bossAt.x, this.bossAt.y], shadow: !echo && b.kind !== 'malgrim', ward: null, drops: [] };
+    if (echo) { cfg.hpMul = 1.25; cfg.dmgMul = 1.15; }
     if (this.lab && sc.state.labStart === 'boss' && b.labLevelBonus !== undefined) cfg.levelBonus = b.labLevelBonus;
     const arena = { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
-    const make = b.kind === 'murk'
-      ? (x, y, o) => new Murk(sc, x, y, { ...o, shadow: true, arena, pool: b.pool })
+    const sh = !echo;
+    const make0 = b.kind === 'murk'
+      ? (x, y, o) => new Murk(sc, x, y, { ...o, shadow: sh, arena, pool: b.pool })
       : b.kind === 'huntsman'
-        ? (x, y, o) => new Huntsman(sc, x, y, { ...o, shadow: true, arena })
+        ? (x, y, o) => new Huntsman(sc, x, y, { ...o, shadow: sh, arena })
         : b.kind === 'vulk'
-          ? (x, y, o) => new Vulk(sc, x, y, { ...o, shadow: true, arena })
+          ? (x, y, o) => new Vulk(sc, x, y, { ...o, shadow: sh, arena })
         : b.kind === 'isolde'
-          ? (x, y, o) => new Isolde(sc, x, y, { ...o, shadow: true, arena })
-        : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
+          ? (x, y, o) => new Isolde(sc, x, y, { ...o, shadow: sh, arena })
+        : b.kind === 'malgrim'
+          ? (x, y, o) => new Malgrim(sc, x, y, { ...o, arena })
+        : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: sh });
+    const make = (x, y, o) => { const g = make0(x, y, o); if (echo) { g.isEcho = true; g.sprite.setTint(0xd9b8ff); } return g; };
     return this._bossDef = { id: this.id, flag: this.bossFlag, style: b.style || 'shadow', cfg, rect: [arena.x0, arena.y0, arena.x1, arena.y1 - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
   }
 

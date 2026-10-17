@@ -129,6 +129,60 @@
    "name": "THE RIMEGLASS SPIRE",
    "sub": "WHERE THE ASTRONOMERS WATCHED",
    "outer": "frost"
+  },
+  {
+   "id": "tower1",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 1",
+   "basin": true
+  },
+  {
+   "id": "tower2",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 2",
+   "basin": true
+  },
+  {
+   "id": "tower3",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 3",
+   "basin": true
+  },
+  {
+   "id": "tower4",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 4",
+   "basin": true
+  },
+  {
+   "id": "tower5",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 5",
+   "basin": true
+  },
+  {
+   "id": "tower6",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 6",
+   "basin": true
+  },
+  {
+   "id": "tower7",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 7",
+   "basin": true
+  },
+  {
+   "id": "tower8",
+   "name": "THE NINTH TOWER",
+   "sub": "FLOOR 8",
+   "basin": true
+  },
+  {
+   "id": "tower9",
+   "name": "THE NINTH TOWER",
+   "sub": "MALGRIM'S CHAMBER",
+   "basin": true
   }
  ],
  "groups": [
@@ -2429,6 +2483,131 @@
    },
    "exit": true,
    "requires": "isoldeDefeated"
+  },
+  {
+   "id": "towerIn",
+   "x": 155,
+   "y": 269,
+   "to": {
+    "x": 433,
+    "y": 242
+   },
+   "requires": "wardBroken",
+   "tower": "door"
+  },
+  {
+   "id": "towerOut",
+   "x": 433,
+   "y": 243,
+   "to": {
+    "x": 155,
+    "y": 271
+   },
+   "exit": true
+  },
+  {
+   "id": "towerUp1",
+   "x": 433,
+   "y": 215,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 1,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp2",
+   "x": 473,
+   "y": 215,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 2,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp3",
+   "x": 495,
+   "y": 215,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 3,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp4",
+   "x": 442,
+   "y": 250,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 4,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp5",
+   "x": 473,
+   "y": 250,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 5,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp6",
+   "x": 495,
+   "y": 250,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 6,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp7",
+   "x": 433,
+   "y": 285,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 7,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
+  },
+  {
+   "id": "towerUp8",
+   "x": 473,
+   "y": 285,
+   "to": {
+    "x": 0,
+    "y": 0
+   },
+   "tower": 8,
+   "tap": true,
+   "stairs": true,
+   "label": "STAIRS UP"
   }
  ],
  "posts": [
@@ -4628,5 +4807,55 @@
     258
    ]
   }
- ]
+ ],
+ "echoMarsh": {
+  "name": "WARD ECHO: MOTHER MURK",
+  "sub": "THE MISTFEN STONE STILL STANDS, AND IT REMEMBERS HER",
+  "drops": [],
+  "gold": 120,
+  "fall": [
+   "THE ECHO FADES",
+   "THE WAY UP IS OPEN."
+  ]
+ },
+ "echoGloam": {
+  "name": "WARD ECHO: THE PALE HUNTSMAN",
+  "sub": "THE GLOAMWOOD STONE STILL STANDS, AND THE HUNT GOES ON",
+  "drops": [],
+  "gold": 120,
+  "fall": [
+   "THE ECHO FADES",
+   "THE WAY UP IS OPEN."
+  ]
+ },
+ "echoCinder": {
+  "name": "WARD ECHO: FORGEMASTER VULK",
+  "sub": "THE CINDERREACH STONE STILL STANDS, AND ITS FORGE STILL BURNS",
+  "drops": [],
+  "gold": 120,
+  "fall": [
+   "THE ECHO FADES",
+   "THE WAY UP IS OPEN."
+  ]
+ },
+ "echoFrost": {
+  "name": "WARD ECHO: ISOLDE",
+  "sub": "THE FROSTHELM STONE STILL STANDS, AND ITS KNIGHT STILL GUARDS IT",
+  "drops": [],
+  "gold": 120,
+  "fall": [
+   "THE ECHO FADES",
+   "THE WAY UP IS OPEN."
+  ]
+ },
+ "malgrim": {
+  "name": "MALGRIM THE UNKIND",
+  "sub": "COURT MAGE TO THE FROG KING. ARCHITECT OF THE NINTH TOWER",
+  "drops": [],
+  "gold": 500,
+  "fall": [
+   "MALGRIM FALLS",
+   "THE NINTH TOWER SHUDDERS..."
+  ]
+ }
 }

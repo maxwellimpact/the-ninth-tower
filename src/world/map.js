@@ -55,6 +55,17 @@ export const AREAS = {
   clawhold: { x0: 250, y0: 0, x1: 312, y1: 50, interior: true },
   // the Rimeglass Spire, the astronomers' tower on the Highfold
   spire: { x0: 322, y0: 212, x1: 415, y1: 318, interior: true },
+  // the Ninth Tower's nine floors, each its own space (a floor whose outer
+  // Ward Stone has fallen is sealed: the stairs pass it by)
+  tower1: { x0: 418, y0: 212, x1: 448, y1: 246, interior: true },
+  tower2: { x0: 449, y0: 212, x1: 479, y1: 246, interior: true },
+  tower3: { x0: 480, y0: 212, x1: 510, y1: 246, interior: true },
+  tower4: { x0: 418, y0: 247, x1: 448, y1: 281, interior: true, dark: true },
+  tower5: { x0: 449, y0: 247, x1: 479, y1: 281, interior: true },
+  tower6: { x0: 480, y0: 247, x1: 510, y1: 281, interior: true },
+  tower7: { x0: 418, y0: 282, x1: 448, y1: 316, interior: true },
+  tower8: { x0: 449, y0: 282, x1: 479, y1: 316, interior: true },
+  tower9: { x0: 480, y0: 282, x1: 510, y1: 316, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -204,7 +215,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' || b.startsWith('tower') ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'basin') {
       set(x, y, T.BLIGHT);
       // rifts into nothing, where the curse ate through the ground

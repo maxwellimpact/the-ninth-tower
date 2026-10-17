@@ -58,6 +58,7 @@ export function makeTerrainPainter(world) {
 
   const FG = AREAS.forge;
   const inForge = (tx, ty) => tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
+  const inTower = (tx, ty) => tx >= 418 && tx <= 511 && ty >= 212 && ty <= 318; // the Ninth Tower's floors
   const SP = AREAS.spire;
   const inSpire = (tx, ty) => tx >= SP.x0 && tx <= SP.x1 && ty >= SP.y0 && ty <= SP.y1;
   const CH = AREAS.clawhold;
@@ -412,6 +413,16 @@ export function makeTerrainPainter(world) {
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
       case T.DFLOOR: {
+        if (inTower(tx, ty)) {
+          // black obsidian flags with violet runes inlaid, worn dull where Malgrim walks
+          const up = tileAtPx(x, y - 6);
+          if (up === T.DWALL && bayer(x, y) < 0.7) return C.ink;
+          if (x % 16 === 0 || y % 16 === 0) return C.hexD;
+          const rx = x % 16, ry = y % 16, rune = hash(tx, ty, 270) < 0.18;
+          if (rune && ((rx === 8 && ry > 4 && ry < 12) || (ry === 8 && rx > 4 && rx < 12) || Math.abs(rx - ry) === 0 && rx > 5 && rx < 11)) return hash(tx, ty, 271) < 0.5 ? C.curse : C.purp;
+          const n = vnoise(x / 22, y / 22, 272) + (bayer(x, y) - 0.5) * 0.12;
+          return n < 0.4 ? C.night : n < 0.8 ? C.basalt : C.slate;
+        }
         if (inSpire(tx, ty)) {
           // the astronomers' floor: polished pale glass tiles, a star chart inlaid
           const up = tileAtPx(x, y - 6);
@@ -463,6 +474,18 @@ export function makeTerrainPainter(world) {
         return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
       }
       case T.DWALL: {
+        if (inTower(tx, ty)) {
+          // walls of black stone, the courses split by thin seams of violet light
+          const faceBelowT = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+          if (!faceBelowT) { const n = vnoise(x / 7, y / 7, 273) + (bayer(x, y) - 0.5) * 0.3; return n > 0.75 ? C.hexD : C.ink; }
+          const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+          if (fy < 2) return C.slate;
+          if (fy > 29) return C.ink;
+          const brow = Math.floor((fy - 2) / 7), bx = (x + (brow % 2) * 8) % 16;
+          if ((fy - 2) % 7 === 6) return hash(Math.floor(x / 4), brow + ty * 9, 274) < 0.3 ? C.curse : C.hexD;
+          if (bx === 0) return C.ink;
+          return bx < 3 ? C.slate : C.night;
+        }
         if (inSpire(tx, ty)) {
           // walls of rimeglass blocks, a hex vein of purple crawling through some
           const faceBelowS = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
