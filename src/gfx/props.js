@@ -888,3 +888,22 @@ export function tent(seed = 0) {
   outline(c, 'ink');
   return c;
 }
+
+// The Forge of Ash's gate: a dwarven archway cut into the mountain, its
+// great doors standing open on a red glow (drawn over the cliff face).
+export function forgeGate() {
+  const [c, ctx] = makeCanvas(72, 52);
+  for (let y = 0; y < 50; y++) for (let x = 0; x < 72; x++) {
+    const inArch = Math.hypot((x - 36) / 22, Math.max(0, 20 - y) / 18) < 1 && y > 6;
+    const ring = Math.hypot((x - 36) / 30, Math.max(0, 22 - y) / 24) < 1 && y > 2;
+    if (inArch) px(ctx, x, y, y > 30 ? 'lavaD' : y > 22 ? 'redD' : 'ink'); // the glowing passage
+    else if (ring) { // carved stone voussoirs
+      const blk = Math.floor(Math.atan2(22 - y, x - 36) * 6) % 2;
+      px(ctx, x, y, blk ? 'basaltL' : 'basalt');
+    }
+  }
+  for (const sx of [12, 54]) { px(ctx, sx, 20, 'steelD', 6, 30); px(ctx, sx + 1, 20, 'gold', 4, 30); for (let y = 24; y < 50; y += 6) px(ctx, sx + 1, y, 'goldL', 4, 1); } // brass door leaves, swung open
+  px(ctx, 32, 3, 'gold', 8, 5); px(ctx, 34, 4, 'lavaXL', 4, 3); // a hearth rune on the keystone
+  outline(c, 'ink');
+  return c;
+}

@@ -2,7 +2,7 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, ghostRecolor, paleRecolor, scaleRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, ghostRecolor, paleRecolor, scaleRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake } from '../gfx/creatures.js';
@@ -78,6 +78,7 @@ export const GROUPS = {
       s.textures.addCanvas('house_tavern', P.house('tavern'));
       s.textures.addCanvas('house_elder', P.elderTree());
       for (let k = 0; k < 3; k++) s.textures.addCanvas(`tent${k}`, P.tent(k));
+      s.textures.addCanvas('house_forgegate', P.forgeGate());
       s.textures.addCanvas('boulder_cracked', P.crackedBoulder());
       s.textures.addCanvas('wall_cracked', P.crackedWall());
       frames(s, 'fly', P.goldenFly(), 8);
@@ -170,6 +171,7 @@ export const GROUPS = {
       creature(s, 'beetle', buildBeetle(), { idle: 4, walk: 12, windup: 10, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'drake', buildDrake(), { idle: 2, walk: 6, windup: 6, attack: 8, fly: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'fly']);
       registerPuppet(s, 'salamander', SALAMANDER, scaleRecolor);
+      registerPuppet(s, 'vulk', VULK, scaleRecolor);
     }],
     ['badlands', (s) => {
       for (let k = 0; k < 6; k++) s.textures.addCanvas(`ashtree${k}`, P.ashTree(k));
@@ -238,6 +240,8 @@ GROUPS.core.push(
     s.textures.addCanvas('dgCrackFace', DG.crackedWall(true)); s.textures.addCanvas('dgCrackTop', DG.crackedWall(false));
     s.textures.addCanvas('dgBrazier', DG.brazier(false)); frames(s, 'dgBrazierLit', [0, 1, 2].map((f) => DG.brazier(true, f)), 9);
     frames(s, 'dgFalseWall', [0, 1].map((f) => DG.falseWall(f)), 3); s.textures.addCanvas('dgSpiritBridge', DG.spiritBridge());
+    s.textures.addCanvas('dgBoulder', DG.heavyBoulder()); s.textures.addCanvas('dgBoulderSunk', DG.sunkBoulder());
+    s.textures.addCanvas('dgReinforcedFace', DG.reinforcedWall(true)); s.textures.addCanvas('dgReinforcedTop', DG.reinforcedWall(false));
     for (const k of ['shutter', 'key', 'boss', 'vault']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
   }],

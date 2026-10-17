@@ -954,8 +954,8 @@ export class Hero extends Unit {
 const ENEMY = enemyData;
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -1187,7 +1187,8 @@ export class Enemy extends Unit {
     // a shock, the Gauntlets' slam, or simply enough hits chipping it away
     if (this.s.ai === 'brute' && !this.cracked && src) {
       this.chips = (this.chips || 0) + (dot ? 0 : 1);
-      if (this.lastElement === 'storm' || this.status?.shock || src.gauntletSlam || this.chips >= 8) this.crackArmour();
+      const fist = src.team === 'party' && !src.ranged && !dot && this.scene.state.relics.includes('gauntlets'); // the Stone Gauntlets crack rock
+      if (this.lastElement === 'storm' || this.status?.shock || fist || this.chips >= 8) this.crackArmour();
       else {
         amount *= 0.2;
         if (!this.guardMsgT || this.scene.time.now > this.guardMsgT) { this.guardMsgT = this.scene.time.now + 1800; this.scene.floatText(this.x, this.y - 34, 'ROCK ARMOUR', 'fontPlain', 0xbfb0a8); audio.sfx('block'); }
@@ -2787,6 +2788,219 @@ export class Huntsman extends Enemy {
   }
 }
 
+// Forgemaster Vulk (Cinderreach): the salamander smith Malgrim gave a forge
+// that never cools.
+//   phase 1: a three-swing hammer combo, each swing telegraphed, and molten
+//            globs lobbed onto marked spots that leave burning puddles
+//   phase 2 (65%): four lava vents erupt in turn while slag boulders crash
+//            down. While any vent is open he's stoked (half damage taken).
+//            Shove a boulder onto a vent with the Stone Gauntlets to plug it:
+//            each plug staggers him and opens him up
+//   phase 3 (30%, true form only): his armour glows white-hot and turns most
+//            blows. Frost cools it for a few seconds; so does his own breath
+//            every few seconds (a window to strike)
+// His Shadow (the Forge of Ash) has 60% health and never reaches phase 3.
+export class Vulk extends Enemy {
+  constructor(scene, x, y, opts = {}) {
+    super(scene, 'vulk', x, y, opts);
+    this.boss = true;
+    this.phase = 1;
+    this.home = { x, y };
+    this.arena = opts.arena || null;
+    this.isShadow = !!opts.shadow;
+    if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; }
+    this.globT = 5; this.vents = []; this.slag = []; this.heatT = 0; this.coolT = 0;
+    this.restoreTint();
+  }
+  restoreTint() {
+    const t = this.statusColor();
+    if (t) this.sprite.setTint(t);
+    else if (this.isShadow) this.sprite.setTint(0x8a6cc4);
+    else if (this.phase === 3 && this.coolT <= 0) this.sprite.setTint(0xffe0a0);
+    else this.sprite.clearTint();
+  }
+  knock(dx, dy, p) { super.knock(dx, dy, p * 0.1); }
+  stun(t) { super.stun(t * 0.3); }
+  setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
+  heroes() { return this.scene.party.filter((h) => h.alive && !h.downed); }
+  clampArena(x, y) {
+    const A = this.arena;
+    if (!A) return { x, y };
+    return { x: Math.max((A.x0 + 1) * 16, Math.min(A.x1 * 16, x)), y: Math.max((A.y0 + 1) * 16, Math.min(A.y1 * 16, y)) };
+  }
+  get stoked() { return this.phase >= 2 && this.vents.some((v) => !v.plugged); }
+
+  damage(amount, src, opts) {
+    if (this.phase === 3 && this.lastElement === 'frost' && this.coolT <= 0) this.cool(4); // frost always cools him
+    if (this.staggerT > 0) amount *= 1.3;
+    else if (this.phase === 3 && this.coolT <= 0) { amount *= 0.12; this.hintMsg('WHITE-HOT! COOL HIM - FROST!'); }
+    else if (this.stoked) { amount *= 0.5; this.hintMsg('THE VENTS STOKE HIM - PLUG THEM!'); }
+    const r = Enemy.prototype.damage.call(this, amount, src, opts);
+    if (!this.alive) return r;
+    const f = this.hp / this.maxHp;
+    if (this.phase === 1 && f < 0.65) this.enterPhase(2);
+    else if (this.phase === 2 && f < 0.3 && !this.isShadow) this.enterPhase(3);
+    return r;
+  }
+  hintMsg(t) { const sc = this.scene; if (!this.msgT || sc.time.now > this.msgT) { this.msgT = sc.time.now + 2500; sc.floatText(this.x, this.y - 64, t, 'fontPlain', 0xffd04a); } }
+
+  enterPhase(n) {
+    const sc = this.scene;
+    this.phase = n;
+    audio.sfx('roar', { pitch: 0.7 });
+    sc.shake(500, 0.012);
+    this.clearZone(); this.state = 'chase'; this.t = 0;
+    if (n === 2) {
+      sc.floatText(this.x, this.y - 70, 'THE FORGE ROARS!', 'fontGold');
+      const spots = [[-64, -40], [64, -40], [-64, 40], [64, 40]];
+      for (const [dx, dy] of spots) {
+        const p = this.clampArena(this.home.x + dx, this.home.y + dy);
+        if (sc.nav.solidAtPx(p.x, p.y)) continue;
+        const v = { x: p.x, y: p.y, plugged: false, t: 1 + this.vents.length * 0.9 };
+        v.s = sc.add.sprite(p.x, p.y + 4, 'vent0').setOrigin(0.5, 1).play('vent0').setScale(1.6).setDepth(p.y);
+        this.vents.push(v);
+        // a slag boulder crashes down beside each vent (off its tile, toward the middle)
+        const bx = p.x - Math.sign(dx) * 32, by = p.y - Math.sign(dy) * 16;
+        this.dropSlag(bx, by);
+      }
+      const who = sc.party.find((h) => !h.downed) || sc.leader;
+      sc.time.delayedCall(1200, () => sc.bark(who, sc.state.relics.includes('gauntlets') ? 'THE GAUNTLETS! SHOVE THOSE BOULDERS ONTO THE VENTS!' : "THOSE VENTS ARE FEEDING HIM. IF ONLY WE COULD MOVE THOSE ROCKS..."));
+    } else {
+      sc.floatText(this.x, this.y - 70, 'HIS ARMOUR BLAZES WHITE-HOT!', 'fontGold');
+      this.coolT = 0; this.heatT = 6;
+      this.restoreTint();
+      const pip = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
+      sc.time.delayedCall(1000, () => sc.bark(pip, 'FROST! COOL HIS ARMOUR AND IT CRACKS!'));
+    }
+  }
+
+  dropSlag(x, y) {
+    const sc = this.scene;
+    const b = { x, y, s: sc.add.image(x, y - 80, 'dgBoulder').setOrigin(0.5, 1).setDepth(y) };
+    sc.tweens.add({ targets: b.s, y: y + 8, duration: 500, ease: 'Quad.easeIn', onComplete: () => { sc.fx.dust(x, y); sc.shake(140, 0.006); audio.sfx('bash'); } });
+    sc.nav.block(Math.floor(x / 16), Math.floor(y / 16));
+    b.o = sc.addInteractable({ x, y, reach: 26, standOff: 14, h: 18, kind: 'block', interact: (h) => this.shove(b, h || sc.leader) });
+    this.slag.push(b);
+  }
+
+  // the Gauntlets shove a slag boulder one tile away from the hero
+  shove(b, h) {
+    const sc = this.scene;
+    if (!sc.state.relics.includes('gauntlets')) { audio.sfx('block'); sc.bark(h, "IT'S FAR TOO HEAVY TO MOVE."); return; }
+    if (b.moving || b.plugged) return;
+    const dx = b.x - h.x, dy = b.y - h.y;
+    const [sx, sy] = Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)];
+    const nx = b.x + sx * 16, ny = b.y + sy * 16;
+    const vent = this.vents.find((v) => !v.plugged && Math.hypot(v.x - nx, v.y - ny) < 14);
+    if (!vent && sc.nav.solidAtPx(nx, ny)) { audio.sfx('block'); return; }
+    b.moving = true;
+    sc.nav.unblock(Math.floor(b.x / 16), Math.floor(b.y / 16));
+    b.x = vent ? vent.x : nx; b.y = vent ? vent.y : ny;
+    h.face(sx, sy); h.anim = ''; h.play('attack');
+    audio.sfx('push'); sc.fx.dust(b.s.x, b.s.y);
+    sc.tweens.add({ targets: b.s, x: b.x, y: b.y + 8, duration: 180, onComplete: () => {
+      b.moving = false; b.o.x = b.x; b.o.y = b.y; b.s.setDepth(b.y);
+      if (vent) this.plug(vent, b);
+      else sc.nav.block(Math.floor(b.x / 16), Math.floor(b.y / 16));
+    } });
+  }
+
+  plug(v, b) {
+    const sc = this.scene;
+    v.plugged = true; b.plugged = true;
+    v.s.stop(); v.s.setTexture('vent0', '0').setTint(0x555060);
+    b.s.setTexture('dgBoulderSunk').setOrigin(0.5).setPosition(v.x, v.y).setDepth(v.y - 2);
+    sc.removeInteractable(b.o);
+    sc.fx.burst('ember', v.x, v.y - 6, 24); sc.shake(300, 0.01); audio.sfx('bash'); audio.sfx('fireImpact', { pitch: 0.6 });
+    this.staggerT = 2.5; this.stunT = Math.max(this.stunT, 2.5); this.clearZone(); this.state = 'chase';
+    const left = this.vents.filter((q) => !q.plugged).length;
+    sc.floatText(this.x, this.y - 70, left ? `VENT PLUGGED! ${left} LEFT` : 'THE FORGE GOES QUIET!', 'fontGold');
+  }
+
+  cool(t) {
+    const sc = this.scene;
+    this.coolT = t;
+    this.restoreTint();
+    sc.fx.burst('spark', this.x, this.y - 30, 16);
+    sc.floatText(this.x, this.y - 64, 'HIS ARMOUR COOLS!', 'fontPlain', 0x9fd8ff);
+  }
+
+  // a lobbed glob of molten metal: a marked spot, then a burning puddle
+  globs(n) {
+    const sc = this.scene;
+    const hs = this.heroes();
+    for (let i = 0; i < n && hs.length; i++) {
+      const t = hs[i % hs.length];
+      const p = this.clampArena(t.x + (Math.random() - 0.5) * 40, t.y + (Math.random() - 0.5) * 30);
+      const zone = { x: p.x, y: p.y, r: 18, until: 1.2 };
+      sc.dangers.push(zone);
+      const g = sc.fx.telegraph(p.x, p.y, 18, 1.2);
+      sc.time.delayedCall(1200, () => {
+        g.destroy();
+        if (!this.alive) { sc.dangers = sc.dangers.filter((z) => z !== zone); return; }
+        sc.fx.burst('ember', p.x, p.y - 4, 12); audio.sfx('fireImpact');
+        for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) < 18 + h.r) h.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this);
+        // the puddle burns a while
+        const pud = sc.add.ellipse(p.x, p.y, 30, 18, 0xff7b2e, 0.4).setDepth(-25);
+        zone.until = 4;
+        sc.tweens.add({ targets: pud, alpha: 0, duration: 4000, onComplete: () => { pud.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone); } });
+        let k = 0;
+        sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null); } });
+        void k;
+      });
+    }
+    sc.floatText(this.x, this.y - 64, 'MOLTEN METAL!', 'fontPlain', 0xffa060);
+    this.anim = ''; this.play('attack');
+  }
+
+  updateVents(dt) {
+    const sc = this.scene;
+    for (const v of this.vents) {
+      if (v.plugged) continue;
+      v.t -= dt;
+      if (v.t > 0) continue;
+      v.t = 3.6;
+      const zone = { x: v.x, y: v.y, r: 28, until: 0.9 };
+      sc.dangers.push(zone);
+      const g = sc.fx.telegraph(v.x, v.y, 28, 0.9);
+      sc.time.delayedCall(900, () => {
+        g.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone);
+        if (v.plugged || !this.alive) return;
+        sc.fx.burst('ember', v.x, v.y - 10, 26); audio.sfx('fireImpact', { pitch: 0.8 });
+        for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - v.x, h.y - v.y) < 28 + h.r) h.damage(this.s.dmg * 0.8 * sc.difficulty.dmg, { x: v.x, y: v.y });
+      });
+    }
+  }
+
+  update(dt) {
+    if (!this.alive) return;
+    if (this.introT > 0) { super.update(dt); return; }
+    this.staggerT = Math.max(0, (this.staggerT || 0) - dt);
+    if (this.phase >= 2) this.updateVents(dt);
+    if (this.phase === 3) {
+      const was = this.coolT > 0;
+      this.coolT = Math.max(0, this.coolT - dt);
+      this.heatT -= dt;
+      if (this.heatT <= 0) { this.heatT = 9; this.cool(2.5); } // he has to breathe: a short window
+      if (was && this.coolT <= 0) this.restoreTint();
+    }
+    if (this.engaged && this.state === 'chase' && !(this.stunT > 0)) {
+      this.globT -= dt;
+      if (this.globT <= 0) { this.globT = this.phase === 1 ? 7 : 5.5; this.globs(this.phase === 1 ? 3 : 4); }
+    }
+    super.update(dt);
+  }
+
+  die(src) {
+    this.alive = false;
+    this.clearZone();
+    for (const v of this.vents) v.s?.destroy();
+    for (const b of this.slag) { if (!b.plugged) { this.scene.nav.unblock(Math.floor(b.x / 16), Math.floor(b.y / 16)); this.scene.removeInteractable(b.o); } b.s.destroy(); }
+    this.scene.onBossKilled(this, src);
+    this.destroy();
+  }
+}
+
 export class Breakable extends Unit {
   constructor(scene, def) {
     const x = def.x * 16 + 8, y = def.y * 16 + 8;
@@ -2799,6 +3013,14 @@ export class Breakable extends Unit {
   }
   damage(amount, src) {
     if (!this.alive) return 0;
+    if (this.def.reinforced) { // iron-strapped: only the Stone Gauntlets break it
+      if (!this.scene.state.relics.includes('gauntlets')) {
+        audio.sfx('block');
+        if (!this.hintT || this.scene.time.now > this.hintT) { this.hintT = this.scene.time.now + 3000; this.scene.floatText(this.x, this.y - 24, 'IT WON\'T BREAK. NOT FOR A BLADE.', 'fontPlain'); }
+        return 0;
+      }
+      amount *= 6;
+    }
     amount = Math.round(amount);
     this.hp -= amount;
     this.flash(60, 0xffffff);

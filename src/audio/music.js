@@ -270,6 +270,25 @@ export const CINDERREACH_THEME = buildTheme({
   inst: { lead: { duty: 0.25, vibrato: 0.01, echo: 0.3, vol: 0.95 }, arp: { vol: 0.8, echo: 0.2 }, bass: { vol: 1.15 }, pad: { vol: 1.1, cutoff: 480 }, sub: { vol: 1.5 } },
 });
 
+// The Forge of Ash: the work song gone underground - slower, the anvil
+// echoing off stone, a hollow drone where the hearth used to roar
+export const FORGE_THEME = buildTheme({
+  name: 'The Forge of Ash', bpm: 72, key: -9, arp: 'anvil', bass: 'hollow',
+  chords: [['E2', 'G2', 'B2'], ['C2', 'E2', 'G2'], ['F2', 'A2', 'C3'], ['E2', 'G#2', 'B2'],
+    ['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['-', 4], ['E4', 4], ['F4', 4], ['G4', 4],
+    ['E4', 12], ['-', 4],
+    ['-', 4], ['C5', 4], ['B4', 4], ['A4', 4],
+    ['G#4', 12], ['-', 4],
+    ['A4', 4], ['C5', 4], ['E5', 8],
+    ['D5', 4], ['C5', 4], ['A4', 8],
+    ['F4', 4], ['A4', 4], ['G#4', 4], ['F4', 4],
+    ['E4', 12], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 1.05, echo: 0.5, vibrato: 0.008 }, arp: { vol: 0.9, echo: 0.45 }, bass: { vol: 0.95 }, pad: { vol: 1.2, cutoff: 460 }, sub: { vol: 1.4 } },
+});
+
 // Witchroot Hollow: under the elder's roots - the forest's music box, slowed
 // and sunk an octave, dripping between long hollow notes
 export const WITCHROOT_THEME = buildTheme({
@@ -309,7 +328,7 @@ export const HEARTH_THEME = buildTheme({
 });
 
 const REGION_THEMES = {
-  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME,
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME,
   cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };

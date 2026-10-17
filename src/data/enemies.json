@@ -911,5 +911,30 @@
    "brimstone": 2
   },
   "named": true
+ },
+ "vulk": {
+  "name": "FORGEMASTER VULK",
+  "maxHp": 2000,
+  "speed": 30,
+  "aggro": 220,
+  "reach": 38,
+  "windup": 0.55,
+  "recover": 0.8,
+  "dmg": 34,
+  "xp": 260,
+  "gold": [
+   45,
+   60
+  ],
+  "r": 10,
+  "zone": "front",
+  "zr": 30,
+  "scale": 1.7,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 3,
+   "silver": 2
+  }
  }
 }

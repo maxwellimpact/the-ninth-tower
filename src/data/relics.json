@@ -18,5 +18,10 @@
   "name": "SEER'S LENS",
   "icon": "icon_lens",
   "text": "FALSE WALLS SHIMMER AND HIDDEN BRIDGES APPEAR. SHADES CAN'T HIDE FROM YOU."
+ },
+ "gauntlets": {
+  "name": "STONE GAUNTLETS",
+  "icon": "icon_gauntlets",
+  "text": "HEAVY BOULDERS SHIFT AND REINFORCED WALLS BREAK. ROCK ARMOUR CRACKS UNDER YOUR BLOWS."
  }
 }

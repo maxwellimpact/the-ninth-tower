@@ -168,4 +168,6 @@ function recolorCanvas(canvas, RAMP_GHOST, fade) {
 export const HUNTSMAN = { ...composeHero('wren', { head: 'hood_ranger@5', body: 'leathers_ranger@5', weapon: 'bow_long@5', offhand: 'quiver_fine@5' }), id: 'huntsman', name: 'Pale Huntsman' };
 // Salamander Warrior: a scaled fighter with a horned helm, a long blade and a kite shield
 export const SALAMANDER = { ...composeHero('kesh', { head: 'warhelm_horn@4', body: 'plate_hex@3', weapon: 'sword_long@4', offhand: 'shield_kite@4' }), id: 'salamander', name: 'Salamander Warrior' };
+// Forgemaster Vulk: the salamander smith, horned and plated, with his great forge-axe
+export const VULK = { ...composeHero('kesh', { head: 'warhelm_horn@5', body: 'plate_hex@5', weapon: 'axe_bearded@5', offhand: null }), id: 'vulk', name: 'Forgemaster Vulk' };
 export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

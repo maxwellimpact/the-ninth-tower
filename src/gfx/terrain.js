@@ -55,6 +55,8 @@ export function makeTerrainPainter(world) {
     return n < 0.3 ? C.gloomD : n < 0.66 ? C.gloom : C.gloomL;
   }
 
+  const FG = AREAS.forge;
+  const inForge = (tx, ty) => tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
   const WR = AREAS.witchroot;
   const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
@@ -279,6 +281,15 @@ export function makeTerrainPainter(world) {
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
       case T.DFLOOR: {
+        if (inForge(tx, ty)) {
+          // forge floor: square basalt tiles, soot in the joints, warm near lava
+          const up = tileAtPx(x, y - 6);
+          if (up === T.DWALL && bayer(x, y) < 0.7) return C.basaltD;
+          if (x % 12 === 11 || y % 12 === 11) return C.ashD;
+          if (typeAt(x + 5, y) === T.LAVA || typeAt(x - 5, y) === T.LAVA || typeAt(x, y + 5) === T.LAVA || typeAt(x, y - 5) === T.LAVA) return bayer(x, y) < 0.5 ? C.lavaD : C.basalt;
+          if (hash(x, y, 196) < 0.02) return C.ashL;
+          return hash(Math.floor(x / 12), Math.floor(y / 12), 197) < 0.5 ? C.basalt : C.basaltL;
+        }
         if (inWitchroot(tx, ty)) {
           // packed earth between the roots, with root tendrils crossing it
           const up = tileAtPx(x, y - 6);
@@ -301,6 +312,18 @@ export function makeTerrainPainter(world) {
         return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
       }
       case T.DWALL: {
+        if (inForge(tx, ty)) {
+          // dwarven brickwork, near-black, with a glowing seam in some courses
+          const faceBelowF = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+          if (!faceBelowF) { const n = vnoise(x / 7, y / 7, 198) + (bayer(x, y) - 0.5) * 0.3; return n > 0.72 ? C.basalt : n > 0.4 ? C.basaltD : C.ink; }
+          const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+          if (fy < 2) return C.ashL;
+          if (fy < 4) return C.basaltL;
+          if (fy > 29) return C.ink;
+          const brow = Math.floor((fy - 4) / 5), bx = (x + (brow % 2) * 6) % 12;
+          if ((fy - 4) % 5 === 4 || bx === 0) return hash(Math.floor(x / 12), brow + ty * 5, 199) < 0.12 ? C.lavaL : C.basaltD;
+          return bx < 2 ? C.basaltL : C.basalt;
+        }
         if (inWitchroot(tx, ty)) {
           // a wall of tangled roots: dark mass on top, a face of braided roots
           const faceBelowW = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;

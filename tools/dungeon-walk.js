@@ -175,6 +175,96 @@ export async function witchroot() {
   return log;
 }
 
+// The Forge of Ash (Cinderreach): the push-block entry, the crucible crystal,
+// the Forge Guardian for the Stone Gauntlets, a reinforced wall, a boulder
+// rolled into the lava, two boulders on plates for the Master's Brand, then
+// Vulk's Shadow and its vents.
+//   await W.boot({ relics: ['grapple', 'lantern'] }); await W.forge()
+export async function forge() {
+  const log = [];
+  const sc = window.__scene;
+  for (const h of sc.party) { h.maxHp *= 50; h.hp = h.maxHp; }
+  await enter('forgeIn');
+  const c = ctx('forge');
+  log.push({ step: 'entered', area: sc.area, at: c.at() });
+  const hallDoor = c.door(31, 48);
+  log.push({ step: 'hall shutter', shut: !!hallDoor.closed });
+  const b0 = c.k.blocks.find((b) => !b.heavy);
+  for (let i = 0; i < 9; i++) await c.push(b0, b0.x - c.k.ox - 1, b0.y - c.k.oy);
+  log.push({ step: 'block on plate', block: [b0.x - c.k.ox, b0.y - c.k.oy], open: !hallDoor.closed });
+  log.push({ step: 'forge fight', ...(await c.enterFight(31, 44)) });
+  c.tp(9, 37); await step(30);
+  if (c.solid(8, 32)) await c.crystal(3, 37);
+  c.tp(9, 30); log.push({ step: 'key 1', opened: await c.openChest('1'), keys: c.k.keys });
+  c.tp(9, 37); await c.crystal(3, 37);
+  c.tp(9, 44); log.push({ step: 'map', opened: await c.openChest('2'), map: c.k.map });
+  await c.killAll();
+  c.tp(49, 36); log.push({ step: 'east door', unlocked: await c.unlock(51, 36), keys: c.k.keys });
+  // the reinforced wall holds without the Gauntlets
+  const wallBefore = c.solid(15, 26);
+  const fight = await c.enterFight(56, 39);
+  const guardian = c.room(56, 39).spawned?.find((e) => e.named);
+  log.push({ step: 'guardian fight', ...fight, elite: guardian?.s.name, wallHeldBefore: wallBefore });
+  c.tp(56, 43); await c.openChest('3'); await step(30);
+  log.push({ step: 'stone gauntlets', relics: [...sc.state.relics] });
+  // smash the reinforced wall
+  const rw = sc.breakables.find((b) => b.def?.reinforced && b.def.x === c.k.ox + 15 && b.def.y === c.k.oy + 26);
+  for (let i = 0; i < 4 && rw?.alive; i++) { rw.damage(30, sc.leader); await step(10); }
+  log.push({ step: 'reinforced wall smashed', open: !c.solid(15, 26) });
+  // the NW wing: roll the boulder into the lava
+  c.tp(15, 23); await c.tapTile(15, 12, 240); await c.killAll();
+  const bo = c.k.blocks.find((b) => b.heavy && b.x0 === c.k.ox + 12 && b.y0 === c.k.oy + 12);
+  log.push({ step: 'lava blocks the way', lava: c.solid(10, 12) });
+  await c.push(bo, 13, 12); await c.push(bo, 13, 12); await step(20);
+  log.push({ step: 'boulder in the lava', crossing: !c.solid(10, 12) });
+  c.tp(11, 12); await c.tapTile(5, 12, 240); log.push({ step: 'across', at: c.at() });
+  await c.killAll();
+  c.tp(4, 8); log.push({ step: 'key 2', opened: await c.openChest('4'), keys: c.k.keys });
+  c.tp(4, 16); log.push({ step: 'compass', opened: await c.openChest('7'), compass: c.k.compass });
+  const rw2 = sc.breakables.find((b) => b.def?.reinforced && b.def.y === c.k.oy + 3);
+  for (let i = 0; i < 4 && rw2?.alive; i++) { rw2.damage(30, sc.leader); await step(10); }
+  c.tp(3, 2); log.push({ step: 'secret chest', opened: await c.openChest('6') });
+  // NE chamber: two boulders onto two plates
+  c.tp(42, 2); log.push({ step: 'north-east door', unlocked: await c.unlock(44, 2), keys: c.k.keys });
+  c.tp(47, 9); await step(40); await c.killAll();
+  const alcove = c.door(52, 17);
+  for (const [bx] of [[48], [57]]) {
+    const b = c.k.blocks.find((k) => k.heavy && k.x0 === c.k.ox + bx);
+    for (let i = 0; i < 7; i++) await c.push(b, bx, b.y - c.k.oy - 1);
+  }
+  log.push({ step: 'boulders on plates', open: !alcove.closed });
+  c.tp(52, 19); log.push({ step: "master's brand", opened: await c.openChest('5'), big: c.k.big });
+  await step(90); await c.killAll();
+  c.tp(23, 52); log.push({ step: 'vault (tide) sealed', unlocked: await c.unlock(21, 52) });
+  c.tp(31, 28); log.push({ step: 'boss door', unlocked: await c.unlock(31, 26) });
+  c.tp(31, 24); await c.tapTile(31, 16, 200);
+  for (let i = 0; i < 30 && !sc.golem; i++) await step(10);
+  for (let i = 0; i < 60 && sc.busy; i++) await step(10);
+  const g = sc.golem;
+  log.push({ step: 'vulk rises', boss: g?.bossName, level: g?.level, shadow: g?.isShadow, scale: g?.sprite.scaleX });
+  // drive him into phase 2, then plug every vent with the Gauntlets
+  for (let i = 0; i < 60 && g?.alive && g.phase === 1; i++) { g.damage(200, sc.leader); await step(10); for (let k = 0; k < 20 && sc.busy; k++) await step(10); }
+  await step(80);
+  log.push({ step: 'phase 2', phase: g?.phase, vents: g?.vents.length, slag: g?.slag.length, stoked: g?.stoked });
+  for (const v of g?.vents || []) {
+    const b = g.slag.find((s2) => !s2.plugged && Math.hypot(s2.x - v.x, s2.y - v.y) < 56);
+    if (!b) continue;
+    // shove it along one axis then the other, from the far side (the slide takes a moment)
+    for (let i = 0; i < 6 && !v.plugged; i++) {
+      const dx = v.x - b.x, dy = v.y - b.y, horiz = Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 2;
+      g.shove(b, { x: horiz ? b.x - Math.sign(dx) * 12 : b.x, y: horiz ? b.y : b.y - Math.sign(dy) * 12, face() {}, play() {}, anim: '' });
+      await step(40);
+    }
+  }
+  log.push({ step: 'vents plugged', plugged: g?.vents.filter((v) => v.plugged).length, stoked: g?.stoked });
+  for (let i = 0; i < 200 && g?.alive; i++) { g.damage(300, sc.leader); await step(15); for (let k = 0; k < 20 && sc.busy; k++) await step(10); }
+  await step(240);
+  log.push({ step: 'the shadow breaks', dead: !g?.alive, flag: !!sc.flags.vulkDefeated, gate: !!sc.arenaGate, vineWithering: sc.vines.filter((v) => v.ward.def.id === 'cinder').map((v) => v.dead) });
+  log.push({ step: 'back stairs', present: !!sc.interactables.find((o) => o.kind === 'warp' && o.warp.id === 'forgeBack') });
+  log.push({ errs: window.__errs || [] });
+  return log;
+}
+
 // A fresh real game (not the lab): Brann, Pip and Sable at `level`, with the
 // given relics, at the start of the world. Clears the saved game first.
 export async function boot({ level = 6, relics = ['grapple'], state = null } = {}) {

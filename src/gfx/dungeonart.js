@@ -209,3 +209,42 @@ export function spiritBridge() {
   px(ctx, 1, 0, 'crystal', 1, 16); px(ctx, 14, 0, 'crystal', 1, 16); // rails
   return c;
 }
+
+// ------------------------------------------------------------ the Forge of Ash
+// A heavy boulder: rough basalt bound with an iron band. Only the Stone
+// Gauntlets can shift it.
+export function heavyBoulder() {
+  const [c, ctx] = makeCanvas(20, 20);
+  for (let y = 0; y < 18; y++) for (let x = 0; x < 18; x++) {
+    const nx = (x - 9) / 8.5, ny = (y - 10) / 8;
+    const d = nx * nx + ny * ny;
+    if (d > 1) continue;
+    const l = 0.5 - nx * 0.35 - ny * 0.5 + (hash(x, y, 51) - 0.5) * 0.3;
+    px(ctx, x + 1, y + 1, l > 0.55 ? 'basaltL' : l > 0.15 ? 'basalt' : 'basaltD');
+  }
+  px(ctx, 2, 9, 'steelD', 16, 2); px(ctx, 2, 9, 'steel', 16, 1); // iron band
+  px(ctx, 8, 8, 'steelL', 2, 4); // its rivet
+  px(ctx, 5, 4, 'ashL', 2, 1); px(ctx, 12, 14, 'basaltL', 3, 1);
+  outline(c, 'ink');
+  return c;
+}
+// ...and once it's rolled into the lava: a cooling slab you can walk on
+export function sunkBoulder() {
+  const [c, ctx] = makeCanvas(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const edge = x < 1 || y < 1 || x > 14 || y > 14;
+    px(ctx, x, y, edge ? 'lavaD' : hash(x, y, 52) < 0.2 ? 'basaltL' : (x + y) % 7 === 0 ? 'lavaD' : 'basalt');
+  }
+  px(ctx, 3, 7, 'steelD', 10, 1);
+  return c;
+}
+// Reinforced wall: a cracked dwarven wall bound with iron straps. Blades
+// glance off it; a fist of stone breaks it. 'face' = wall seen front-on.
+export function reinforcedWall(face) {
+  const c = crackedWall(face);
+  const ctx = c.getContext('2d');
+  const H = face ? 32 : 16;
+  for (const y of face ? [8, 22] : [4, 11]) { px(ctx, 0, y, 'steelD', 16, 2); px(ctx, 0, y, 'steel', 16, 1); px(ctx, 3, y, 'steelL'); px(ctx, 12, y, 'steelL'); }
+  void H;
+  return c;
+}

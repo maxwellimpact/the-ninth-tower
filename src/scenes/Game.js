@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, Huntsman, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -2387,7 +2387,11 @@ export class Game extends Phaser.Scene {
     at(250, () => audio.sfx('rumble'));
     at(1300, () => audio.sfx('rumble'));
     for (let i = 0; i < 9; i++) at(250 + i * 210, () => this.shake(230, 0.002 + i * 0.0011));
-    if (style === 'fog') {
+    if (style === 'magma') {
+      // the ground cracks and glows, then he climbs out of the lava
+      for (let i = 0; i < 14; i++) at(300 + i * 130, () => this.fx.burst('ember', bx + (Math.random() - 0.5) * 70, by + (Math.random() - 0.5) * 30, 10));
+      if (g.isShadow) for (let i = 0; i < 6; i++) at(450 + i * 230, () => this.fx.burst('curse', bx, by - 20, 10));
+    } else if (style === 'fog') {
       // hounds howl in the mist, then he steps out of it
       at(300, () => audio.sfx('roar', { pitch: 2.2 }));
       at(1100, () => audio.sfx('roar', { pitch: 2.5 }));
@@ -2418,10 +2422,11 @@ export class Game extends Phaser.Scene {
       this.fx.burst('curse', bx, by - 20, 30);
       if (style === 'fog') { g.shadow.setAlpha(0.28); g.sprite.setAlpha(0); this.tweens.add({ targets: g.sprite, alpha: 1, duration: 700 }); }
       else {
-        g.sprite.setAlpha(1).setScale(1, 0.4); g.shadow.setAlpha(0.28);
-        this.tweens.add({ targets: g.sprite, scaleY: 1, duration: 450, ease: 'Back.easeOut' });
+        const sx = g.s.scale || 1; // keep a scaled boss's size (Vulk)
+        g.sprite.setAlpha(1).setScale(sx, sx * 0.4); g.shadow.setAlpha(0.28);
+        this.tweens.add({ targets: g.sprite, scaleY: sx, duration: 450, ease: 'Back.easeOut' });
       }
-      if (style === 'pool') { const y0 = g.sprite.y; g.sprite.y = y0 + 30; this.tweens.add({ targets: g.sprite, y: y0, duration: 500, ease: 'Back.easeOut' }); }
+      if (style === 'pool' || style === 'magma') { const y0 = g.sprite.y; g.sprite.y = y0 + 30; this.tweens.add({ targets: g.sprite, y: y0, duration: 500, ease: 'Back.easeOut' }); }
     });
     // ...and roars
     at(2750, () => {
@@ -2466,14 +2471,14 @@ export class Game extends Phaser.Scene {
       const x = (w.def.x + wb.offset[0]) * TILE + 8, y = (w.def.y + wb.offset[1]) * TILE + 8;
       if (Math.hypot(L.x - x, L.y - y) > wb.trigger * TILE) continue;
       const opts = { level: this.enemyLevel(x, y) + 2, arena: wb.arena, pool: wb.pool };
-      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : wb.kind === 'huntsman' ? new Huntsman(this, x, y, opts) : new Golem(this, x, y, opts);
+      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : wb.kind === 'huntsman' ? new Huntsman(this, x, y, opts) : wb.kind === 'vulk' ? new Vulk(this, x, y, opts) : new Golem(this, x, y, opts);
       boss.maxHp = Math.round(boss.maxHp * wb.hpMul); boss.hp = boss.maxHp;
       boss.s = { ...boss.s, dmg: boss.s.dmg * wb.dmgMul };
       const B = { id: wb.id, flag: wb.flag, cfg: wb };
       boss.bossName = wb.name; boss.bossDef = B; boss.wardBoss = wb;
       this.golem = boss;
       this.enemies.push(boss);
-      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : wb.kind === 'huntsman' ? 'fog' : 'stone', B);
+      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : wb.kind === 'huntsman' ? 'fog' : wb.kind === 'vulk' ? 'magma' : 'stone', B);
       return;
     }
   }

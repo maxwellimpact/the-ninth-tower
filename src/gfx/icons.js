@@ -814,6 +814,18 @@ const ICONS = {
     '....bBBBBb....',
     '.....bbbb.....',
   ],
+  gauntlets: [
+    '..ss.ss.ss....',
+    '.sSSsSSsSSs...',
+    '.sSSsSSsSSs.s.',
+    '.sSSsSSsSSssSs',
+    '.sSSSSSSSSsSSs',
+    '.sSSSSSSSSSSs.',
+    '..sSSSSSSSSs..',
+    '..dGGGGGGGd...',
+    '..dsssssssd...',
+    '...dddddd.....',
+  ],
   lens: [
     '....kkkkk.....',
     '...kSWWWSk....',

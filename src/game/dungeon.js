@@ -15,7 +15,7 @@
 // Sluices (the Abbey): a lever swaps the water between two basins ('w' / 'v'),
 // like red and blue pegs. Drained basin floor is walkable; flooded needs the
 // Tide Charm to swim.
-import { Unit, Breakable, Golem, Murk, Huntsman } from './units.js';
+import { Unit, Breakable, Golem, Murk, Huntsman, Vulk } from './units.js';
 import { audio } from '../audio/synth.js';
 import DUNGEONS from '../data/dungeons.json';
 
@@ -23,7 +23,7 @@ const TILE = 16;
 const px = (t) => t * TILE + TILE / 2;
 const DOOR = { '=': 'shutter', k: 'key', K: 'boss', V: 'vault' };
 const FOES = { h: 'hollow', R: 'rats' }; // defaults; a dungeon can list its own (def.foes)
-const WALLISH = new Set(['#', ' ', '~', 'I', '_']); // illusory walls and hidden bridges divide rooms like walls and chasms
+const WALLISH = new Set(['#', ' ', '~', 'I', '_', '&']); // illusory walls and hidden bridges divide rooms like walls and chasms
 const BASIN = { w: 'A', v: 'B' };
 const T_WATER = 3; // map.js T.WATER
 const key = (x, y) => `${x},${y}`;
@@ -125,6 +125,7 @@ export class DungeonKit {
       r: this.rooms.map((r, i) => (r.cleared ? i : -1)).filter((i) => i >= 0),
       z: this.zones.map((z) => [z.raised, z.flood]),
       f: this.braziers.map((b, i) => (b.lit ? i : -1)).filter((i) => i >= 0),
+      s: (this.sunkLog || []),
       h: [...this.hinted],
     };
     if (autosave) this.sc.autosave('dungeon');
@@ -140,6 +141,7 @@ export class DungeonKit {
       (s.z || []).forEach(([raised, flood], i) => { const z = this.zones[i]; if (z) { z.raised = raised; z.flood = flood; this.applyPegs(z, true); this.applyWater(z, true); } });
       for (const h of s.h || []) this.hinted.add(h);
       for (const i of s.f || []) if (this.braziers[i]) this.light(this.braziers[i], true);
+      for (const [x0, y0, x, y] of s.s || []) { const b = this.blocks.find((k) => k.heavy && k.x0 === x0 && k.y0 === y0); if (b) { this.sc.nav.unblock(b.x, b.y); b.x = x; b.y = y; this.sink(b, true); this.sunkLog.push([x0, y0, x, y]); } }
     } else this.migrate();
     for (const c of this.chests) {
       if (f[`chest_${c.id}`]) { c.opened = true; c.img?.setTexture('chestOpen'); }
@@ -233,7 +235,7 @@ export class DungeonKit {
 
   build() {
     const sc = this.sc;
-    this.doors = []; this.blocks = []; this.plates = []; this.chests = []; this.crystals = []; this.braziers = []; this.illusions = []; this.bridges = [];
+    this.doors = []; this.blocks = []; this.plates = []; this.chests = []; this.crystals = []; this.braziers = []; this.illusions = []; this.bridges = []; this.sunkLog = [];
     const seen = new Set();
     for (const [k, ch] of this.cells) {
       const [x, y] = k.split(',').map(Number);
@@ -242,13 +244,22 @@ export class DungeonKit {
       if (DOOR[ch] && !seen.has(k)) this.addDoor(x, y, ch, seen);
       else if (ch === '@') this.start = { x, y };
       else if (ch === 'F') this.addCampfire(x, y);
-      else if (ch === 'B') { const b = { x, y, x0: x, y0: y, room, s: sc.add.image(px(x), px(y) + 8, 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', interact: (h) => this.pushFrom(b, h) }); }
+      else if (ch === 'B' || ch === 'O') { const b = { x, y, x0: x, y0: y, room, heavy: ch === 'O', s: sc.add.image(px(x), px(y) + 8, ch === 'O' ? 'dgBoulder' : 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', interact: (h) => this.pushFrom(b, h) }); }
       else if (ch === 'P') { const p = { x, y, room, latched: false, s: sc.add.image(px(x), px(y), 'dgPlate').setDepth(-30) }; this.plates.push(p); room.plates.push(p); }
       else if (ch === 'b' || ch === 'r') { const z = this.zones[this.zoneOf.get(k)]; z.pegs.push({ x, y, color: ch === 'b' ? 'blue' : 'red', s: sc.add.image(px(x), px(y) + 6, 'dgPeg_blue_up').setOrigin(0.5, 1) }); }
       else if (this.def.posts?.[ch]) this.addPost(x, y, ch); // a dungeon's own post letters win over shared ones
       else if (BASIN[ch]) { const z = this.zones[this.zoneOf.get(k)]; z.basins.push({ x, y, side: BASIN[ch], s: sc.add.image(px(x), px(y), 'dgWater').setDepth(-29) }); }
       else if (ch === 'L') { const z = this.zones[this.zoneOf.get(k)]; const l = { x, y, z, s: sc.add.image(px(x), px(y) + 6, 'dgLever_A').setOrigin(0.5, 1).setDepth(px(y)) }; sc.nav.block(x, y); z.levers.push(l); l.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'lever', interact: (h) => this.pull(l, h) }); }
       else if (ch === 'C') { const z = this.zones[this.zoneOf.get(k)]; const c = new Crystal(sc, this, x, y, z); z.crystals.push(c); this.crystals.push(c); sc.breakables.push(c); sc.nav.block(x, y); }
+      else if (ch === 'X') {
+        // reinforced wall: only the Stone Gauntlets break it
+        const face = !WALLISH.has(this.at(x, y + 1)) && this.at(x, y + 1) !== 'X';
+        const bid = `${this.id}_${lx}_${ly}`;
+        if (!sc.flags[`broke_${bid}`]) {
+          const b = new Breakable(sc, { id: bid, kind: 'wall', reinforced: true, tex: face ? 'dgReinforcedFace' : 'dgReinforcedTop', x, y, hp: 60, tiles: [[x, y]] });
+          sc.nav.block(x, y); sc.breakables.push(b);
+        }
+      }
       else if (ch === '%') {
         // cracked wall: drawn to match a wall face (floor below it) or a wall run seen from above
         const face = !WALLISH.has(this.at(x, y + 1)) && this.at(x, y + 1) !== '%';
@@ -447,6 +458,11 @@ export class DungeonKit {
 
   // ------------------------------------------------------------- blocks
   pushFrom(b, h) {
+    if (b.heavy && !this.sc.state.relics.includes('gauntlets')) {
+      audio.sfx('block');
+      if (!this.hinted.has('heavy')) { this.hinted.add('heavy'); this.sc.bark(h || this.sc.leader, "IT WON'T EVEN ROCK. WE'D NEED THE STRENGTH OF A GIANT FOR THIS ONE."); }
+      return;
+    }
     const dx = b.x * TILE + 8 - h.x, dy = b.y * TILE + 8 - h.y;
     if (Math.abs(dx) > Math.abs(dy)) this.push(b, Math.sign(dx), 0, h); else this.push(b, 0, Math.sign(dy), h);
   }
@@ -454,9 +470,11 @@ export class DungeonKit {
   push(b, dx, dy, h) {
     const sc = this.sc;
     if (b.moving) { b.queued = { dx, dy, h }; return true; } // a quick second tap waits for the slide, never lost
+    if (b.heavy && !sc.state.relics.includes('gauntlets')) return false;
     const nx = b.x + dx, ny = b.y + dy;
     const occupied = sc.enemies.some((e) => e.alive && Math.floor(e.x / TILE) === nx && Math.floor(e.y / TILE) === ny);
-    if (sc.nav.isSolid(nx, ny) || occupied || this.roomOf.get(key(nx, ny)) !== b.room.id) {
+    const intoLava = b.heavy && this.at(nx, ny) === '&' && !this.filled?.has(key(nx, ny)); // a boulder rolls into lava and fills it
+    if (!intoLava && (sc.nav.isSolid(nx, ny) || occupied || this.roomOf.get(key(nx, ny)) !== b.room.id)) {
       audio.sfx('block');
       if (!this.hinted.has('stuck')) { this.hinted.add('stuck'); sc.bark(h || sc.leader, 'IT WON\'T BUDGE THAT WAY.'); }
       return false;
@@ -468,6 +486,7 @@ export class DungeonKit {
     sc.fx.dust(b.s.x, b.s.y);
     sc.tweens.add({ targets: b.s, x: px(nx), y: px(ny) + 8, duration: 160, ease: 'Sine.easeOut', onUpdate: () => b.s.setDepth(b.s.y - 6), onComplete: () => {
       b.moving = false;
+      if (intoLava) { this.sink(b); this.save(); return; }
       b.o.x = px(nx); b.o.y = px(ny);
       for (const u of sc.party) this.evict(u, [[nx, ny]]);
       this.checkPlates();
@@ -475,6 +494,25 @@ export class DungeonKit {
     } });
     if (h) { h.face(dx, dy); h.anim = ''; h.play('attack'); }
     return true;
+  }
+
+  // a heavy boulder in the lava: it sinks to a cooling slab you can walk on
+  sink(b, silent = false) {
+    const sc = this.sc;
+    (this.filled ??= new Set()).add(key(b.x, b.y));
+    b.sunk = true;
+    if (!silent) this.sunkLog.push([b.x0, b.y0, b.x, b.y]);
+    sc.nav.unblock(b.x, b.y);
+    b.s.setTexture('dgBoulderSunk').setOrigin(0.5).setPosition(px(b.x), px(b.y)).setDepth(-30);
+    sc.removeInteractable(b.o);
+    this.blocks = this.blocks.filter((k) => k !== b);
+    b.room.blocks = b.room.blocks.filter((k) => k !== b);
+    this.cells.set(key(b.x, b.y), '.');
+    if (!silent) {
+      audio.sfx('fireImpact'); audio.sfx('push', { pitch: 0.6 });
+      sc.fx.burst('ember', px(b.x), px(b.y) - 4, 20); sc.shake(200, 0.006);
+      if (!this.hinted.has('sink')) { this.hinted.add('sink'); sc.bark(sc.leader, 'IT SANK! THE LAVA COOLED OVER IT - WE CAN WALK ON THAT.'); }
+    }
   }
 
   // leaving a room with its puzzle unsolved puts the blocks back
@@ -632,6 +670,8 @@ export class DungeonKit {
       ? (x, y, o) => new Murk(sc, x, y, { ...o, shadow: true, arena, pool: b.pool })
       : b.kind === 'huntsman'
         ? (x, y, o) => new Huntsman(sc, x, y, { ...o, shadow: true, arena })
+        : b.kind === 'vulk'
+          ? (x, y, o) => new Vulk(sc, x, y, { ...o, shadow: true, arena })
         : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
     return this._bossDef = { id: this.id, flag: this.bossFlag, style: b.style || 'shadow', cfg, rect: [arena.x0, arena.y0, arena.x1, arena.y1 - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
   }
