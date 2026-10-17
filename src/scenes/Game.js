@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -868,6 +868,7 @@ export class Game extends Phaser.Scene {
   }
 
   recruitOrder() {
+    // slot 3 only fills when the starter isn't one of the core three, so no core hero is lost
     const all = ['brann', 'pip', 'sable'];
     const first = this.state.recruited[0];
     return [first, ...all.filter((i) => i !== first)];
@@ -1203,6 +1204,7 @@ export class Game extends Phaser.Scene {
         for (const e of near) { e.arcing = true; this.dealDamage(src, e, dealt * 0.4, { knock: 0, noProc: true }); e.arcing = false; this.fx.burst('spark', e.x, e.y - 8, 4); }
       }
       if (el === 'light' && hero) { const low = this.party.filter((p) => !p.downed).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]; low?.heal(Math.round(dealt * 0.02)); }
+      if (el === 'light' && hero && src.passive('faith')) for (const p of this.party) if (p.alive && !p.downed) p.heal(Math.round(dealt * 0.1 / this.party.length)); // Faith (Oake)
     }
     if (hero) {
       // cooldown refunds from crits: at most once a second, so one big AoE crit-storm can't reset everything
@@ -1412,6 +1414,26 @@ export class Game extends Phaser.Scene {
           audio.sfx('swing', { pitch: 1.8 });
         });
         this.time.delayedCall(4200, () => this.tweens.add({ targets: hawk, y: hawk.y - 120, alpha: 0, duration: 500, onComplete: () => hawk.destroy() }));
+        break;
+      }
+      case 'dawnbreak': {
+        // every fallen ally rises, and the party heals to full over 3s
+        h.act?.('dawnbreak', 0.8, 'cast');
+        const light = this.add.circle(h.x, h.y - 10, 20, 0xfff6c0, 0.5).setDepth(TOP - 30).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: light, scale: 10, alpha: 0, duration: 1200, onComplete: () => light.destroy() });
+        this.cameras.main.flash(300, 255, 246, 200);
+        for (const p of this.party) if (p.downed) p.revive(0.3);
+        this.time.addEvent({ delay: 500, repeat: 5, callback: () => { for (const p of this.party) if (p.alive && !p.downed) p.heal(Math.round(p.maxHp / 6)); } });
+        audio.sfx('levelUp');
+        sc.floatText(h.x, h.y - 36, 'DAWNBREAK!', 'fontGold', 0xffffff, true);
+        break;
+      }
+      case 'clank': {
+        const [fx, fy] = h.facingVec();
+        const x = h.x + fx * 20, y = h.y + fy * 14;
+        new Gadget(this, h, 'clank', this.nav.solidAtPx(x, y) ? h.x : x, this.nav.solidAtPx(x, y) ? h.y + 6 : y, 1);
+        this.shake(260, 0.01); audio.sfx('bash');
+        sc.floatText(h.x, h.y - 36, 'CLANK!', 'fontGold', 0xffffff, true);
         break;
       }
       case 'primal': {
@@ -1630,6 +1652,7 @@ export class Game extends Phaser.Scene {
       const n = (Math.random() < chance ? 1 : 0) + (e.elite ? 1 + (Math.random() < 0.5 ? 1 : 0) : 0);
       if (n) got[m] = n;
     }
+    if (got.scrap && this.party.some((h) => h.alive && h.passive?.('scrapper'))) got.scrap = Math.ceil(got.scrap * 1.5); // Scrap Collector (Gizmo)
     this.quests?.onKill(e);
     if (Object.keys(got).length) {
       addMats(this.state, got);
@@ -2949,6 +2972,7 @@ export class Game extends Phaser.Scene {
 
     for (const h of this.party) { if (h.zipping) h.sync(dt); else h.update(dt); this.gearFx.update(h, dt); }
     for (const e of this.enemies) e.update(dt);
+    for (const g of [...(this.gadgets || [])]) g.update(dt); // Gizmo's machines
     this.drawEnemyBars();
     this.enemies = this.enemies.filter((e) => e.alive);
     for (const u of this.wardUnits()) u.update(dt);

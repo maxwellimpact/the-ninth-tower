@@ -174,5 +174,76 @@
    "YOU... FOUGHT FOR ME. NOBODY FIGHTS FOR THE BEAST IN THE PIT.",
    "KESH. I WAS A MILLER BEFORE THE CURSE. NOW I'M... THIS. POINT ME AT MALGRIM'S THINGS AND I'LL BE GOOD."
   ]
+ },
+ {
+  "id": "oake",
+  "name": "Oake",
+  "title": "Cleric",
+  "stats": {
+   "maxHp": 125,
+   "atk": 10,
+   "range": 17,
+   "atkCd": 0.72,
+   "speed": 60,
+   "crit": 0.05,
+   "role": "healer",
+   "hitAt": 0.1
+  },
+  "skills": [
+   "oheal",
+   "smite"
+  ],
+  "ultimate": "dawnbreak",
+  "voice": {
+   "pitch": 210,
+   "wave": "triangle",
+   "speed": 0.95
+  },
+  "equip": {
+   "head": "monk_hood",
+   "body": "plain_habit",
+   "weapon": "war_hammer",
+   "offhand": "holy_relic"
+  },
+  "recruit": [
+   "OAKE: THE ABBOT CALLED THEM HOPELESS. HE CALLED YOU HOPELESS, TOO. I LIKE HOPELESS CAUSES. THEY'RE THE ONLY ONES WORTH ANY TROUBLE.",
+   "BROTHER OAKE, AT YOUR SERVICE. I MEND, I BLESS, AND IF IT COMES TO IT, I HIT THINGS WITH THIS HAMMER. CHEERFULLY."
+  ]
+ },
+ {
+  "id": "gizmo",
+  "name": "Gizmo",
+  "title": "Tinkerer",
+  "stats": {
+   "maxHp": 110,
+   "atk": 11,
+   "range": 17,
+   "atkCd": 0.66,
+   "speed": 62,
+   "crit": 0.07,
+   "role": "summoner",
+   "hitAt": 0.09
+  },
+  "skills": [
+   "turret",
+   "sparkmine"
+  ],
+  "ultimate": "clank",
+  "voice": {
+   "pitch": 420,
+   "wave": "square",
+   "duty": 0.125,
+   "speed": 1.15
+  },
+  "equip": {
+   "head": "brass_goggles",
+   "body": "work_overalls",
+   "weapon": "steel_spanner",
+   "offhand": "gadget_box"
+  },
+  "recruit": [
+   "GIZMO: THE MILL TURNS! THE MILL TURNS! I KNEW THE COGS WOULD MESH IF I JUST HIT THEM HARDER.",
+   "GIZMO, TINKERER, INVENTOR, OCCASIONAL EXPLODER. YOU NEED TURRETS? I'VE GOT TURRETS. YOU NEED A GIANT METAL FRIEND? WAIT TILL YOU MEET CLANK."
+  ]
  }
 ]

@@ -433,6 +433,136 @@
      "def"
     ]
    }
+  },
+  "oake": {
+   "weapon": {
+    "name": "WAR HAMMER",
+    "mat": "metal",
+    "looks": [
+     "hammer_war",
+     "hammer_war"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "RELIC",
+    "mat": "metal",
+    "looks": [
+     "relic_holy",
+     "relic_holy"
+    ],
+    "split": {
+     "atk": 0.5,
+     "hp": 0.5
+    },
+    "bonus": [
+     "hp",
+     "atk"
+    ]
+   },
+   "head": {
+    "name": "HOOD",
+    "mat": "cloth",
+    "looks": [
+     "hood_monk",
+     "hood_monk"
+    ],
+    "split": {
+     "def": 0.5,
+     "hp": 0.5
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   },
+   "body": {
+    "name": "HABIT",
+    "mat": "cloth",
+    "looks": [
+     "habit_monk",
+     "vestments_cleric"
+    ],
+    "split": {
+     "def": 0.6,
+     "hp": 0.4
+    },
+    "bonus": [
+     "hp",
+     "def"
+    ]
+   }
+  },
+  "gizmo": {
+   "weapon": {
+    "name": "SPANNER",
+    "mat": "metal",
+    "looks": [
+     "wrench_steel",
+     "wrench_steel"
+    ],
+    "split": {
+     "atk": 1
+    },
+    "bonus": [
+     "atk",
+     "crit"
+    ]
+   },
+   "offhand": {
+    "name": "GADGET",
+    "mat": "metal",
+    "looks": [
+     "gadget_box",
+     "gadget_turret"
+    ],
+    "split": {
+     "atk": 0.7,
+     "hp": 0.3
+    },
+    "bonus": [
+     "atk",
+     "hp"
+    ]
+   },
+   "head": {
+    "name": "GOGGLES",
+    "mat": "leather",
+    "looks": [
+     "goggles_brass",
+     "goggles_brass"
+    ],
+    "split": {
+     "def": 0.5,
+     "crit": 0.5
+    },
+    "bonus": [
+     "crit",
+     "def"
+    ]
+   },
+   "body": {
+    "name": "OVERALLS",
+    "mat": "cloth",
+    "looks": [
+     "overalls_work",
+     "overalls_work"
+    ],
+    "split": {
+     "def": 0.6,
+     "hp": 0.4
+    },
+    "bonus": [
+     "def",
+     "hp"
+    ]
+   }
   }
  },
  "rings": {

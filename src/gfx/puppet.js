@@ -129,6 +129,28 @@ export const WEAPONS = {
     }
     px(ctx, Math.round(hx + c), Math.round(hy + s), st.haftD || 'woodD');
   },
+  // war hammer (Oake): a long haft with a squared head, struck face lit
+  hammer(ctx, h, ang, glow, st = {}) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const len = st.len || 9;
+    ray(ctx, h.x - c * 2, h.y - s * 2, ang, len + 2, st.haft || 'wood');
+    const hx = h.x + c * len, hy = h.y + s * len;
+    for (let t = -1; t <= 1; t++) for (let k = -2; k <= 2; k++) {
+      const x = Math.round(hx + c * t - s * k), y = Math.round(hy + s * t + c * k);
+      px(ctx, x, y, k === 2 || k === -2 ? st.face || 'steelL' : st.head || 'steel');
+    }
+    if (st.glow) px(ctx, Math.round(hx), Math.round(hy), st.glow);
+  },
+  // spanner (Gizmo): a short shaft and an open jaw
+  wrench(ctx, h, ang, glow, st = {}) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const len = st.len || 7;
+    ray(ctx, h.x - c * 1, h.y - s * 1, ang, 3, st.grip || 'leatherD');
+    ray(ctx, h.x + c * 2, h.y + s * 2, ang, len - 1, st.head || 'steel');
+    const hx = h.x + c * (len + 1), hy = h.y + s * (len + 1);
+    for (const k of [-2, 2]) for (let t = 0; t <= 1; t++) px(ctx, Math.round(hx + c * t - s * k), Math.round(hy + s * t + c * k), st.jaw || 'steelL');
+    px(ctx, Math.round(hx - s), Math.round(hy + c), st.head || 'steel'); px(ctx, Math.round(hx + s), Math.round(hy - c), st.head || 'steel');
+  },
   spear(ctx, h, ang) {
     const c = Math.cos(ang), s = Math.sin(ang);
     ray(ctx, h.x - c * 6, h.y - s * 6, ang, 17, 'woodL');

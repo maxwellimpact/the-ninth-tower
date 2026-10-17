@@ -201,11 +201,11 @@ export class Hero extends Unit {
     if (anim) this.play(anim);
   }
 
-  buff(stat, mul, t) { this.buffs[stat] = { mul, t }; }
+  buff(stat, mul, t) { if (stat === 'slow' && mul < 1 && this.purifyT > 0) return; this.buffs[stat] = { mul, t }; }
 
   // Poison from leeches / venom: ticks down HP for a few seconds.
   addPoison(dps, t) {
-    if (this.downed || this.antidoteT > 0) return;
+    if (this.downed || this.antidoteT > 0 || this.purifyT > 0) return;
     this.poison = { dps: Math.max(dps, this.poison?.dps || 0), t: Math.max(t, this.poison?.t || 0), next: this.poison?.next ?? 0.6 };
     this.sprite.setTint(0xb8ff9a);
   }
@@ -322,7 +322,7 @@ export class Hero extends Unit {
     this.anim = '';
     this.play('attack');
     const id = this.def.id;
-    if (id === 'brann' || id === 'kesh') audio.sfx('swing', { pitch: id === 'kesh' ? 0.65 : 0.8 });
+    if (id === 'brann' || id === 'kesh' || id === 'oake' || id === 'gizmo') audio.sfx('swing', { pitch: id === 'kesh' ? 0.65 : id === 'oake' ? 0.7 : id === 'gizmo' ? 1.1 : 0.8 });
     else if (id === 'sable') audio.sfx('stab');
     else if (id === 'wren') audio.sfx('swing', { pitch: 1.7 });
     else audio.sfx('fireCast');
@@ -574,6 +574,8 @@ export class Hero extends Unit {
     this.wallT = Math.max(0, (this.wallT || 0) - dt);
     this.riposteT = Math.max(0, (this.riposteT || 0) - dt);
     this.surgeT = Math.max(0, (this.surgeT || 0) - dt);
+    this.overchargeT = Math.max(0, (this.overchargeT || 0) - dt); // Gizmo's Overcharge
+    this.purifyT = Math.max(0, (this.purifyT || 0) - dt); // Oake's Purify: no new poison, burn or slow
     if (this.hiddenT > 0) { this.hiddenT -= dt; this.sprite.setAlpha(this.hiddenT > 0 ? 0.45 : 1); }
     for (const [k, b] of Object.entries(this.buffs)) { b.t -= dt; if (b.t <= 0) delete this.buffs[k]; }
     if (this.stats.regen && !this.downed) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.stats.regen * dt);
@@ -729,7 +731,7 @@ export class Hero extends Unit {
         this.clearPath();
         this.play('cast');
         this.reviveT += dt;
-        if (this.reviveT > 1.4) { r.revive(0.4); audio.sfx('heal'); this.reviveTarget = null; this.reviveT = 0; }
+        if (this.reviveT > (this.passive('steadyhands') ? 0.7 : 1.4)) { r.revive(0.4); audio.sfx('heal'); this.reviveTarget = null; this.reviveT = 0; } // Steady Hands: twice as fast
         return;
       } else { this.setGoal(r.x, r.y); this.followPath(dt, 1.2); return; }
     }
@@ -886,7 +888,9 @@ export class Hero extends Unit {
       const hurt = sc.party.some((h) => !h.downed && h.hp / h.maxHp < 0.45);
       const id = this.ultimate.id;
       const want = (id === 'bulwark' && (hurt || near.length >= 3 || boss)) || (id === 'meteor' && (near.length >= 2 || boss)) || (id === 'thousand_cuts' && (near.length >= 2 || boss))
-        || (id === 'talons' && (near.length >= 2 || boss)) || (id === 'primal' && (near.length >= 2 || boss || this.hp / this.maxHp < 0.5));
+        || (id === 'talons' && (near.length >= 2 || boss)) || (id === 'primal' && (near.length >= 2 || boss || this.hp / this.maxHp < 0.5))
+        || (id === 'dawnbreak' && (sc.party.some((p) => p.downed) || sc.party.filter((p) => !p.downed && p.hp / p.maxHp < 0.4).length >= 2))
+        || (id === 'clank' && (near.length >= 2 || boss));
       if (want && sc.useUltimate(this)) return;
     }
     // pick a target: what the leader engages, else what's attacking us
@@ -3031,6 +3035,98 @@ export class Breakable extends Unit {
     return amount;
   }
   update(dt) { if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.sprite.clearTint(); } }
+}
+
+// ------------------------------------------------------------- Gizmo's gadgets
+// Friendly machines on the field: a turret that shoots, a repair bot that
+// heals, and Clank the mech that taunts and slams. They live in scene.allies
+// (so enemy strikes and shots can hit them) and scene.gadgets (updated each
+// frame). Damage scales off Gizmo's attack; Overcharge doubles their pace
+// and makes their hits Shock.
+const GADGET = {
+  turret: { tex: 'gadget_turret', hp: 0.6, life: 12, r: 6 },
+  bot: { tex: 'gadget_bot', hp: 0.4, life: 8, r: 5 },
+  clank: { tex: 'gadget_clank', hp: 2.2, life: 12, r: 11 },
+};
+export class Gadget extends Unit {
+  constructor(scene, owner, kind, x, y, m = 1) {
+    const g = GADGET[kind];
+    super(scene, x, y, { key: g.tex, frame: 'idle_0', maxHp: Math.round(owner.maxHp * g.hp), team: 'party', r: g.r, shadow: kind === 'clank' ? 'shadowL' : 'shadow' });
+    this.kind = kind; this.owner = owner; this.m = m;
+    this.life = g.life * (kind === 'turret' && owner.hasPerk?.('turret2') ? 2 : 1);
+    this.ally = true; this.gadget = true;
+    this.t = 0.4;
+    this.sprite.play(`${g.tex}_idle`);
+    if (kind === 'clank') this.sprite.setOrigin(0.5, 44 / 48);
+    scene.fx.puff(x, y - 6, 'spark');
+    (scene.allies ??= []).push(this);
+    (scene.gadgets ??= []).push(this);
+  }
+  get over() { return this.owner.overchargeT > 0; }
+  damage(amt) {
+    if (!this.alive) return 0;
+    this.hp -= amt; this.flash(60);
+    this.scene.floatText(this.x, this.y - 20, `${Math.round(amt)}`, 'font', 0xff6a6a);
+    if (this.hp <= 0) this.expire();
+    return amt;
+  }
+  expire() {
+    if (!this.alive) return;
+    const sc = this.scene;
+    this.alive = false;
+    sc.fx.puff(this.x, this.y - 6, 'spark'); audio.sfx('block', { pitch: 1.6 });
+    sc.allies = sc.allies.filter((a) => a !== this);
+    sc.gadgets = sc.gadgets.filter((a) => a !== this);
+    for (const e of sc.enemies) if (e.taunter === this) { e.tauntT = 0; e.taunter = null; }
+    this.destroy();
+  }
+  update(dt) {
+    if (!this.alive) return;
+    const sc = this.scene, o = this.owner, rate = this.over ? 2 : 1;
+    this.life -= dt;
+    if (this.life <= 0 || !o.alive) { this.expire(); return; }
+    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.sprite.clearTint(); }
+    this.t -= dt * rate;
+    if (this.kind === 'turret' && this.t <= 0) {
+      const e = sc.enemies.filter((k) => sc.fairTarget(k) && !k.submerged && Math.hypot(k.x - this.x, k.y - this.y) < 110).sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))[0];
+      if (e) {
+        this.t = 0.9;
+        const [nx, ny] = norm(e.x - this.x, e.y - 8 - (this.y - 10));
+        this.flip = nx < 0; this.sprite.setFlipX(this.flip);
+        this.sprite.play('gadget_turret_attack');
+        sc.spawnProjectile({ owner: o, target: e, x: this.x + nx * 8, y: this.y - 10, vx: nx * 260, vy: ny * 260, dmg: o.stats.atk * 0.55 * this.m, kind: 'arrow', life: 0.6, element: this.over || o.hasPerk?.('turret2') ? 'storm' : undefined });
+        audio.sfx('swing', { pitch: 2.1 });
+      } else this.t = 0.3;
+    }
+    if (this.kind === 'bot') {
+      this.y += Math.sin(sc.time.now / 200) * 0.05;
+      if (this.t <= 0) {
+        this.t = 1;
+        for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - this.x, h.y - this.y) < 44 && h.hp < h.maxHp) h.heal(Math.round(h.maxHp * 0.04 * this.m));
+        sc.fx.ring(this.x, this.y - 6, 'ringWhite', 1.6);
+      }
+      // drift after Gizmo
+      const d = Math.hypot(o.x - this.x, o.y - this.y);
+      if (d > 30) { const [nx, ny] = norm(o.x - this.x, o.y - this.y); this.x += nx * 40 * dt; this.y += ny * 40 * dt; }
+    }
+    if (this.kind === 'clank') {
+      const e = sc.enemies.filter((k) => sc.fairTarget(k) && !k.submerged).sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))[0];
+      if (e && Math.hypot(e.x - this.x, e.y - this.y) > 30) {
+        const [nx, ny] = norm(e.x - this.x, e.y - this.y);
+        this.moveBy(nx * 46 * dt, ny * 46 * dt); this.flip = nx < 0; this.sprite.setFlipX(this.flip);
+        if (this.sprite.anims.currentAnim?.key !== 'gadget_clank_walk' && this.t > 0.2) this.sprite.play('gadget_clank_walk');
+      }
+      if (this.t <= 0 && e && Math.hypot(e.x - this.x, e.y - this.y) < 44) {
+        this.t = 1.6;
+        this.sprite.play('gadget_clank_attack');
+        sc.fx.slam(this.x, this.y, 36); sc.shake(160, 0.006); audio.sfx('bash');
+        for (const k of sc.enemies) if (k.alive && Math.hypot(k.x - this.x, k.y - this.y) < 36 + k.r) { sc.dealDamage(o, k, o.stats.atk * 1.6 * this.m, { knock: 90, element: this.over ? 'storm' : undefined }); }
+        for (const k of sc.enemies) if (k.alive && !k.boss && Math.hypot(k.x - this.x, k.y - this.y) < 90) k.setTaunt(this, 2.5); // HEY! OVER HERE!
+        sc.floatText(this.x, this.y - 40, 'CLANK!', 'fontGold');
+      }
+    }
+    this.sync(dt);
+  }
 }
 
 // ------------------------------------------------------------- Ward Stone

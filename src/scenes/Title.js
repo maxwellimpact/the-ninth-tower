@@ -33,7 +33,7 @@ export class Title extends Phaser.Scene {
     this.add.circle(tx, base - 94, 2, 0xe7a6ff);
 
     this.add.bitmapText(W / 2, 22, 'fontGold', 'THE NINTH TOWER').setOrigin(0.5).setScale(3);
-    this.add.bitmapText(W / 2, 42, 'fontPlain', 'WAVE 1 PREVIEW').setOrigin(0.5);
+    this.add.bitmapText(W / 2, 42, 'fontPlain', 'WAVE 2 PREVIEW').setOrigin(0.5);
     const save = loadState();
     if (save) this.saveMenu(save);
     else this.heroSelect();
@@ -125,24 +125,27 @@ export class Title extends Phaser.Scene {
 
     // centred for however many heroes there are, so none run off the edge
     const spacing = Math.min(100, (W - 16) / HEROES.length);
+    const hw = Math.min(40, Math.floor(spacing / 2) - 2); // cards narrow as the roster grows
+    const skillsFit = hw >= 40, ch = skillsFit ? 96 : 80; // narrow cards drop the skill list (it can't shrink and stay legible)
     HEROES.forEach((def, i) => {
       const x = Math.round(W / 2 + (i - (HEROES.length - 1) / 2) * spacing), y = 128;
       const card = this.add.graphics();
       const drawCard = (hot) => {
         card.clear();
-        card.fillStyle(0x1a1423).fillRect(x - 40, y - 52, 80, 96);
-        card.fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(x - 39, y - 51, 78, 94);
-        card.fillStyle(0x2b2140).fillRect(x - 38, y - 50, 76, 92);
-        card.fillStyle(0x2f5d3a).fillRect(x - 38, y - 4, 76, 14);
+        card.fillStyle(0x1a1423).fillRect(x - hw, y - 52, hw * 2, ch);
+        card.fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(x - hw + 1, y - 51, hw * 2 - 2, ch - 2);
+        card.fillStyle(0x2b2140).fillRect(x - hw + 2, y - 50, hw * 2 - 4, ch - 4);
+        card.fillStyle(0x2f5d3a).fillRect(x - hw + 2, y - 4, hw * 2 - 4, 14);
       };
       drawCard(false);
       this.add.image(x + 1, y + 2, 'shadow').setAlpha(0.3).setScale(2);
       const s = this.add.sprite(x, y, def.id).setOrigin(0.5, 0.75).setScale(2).play(`${def.id}_idle_down`);
-      this.add.bitmapText(x, y + 14, 'fontGold', def.name.toUpperCase()).setOrigin(0.5);
-      this.add.bitmapText(x, y + 22, 'fontPlain', def.title.toUpperCase()).setOrigin(0.5);
+      const fit = (t) => { if (t.width > hw * 2 - 4) t.setScale((hw * 2 - 4) / t.width); return t; }; // text never spills past a narrow card
+      fit(this.add.bitmapText(x, y + 14, 'fontGold', def.name.toUpperCase()).setOrigin(0.5));
+      fit(this.add.bitmapText(x, y + 22, 'fontPlain', def.title.toUpperCase()).setOrigin(0.5));
       const st = HERO_STATS[def.id];
-      this.add.bitmapText(x, y + 31, 'fontPlain', newSkillState(def.id).skills.active.filter(Boolean).map((k) => skillDef(k).name).join('\n')).setOrigin(0.5, 0).setScale(1).setCenterAlign();
-      const z = this.add.zone(x - 40, y - 52, 80, 96).setOrigin(0).setInteractive({ useHandCursor: true });
+      if (skillsFit) this.add.bitmapText(x, y + 31, 'fontPlain', newSkillState(def.id).skills.active.filter(Boolean).map((k) => skillDef(k).name).join('\n')).setOrigin(0.5, 0).setCenterAlign();
+      const z = this.add.zone(x - hw, y - 52, hw * 2, ch).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerover', () => { drawCard(true); s.play(`${def.id}_walk_down`); });
       z.on('pointerout', () => { drawCard(false); s.play(`${def.id}_idle_down`); });
       z.on('pointerdown', () => {

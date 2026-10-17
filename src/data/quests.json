@@ -1598,6 +1598,49 @@
      "slot": "body"
     }
    }
+  },
+  "waterWheel": {
+   "title": "THE WATER WHEEL",
+   "giver": "gizmo",
+   "region": "vale",
+   "wards": 2,
+   "offer": [
+    "GIZMO: AH! YOU! YOU LOOK LIKE SOMEONE WHO WALKS FAR AWAY AND COMES BACK. PERFECT. BRIGHTWATER'S MILL WHEEL HAS SEIZED - NO FLOUR, NO BREAD, VERY GRUMPY TOWN.",
+    "I NEED TWO PARTS. A HEARTWOOD AXLE PIN FROM THE OLD WOODCUTTERS' STUMP IN GLOAMWOOD, AND A BRASS COG FROM THE DWARVES' SCRAP HEAP BY THE FORGE GATE IN CINDERREACH. GO! QUICKLY! WITH STYLE!"
+   ],
+   "accept": "TWO PARTS. GOT IT.",
+   "thanks": [
+    "GIZMO: HEARTWOOD AND BRASS! NOW WATCH - A LITTLE TAP HERE... A BIGGER TAP THERE...",
+    "...THE MILL TURNS! TAKE THESE GOGGLES - THEY SEE WHAT'S HIDDEN. AND TAKE ME, TOO. YOU'LL NEED A TINKERER WHERE YOU'RE GOING."
+   ],
+   "steps": [
+    {
+     "type": "find",
+     "text": "FIND A HEARTWOOD AXLE PIN AT THE WOODCUTTERS' STUMP (GLOAMWOOD)",
+     "x": 66,
+     "y": 142,
+     "kind": "glint",
+     "say": "A PIN OF DARK HEARTWOOD, HARD AS IRON, WEDGED IN AN OLD STUMP."
+    },
+    {
+     "type": "find",
+     "text": "FIND A BRASS COG IN THE SCRAP BY THE FORGE GATE (CINDERREACH)",
+     "x": 182,
+     "y": 189,
+     "kind": "glint",
+     "say": "A BIG BRASS COG, STILL TOOTHED, UNDER A HEAP OF DWARVEN SLAG."
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE PARTS TO GIZMO AT THE MILL",
+     "npc": "gizmo"
+    }
+   ],
+   "reward": {
+    "xp": 350,
+    "item": "clockwork_goggles",
+    "recruit": "gizmo"
+   }
   }
  },
  "npcs": [
@@ -2196,7 +2239,8 @@
    ],
    "errands": [
     "excessiveOptimism"
-   ]
+   ],
+   "recruitOf": "oake"
   },
   {
    "id": "dusty",
@@ -2212,6 +2256,27 @@
    "lines": [
     "THE MONKS SAID WE WERE TOO FAR GONE. BROTHER OAKE SAID 'NONSENSE' AND STAYED."
    ]
+  },
+  {
+   "id": "gizmo",
+   "name": "GIZMO",
+   "x": 26,
+   "y": 32,
+   "look": "gizmo",
+   "wards": 2,
+   "voice": {
+    "pitch": 420,
+    "wave": "square",
+    "duty": 0.125,
+    "speed": 1.15
+   },
+   "lines": [
+    "THE MILL WHEEL'S SEIZED. TWO COGS SHORT. TWO! OF THE GOOD ONES!"
+   ],
+   "errands": [
+    "waterWheel"
+   ],
+   "recruitOf": "gizmo"
   }
  ]
 }

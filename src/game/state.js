@@ -281,8 +281,10 @@ function pay(state, needs, gold = 0) {
 export function craft(state, recipe) {
   if (!canAfford(state, recipe.needs)) return false;
   pay(state, recipe.needs);
-  state.potions[recipe.makes] = (state.potions[recipe.makes] || 0) + 1;
-  return true;
+  // Tinker's Luck (Gizmo, in the party): sometimes a second one comes out of it
+  const g = state.heroes.gizmo, lucky = state.active?.includes('gizmo') && g?.skills?.passive.includes('tinkersluck') && Math.random() < 0.2;
+  state.potions[recipe.makes] = (state.potions[recipe.makes] || 0) + (lucky ? 2 : 1);
+  return lucky ? 'double' : true;
 }
 
 // Blacksmith rank 0-3 (C5): returns with the Vale stone, then 3 and 5 stones.

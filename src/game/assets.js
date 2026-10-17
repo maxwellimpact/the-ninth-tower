@@ -5,7 +5,7 @@
 import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, ghostRecolor, paleRecolor, scaleRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -201,6 +201,11 @@ export const GROUPS = {
 };
 // errand townsfolk + props are small and needed across the Vale, so they ride with core
 GROUPS.core.push(
+  ['gadgets', (s) => {
+    creature(s, 'gadget_turret', buildTurret(), { idle: 1, attack: 12 }, ['idle']);
+    creature(s, 'gadget_bot', buildBot(), { idle: 12 }, ['idle']);
+    creature(s, 'gadget_clank', buildClank(), { idle: 2, walk: 6, attack: 8 }, ['idle', 'walk']);
+  }],
   ['herbs', (s) => { frames(s, 'herb', P.herbNode(false), 2); s.textures.addCanvas('herb_used', P.herbNode(true)[0]); }],
   ['vale foes', (s) => {
     creature(s, 'boar', buildBoar(), { idle: 2, walk: 8, windup: 10, attack: 12, hurt: 1 }, ['idle', 'walk', 'windup']);

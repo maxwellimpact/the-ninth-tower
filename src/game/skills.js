@@ -1,7 +1,9 @@
 // Skill engine: what each active skill does (cast), and when an AI companion
 // should use it (ai). Numbers scale with rank via `m` (rank multiplier).
 // Passives are looked up with hero.passive(id) -> rank (0 when not equipped).
+import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
+import { Gadget } from './units.js'; // Gizmo's machines (used only inside casts, so the cycle is safe)
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
@@ -32,6 +34,20 @@ const engagedNear = (sc, p, r) => sc.enemies.filter((e) => e.alive && e.engaged 
 const attackers = (sc, h, r = 40) => sc.enemies.filter((e) => e.alive && e.target === h && dist(e, h) < r);
 const tough = (e) => e && (e.boss || e.elite || e.maxHp >= 200);
 const inDanger = (sc, x, y, pad = 0) => sc.dangers.some((z) => Math.hypot(x - z.x, y - z.y) < z.r + pad);
+// the undead and the Hexed: Oake's light hits them harder (and Judgment stuns them)
+const UNDEAD = new Set(['drowned', 'hollow', 'shade', 'banshee', 'huntecho', 'wisp']);
+const unholy = (e) => e && (UNDEAD.has(e.kind) || e.s?.hexed);
+// a heal from Oake: with Optimism, what overflows becomes a shield (up to 15% of max HP)
+function healBy(src, t, amt, quiet = false) {
+  const room = t.maxHp - t.hp;
+  if (quiet && amt > room && room <= 0 && !src.passive?.('optimism')) return;
+  t.heal(amt);
+  const over = amt - room;
+  if (over > 0 && src.passive?.('optimism')) {
+    const cap = Math.round(t.maxHp * 0.15);
+    t.shield = Math.min(cap, (t.shield || 0) + over); t.shieldT = Math.max(t.shieldT || 0, 6);
+  }
+}
 
 export const SKILL_FX = {
   // ----------------------------------------------------------------- Brann
@@ -615,6 +631,213 @@ export const SKILL_FX = {
       return true;
     },
     ai(h) { return h.scene.party.some((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.6 && !(p.shield > 0)) ? true : null; },
+  },
+
+  // ------------------------------------------------------- Brother Oake
+  oheal: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const t = sc.party.filter((p) => p.alive && !p.downed && dist(p, h) < 170).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+      if (!t) return false;
+      h.act('oheal', 0.45, 'cast');
+      healBy(h, t, Math.round(t.maxHp * 0.45 * m));
+      sc.fx.ring(t.x, t.y - 6, 'ringGold', 2.2);
+      audio.sfx('heal');
+      return true;
+    },
+    ai(h) { return h.scene.party.some((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.55) ? true : null; },
+  },
+  smite: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 130) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('smite', 0.4, 'cast', {
+        hitAt: 0.2,
+        resolve: () => {
+          if (!target.alive) return;
+          const g = sc.add.rectangle(target.x, target.y - 30, 6, 60, 0xfff0a0, 0.8).setDepth(target.y + 10).setBlendMode(Phaser.BlendModes.ADD);
+          sc.tweens.add({ targets: g, alpha: 0, scaleX: 3, duration: 300, onComplete: () => g.destroy() });
+          sc.dealDamage(h, target, h.stats.atk * 1.5 * m * (unholy(target) ? 1.5 : 1), { knock: 20, element: 'light', spell: true });
+          audio.sfx('frost', { pitch: 1.8 });
+        },
+      });
+      return true;
+    },
+    ai(h, c) { return c.target && dist(h, c.target) < 120 ? c.target : null; },
+  },
+  sanctuary: {
+    cast(h, { m }) {
+      const sc = h.scene, x = h.x, y = h.y;
+      h.act('sanctuary', 0.5, 'cast');
+      const g = sc.add.ellipse(x, y, 84, 52, 0xfff0a0, 0.18).setStrokeStyle(1, 0xfff0a0, 0.8).setDepth(-25);
+      sc.time.addEvent({ delay: 500, repeat: 11, callback: () => { for (const p of sc.party) if (p.alive && !p.downed && Math.hypot(p.x - x, (p.y - y) * 1.6) < 42) healBy(h, p, Math.round(p.maxHp * 0.035 * m), true); } });
+      sc.tweens.add({ targets: g, alpha: 0, duration: 6000, ease: 'Quad.easeIn', onComplete: () => g.destroy() });
+      audio.sfx('heal', { pitch: 0.8 });
+      return true;
+    },
+    ai(h) { return h.scene.party.filter((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.75 && dist(p, h) < 50).length >= 2 ? true : null; },
+  },
+  purify: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      h.act('purify', 0.4, 'cast');
+      for (const p of sc.party) {
+        if (!p.alive || p.downed) continue;
+        p.poison = null; p.status && (p.status = null); delete p.buffs.slow;
+        p.purifyT = 3 * Math.min(1.5, m);
+        p.sprite.clearTint(); sc.fx.heal(p.x, p.y);
+      }
+      sc.floatText(h.x, h.y - 30, 'PURIFIED', 'fontPlain', 0xfff0a0);
+      audio.sfx('heal', { pitch: 1.4 });
+      return true;
+    },
+    ai(h) { return h.scene.party.some((p) => p.alive && !p.downed && (p.poison || p.buffs.slow)) ? true : null; },
+  },
+  halo: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const t = sc.party.filter((p) => p.alive && !p.downed && dist(p, h) < 170).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+      if (!t) return false;
+      h.act('halo', 0.35, 'cast');
+      t.shield = Math.max(t.shield || 0, Math.round(t.maxHp * 0.2 * m)); t.shieldT = 6;
+      sc.fx.ring(t.x, t.y - 20, 'ringGold', 1.4);
+      sc.floatText(t.x, t.y - 32, 'HALO', 'fontPlain', 0xfff0a0);
+      audio.sfx('heal', { pitch: 1.6 });
+      return true;
+    },
+    ai(h) { return h.scene.party.some((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.5 && !(p.shield > 0)) ? true : null; },
+  },
+  judgment: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 130) return false;
+      const x = target.x, y = target.y;
+      h.act('judgment', 0.6, 'cast');
+      const g = sc.add.ellipse(x, y, 60, 36, 0xfff0a0, 0.15).setStrokeStyle(1, 0xfff0a0, 0.9).setDepth(-25);
+      sc.time.delayedCall(600, () => {
+        g.destroy();
+        const p = sc.add.rectangle(x, y - 60, 22, 120, 0xfff6c0, 0.85).setDepth(y + 10).setBlendMode(Phaser.BlendModes.ADD);
+        sc.tweens.add({ targets: p, alpha: 0, duration: 500, onComplete: () => p.destroy() });
+        sc.shake(200, 0.008); audio.sfx('bash'); audio.sfx('frost', { pitch: 1.3 });
+        for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 30 + e.r) {
+          sc.dealDamage(h, e, h.stats.atk * 2.4 * m * (unholy(e) ? 1.4 : 1), { knock: 40, element: 'light', spell: true });
+          if (unholy(e) && !e.boss) e.stun?.(2);
+        }
+      });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && (t.boss || t.elite || engagedNear(h.scene, t, 34).length >= 2) ? t : null; },
+  },
+
+  // ------------------------------------------------------------ Gizmo
+  turret: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const max = h.passive('engineering') ? 2 : 1;
+      const mine = (sc.gadgets || []).filter((g) => g.kind === 'turret' && g.owner === h);
+      if (mine.length >= max) mine[0].expire(); // the oldest goes
+      const [fx, fy] = h.facingVec();
+      const x = h.x + fx * 14, y = h.y + fy * 10;
+      h.act('turret', 0.4, 'cast');
+      new Gadget(sc, h, 'turret', sc.nav.solidAtPx(x, y) ? h.x : x, sc.nav.solidAtPx(x, y) ? h.y + 4 : y, m);
+      audio.sfx('equip');
+      return true;
+    },
+    ai(h) { return engagedNear(h.scene, h, 110).length >= 1 && !(h.scene.gadgets || []).some((g) => g.kind === 'turret' && g.owner === h && g.life > 3) ? true : null; },
+  },
+  sparkmine: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const [fx, fy] = h.facingVec();
+      const x = h.x + fx * 16, y = h.y + fy * 12;
+      h.act('sparkmine', 0.3, 'cast');
+      const img = sc.add.image(x, y, 'snare').setDepth(y - 4).setTint(0x9fd8ff);
+      const trap = { t: 20 };
+      const check = sc.time.addEvent({ delay: 100, loop: true, callback: () => {
+        trap.t -= 0.1;
+        const e = sc.enemies.find((k) => k.alive && !k.staged && Math.hypot(k.x - x, k.y - y) < 12 + k.r);
+        if (e || trap.t <= 0) {
+          check.remove(); img.destroy();
+          if (!e) return;
+          sc.fx.burst('spark', x, y - 4, 14); audio.sfx('frost', { pitch: 2 });
+          for (const k of sc.enemies) if (k.alive && Math.hypot(k.x - x, k.y - y) < 26 + k.r) {
+            sc.dealDamage(h, k, h.stats.atk * 0.9 * m, { knock: 0, element: 'storm' });
+            k.applyElement?.('storm', h);
+            if (!k.boss) k.stun?.(1.5);
+          }
+        }
+      } });
+      audio.sfx('equip');
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 50).length >= 1 || engagedNear(h.scene, h, 40).length >= 2 ? true : null; },
+  },
+  repairbot: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      (sc.gadgets || []).filter((g) => g.kind === 'bot' && g.owner === h).forEach((g) => g.expire());
+      h.act('repairbot', 0.4, 'cast');
+      new Gadget(sc, h, 'bot', h.x + 10, h.y - 4, m);
+      audio.sfx('equip', { pitch: 1.3 });
+      return true;
+    },
+    ai(h) { return h.scene.party.filter((p) => p.alive && !p.downed && p.hp / p.maxHp < 0.7).length >= 1 && engagedNear(h.scene, h, 120).length ? true : null; },
+  },
+  gravity: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      const c = target && dist(h, target) < 120 ? { x: target.x, y: target.y } : { x: h.x + h.facingVec()[0] * 50, y: h.y + h.facingVec()[1] * 40 };
+      h.act('gravity', 0.45, 'cast');
+      const g = sc.add.circle(c.x, c.y - 6, 30, 0x6b3fa0, 0.25).setStrokeStyle(1, 0xd9b8ff, 0.9).setDepth(c.y + 10);
+      sc.tweens.add({ targets: g, scale: 0.1, alpha: 0, duration: 600, onComplete: () => g.destroy() });
+      for (const e of sc.enemies) {
+        if (!e.alive || e.boss || Math.hypot(e.x - c.x, e.y - c.y) > 75) continue;
+        const [nx, ny] = norm(c.x - e.x, c.y - e.y), d = Math.hypot(c.x - e.x, c.y - e.y);
+        e.knock(nx, ny, Math.min(220, d * 4));
+        e.status ??= {}; // a 2s slow that doesn't count toward a frost freeze
+        if (!e.status.chill) { e.status.chill = { t: 2, n: 0 }; e.statusTint(); }
+      }
+      audio.sfx('warp', { pitch: 0.7 });
+      sc.dealDamage && sc.time.delayedCall(450, () => { for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - c.x, e.y - c.y) < 26 + e.r) sc.dealDamage(h, e, h.stats.atk * 0.6 * m, { knock: 0 }); });
+      return true;
+    },
+    ai(h, c) { const t = c.target; return t && engagedNear(h.scene, t, 75).length >= 3 ? t : null; },
+  },
+  rocketboots: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const threat = sc.enemies.filter((e) => e.alive && e.engaged).sort((a, b) => dist(a, h) - dist(b, h))[0];
+      let [nx, ny] = h.direct && (h.direct.x || h.direct.y) ? norm(h.direct.x, h.direct.y) : threat && dist(threat, h) < 50 ? norm(h.x - threat.x, h.y - threat.y) : h.facingVec();
+      const ox = h.x, oy = h.y;
+      let d = 0;
+      for (let k = 8; k <= 80; k += 8) { if (sc.nav.solidAtPx(ox + nx * k, oy + ny * k)) break; d = k; }
+      h.act('rocketboots', 0.3, 'dodge');
+      h.invuln = Math.max(h.invuln, 0.3);
+      audio.sfx('dash'); audio.sfx('fireCast', { pitch: 1.4 });
+      sc.tweens.add({ targets: h, x: ox + nx * d, y: oy + ny * d, duration: 260, ease: 'Sine.easeOut' });
+      for (let k = 0; k <= d; k += 14) {
+        const x = ox + nx * k, y = oy + ny * k;
+        const f = sc.add.ellipse(x, y, 16, 10, 0xff7b2e, 0.5).setDepth(-25);
+        sc.tweens.add({ targets: f, alpha: 0, duration: 2500, onComplete: () => f.destroy() });
+        sc.time.addEvent({ delay: 500, repeat: 4, callback: () => { for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 10 + e.r) { sc.dealDamage(h, e, h.stats.atk * 0.3 * m, { knock: 0, element: 'fire' }); e.applyElement?.('fire', h); } } });
+      }
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 30).length >= 2 || (attackers(h.scene, h, 30).length && h.hp / h.maxHp < 0.4) ? true : null; },
+  },
+  overcharge: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      if (!(sc.gadgets || []).some((g) => g.owner === h)) return false;
+      h.act('overcharge', 0.35, 'cast');
+      h.overchargeT = 5 * Math.min(1.5, m);
+      for (const g of sc.gadgets) if (g.owner === h) sc.fx.ring(g.x, g.y - 6, 'ringBlue', 1.8);
+      sc.floatText(h.x, h.y - 30, 'OVERCHARGE!', 'fontGold');
+      audio.sfx('frost', { pitch: 2.2 });
+      return true;
+    },
+    ai(h) { return (h.scene.gadgets || []).filter((g) => g.owner === h).length >= 2 && engagedNear(h.scene, h, 110).length >= 2 ? true : null; },
   },
 
   // ------------------------------------------------ Ranger discipline

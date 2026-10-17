@@ -75,6 +75,31 @@ BASE.kesh = {
   cast: (v) => castRaise(v, { crouch: 1 }),
 };
 
+// Brother Oake: a round, cheerful monk with a tonsure (bare crown, brown fringe)
+BASE.oake = {
+  headMap: { ...SKIN, H: 'hairBrL', h: 'hairBr', R: 'redL' },
+  head: {
+    down: ['...SSSS...', '..SSLSSS..', '.hSSSSSSh.', '.HSSSSSSH.', '.SSESSESS.', '.SRSSSSRS.', '..SSssSS..', '...SSSS...'],
+    side: ['...SSSS...', '..SSLSSS..', '.hSSSSSSS.', '.HHSSSSES.', '.HHSSSSSSS', '..HSRSSs..', '..SSSsSS..', '...SSSS...'],
+    up: ['...SSSS...', '..SSLSSS..', '.hSSSSSSh.', '.HHHHHHHH.', '.HhHHHHhH.', '.hHHHHHHh.', '..hhhhhh..', '..........'],
+  },
+  idleAng: { down: 1.9, up: 1.4, side: 1.3 },
+  attack: swordAttack,
+  cast: (v) => castRaise(v),
+};
+// Gizmo: a gnome inventor - wild white hair, a big nose, bushy brows
+BASE.gizmo = {
+  headMap: { ...SKIN, H: 'white', h: 'mist', N: 'skinD' },
+  head: {
+    down: ['h.hHHHh.h.', 'HhHHHHHHhH', '.HHHHHHHH.', '.hSSSSSSh.', '.SSESSESS.', '.SSSNNSSS.', '..SSNNSS..', '...SSSS...'],
+    side: ['.h.HHHh...', 'hHHHHHHH..', '.HHHHHHHH.', '.HHHSSSSh.', '.HHSSSSES.', '.HHSSSSNNN', '..HSSSSNN.', '...SSSS...'],
+    up: ['h.hHHHh.h.', 'HhHHHHHHhH', '.HHHHHHHH.', '.HHHHHHHH.', '.HHhHHhHH.', '.hHHHHHHh.', '..hHHHHh..', '..........'],
+  },
+  idleAng: { down: 1.9, up: 1.4, side: 1.3 },
+  attack: swordAttack,
+  cast: (v) => castRaise(v),
+};
+
 // ------------------------------------------------------------------ LOOKS
 const HEAD = {
   // ---- Brann
@@ -116,6 +141,33 @@ const HEAD = {
     down: ['B........B', 'BB......BB', '.bBkkkkBb.', '.kKKKKKKk.', 'kKKKKKKKKk'],
     side: ['B.........', 'BB........', '.bBkkkk...', '.kKKKKKK..', 'kKKKKKKKK.'],
     up: ['B........B', 'BB......BB', '.bBkkkkBb.', '.kKKKKKKk.', 'kKKKKKKKKk', '.kKKKKKKk.'],
+  },
+  // ---- Oake
+  hood_monk: {
+    oy: 2, map: { M: 'wood', m: 'woodD', L: 'woodL' },
+    down: ['..mMMMMm..', '.mMLMMMMm.', 'mMMMMMMMMm', 'mM......Mm', 'm........m'],
+    side: ['..mMMMM...', '.mMLMMMM..', 'mMMMMMMMMm', 'mMMMM.....', 'mMMM......'],
+    up: ['..mMMMMm..', '.mMLMMMMm.', 'mMMMMMMMMm', 'mMMMMMMMMm', 'mMMMMMMMMm', '.mMMMMMMm.'],
+  },
+  mitre_cheer: {
+    oy: 5, map: { W: 'white', w: 'bone', G: 'gold', g: 'goldL', R: 'red' },
+    down: ['....gg....', '...wWWw...', '..wWGGWw..', '..WWGGWW..', '.wWWRRWWw.', '.GGGGGGGG.', 'wWWWWWWWWw'],
+    side: ['...gg.....', '..wWWw....', '..WGGWw...', '.wWGGWWw..', '.WWRRWWW..', '.GGGGGGGG.', 'wWWWWWWWW.'],
+    up: ['....gg....', '...wWWw...', '..wWWWWw..', '..WWWWWW..', '.wWWWWWWw.', '.GGGGGGGG.', 'wWWWWWWWWw'],
+  },
+  // ---- Gizmo
+  goggles_brass: {
+    oy: 0, map: { K: 'leatherD', G: 'gold', g: 'hairBlD', L: 'foam', l: 'waterL' },
+    // pushed up on the hair, so they read as goggles and not as eyes
+    down: ['..........', '.gGGggGGg.', 'KGLlGGLlGK', '.gGGggGGg.'],
+    side: ['..........', '.....gGGg.', 'KKKKKGLlG.', '.....gGGg.'],
+    up: ['..........', '..........', 'KKKKKKKKKK'],
+  },
+  goggles_clockwork: {
+    oy: 0, map: { K: 'woodD', G: 'gold', g: 'hairBlD', L: 'grassXL', l: 'grassL', R: 'redL' },
+    down: ['....RR....', '.gGGggGGg.', 'KGLlGRLlGK', '.gGGggGGg.'],
+    side: ['......RR..', '.....gGGg.', 'KKKKKGLlG.', '.....gGGg.'],
+    up: ['....RR....', '..........', 'KKKKKKKKKK'],
   },
   // ---- enemies / NPCs
   helm_hex: { oy: 3, map: { R: 'curse', r: 'purpD', W: 'stone', K: 'slate', k: 'night', E: 'curseL', d: 'ink' } },
@@ -259,6 +311,36 @@ const BODY = {
     legs: ['night', 'night', 'leatherD'], arms: ['grassD', 'leafD', 'skin'],
   },
   // ---- Kesh
+  // ---- Oake
+  habit_monk: {
+    map: { M: 'wood', m: 'woodD', L: 'woodL', R: 'sand', r: 'dirtD' },
+    down: ['mMMMMMMm', 'mMMLMMMm', 'mMMMMMMm', '.mMMMMm.', '.rRRRRr.', '.mMMMMm.'],
+    side: ['mMMMMm', 'mMMLMm', 'mMMMMm', '.mMMMm', '.rRRRr', '.mMMMm'],
+    up: ['mMMMMMMm', 'mMMMMMMm', 'mMMMMMMm', '.mMMMMm.', '.rRRRRr.', '.mMMMMm.'],
+    swayFrom: 6, legs: ['woodD', 'night', 'woodD'], arms: ['wood', 'woodD', 'skin'],
+  },
+  vestments_cleric: {
+    map: { M: 'white', m: 'bone', L: 'goldL', R: 'gold', r: 'hairBlD' },
+    down: ['mMMMMMMm', 'mMRMMRMm', 'mMRMMRMm', '.mMRRMm.', '.rRRRRr.', '.mMMMMm.'],
+    side: ['mMMMMm', 'mMMRMm', 'mMMRMm', '.mMRMm', '.rRRRr', '.mMMMm'],
+    up: ['mMMMMMMm', 'mMMRRMMm', 'mMMRRMMm', '.mMRRMm.', '.rRRRRr.', '.mMMMMm.'],
+    swayFrom: 6, legs: ['bone', 'night', 'woodD'], arms: ['white', 'bone', 'skin'],
+  },
+  // ---- Gizmo
+  overalls_work: {
+    map: { D: 'blue', d: 'blueD', S: 'redL', s: 'red', G: 'gold', P: 'blueL' },
+    down: ['sSdDDdSs', 'sSDGGDSs', '.dDDDDd.', '.dDPPDd.', '.dDDDDd.', '.dDddDd.'],
+    side: ['sSDDds', 'sSDGDs', '.dDDDd', '.dDPDd', '.dDDDd', '.dDdDd'],
+    up: ['sSdDDdSs', 'sSDDDDSs', '.dDDDDd.', '.dDDDDd.', '.dDDDDd.', '.dDddDd.'],
+    legs: ['blueD', 'night', 'woodD'], arms: ['red', 'redD', 'skin'],
+  },
+  overalls_flame: {
+    map: { D: 'lavaD', d: 'redD', S: 'mist', s: 'stone', G: 'gold', P: 'lavaL' },
+    down: ['sSdDDdSs', 'sSDGGDSs', '.dDDDDd.', '.dDPPDd.', '.dDDDDd.', '.dDddDd.'],
+    side: ['sSDDds', 'sSDGDs', '.dDDDd', '.dDPDd', '.dDDDd', '.dDdDd'],
+    up: ['sSdDDdSs', 'sSDDDDSs', '.dDDDDd.', '.dDDDDd.', '.dDDDDd.', '.dDddDd.'],
+    legs: ['redD', 'night', 'woodD'], arms: ['stone', 'slate', 'skin'],
+  },
   furs_hide: {
     map: { F: 'stone', f: 'slate', L: 'leather', l: 'leatherD', b: 'woodD', T: 'bone' },
     down: ['fFFFFFFf', 'FfLLLLfF', '.lLLLLl.', '.lLTTLl.', '.bbbbbb.', '.lLLLLl.'],
@@ -298,6 +380,10 @@ const WEAPON = {
   bow_long: { kind: 'bow', style: { len: 7, bend: 3, wood: 'wood', tips: 'night' } },
   axe_hand: { kind: 'axe', style: {} },
   axe_bearded: { kind: 'axe', style: { len: 9, bearded: true } },
+  hammer_war: { kind: 'hammer', style: {} },
+  hammer_dawn: { kind: 'hammer', style: { len: 10, head: 'gold', face: 'goldL', haft: 'bone', glow: 'goldL' } },
+  wrench_steel: { kind: 'wrench', style: {} },
+  wrench_omni: { kind: 'wrench', style: { len: 9, head: 'gold', jaw: 'goldL', grip: 'redD' } },
 };
 
 // ---------------------------------------------------------------- offhand
@@ -351,6 +437,23 @@ function tomeDrawFrom(map) {
     grid(ctx, rows, map, hL.x - 1, hL.y - 2);
   };
 }
+// Oake's holy relic: a little golden reliquary held in the off hand (or a
+// lantern, for the Lantern of the Faithful)
+function relicDraw(map, lantern = false) {
+  const rows = lantern ? ['.kk.', 'kggk', 'kgwk', 'kggk', '.kk.'] : ['.gg.', 'kcck', 'cwgc', 'cggc', 'kcck'];
+  return (ctx, view, hL) => {
+    if (view === 'side') return; // held on the far side
+    grid(ctx, rows, map, hL.x - 1, hL.y - 3);
+  };
+}
+// Gizmo's gadget: a little box of gears with a blinking light on a stalk
+function gadgetDraw(map) {
+  const rows = ['..l.', '..k.', 'kcck', 'cgcc', 'kcck'];
+  return (ctx, view, hL) => {
+    if (view === 'side') return;
+    grid(ctx, rows, map, hL.x - 1, hL.y - 3);
+  };
+}
 function orbDraw() {
   return (ctx, view, hL, pose) => {
     const bob = Math.round(Math.sin(((pose.fi || 0) / 4) * Math.PI * 2) * 1.2);
@@ -396,6 +499,10 @@ const OFFHAND = {
   parry_fang: { dagger: WEAPON.dagger_fang.style },
   quiver_basic: { back: quiverDraw(QUIVERS.basic), quiver: QUIVERS.basic },
   quiver_fine: { back: quiverDraw(QUIVERS.fine), quiver: QUIVERS.fine },
+  relic_holy: { draw: relicDraw({ k: 'hairBlD', c: 'gold', g: 'goldL', w: 'white' }) },
+  relic_lantern: { draw: relicDraw({ k: 'hairBlD', c: 'gold', g: 'fireL', w: 'goldL' }, true) },
+  gadget_box: { draw: gadgetDraw({ k: 'steelD', c: 'steel', l: 'redL', g: 'gold' }) },
+  gadget_turret: { draw: gadgetDraw({ k: 'hairBlD', c: 'gold', l: 'blueL', g: 'goldL' }) },
   hatchet_plain: { weaponL: { kind: 'axe', style: { len: 7 } } },
   hatchet_bearded: { weaponL: { kind: 'axe', style: { len: 7, bearded: true } } },
 };
@@ -415,6 +522,8 @@ const RAMPS = {
   6: { steelD: 'hairBlD', steel: 'gold', steelL: 'goldL', blue: 'white', blueD: 'bone', blueL: 'white', purp: 'white', purpD: 'bone', purpL: 'white', red: 'redD', redD: 'woodD', redL: 'red', leather: 'redD', leatherD: 'woodD', wood: 'gold', woodD: 'hairBlD', gold: 'goldL' },
 };
 const WEAPON_DEFAULTS = {
+  hammer: { haft: 'wood', haftD: 'woodD', head: 'steel', face: 'steelL' },
+  wrench: { head: 'steel', jaw: 'steelL', grip: 'leatherD' },
   bow: { wood: 'woodL', tips: 'woodD', string: 'bone' },
   axe: { haft: 'wood', haftD: 'woodD', head: 'steel', edge: 'steelL' },
   sword: { blade: 'steelL', edge: 'steel', guard: 'gold', tip: 'white', grip: 'woodD' },
@@ -460,8 +569,8 @@ export function getLook(slot, lookId) {
 
 // ---------------------------------------------------------------- compose
 // equip: { head, body, weapon, offhand } -> look ids (null = nothing equipped)
-export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather', wren: 'leathers_ranger', kesh: 'furs_hide' };
-export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel', wren: 'bow_hunting', kesh: 'axe_hand' };
+export const DEFAULT_BODY = { brann: 'plate_guard', pip: 'robe_apprentice', sable: 'jacket_leather', wren: 'leathers_ranger', kesh: 'furs_hide', oake: 'habit_monk', gizmo: 'overalls_work' };
+export const DEFAULT_WEAPON = { brann: 'sword_iron', pip: 'staff_oak', sable: 'dagger_steel', wren: 'bow_hunting', kesh: 'axe_hand', oake: 'hammer_war', gizmo: 'wrench_steel' };
 export function composeHero(heroId, equip, meta = {}) {
   const b = BASE[heroId];
   const body = getLook('body', equip.body) || BODY[DEFAULT_BODY[heroId]];

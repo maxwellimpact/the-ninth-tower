@@ -669,5 +669,116 @@
    "type": "phoenix",
    "at": "offhand"
   }
+ },
+ "monk_hood": {
+  "name": "MONK'S HOOD",
+  "hero": "oake",
+  "slot": "head",
+  "rarity": "common",
+  "look": "hood_monk",
+  "stats": {
+   "def": 2,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "plain_habit": {
+  "name": "PLAIN HABIT",
+  "hero": "oake",
+  "slot": "body",
+  "rarity": "common",
+  "look": "habit_monk",
+  "stats": {
+   "def": 3,
+   "hp": 5
+  },
+  "desc": ""
+ },
+ "war_hammer": {
+  "name": "WAR HAMMER",
+  "hero": "oake",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "hammer_war",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "holy_relic": {
+  "name": "HOLY RELIC",
+  "hero": "oake",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "relic_holy",
+  "stats": {
+   "atk": 1,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "brass_goggles": {
+  "name": "BRASS GOGGLES",
+  "hero": "gizmo",
+  "slot": "head",
+  "rarity": "common",
+  "look": "goggles_brass",
+  "stats": {
+   "def": 1,
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "work_overalls": {
+  "name": "WORK OVERALLS",
+  "hero": "gizmo",
+  "slot": "body",
+  "rarity": "common",
+  "look": "overalls_work",
+  "stats": {
+   "def": 3,
+   "hp": 4
+  },
+  "desc": ""
+ },
+ "steel_spanner": {
+  "name": "STEEL SPANNER",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "wrench_steel",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "gadget_box": {
+  "name": "GADGET BOX",
+  "hero": "gizmo",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "gadget_box",
+  "stats": {
+   "atk": 1,
+   "hp": 2
+  },
+  "desc": ""
+ },
+ "clockwork_goggles": {
+  "name": "CLOCKWORK GOGGLES",
+  "hero": "gizmo",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "goggles_clockwork",
+  "stats": {
+   "def": 4,
+   "crit": 0.06
+  },
+  "perk": "clockwork",
+  "desc": "HIDDEN CHESTS AND TRAPS NEARBY SHOW ON THE MINIMAP. +6% CRIT. GIZMO'S PRIDE AND JOY.",
+  "fx": {
+   "type": "phoenix",
+   "at": "head"
+  }
  }
 }

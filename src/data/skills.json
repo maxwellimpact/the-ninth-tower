@@ -594,5 +594,195 @@
   "short": "BLESS",
   "icon": "icon_blessed",
   "desc": "+20% HEALING RECEIVED (+4% PER RANK). (CLERIC)"
+ },
+ "oheal": {
+  "hero": "oake",
+  "unlock": 1,
+  "name": "HEAL",
+  "short": "HEAL",
+  "icon": "icon_oheal",
+  "cd": 7,
+  "range": 0,
+  "desc": "A LARGE HEAL ON THE MOST HURT ALLY."
+ },
+ "smite": {
+  "hero": "oake",
+  "unlock": 1,
+  "name": "SMITE",
+  "short": "SMITE",
+  "icon": "icon_smite",
+  "cd": 6,
+  "range": 120,
+  "desc": "A BOLT OF RADIANT LIGHT STRIKES A FOE. UNDEAD AND HEXED FOES TAKE MORE."
+ },
+ "sanctuary": {
+  "hero": "oake",
+  "unlock": 4,
+  "name": "SANCTUARY",
+  "short": "SANCT",
+  "icon": "icon_sanctuary",
+  "cd": 16,
+  "range": 0,
+  "desc": "A CIRCLE OF LIGHT THAT HEALS ALLIES STANDING IN IT FOR 6S."
+ },
+ "purify": {
+  "hero": "oake",
+  "unlock": 8,
+  "name": "PURIFY",
+  "short": "PURIFY",
+  "icon": "icon_purify",
+  "cd": 14,
+  "range": 0,
+  "desc": "CLEARS POISON, BURNING AND SLOWS FROM THE PARTY AND BLOCKS NEW ONES FOR 3S."
+ },
+ "halo": {
+  "hero": "oake",
+  "unlock": 12,
+  "name": "HALO",
+  "short": "HALO",
+  "icon": "icon_halo",
+  "cd": 12,
+  "range": 0,
+  "desc": "SHIELDS THE MOST HURT ALLY FOR 20% OF THEIR HEALTH."
+ },
+ "judgment": {
+  "hero": "oake",
+  "unlock": 16,
+  "name": "JUDGMENT",
+  "short": "JUDGE",
+  "icon": "icon_judgment",
+  "cd": 18,
+  "range": 120,
+  "desc": "A PILLAR OF LIGHT FALLS ON A FOE: HEAVY RADIANT DAMAGE AROUND IT, AND UNDEAD OR HEXED FOES ARE STUNNED."
+ },
+ "optimism": {
+  "hero": "oake",
+  "unlock": 1,
+  "passive": true,
+  "name": "OPTIMISM",
+  "short": "OPTIM",
+  "icon": "icon_optimism",
+  "desc": "OVERHEALING BECOMES A SHIELD, UP TO 15% OF MAX HP."
+ },
+ "steadyhands": {
+  "hero": "oake",
+  "unlock": 6,
+  "passive": true,
+  "name": "STEADY HANDS",
+  "short": "STEADY",
+  "icon": "icon_steadyhands",
+  "desc": "OAKE REVIVES FALLEN ALLIES TWICE AS FAST."
+ },
+ "faith": {
+  "hero": "oake",
+  "unlock": 14,
+  "passive": true,
+  "name": "FAITH",
+  "short": "FAITH",
+  "icon": "icon_faith",
+  "desc": "10% OF THE LIGHT DAMAGE OAKE DEALS HEALS THE PARTY."
+ },
+ "dawnbreak": {
+  "hero": "oake",
+  "ult": true,
+  "name": "DAWNBREAK",
+  "short": "DAWN",
+  "icon": "icon_dawnbreak",
+  "desc": "REVIVES EVERY FALLEN ALLY AND HEALS THE PARTY TO FULL OVER 3S."
+ },
+ "turret": {
+  "hero": "gizmo",
+  "unlock": 1,
+  "name": "DEPLOY TURRET",
+  "short": "TURRET",
+  "icon": "icon_turret",
+  "cd": 14,
+  "range": 0,
+  "desc": "DROPS A TURRET THAT SHOOTS NEARBY FOES FOR 12S. ONE AT A TIME."
+ },
+ "sparkmine": {
+  "hero": "gizmo",
+  "unlock": 1,
+  "name": "SPARK MINE",
+  "short": "MINE",
+  "icon": "icon_sparkmine",
+  "cd": 10,
+  "range": 0,
+  "desc": "LAYS A STORM MINE: THE FIRST FOE ON IT IS SHOCKED AND STUNNED FOR 1.5S."
+ },
+ "repairbot": {
+  "hero": "gizmo",
+  "unlock": 4,
+  "name": "REPAIR BOT",
+  "short": "BOT",
+  "icon": "icon_repairbot",
+  "cd": 18,
+  "range": 0,
+  "desc": "A LITTLE BOT THAT HEALS ALLIES NEAR IT FOR 8S."
+ },
+ "gravity": {
+  "hero": "gizmo",
+  "unlock": 8,
+  "name": "GRAVITY GADGET",
+  "short": "GRAV",
+  "icon": "icon_gravity",
+  "cd": 15,
+  "range": 110,
+  "desc": "PULLS NEARBY FOES TOGETHER INTO A CLUSTER."
+ },
+ "rocketboots": {
+  "hero": "gizmo",
+  "unlock": 12,
+  "name": "ROCKET BOOTS",
+  "short": "BOOTS",
+  "icon": "icon_rocketboots",
+  "cd": 12,
+  "range": 0,
+  "desc": "A ROCKET DASH THAT LEAVES A TRAIL OF FIRE."
+ },
+ "overcharge": {
+  "hero": "gizmo",
+  "unlock": 16,
+  "name": "OVERCHARGE",
+  "short": "OVER",
+  "icon": "icon_overcharge",
+  "cd": 20,
+  "range": 0,
+  "desc": "FOR 5S GIZMO'S GADGETS WORK TWICE AS FAST AND SHOCK WHAT THEY HIT."
+ },
+ "engineering": {
+  "hero": "gizmo",
+  "unlock": 1,
+  "passive": true,
+  "name": "ENGINEERING",
+  "short": "ENGIN",
+  "icon": "icon_engineering",
+  "desc": "ONE MORE TURRET CAN BE OUT AT ONCE."
+ },
+ "scrapper": {
+  "hero": "gizmo",
+  "unlock": 6,
+  "passive": true,
+  "name": "SCRAP COLLECTOR",
+  "short": "SCRAP",
+  "icon": "icon_scrapper",
+  "desc": "+50% GOBLIN SCRAP FROM FOES AND SALVAGE."
+ },
+ "tinkersluck": {
+  "hero": "gizmo",
+  "unlock": 14,
+  "passive": true,
+  "name": "TINKER'S LUCK",
+  "short": "LUCK",
+  "icon": "icon_tinkersluck",
+  "desc": "A 20% CHANCE TO MAKE DOUBLE WHEN CRAFTING."
+ },
+ "clank": {
+  "hero": "gizmo",
+  "ult": true,
+  "name": "CLANK",
+  "short": "CLANK",
+  "icon": "icon_clank",
+  "desc": "SUMMONS CLANK, A MECH THAT TAUNTS AND SLAMS FOES FOR 12S."
  }
 }

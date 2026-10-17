@@ -5,6 +5,7 @@
 // something placed in the world), escort (protect a cart), bells (ring in
 // order), defend (keep an NPC alive until the attackers are gone).
 import Q from '../data/quests.json';
+import W from '../data/world.json';
 import items from '../data/items.json';
 import { RACE_BET } from '../scenes/FrogRace.js';
 import { audio } from '../audio/synth.js';
@@ -61,7 +62,7 @@ export class QuestManager {
     npc.mark = sc.add.image(npc.px, npc.py - 30, 'markQ').setDepth(100000 - 40).setVisible(false);
     sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', interact: () => this.talk(npc) });
-    if (n.hidden || (n.requires && !this.sc.flags[n.requires])) this.setNpcVisible(npc, false);
+    if (n.hidden || (n.requires && !this.sc.flags[n.requires]) || (n.wards && this.brokenWards() < n.wards) || (n.recruitOf && this.state.recruited.includes(n.recruitOf))) this.setNpcVisible(npc, false);
     if (n.service === 'smith') npc.forge = this.sc.add.image(npc.px + 18, npc.py + 6, 'forge').setOrigin(0.5, 1).setDepth(npc.py).setVisible(!npc.hiddenNow);
     this.npcs.push(npc);
   }
@@ -78,9 +79,13 @@ export class QuestManager {
   offerFor(npc) {
     return (npc.errands || []).find((id) => {
       const e = ERRANDS[id];
+      if (e.reward?.recruit && this.state.recruited.includes(e.reward.recruit)) return false; // they've already joined
+      if (e.wards && this.brokenWards() < e.wards) return false; // e.g. Gizmo's mill: after two Ward Stones
       return !this.q(id) && (!e.requires || this.q(e.requires)?.done);
     });
   }
+
+  brokenWards() { return W.wards.filter((w) => this.sc.flags[w.flag]).length; }
 
   // an active step that wants to talk to this NPC
   turnInFor(npc) { return this.active().find((id) => { const s = this.step(id); return s?.type === 'talk' && s.npc === npc.id; }); }
@@ -412,6 +417,8 @@ export class QuestManager {
     // markers: "!" when an errand is on offer, "?" when they're waiting on you
     for (const n of this.npcs) {
       if (n.requires && n.hiddenNow && sc.flags[n.requires]) this.setNpcVisible(n, true);
+      if (n.wards && n.hiddenNow && !this.state.recruited.includes(n.recruitOf) && this.brokenWards() >= n.wards) this.setNpcVisible(n, true);
+      if (n.recruitOf && !n.hiddenNow && this.state.recruited.includes(n.recruitOf)) this.setNpcVisible(n, false); // joined the party: no double
       if (n.hiddenNow) { n.mark.setVisible(false); continue; }
       const ready = this.turnInFor(n), offer = this.offerFor(n);
       n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');

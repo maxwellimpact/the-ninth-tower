@@ -1571,6 +1571,13 @@
    "y": 46,
    "face": "down",
    "guardedBy": "gR3"
+  },
+  {
+   "id": "recruit4",
+   "slot": 3,
+   "x": 30,
+   "y": 38,
+   "face": "down"
   }
  ],
  "warps": [

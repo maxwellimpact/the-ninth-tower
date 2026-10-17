@@ -771,3 +771,58 @@ export function buildDrake() {
     hurt: [drakeFrame({})],
   };
 }
+
+// ================================================================== Gizmo's gadgets
+// Turret: a brass tripod with a stubby barrel and a glowing sight (two frames:
+// ready, recoil).
+const BRASS = ['hairBlD', 'gold', 'goldL', 'white'];
+function turretFrame(recoil = 0) {
+  const [c, ctx] = makeCanvas(24, 24);
+  for (const [x0, x1] of [[12, 5], [12, 19], [12, 12]]) for (let k = 0; k <= 7; k++) px(ctx, Math.round(x0 + (x1 - x0) * k / 7), 14 + k, k === 7 ? 'steelD' : 'woodD'); // tripod legs
+  shadedBlob(ctx, 12, 11, 5, 4, BRASS); // housing
+  px(ctx, 15 - recoil, 9, 'steelD', 7, 3); px(ctx, 16 - recoil, 9, 'steel', 6, 1); // barrel
+  px(ctx, 9, 9, 'redL', 2, 2); // sight
+  outline(c, 'ink');
+  return c;
+}
+export function buildTurret() { return { idle: [turretFrame(0)], attack: [turretFrame(2), turretFrame(0)] }; }
+
+// Repair bot: a little hovering drone with a green cross and a spinning rotor.
+function botFrame(f) {
+  const [c, ctx] = makeCanvas(18, 18);
+  const y = 9 + (f % 2);
+  px(ctx, f ? 3 : 5, y - 6, 'mist', f ? 12 : 8, 1); // rotor blur
+  px(ctx, 8, y - 5, 'steelD', 2, 2);
+  shadedBlob(ctx, 9, y, 5, 3.5, ['steelD', 'steel', 'steelL', 'white']);
+  px(ctx, 8, y - 1, 'grassL', 2, 3); px(ctx, 7, y, 'grassL', 4, 1);
+  outline(c, 'ink');
+  return c;
+}
+export function buildBot() { return { idle: [botFrame(0), botFrame(1)] }; }
+
+// Clank: Gizmo's mech - a barrel-chested brass walker with a porthole cockpit
+// (Gizmo's goggles peer out), riveted arms with piston fists, stubby legs.
+function clankFrame({ step = 0, slam = 0 }) {
+  const [c, ctx] = makeCanvas(48, 48);
+  const by = slam ? 2 : 0;
+  const lg = step % 2 ? [0, 2] : [2, 0];
+  px(ctx, 15, 38 - lg[0], 'steelD', 6, 8); px(ctx, 16, 38 - lg[0], 'steel', 3, 8); px(ctx, 14, 45 - lg[0], 'night', 8, 2);
+  px(ctx, 27, 38 - lg[1], 'steelD', 6, 8); px(ctx, 28, 38 - lg[1], 'steel', 3, 8); px(ctx, 26, 45 - lg[1], 'night', 8, 2);
+  const armY = slam ? 34 : 24;
+  for (const side of [-1, 1]) {
+    const ax = 24 + side * 15;
+    px(ctx, ax - 2, 18 + by, 'steelD', 4, armY - 18); px(ctx, ax - 1, 18 + by, 'steel', 2, armY - 18);
+    shadedBlob(ctx, ax, armY + by + 2, 4, 3.5, BRASS); // piston fist
+  }
+  shadedBlob(ctx, 24, 24 + by, 12, 11, BRASS); // body
+  for (const [x, y] of [[15, 18], [33, 18], [15, 30], [33, 30], [24, 14]]) px(ctx, x, y + by, 'hairBlD'); // rivets
+  shadedBlob(ctx, 24, 21 + by, 5, 4.5, ['steelD', 'blueD', 'blue', 'blueL']); // porthole
+  px(ctx, 21, 20 + by, 'gold', 2, 2); px(ctx, 25, 20 + by, 'gold', 2, 2); px(ctx, 22, 20 + by, 'foam'); px(ctx, 26, 20 + by, 'foam'); // goggles peering out
+  px(ctx, 20, 31 + by, 'redL', 8, 1); // grille glow
+  px(ctx, 31, 9 + by, 'steelD', 2, 6); px(ctx, 30, 7 + by, 'mist', 4, 2); // smokestack
+  outline(c, 'ink');
+  return c;
+}
+export function buildClank() {
+  return { idle: [clankFrame({}), clankFrame({ step: 1 })], walk: [clankFrame({ step: 0 }), clankFrame({ step: 1 })], attack: [clankFrame({ slam: 1 }), clankFrame({})] };
+}
