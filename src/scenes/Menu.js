@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill, skillsReady, skillDef } from '../game/state.js';
+import { freshFor, SLOTS, ALL_SLOTS, refineCap, smithRank, salvage, salvageYield, socketCount, socketGem, unsocket, combineGems, gemName, statDelta, xpToNext, CRAFT, canAfford, craft, refineCost, refine, itemName, heroSkillIds, skillRank, nextRankCost, canRankUp, rankUp, toggleSkill, skillsReady, skillDef, compareGear } from '../game/state.js';
 import tuning from '../data/tuning.json';
 import { panel, RARITY, skillBadge } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
@@ -532,13 +532,24 @@ export class Menu extends Phaser.Scene {
       if (isNew) this.t(x + w - 20, yy + 3, 'NEW', 'fontGold');
       if (isEq) this.t(x + 23, yy + rowH - 12, 'EQUIPPED', 'fontPlain', 0xf2c14e);
       else {
-        const d = statDelta(h.def.id, hs.level, hs.equip, id);
+        // the overall verdict first (damage / toughness %), then the raw stats in grey
+        const d = statDelta(h.def.id, hs.level, hs.equip, id), v = compareGear(h.def.id, hs.level, hs.equip, id);
         let xx = x + 23;
+        const parts = [];
+        if (v.dmg) parts.push([`${v.dmg > 0 ? '+' : ''}${v.dmg}% DMG`, v.dmg > 0]);
+        if (v.tough) parts.push([`${v.tough > 0 ? '+' : ''}${v.tough}% TOUGH`, v.tough > 0]);
+        if (!parts.length) parts.push(['SAME POWER', null]);
+        for (const [str, good] of parts) { this.t(xx, yy + rowH - 12, str, 'font', good === null ? 0x9d93b3 : good ? 0x8cff8c : 0xff7a7a); xx += str.length * 5 + 6; }
+        // net verdict: an arrow at the right edge (an item that trades one for the other shows both colours)
+        const net = v.dmg + v.tough, ax = x + w - 10, ay = yy + rowH - 9;
+        if (net > 0) g.fillStyle(0x1a1423).fillTriangle(ax - 5, ay + 4, ax + 5, ay + 4, ax, ay - 4).fillStyle(0x8cff8c).fillTriangle(ax - 3, ay + 3, ax + 3, ay + 3, ax, ay - 2);
+        else if (net < 0) g.fillStyle(0x1a1423).fillTriangle(ax - 5, ay - 4, ax + 5, ay - 4, ax, ay + 4).fillStyle(0xff7a7a).fillTriangle(ax - 3, ay - 3, ax + 3, ay - 3, ax, ay + 2);
+        xx += 4;
         for (const [k, label] of [['atk', 'ATK'], ['def', 'DEF'], ['maxHp', 'HP'], ['crit', 'CRIT'], ['cdr', 'CDR']]) {
           if (!d[k]) continue;
           const str = `${d[k] > 0 ? '+' : ''}${d[k]}${k === 'crit' ? '%' : ''} ${label}`;
-          if (xx + str.length * 5 > x + w) break;
-          this.t(xx, yy + rowH - 12, str, 'fontPlain', d[k] > 0 ? 0x8cff8c : 0xff7a7a);
+          if (xx + str.length * 5 > x + w - 16) break;
+          this.t(xx, yy + rowH - 12, str, 'fontPlain', 0x9d93b3);
           xx += str.length * 5 + 5;
         }
       }

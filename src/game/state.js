@@ -272,6 +272,21 @@ export function statDelta(id, level, equip, newId) {
   return { atk: b.atk - a.atk, def: b.def - a.def, maxHp: b.maxHp - a.maxHp, crit: Math.round((b.crit - a.crit) * 100) };
 }
 
+// What swapping in an item means overall, as two percentages a player can read
+// at a glance (the raw stat deltas mix units: ATK, %CRIT, HP, DEF):
+//   damage    = ATK x average crit bonus x a little for cooldown reduction
+//   toughness = HP x how much DEF cuts a same-level foe's hits (see mitigate)
+export function compareGear(id, level, equip, newId) {
+  let slot = items[newId].slot;
+  if (slot === 'trinket') slot = equip.trinket1 ? (equip.trinket2 ? 'trinket1' : 'trinket2') : 'trinket1';
+  const cm = tuning.critMult || 1.75, k = tuning.defK + 6 * (level - 1);
+  const dmg = (s) => s.atk * (1 + Math.min(1, s.crit) * (cm - 1)) * (1 + (s.cdr || 0) * 0.5);
+  const tough = (s) => s.maxHp * ((k + Math.max(0, s.def)) / k);
+  const a = computeStats(id, level, equip), b = computeStats(id, level, { ...equip, [slot]: newId });
+  const pct = (x, y) => Math.round((y / x - 1) * 100);
+  return { dmg: pct(dmg(a), dmg(b)), tough: pct(tough(a), tough(b)) };
+}
+
 // Pick a "fine" drop the party doesn't own yet, favouring recruited heroes.
 export function rollFineDrop(state, rand = Math.random) {
   if (rand() > tuning.fineDropChance) return null;
