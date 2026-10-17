@@ -1939,8 +1939,17 @@ export class Game extends Phaser.Scene {
     L.face(f.x - L.x, f.y - L.y);
     const me = { who: t.name, voice: { pitch: 280 + (t.id.length * 23) % 160, wave: 'square', duty: 0.25 } };
     if (f.saved) { this.events.emit('dialogue', [{ ...me, text: t.home }]); return; }
+    // a hex needs a Hexbane Draught to break (brewed in CRAFT > BREW)
+    const have = this.state.potions.hexbane || 0;
+    if (!have) {
+      const R = CRAFT.recipes.find((r) => r.id === 'hexbane');
+      const need = Object.entries(R.needs).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`).join(', ');
+      this.events.emit('dialogue', [{ ...me, text: t.quirk }, { ...me, text: 'PLEASE... CAN YOU BREAK THIS HEX?' },
+        { who: L.def.name.toUpperCase(), text: `A HEX THIS DEEP WON'T BREAK BY HAND. WE NEED A HEXBANE DRAUGHT: ${need}. BREW IT UNDER CRAFT.` }]);
+      return;
+    }
     const ask = { ...me, text: 'PLEASE... CAN YOU BREAK THIS HEX?' };
-    ask.choices = [['BREAK THE HEX', () => this.rescueTownsfolk(f)], ['NOT NOW', () => {}]];
+    ask.choices = [[`USE HEXBANE DRAUGHT (${have})`, () => { this.state.potions.hexbane = Math.max(0, (this.state.potions.hexbane || 0) - 1); this.rescueTownsfolk(f); }], ['NOT NOW', () => {}]];
     this.events.emit('dialogue', [{ ...me, text: t.quirk }, ask]);
   }
 

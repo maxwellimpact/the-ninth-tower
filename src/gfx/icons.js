@@ -1211,6 +1211,18 @@ const ICONS = {
     '...sLLLLs.....',
     '....ssss......',
   ],
+  // the Hexbane Draught: the antidote's flask, slime-purple with a curse-breaking glint
+  hexbane: [
+    '.....ss....C..',
+    '.....dd...CWC.',
+    '....sWWs...C..',
+    '...sPPPPs.....',
+    '..sPPCPPPs....',
+    '..sPpPPPPs....',
+    '..sPPPPpPs....',
+    '...sPPPPs.....',
+    '....ssss......',
+  ],
   lore: [
     '...wwwwwww....',
     '..wWWWWWWWw...',

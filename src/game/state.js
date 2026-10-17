@@ -301,7 +301,8 @@ export function craft(state, recipe) {
   pay(state, recipe.needs);
   // Tinker's Luck (Gizmo, in the party): sometimes a second one comes out of it
   const g = state.heroes.gizmo, lucky = state.active?.includes('gizmo') && g?.skills?.passive.includes('tinkersluck') && Math.random() < 0.2;
-  state.potions[recipe.makes] = (state.potions[recipe.makes] || 0) + (lucky ? 2 : 1);
+  const n = recipe.count || 1; // some brews make a batch (Hexbane Draught: 2)
+  state.potions[recipe.makes] = (state.potions[recipe.makes] || 0) + (lucky ? n * 2 : n);
   return lucky ? 'double' : true;
 }
 

@@ -578,7 +578,7 @@ export class Menu extends Phaser.Scene {
     if (this.craftTab === 'brew') {
       for (const r of CRAFT.recipes) {
         const ok = canAfford(st, r.needs);
-        row(`icon_${r.makes}`, `${CRAFT.consumables[r.makes].name} (${st.potions[r.makes] || 0})`, 0xffffff, matStr(r.needs), ok ? 0x8cff8c : 0xff7a7a, 'MAKE', ok, () => { if (craft(st, r)) { audio.sfx('chest'); this.render(); } else audio.sfx('click'); });
+        row(`icon_${r.makes}`, `${CRAFT.consumables[r.makes].name} (${st.potions[r.makes] || 0})`, 0xffffff, matStr(r.needs), ok ? 0x8cff8c : 0xff7a7a, r.count > 1 ? `MAKE ${r.count}` : 'MAKE', ok, () => { if (craft(st, r)) { audio.sfx('chest'); this.render(); } else audio.sfx('click'); });
       }
     } else if (this.craftTab === 'upgrade') {
       const cap = refineCap(st);
