@@ -260,12 +260,15 @@ export class Hero extends Unit {
   }
 
   // ----------------------------------------------------------- movement
-  setGoal(x, y) {
+  // dry: keep to land if there's any way round (a ranged hero walking to a
+  // firing spot shouldn't take a short cut across a pool)
+  setGoal(x, y, dry = false) {
     if (this.pathGoal && Math.hypot(this.pathGoal.x - x, this.pathGoal.y - y) < 6 && this.path) return;
     this.pathGoal = { x, y };
     const nav = this.scene.nav;
-    nav.swimmer = this.scene.canSwim;
+    nav.swimmer = this.scene.canSwim && !dry;
     this.path = nav.find(this.x, this.y, x, y);
+    if (dry && !this.path && this.scene.canSwim) { nav.swimmer = true; this.path = nav.find(this.x, this.y, x, y); }
     nav.swimmer = false;
     this.repathT = 0.5;
   }
@@ -312,7 +315,8 @@ export class Hero extends Unit {
     }
     this.face(dx, dy);
     const ox = this.x, oy = this.y;
-    this.moveBy((dx / d) * sp, (dy / d) * sp);
+    const [sx, sy] = this.steerRound ? this.steerRound(dx / d, dy / d, dt) : [dx / d, dy / d]; // companions skirt lingering puddles
+    this.moveBy(sx * sp, sy * sp);
     if (Math.hypot(this.x - ox, this.y - oy) < sp * 0.2) this.stuckT = (this.stuckT || 0) + dt; else this.stuckT = 0;
     if (this.stuckT > 0.4 && this.pathGoal) {
       this.stuckT = 0;
@@ -732,7 +736,7 @@ export class Hero extends Unit {
       const d = dist(this, t);
       const range = this.stats.range + t.r;
       const slack = this.ranged ? 0 : 6; // melee: close enough counts
-      if (d <= range + slack && (!this.ranged || sc.nav.lineClear(this.x, this.y, t.x, t.y, 1))) {
+      if (d <= range + slack && (!this.ranged || sc.shotClear(this.x, this.y, t.x, t.y))) { // shots cross water
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         this.startAttack(t);
@@ -745,7 +749,9 @@ export class Hero extends Unit {
         this.blockedT = Math.max(0, (this.blockedT || 0) - dt);
         if (this.blockedT > 0) return;
         this.repathT -= dt;
-        if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(t.x, t.y); }
+        // a ranged leader walks to a dry spot with a shot, not out into a pool after it
+        const goal = this.ranged ? this.firingSpot(t, Math.min(this.stats.range - 12, Math.max(56 + t.r, this.stats.range * 0.72))) : t;
+        if (!this.path || this.repathT <= 0) { this.path = null; this.setGoal(goal.x, goal.y); }
         this.followPath(dt);
       }
       return;
@@ -771,11 +777,16 @@ export class Hero extends Unit {
   // a hit that would take a real chunk, or when already hurt. Ordinary swings
   // from ordinary foes get traded, not danced around.
   worthDodging(z) {
+    if (z.linger && this.braveT > 0) return false; // gave up steering round it: just go through
     if (z === this.evading) return true; // committed: see it through
     const now = this.scene.time.now;
     z.seenAt ??= now;
-    if (now - z.seenAt < (this.reactMs ??= 200 + Math.random() * 160)) return false;
-    if (z.src && z.lockAt !== undefined && !z.locked && z.src.alive) return false;
+    this.reactMs ??= 200 + Math.random() * 160;
+    if (z.src && z.lockAt !== undefined && z.src.alive) { // a tracking blow: nothing to dodge until it locks, then a beat to notice
+      if (!z.locked) return false;
+      z.lockedAt ??= now;
+      if (now - z.lockedAt < this.reactMs) return false;
+    } else if (now - z.seenAt < this.reactMs) return false;
     if (!z.src || z.big) return true;
     if (this.hp < this.maxHp * 0.5 || (z.dmg || 0) >= this.hp * 0.3) return true;
     // an ordinary swing: sometimes they see it coming (more often when it's aimed at them), decided once
@@ -793,10 +804,13 @@ export class Hero extends Unit {
 
     // 1) step out of telegraphed danger zones, and commit to it: keep going
     // until well clear (not just over the edge), or the AI flickers in and out
-    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + (z === this.evading ? 12 : 4) && this.worthDodging(z));
+    this.braveT = Math.max(0, (this.braveT || 0) - dt);
+    // a lingering puddle's poison spreads a little wider than its marker: step fully clear of it
+    const danger = sc.dangers.find((z) => Math.hypot(this.x - z.x, this.y - z.y) < z.r + (z.linger ? 8 : z === this.evading ? 12 : 4) && this.worthDodging(z));
     if (danger) {
+      if (this.evading !== danger || !((this.evadeT -= dt) > 0)) { this.evadeDir = this.exitDir(danger); this.evadeT = 0.3; }
       this.evading = danger;
-      const [nx, ny] = norm(this.x - danger.x, this.y - danger.y);
+      const [nx, ny] = this.evadeDir;
       this.face(nx, ny);
       this.moveBy(nx * this.spd * 1.3 * dt, ny * this.spd * 1.3 * dt);
       this.clearPath();
@@ -838,8 +852,14 @@ export class Hero extends Unit {
         const keep = Math.min(st.range - 12, Math.max(56 + t.r, st.range * 0.72));
         if (d < keep - 12) this.backing = true; else if (d >= keep) this.backing = false;
         if (this.backing && dl0 < 170) {
-          const [nx, ny] = norm(this.x - t.x, this.y - t.y);
+          let [nx, ny] = norm(this.x - t.x, this.y - t.y);
           const ox = this.x, oy = this.y;
+          const nav = sc.nav, wetAt = (x, y) => nav.isWater(Math.floor(x / 16), Math.floor(y / 16));
+          if (!this.swimming && wetAt(this.x + nx * 10, this.y + ny * 10)) { // don't back off into a pool: slide along the shore instead
+            const side = wetAt(this.x - ny * 10, this.y + nx * 10) ? -1 : 1;
+            [nx, ny] = [-ny * side, nx * side];
+            if (wetAt(this.x + nx * 10, this.y + ny * 10)) { nx = 0; ny = 0; }
+          }
           this.moveBy(nx * st.speed * dt, ny * st.speed * dt);
           if (Math.hypot(this.x - ox, this.y - oy) < st.speed * dt * 0.3) this.moveBy(-ny * st.speed * dt, nx * st.speed * dt); // backed into a wall: slide sideways
           this.face(t.x - this.x, t.y - this.y);
@@ -847,15 +867,21 @@ export class Hero extends Unit {
           if (d > keep - 24) this.startAttack(t); // shoot while backing off, unless it's right on top of us: then just run
           return;
         }
-        if (d <= st.range && sc.nav.lineClear(this.x, this.y, t.x, t.y, 1)) {
+        // knocked or dragged into the water: wade back out before shooting (we fight from the shore)
+        if (this.swimming && !L.swimming) { const spot = this.firingSpot(t, keep); this.setGoal(spot.x, spot.y, true); this.followPath(dt, 1.1); return; }
+        if (d <= st.range && this.shotClear(this, t)) {
           this.clearPath();
           this.face(t.x - this.x, t.y - this.y);
           this.startAttack(t);
           return;
         }
-        // close in for a clear shot, but on a leash: past ~7 tiles from the leader, come back
-        if (dl0 > 110) { this.setGoal(L.x, L.y); this.followPath(dt, 1.2); return; }
-        this.setGoal(t.x, t.y); this.followPath(dt);
+        // close in for a clear shot, but on a leash: past ~7 tiles from the leader,
+        // come back (unless the leader has swum out: we hold the shore)
+        if (dl0 > 110 && !L.swimming) { this.setGoal(L.x, L.y); this.followPath(dt, 1.2); return; }
+        // walk to a dry spot in range with a clear shot, not onto the target (a
+        // foe out in a pool would otherwise draw the archer in after it)
+        const spot = this.firingSpot(t, keep);
+        this.setGoal(spot.x, spot.y, true); this.followPath(dt);
         return;
       }
       // melee: approach a flank slot (opposite the leader / tank, not stacked)
@@ -863,7 +889,7 @@ export class Hero extends Unit {
       const reach = st.range + t.r;
       // don't walk back into an attack that's about to land: wait just outside it
       const [ax, ay] = norm(slot.x - this.x, slot.y - this.y);
-      if (sc.dangers.some((z) => Math.hypot(this.x + ax * 10 - z.x, this.y + ay * 10 - z.y) < z.r + 6)) {
+      if (sc.dangers.some((z) => !z.linger && Math.hypot(this.x + ax * 10 - z.x, this.y + ay * 10 - z.y) < z.r + 6)) {
         this.clearPath();
         this.face(t.x - this.x, t.y - this.y);
         if (d <= reach + 6) this.startAttack(t);
@@ -946,8 +972,78 @@ export class Hero extends Unit {
   }
 
   moveTowards(p, dt, mul = 1) {
-    const [nx, ny] = norm(p.x - this.x, p.y - this.y);
+    const [nx, ny] = this.steerRound(...norm(p.x - this.x, p.y - this.y), dt);
     this.moveBy(nx * this.spd * mul * dt, ny * this.spd * mul * dt);
+  }
+
+  // The way out of a danger zone: of 16 headings, the one that clears it in the
+  // fewest steps over open ground - not into a wall, not into water unless
+  // already swimming, not into another danger. (Straight away from the centre
+  // used to walk them into walls, where they stood in the poison, or into pools.)
+  exitDir(z) {
+    const sc = this.scene, nav = sc.nav, wet = (x, y) => nav.isWater(Math.floor(x / 16), Math.floor(y / 16));
+    let best = norm(this.x - z.x, this.y - z.y), bs = -Infinity;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a);
+      let d = 0, ok = true;
+      for (; d <= 48; d += 4) {
+        const x = this.x + ux * d, y = this.y + uy * d;
+        if (nav.solidAtPx(x, y) && !(this.swimming && wet(x, y))) { ok = false; break; }
+        if (wet(x, y) && !this.swimming) { ok = false; break; }
+        if (Math.hypot(x - z.x, y - z.y) >= z.r + (z.linger ? 10 : 14)) break;
+      }
+      if (!ok || d > 48) continue;
+      const ex = this.x + ux * (d + 6), ey = this.y + uy * (d + 6);
+      const other = sc.dangers.some((o) => o !== z && Math.hypot(ex - o.x, ey - o.y) < o.r + 4);
+      const away = (this.x - z.x) * ux + (this.y - z.y) * uy; // prefer roughly away from the centre
+      const score = -d - (other ? 40 : 0) + away * 0.05;
+      if (score > bs) { bs = score; best = [ux, uy]; }
+    }
+    return best;
+  }
+
+  // A shot's line: arrows and spells fly over water (see Game.shotClear).
+  shotClear(a, b) { return this.scene.shotClear(a.x, a.y, b.x, b.y); }
+
+  // Where a ranged companion should stand to shoot t: dry ground, in range, with
+  // a clear shot, as close to where it is now as it can find. Re-picked when the
+  // target moves or every so often.
+  firingSpot(t, keep) {
+    const fs = this.fireSpot;
+    if (fs && fs.t === t && Math.hypot(fs.tx - t.x, fs.ty - t.y) < 24 && this.scene.time.now < fs.until) return fs;
+    const nav = this.scene.nav, range = this.stats.range;
+    let best = null, bd = Infinity;
+    for (const rad of [keep, (keep + range) / 2, range - 10]) for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2, x = t.x + Math.cos(a) * rad, y = t.y + Math.sin(a) * rad;
+      if (nav.solidAtPx(x, y)) continue; // walls, and water (we don't wade in to shoot)
+      if (!this.shotClear({ x, y }, t)) continue;
+      const dd = Math.hypot(x - this.x, y - this.y);
+      if (dd < bd) { bd = dd; best = { x, y }; }
+    }
+    this.fireSpot = { ...(best || { x: t.x, y: t.y }), t, tx: t.x, ty: t.y, until: this.scene.time.now + 1500 };
+    return this.fireSpot;
+  }
+
+  // Companions walk round lingering ground hazards (poison puddles, burning
+  // trails) rather than into them - walking in and hopping straight back out
+  // made them bounce. Blocked for two seconds (the target stands in one, or
+  // they're boxed in): give up and go through for a moment.
+  steerRound(nx, ny, dt) {
+    if (this.isLeader || this.braveT > 0 || this.evading) return [nx, ny];
+    for (const z of this.scene.dangers) {
+      if (!z.linger) continue;
+      const R = z.r + 8 + 4, dz = Math.hypot(this.x - z.x, this.y - z.y); // a little outside the step-clear edge
+      if (dz < z.r + 8) continue; // already in it: the dodge rule walks us out
+      if (Math.hypot(this.x + nx * 14 - z.x, this.y + ny * 14 - z.y) >= R) continue;
+      // skirt it: the tangent on the side we're heading
+      let tx = -(this.y - z.y) / dz, ty = (this.x - z.x) / dz;
+      if (tx * nx + ty * ny < 0) { tx = -tx; ty = -ty; }
+      this.steerT = (this.steerT || 0) + dt;
+      if (this.steerT > 2) { this.braveT = 0.8; this.steerT = 0; return [nx, ny]; } // 0.8 s: long enough to cross one, not to stand in it
+      return [tx, ty];
+    }
+    this.steerT = Math.max(0, (this.steerT || 0) - dt * 0.5);
+    return [nx, ny];
   }
 
   think() {
@@ -1557,7 +1653,7 @@ export class Enemy extends Unit {
           if (d < s.keepAway) { this.backOff(t, dt); break; }
           if (this.repos && (this.reposT = (this.reposT || 0) - dt) > 0 && Math.hypot(this.repos.x - this.x, this.repos.y - this.y) > 3) { this.stepTo(this.repos, dt, 0.8); break; }
           this.repos = null;
-          const clear = this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1);
+          const clear = this.scene.shotClear(this.x, this.y, t.x, t.y); // arrows fly over water
           if (d <= s.reach && !clear) { this.strafe(t, dt); break; }
           if (d <= s.reach && this.onScreen() && clear) {
             if (this.takeToken(t)) this.beginWindup(t); else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); } // wait for a turn to shoot
@@ -1568,7 +1664,7 @@ export class Enemy extends Unit {
         }
         if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
         if (s.ai === 'mab' && (this.tongueCd ?? 3) <= 0 && d > 60 && d < s.pullRange && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
-        if (s.ai === 'web' && this.webCd <= 0 && d > 30 && d < 110 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1) && this.takeToken(t)) { this.spitWeb(t); break; }
+        if (s.ai === 'web' && this.webCd <= 0 && d > 30 && d < 110 && this.onScreen() && this.scene.shotClear(this.x, this.y, t.x, t.y) && this.takeToken(t)) { this.spitWeb(t); break; }
         if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2) && this.takeToken(t)) { this.beginCharge(t); break; }
         // melee: surround the target; only a few may wind up on it at once (the
         // rest wait just outside reach for a turn)
@@ -1635,7 +1731,7 @@ export class Enemy extends Unit {
           if (s.ranged && t && Math.random() < 0.5) {
             const want = (s.keepAway + s.reach) / 2, a = Math.atan2(this.y - t.y, this.x - t.x) + (Math.random() < 0.5 ? 0.45 : -0.45);
             const p = { x: t.x + Math.cos(a) * want, y: t.y + Math.sin(a) * want };
-            if (!nav.solidAtPx(p.x, p.y) && nav.lineClear(p.x, p.y, t.x, t.y, 1)) { this.repos = p; this.reposT = 0.8; }
+            if (!nav.solidAtPx(p.x, p.y) && sc.shotClear(p.x, p.y, t.x, t.y)) { this.repos = p; this.reposT = 0.8; }
           }
         }
         break;
@@ -1935,7 +2031,7 @@ export class Enemy extends Unit {
     this.trailT = 0.45;
     const x = this.x, y = this.y + 2;
     this.lastTrail = { x, y };
-    const zone = { x, y, r: 10, until: 3 };
+    const zone = { x, y, r: 10, until: 3, linger: true }; // a burning trail: steer round it, don't dance in it
     sc.dangers.push(zone);
     const g = sc.add.ellipse(x, y, 20, 12, 0xff9a2e, 0.35).setDepth(-25);
     sc.tweens.add({ targets: g, alpha: 0, duration: 3000, onComplete: () => g.destroy() });
@@ -2045,6 +2141,37 @@ export class Enemy extends Unit {
     return false;
   }
 
+  // A tongue you can see: it whips out from the mouth to the target (~0.12 s),
+  // latches with a slap, then reels the hero in along the ground (~0.3 s),
+  // shortening as they come, and snaps back. onHit runs when they arrive.
+  lashTongue(t, tx, ty, mouth, onHit) {
+    const sc = this.scene, g = sc.add.graphics().setDepth(100000 - 40);
+    const m = () => mouth(); // follows the caster's head
+    const drawTo = (x, y, w) => {
+      const a = m();
+      g.clear();
+      g.lineStyle(w + 2, 0x5a1a2a, 1).lineBetween(a.x, a.y, x, y);   // dark edge
+      g.lineStyle(w, 0xe86a8a, 1).lineBetween(a.x, a.y, x, y);        // tongue
+      g.lineStyle(1, 0xffb0c4, 1).lineBetween(a.x, a.y - 1, x, y - 1); // wet highlight
+      g.fillStyle(0x5a1a2a, 1).fillCircle(x, y, w + 1).fillStyle(0xe86a8a, 1).fillCircle(x, y, w);
+    };
+    const st = { k: 0 };
+    sc.tweens.add({ targets: st, k: 1, duration: 120, ease: 'Quad.easeOut',
+      onUpdate: () => { const a = m(); drawTo(a.x + (t.x - a.x) * st.k, a.y + (t.y - 10 - a.y) * st.k, 3); },
+      onComplete: () => {
+        if (!t.alive) { g.destroy(); return; }
+        audio.sfx('squish'); sc.fx.burst('heal', t.x, t.y - 10, 4); t.flash?.(80, 0xffb0c4);
+        sc.floatText(t.x, t.y - 34, 'GRABBED!', 'fontPlain', 0xffb0c4);
+        sc.tweens.add({ targets: t, x: tx, y: ty, duration: 300, ease: 'Quad.easeIn',
+          onUpdate: () => drawTo(t.x, t.y - 10, 3),
+          onComplete: () => {
+            onHit?.();
+            const end = { x: t.x, y: t.y - 10 }, back = { k: 0 };
+            sc.tweens.add({ targets: back, k: 1, duration: 90, onUpdate: () => { const a = m(); drawTo(end.x + (a.x - end.x) * back.k, end.y + (a.y - end.y) * back.k, 2); }, onComplete: () => g.destroy() });
+          } });
+      } });
+  }
+
   // Croaker: a tongue that drags you in for a bite.
   beginTongue(t) {
     this.clearZone(); // never leave an old warning marker behind
@@ -2054,7 +2181,7 @@ export class Enemy extends Unit {
     this.face(t.x - this.x, t.y - this.y);
     const g = this.scene.add.graphics().setDepth(-2);
     const st = { p: 0 };
-    const draw = () => { if (!t.alive || !g.active) return; g.clear().lineStyle(2, 0xec6a5e, 0.2 + st.p * 0.6).lineBetween(this.x, this.y - 6, t.x, t.y - 6); };
+    const draw = () => { if (!t.alive || !g.active) return; g.clear().lineStyle(2, 0xe86a8a, 0.3 + st.p * 0.6).lineBetween(this.x, this.y - 6, t.x, t.y - 6).fillStyle(0xe86a8a, 0.3 + st.p * 0.5).fillCircle(t.x, t.y - 6, 3 + st.p * 3); }; // aim line + a closing mark on the target
     draw();
     this.scene.tweens.add({ targets: st, p: 1, duration: 800, onUpdate: draw });
     this.zoneGfx = g;
@@ -2070,7 +2197,7 @@ export class Enemy extends Unit {
     audio.sfx('zip');
     const [nx, ny] = norm(this.x - t.x, this.y - t.y);
     const tx = this.x - nx * 18, ty = this.y - ny * 18;
-    sc.tweens.add({ targets: t, x: tx, y: ty, duration: 220, onComplete: () => { t.damage(this.s.dmg * sc.difficulty.dmg, this); sc.floatText(t.x, t.y - 34, 'GULP!', 'fontPlain'); } });
+    this.lashTongue(t, tx, ty, () => ({ x: this.x, y: this.y - 6 }), () => { t.damage(this.s.dmg * sc.difficulty.dmg, this); sc.floatText(t.x, t.y - 34, 'GULP!', 'fontPlain'); });
   }
 
   // Hex Warlock: wards nearby allies and calls hexlings to its side.
@@ -2293,10 +2420,10 @@ export class Golem extends Enemy {
     this.lungeNext = false;
     if (!t?.alive || t.downed) return;
     this.state = 'lunge'; this.t = 0;
-    const r = 26;
-    this.lungeZone = { x: t.x, y: t.y, x0: t.x, y0: t.y, r, until: 0.85, src: this, dmg: this.s.dmg * sc.difficulty.dmg, big: true, lockAt: 0.45 };
+    const r = 30, LAND = 0.78; // locks at 0.5 s, lands at 0.78: a quick dodge clears it, a late one doesn't
+    this.lungeZone = { x: t.x, y: t.y, x0: t.x, y0: t.y, r, until: LAND, src: this, dmg: this.s.dmg * sc.difficulty.dmg, big: true, lockAt: 0.5, land: LAND };
     sc.dangers.push(this.lungeZone);
-    this.lungeGfx = sc.fx.telegraph(t.x, t.y, r, 0.85);
+    this.lungeGfx = sc.fx.telegraph(t.x, t.y, r, LAND);
     this.play('windup');
     audio.sfx('roar', { pitch: 1.3 });
   }
@@ -2307,7 +2434,7 @@ export class Golem extends Enemy {
     if (!z) { this.state = 'chase'; return; }
     if (this.t < z.lockAt && t?.alive && !t.downed) { z.x = t.x; z.y = t.y; this.lungeGfx?.setPosition(z.x - z.x0, z.y - z.y0); }
     else z.locked = true;
-    if (this.t >= 0.85 && !z.landed) {
+    if (this.t >= z.land && !z.landed) {
       z.landed = true;
       const sx = this.x, sy = this.y;
       this.play('attack');
@@ -2614,7 +2741,7 @@ export class Murk extends Enemy {
     const sc = this.scene;
     const g = sc.add.graphics().setDepth(-3);
     g.fillStyle(0x4f7a2f, 0.55).fillEllipse(x, y, 32, 20).fillStyle(0x9fd06a, 0.35).fillEllipse(x - 3, y - 2, 16, 8);
-    const zone = { x, y, r: 15, until: 4 };
+    const zone = { x, y, r: 15, until: 4, linger: true }; // poison that sits there: steer round it
     sc.dangers.push(zone);
     this.puddles.push({ x, y, t: 4, g, zone, tick: 0 });
   }
@@ -2719,11 +2846,11 @@ export class Murk extends Enemy {
     let tx = this.x + nx * 58, ty = this.y + ny * 58;
     const open = sc.nav.nearestOpen(Math.floor(tx / 16), Math.floor(ty / 16));
     if (open && sc.nav.solidAtPx(tx, ty)) { tx = open[0] * 16 + 8; ty = open[1] * 16 + 8; }
-    sc.tweens.add({ targets: t, x: tx, y: ty, duration: 220, onComplete: () => {
+    this.lashTongue(t, tx, ty, () => ({ x: this.x + nx * 12, y: this.y - 26 }), () => { // from her wide mouth
       t.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this);
       t.invuln = Math.max(t.invuln, 0.6);
       sc.floatText(t.x, t.y - 34, 'GULP!', 'fontPlain');
-    } });
+    });
   }
 
   strike() {
@@ -3097,7 +3224,7 @@ export class Vulk extends Enemy {
         for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) < 18 + h.r) h.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this);
         // the puddle burns a while
         const pud = sc.add.ellipse(p.x, p.y, 30, 18, 0xff7b2e, 0.4).setDepth(-25);
-        zone.until = 4;
+        zone.until = 4; zone.linger = true; // now a puddle that sits there
         sc.tweens.add({ targets: pud, alpha: 0, duration: 4000, onComplete: () => { pud.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone); } });
         let k = 0;
         sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) { h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null); h.addBurn(this.s.dmg * 0.08, 2); } } });

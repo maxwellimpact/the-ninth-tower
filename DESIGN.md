@@ -128,6 +128,28 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
   - **Lock:** they wait for the blow to lock in before moving.
   - **What they always dodge:** bosses, elites, big blasts, hazards (rocks, puddles, bombs), a hit worth 30%+ of their health, or anything once they're below half health.
   - **Ordinary swings:** they dodge only sometimes: 60% when aimed at them, 20% when aimed at someone else.
+- **Shots cross water [from playtest, 2026-10-17]:** line of fire follows the projectile rule. Walls, rock and trees stop a shot; water, bog, chasms and low pegs don't (`Game.shotClear`). This applies to heroes, enemy archers and web-spitters.
+- **Ranged companions hold the shore [from playtest]:**
+  - Out of range, they walk over dry land to a firing spot: in range, with a shot, nearest to where they stand.
+  - They don't follow a swimming leader out.
+  - Knocked or dragged into water, they wade back out before shooting.
+  - They never back off into a pool.
+- **Lingering ground hazards [from playtest]:** puddles, burning trails and molten pools are tagged `linger`.
+  - Companions steer round them rather than walking in and hopping out.
+  - They step fully clear (the poison spreads a little past its marker).
+  - Blocked for over a second, they give up and walk through for 1.5s.
+  - A dodge leaves by the quickest open way: not into walls, not into water unless already swimming, and not into another danger.
+- **Measured against Mother Murk (tools/murk-test.js, seeds 5/9), old -> new:**
+  - Pip in the water 67/59% -> 1/6%;
+  - has a shot 1/18% -> 87/90%;
+  - dodges started 44/37 -> 13/21 a minute;
+  - companions doubling back 102/82 -> 11/15 a minute;
+  - time in poison 4/1.3% -> 0.2/2.2%.
+- **Dodging, refined [2026-10-17]:**
+  - Companions leave a danger by the quickest open way, which also stops them freezing on a marker's centre.
+  - For a tracking blow, their reaction counts from the moment it locks.
+  - The Gatewarden's leap locks at 0.5s and lands at 0.78s (r 30). golemTest: slams landed 93%, 17 hits a minute against a player who dodges every marker after 0.3s.
+- **Tongues are visible:** Murk's and the Croaker's tongue whips out, latches ("GRABBED!") and reels the hero in, then snaps back. The aim line plus a closing mark tells you it's coming.
 - **Wind-ups track [from playtest]:** for the first half of a melee wind-up, the foe shuffles after its target and the marker follows, then locks. Stepping away early no longer dodges everything; timing does.
 - **Measured (fight-bench, 7 fights x 2 seeds), old -> new:**
   - companions dodging 9.5-43% -> 1-15% of the time;
@@ -1664,3 +1686,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-16 | Wave 2 finished: unique signatures, hero Burn, hermit's tower + Arcane, belfry, region secrets, Trainers' Hall with L20 ultimate upgrades, Alchemist, workbench, Cartographer, Ward Shard. Region borders made organic (noise-warped, landmarks pinned, region banner has hysteresis) after playtest feedback that the map looked cut into straight bands |
 | 2026-10-16 | Playtest: companions over-dodged and the Gatewarden never landed a blow. Companions now react with a delay, wait for the wind-up to lock and skip most ordinary swings; melee wind-ups track their target for half the wind-up; the Gatewarden throws in every phase and follows a whiffed slam with a tracking leap. Measured with fight-bench + the new golemTest |
 | 2026-10-17 | Performance pass (battery/frame drops on iPhone): off-screen objects are culled from the camera, the HUD's Graphics are baked into textures and repainted only on change, no live Graphics for static shapes. ms/frame on the Mac: overworld 3.76 -> 1.70, fight 4.22 -> 2.13, dungeon 3.97 -> 1.55 (tools/perf-scenes.js). Rule: never leave a static shape as a live Graphics, and check new per-frame drawing with perf-scenes. Also: open doors show the floor through the arch, vines cross doorways square-on and show faintly under water, and hero-built foes get their own heads and outfits |
+| 2026-10-17 | Playtest (Mother Murk): shots cross water; ranged companions hold the shore (dry firing spots, wade out if knocked in); lingering puddles are steered round; dodges take the quickest open way; reactions to tracking blows count from the lock; tongues visibly lash and reel. Measured with tools/murk-test.js, fight-bench and golemTest |

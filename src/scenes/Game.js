@@ -3141,6 +3141,21 @@ export class Game extends Phaser.Scene {
 
 
   // ============================================================== update
+  // A shot's line of fire, by the same rule projectiles use in flight: walls,
+  // rock and trees stop it; water, bog, chasms and low pegs don't.
+  shotClear(x0, y0, x1, y1) {
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4);
+    for (let i = 1; i < n; i++) {
+      const x = x0 + (x1 - x0) * (i / n), y = y0 + (y1 - y0) * (i / n);
+      const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+      if (!this.nav.isSolid(tx, ty)) continue;
+      const t = this.world.at(tx, ty);
+      if (t === T.WATER || t === T.BOG || t === T.CHASM || this.dungeon?.lowAt(x, y)) continue;
+      return false;
+    }
+    return true;
+  }
+
   // Phaser draws every object in the display list, on screen or not, and the
   // world keeps a lot alive (every dungeon's pieces, props, flies, markers):
   // ~1,260 objects with ~50 in view. Each frame, anything well outside the
