@@ -538,7 +538,14 @@ export class UI extends Phaser.Scene {
       const h = p.h;
       const lead = h === game.leader;
       const ready = h.ult >= 100 && !h.downed;
-      panel(g, p.x, p.y, 22, 22, C.ink, lead ? C.gold : ready ? 0xb89a4a : C.slate);
+      // gold means the leader and nothing else: a double gold frame and a pointer
+      // (a ready ultimate shows on its own meter and the ULT! label, not the frame)
+      panel(g, p.x, p.y, 22, 22, C.ink, lead ? C.gold : C.slate);
+      if (lead) {
+        g.fillStyle(C.goldL).fillRect(p.x + 1, p.y + 1, 20, 1).fillRect(p.x + 1, p.y + 20, 20, 1).fillRect(p.x + 1, p.y + 1, 1, 20).fillRect(p.x + 20, p.y + 1, 1, 20);
+        g.fillStyle(C.ink).fillTriangle(p.x - 6, p.y + 5, p.x - 6, p.y + 17, p.x - 1, p.y + 11);
+        g.fillStyle(C.gold).fillTriangle(p.x - 5, p.y + 7, p.x - 5, p.y + 15, p.x - 2, p.y + 11);
+      }
       if (p.img.texture.key !== `${h.texKey}_portrait` && this.textures.exists(`${h.texKey}_portrait`)) p.img.setTexture(`${h.texKey}_portrait`);
       p.img.setAlpha(h.downed ? 0.35 : 1);
       const frac = Math.max(0, h.hp / h.maxHp);
