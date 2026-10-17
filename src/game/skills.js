@@ -421,7 +421,7 @@ export const SKILL_FX = {
         hitAt: 0.25,
         resolve: () => {
           const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
-          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 300, vy: ny * 300, dmg: h.stats.atk * 1.6 * m, kind: 'arrow', pierce: true, life: 0.7 });
+          sc.spawnProjectile({ owner: h, x: h.x + nx * 8, y: h.y - 8, vx: nx * 300, vy: ny * 300, dmg: h.stats.atk * 1.6 * m, kind: 'arrow', pierce: true, life: 0.7, chain: h.hasPerk('galeheart') });
           audio.sfx('swing', { pitch: 1.2 }); audio.sfx('dash');
         },
       });

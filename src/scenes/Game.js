@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Isolde, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -404,7 +404,7 @@ export class Game extends Phaser.Scene {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
-    if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
+    if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll', 'isolde'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -898,6 +898,17 @@ export class Game extends Phaser.Scene {
       this.add.image(x, px(c.y) - 8, 'clawmarks').setOrigin(0.5, 1).setDepth(-38);
       this.addInteractable({ x, y: px(c.y), reach: 26, standOff: 12, h: 30, kind: 'climb', interact: () => this.climb(c, true) });
       this.addInteractable({ x, y: px(c.top[1]), reach: 26, standOff: 12, h: 14, kind: 'climb', interact: () => this.climb(c, false) });
+    }
+    // Gale Cloak glides in the overworld: tap the wind vent to glide off to its landing
+    for (const gl of W.glides || []) {
+      const x = px(gl.x), y = px(gl.y);
+      this.add.sprite(x, y, 'windvent').setDepth(-24).play('windvent');
+      this.addInteractable({ x, y, reach: 24, standOff: 2, h: 12, kind: 'climb', interact: () => {
+        if (this.busy) return;
+        if (!this.state.relics.includes('cloak')) { this.bark(this.leader, 'A STRONG UPDRAFT HERE. WITH SOMETHING TO CATCH IT, WE COULD GLIDE A LONG WAY.'); return; }
+        this.leader.x = x; this.leader.y = y;
+        this.glideTo(px(gl.land[0]), px(gl.land[1]), () => this.autosave('glide'));
+      } });
     }
     // Shrines: +1 skill point for every recruited hero, once each (C10)
     for (const k of W.shrines || []) {
@@ -1515,6 +1526,12 @@ export class Game extends Phaser.Scene {
         // Power Shot / Ice Shard: punches through everything in the line
         (p.hitSet ??= new Set()).add(hit);
         this.dealDamage(p.owner, hit, p.dmg, { knock: 60, element: p.element, spell: p.spell });
+        if (p.chain && !p.chained) { // Galeheart Longbow: Power Shot chains lightning to two more foes
+          p.chained = true;
+          const near = targets.filter((e) => e.alive && e !== hit && !p.hitSet.has(e) && this.strayHits(e, p) && dist(e, hit) < 70).sort((a, b) => dist(a, hit) - dist(b, hit)).slice(0, 2);
+          for (const e of near) { this.fx.burst('spark', e.x, e.y - 8, 6); this.dealDamage(p.owner, e, p.dmg * 0.5, { knock: 20, element: 'storm' }); }
+          if (near.length) audio.sfx('zap');
+        }
         if (p.split === 0) { // Glacier Wand: the shard splits in three at the first hit
           p.split = 1;
           const a0 = Math.atan2(p.vy, p.vx);
@@ -2544,6 +2561,29 @@ export class Game extends Phaser.Scene {
     this.party.filter((p) => p !== L && !p.downed).forEach((p, i) => zipOne(p, 450 + i * 300));
   }
 
+  // Gale Cloak: the party leaps and glides one by one to a spot (across a
+  // chasm, off a ledge, up a wind vent), cloaks spread
+  glideTo(x, y, done) {
+    const L = this.leader;
+    this.busy = true;
+    const heroes = [L, ...this.party.filter((p) => p !== L && !p.downed)];
+    heroes.forEach((h, i) => this.time.delayedCall(i * 240, () => {
+      h.zipping = true; h.clearPath(); h.command = null; h.target = null; h.action = null;
+      const ox = h.x, oy = h.y, tx = x + (h === L ? 0 : (i % 2 ? -1 : 1) * (8 + i * 3)), ty = y + (h === L ? 0 : 4 + i * 2);
+      const d = Math.hypot(tx - ox, ty - oy);
+      audio.sfx('dash', { pitch: 0.7 });
+      this.tweens.addCounter({ from: 0, to: 1, duration: 500 + d * 2.4, ease: 'Sine.easeInOut', onUpdate: (tw) => {
+        const k = tw.getValue();
+        h.x = ox + (tx - ox) * k; h.y = oy + (ty - oy) * k - Math.sin(k * Math.PI) * Math.min(40, 14 + d * 0.12);
+        h.face(tx - ox, ty - oy); h.play('walk');
+        if (Math.random() < 0.35) this.fx.ghost(h, { tint: 0xd6efff, alpha: 0.4 });
+      }, onComplete: () => {
+        h.zipping = false; this.fx.dust(h.x, h.y);
+        if (i === heroes.length - 1) { this.busy = false; done?.(); }
+      } });
+    }));
+  }
+
   // Climbing Claws: the party scrambles up (or down) a marked face one by one
   climb(c, up) {
     const L = this.leader;
@@ -2663,7 +2703,7 @@ export class Game extends Phaser.Scene {
 
   // A hero joins: caught up to the party's level (C3), into the party if
   // there's room, otherwise onto the bench until the next campfire.
-  addRecruit(id, x, y) {
+  addRecruit(id, x, y, force = false) {
     const st = this.state;
     if (st.recruited.includes(id)) return;
     st.recruited.push(id);
@@ -2677,12 +2717,20 @@ export class Game extends Phaser.Scene {
     audio.sfx('levelUp');
     this.party.find((h) => h.def.id === id)?.refreshStats();
     if (st.active.includes(id)) { this.events.emit('partyChanged'); this.autosave('recruit'); return; }
-    if (st.active.length < 3) {
+    if (st.active.length < 3 || force) {
+      // a hero who must fight now (Mirelle in the Spire) takes the last companion's place
+      let swapped = null;
+      if (st.active.length >= 3) {
+        swapped = [...this.party].reverse().find((p) => !p.isLeader);
+        st.active = st.active.filter((a) => a !== swapped.def.id);
+        this.party = this.party.filter((p) => p !== swapped);
+        this.gearFx?.clear?.(swapped.def.id); swapped.alive = false; swapped.destroy();
+      }
       st.active.push(id);
       const h = new Hero(this, id, hs, x, y);
       this.party.push(h);
       this.fx.burst('gold', h.x, h.y - 10, 20);
-      this.events.emit('banner', `${h.def.name.toUpperCase()} JOINED THE PARTY!`, 'TAP A PORTRAIT TO SWITCH HEROES');
+      this.events.emit('banner', `${h.def.name.toUpperCase()} JOINED THE PARTY!`, swapped ? `SHE TAKES ${swapped.def.name.toUpperCase()}'S PLACE - SWAP BACK AT ANY CAMPFIRE` : 'TAP A PORTRAIT TO SWITCH HEROES');
     } else {
       this.fx.burst('gold', x, y - 10, 20);
       this.events.emit('banner', `${heroInfo(id).name.toUpperCase()} JOINED!`, 'THE PARTY IS FULL - SWAP HEROES AT ANY CAMPFIRE');
@@ -2887,6 +2935,16 @@ export class Game extends Phaser.Scene {
       at(300, () => audio.sfx('roar', { pitch: 2.2 }));
       at(1100, () => audio.sfx('roar', { pitch: 2.5 }));
       for (let i = 0; i < 16; i++) at(250 + i * 120, () => this.fx.burst(g.isShadow ? 'curse' : 'spark', bx + (Math.random() - 0.5) * 90, by - 10 + (Math.random() - 0.5) * 40, 6));
+    } else if (style === 'frost') {
+      // frost creeps out over the ground, then shards of ice spiral up into her
+      const rime = this.add.ellipse(bx, by, 10, 6, 0xf4f8ff, 0.45).setDepth(-26);
+      this.tweens.add({ targets: rime, scaleX: 14, scaleY: 14, alpha: 0.25, duration: 1900, ease: 'Sine.easeOut', onComplete: () => this.tweens.add({ targets: rime, alpha: 0, duration: 1500, onComplete: () => rime.destroy() }) });
+      for (let i = 0; i < 16; i++) at(500 + i * 100, () => {
+        const a = i * 0.9, r0 = 70;
+        const sh = this.add.image(bx + Math.cos(a) * r0, by + Math.sin(a) * r0 * 0.6, 'arrow').setTint(g.isShadow ? 0xb48cff : 0xd6efff).setScale(1.2).setDepth(TOP - 40);
+        const st = { k: 0 };
+        this.tweens.add({ targets: st, k: 1, duration: 600, ease: 'Quad.easeIn', onUpdate: () => { const r = r0 * (1 - st.k), aa = a + st.k * 3; sh.setPosition(bx + Math.cos(aa) * r, by - 20 * st.k + Math.sin(aa) * r * 0.6).setRotation(aa + Math.PI / 2); }, onComplete: () => { audio.sfx('frost', { pitch: 1.6 }); sh.destroy(); } });
+      });
     } else if (style === 'pool') {
       if (g.isShadow) for (let i = 0; i < 7; i++) at(450 + i * 230, () => this.fx.burst('curse', bx, by - 20, 10));
       for (let i = 0; i < 12; i++) at(350 + i * 140, () => this.fx.burst('foam', bx + (Math.random() - 0.5) * 80, by + (Math.random() - 0.5) * 34, 8));
@@ -2950,7 +3008,10 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: g.sprite, alpha: 0, y: g.sprite.y + 20, duration: 600, onComplete: () => g.destroy() });
         this.golem = null;
         this.events.emit('boss', null);
-        this.events.emit('banner', g.wardBoss.kind === 'huntsman' ? `${g.wardBoss.name} FADES INTO THE FOG` : `${g.wardBoss.name} SINKS ${g.wardBoss.kind === 'murk' ? 'BACK INTO THE BOG' : 'INTO THE EARTH'}`, g.wardBoss.kind === 'huntsman' ? 'THE HUNT WILL COME FOR YOU AGAIN' : 'IT WILL RISE AGAIN TO GUARD THE STONE');
+        const wk = g.wardBoss.kind;
+        for (const v of g.vents || []) { v.s.destroy(); this.removeInteractable(v.o); }
+        g.plat?.destroy(); g.blizzard?.destroy();
+        this.events.emit('banner', wk === 'huntsman' ? `${g.wardBoss.name} FADES INTO THE FOG` : wk === 'isolde' ? `${g.wardBoss.name} CRUMBLES INTO SNOW` : `${g.wardBoss.name} SINKS ${wk === 'murk' ? 'BACK INTO THE BOG' : 'INTO THE EARTH'}`, wk === 'huntsman' ? 'THE HUNT WILL COME FOR YOU AGAIN' : wk === 'isolde' ? 'SHE WILL FORM AGAIN TO GUARD THE STONE' : 'IT WILL RISE AGAIN TO GUARD THE STONE');
       }
       return;
     }
@@ -2962,14 +3023,14 @@ export class Game extends Phaser.Scene {
       const x = (w.def.x + wb.offset[0]) * TILE + 8, y = (w.def.y + wb.offset[1]) * TILE + 8;
       if (Math.hypot(L.x - x, L.y - y) > wb.trigger * TILE) continue;
       const opts = { level: this.enemyLevel(x, y) + 2, arena: wb.arena, pool: wb.pool };
-      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : wb.kind === 'huntsman' ? new Huntsman(this, x, y, opts) : wb.kind === 'vulk' ? new Vulk(this, x, y, opts) : new Golem(this, x, y, opts);
+      const boss = wb.kind === 'murk' ? new Murk(this, x, y, opts) : wb.kind === 'huntsman' ? new Huntsman(this, x, y, opts) : wb.kind === 'vulk' ? new Vulk(this, x, y, opts) : wb.kind === 'isolde' ? new Isolde(this, x, y, opts) : new Golem(this, x, y, opts);
       boss.maxHp = Math.round(boss.maxHp * wb.hpMul); boss.hp = boss.maxHp;
       boss.s = { ...boss.s, dmg: boss.s.dmg * wb.dmgMul };
       const B = { id: wb.id, flag: wb.flag, cfg: wb };
       boss.bossName = wb.name; boss.bossDef = B; boss.wardBoss = wb;
       this.golem = boss;
       this.enemies.push(boss);
-      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : wb.kind === 'huntsman' ? 'fog' : wb.kind === 'vulk' ? 'magma' : 'stone', B);
+      this.bossIntro(boss, wb.kind === 'murk' ? 'pool' : wb.kind === 'huntsman' ? 'fog' : wb.kind === 'vulk' ? 'magma' : wb.kind === 'isolde' ? 'frost' : 'stone', B);
       return;
     }
   }

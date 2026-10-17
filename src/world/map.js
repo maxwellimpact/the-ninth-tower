@@ -52,6 +52,8 @@ export const AREAS = {
   forge: { x0: 418, y0: 130, x1: 511, y1: 209, interior: true },
   // Wave 3: the trappers' ice cave under Rimewatch (the Climbing Claws)
   clawhold: { x0: 250, y0: 0, x1: 312, y1: 50, interior: true },
+  // the Rimeglass Spire, the astronomers' tower on the Highfold
+  spire: { x0: 322, y0: 212, x1: 415, y1: 318, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
 
@@ -192,7 +194,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'basin') { set(x, y, T.PLATEAU); continue; } // the Blight Basin (built in a later stage), walled off by the ridge
     if (b === 'frost') {
       set(x, y, T.SNOW);
@@ -326,6 +328,12 @@ export function buildWorld() {
     const d = Math.hypot(x - 86, (y - 146) * 1.1);
     if (d < 3.2) set(x, y, T.PAVED); else if (d < 4.4) set(x, y, T.WALL);
   }
+  // a forgotten shrine on the forest's west edge: its door is a false wall
+  // (Seer's Lens) and the Penitent's Gown lies inside (Wave 3, Mirelle's)
+  for (let y = 134; y <= 145; y++) for (let x = 2; x <= 12; x++) {
+    const d = Math.hypot(x - 7, (y - 139) * 1.1);
+    if (d < 3.2) set(x, y, T.PAVED); else if (d < 4.4) set(x, y, T.WALL);
+  }
   // Queen Mab's lair: a hollow under the canopy, choked with webs
   for (let y = 190; y <= 203; y++) for (let x = 12; x <= 29; x++) {
     if (Math.hypot((x - 20) / 6.5, (y - 196.5) / 5) + (vnoise(x / 3, y / 3, 144) - 0.5) * 0.3 < 1) set(x, y, T.LOAM);
@@ -412,7 +420,13 @@ export function buildWorld() {
     if (t === T.PLATEAU || t === T.CLIFF) continue;
     if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].some(([dx, dy]) => at(x + dx, y + dy) === T.PLATEAU || (dy === 0 && at(x + dx, y) === T.CLIFF))) set(x, y, T.RIM);
   }
-  rect(59, 266, 65, 270, T.HOUSE); // the Rimeglass Spire's footprint (the tower is drawn over it)
+  rect(61, 268, 63, 270, T.HOUSE); // the Rimeglass Spire's footprint (the tower is drawn over it)
+  // the sky ledge: a sheer pillar of rock standing out of the frozen lake,
+  // reached only by gliding off the Highfold (Gale Cloak)
+  rect(28, 249, 32, 252, T.PLATEAU);
+  rect(28, 253, 32, 254, T.CLIFF);
+  rect(27, 248, 33, 248, T.RIM);
+  for (let y = 249; y <= 254; y++) { set(27, y, T.RIM); set(33, y, T.RIM); }
 
   // Interiors ---------------------------------------------------------------
   // Cave: tunnels + chambers carved out of rock
@@ -514,10 +528,12 @@ export function buildWorld() {
   reserve(LANDMARKS.gloamCamp.x, LANDMARKS.gloamCamp.y, 7); reserve(LANDMARKS.elderTree.x, LANDMARKS.elderTree.y - 2, 9);
   reserve(LANDMARKS.mirrorPool.x, LANDMARKS.mirrorPool.y, 8); reserve(LANDMARKS.hermitTower.x, LANDMARKS.hermitTower.y, 6);
   reserve(LANDMARKS.spiderLair.x, LANDMARKS.spiderLair.y, 5);
+  reserve(7, 145, 3.5); // the way up to the forgotten shrine's false door
   for (const k of ['emberwatch', 'springs', 'minersCamp', 'drakeLair']) reserve(LANDMARKS[k].x, LANDMARKS[k].y, 8);
   reserve(LANDMARKS.rimewatch.x, LANDMARKS.rimewatch.y, 11); reserve(LANDMARKS.clawhold.x, LANDMARKS.clawhold.y + 2, 4);
   reserve(LANDMARKS.trollGully.x, LANDMARKS.trollGully.y, 8); reserve(LANDMARKS.spire.x, LANDMARKS.spire.y + 1, 7);
   for (const c of W.climbs || []) { reserve(c.x, c.y, 3); reserve(c.top[0], c.top[1], 3); }
+  for (const gl of W.glides || []) { reserve(gl.x, gl.y, 3); reserve(gl.land[0], gl.land[1], 3); }
   reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);

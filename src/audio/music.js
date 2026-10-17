@@ -299,6 +299,25 @@ export const FROSTHELM_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 0.9, echo: 0.55, vibrato: 0.01 }, arp: { vol: 1.2, echo: 0.6 }, bass: { vol: 0.7 }, pad: { vol: 1.3, cutoff: 900 }, sub: { vol: 0.8 } },
 });
 
+// The Rimeglass Spire: the waltz turned inward - glass bells high and
+// sparse, a hollow drone, the melody climbing like a stair in the tower
+export const SPIRE_THEME = buildTheme({
+  name: 'The Rimeglass Spire', bpm: 58, key: -2, arp: 'bells', bass: 'hollow',
+  chords: [['A2', 'C3', 'E3'], ['E2', 'G#2', 'B2'], ['F2', 'A2', 'C3'], ['C3', 'E3', 'G3'],
+    ['D2', 'F2', 'A2'], ['A2', 'C3', 'E3'], ['B2', 'D3', 'F3'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['-', 5], ['A4', 6], ['C5', 5],
+    ['B4', 11], ['-', 5],
+    ['-', 5], ['C5', 6], ['E5', 5],
+    ['G5', 11], ['-', 5],
+    ['F5', 5], ['E5', 6], ['D5', 5],
+    ['C5', 5], ['B4', 6], ['A4', 5],
+    ['-', 5], ['D5', 6], ['F5', 5],
+    ['E5', 11], ['-', 5],
+  ],
+  inst: { lead: { type: 'triangle', vol: 0.85, echo: 0.65, vibrato: 0.008 }, arp: { vol: 1.1, echo: 0.7 }, bass: { vol: 0.8 }, pad: { vol: 1.3, cutoff: 700 }, sub: { vol: 1.1 } },
+});
+
 // The Forge of Ash: the work song gone underground - slower, the anvil
 // echoing off stone, a hollow drone where the hearth used to roar
 export const FORGE_THEME = buildTheme({
@@ -358,7 +377,7 @@ export const HEARTH_THEME = buildTheme({
 
 const REGION_THEMES = {
   vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME, witchroot: WITCHROOT_THEME, cinder: CINDERREACH_THEME, forge: FORGE_THEME, frost: FROSTHELM_THEME,
-  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
+  cave: DEPTHS_THEME, grotto: DEPTHS_THEME, clawhold: DEPTHS_THEME, spire: SPIRE_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };
 export const themeFor = (region) => REGION_THEMES[region] || VALE_THEME;

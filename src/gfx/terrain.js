@@ -58,6 +58,8 @@ export function makeTerrainPainter(world) {
 
   const FG = AREAS.forge;
   const inForge = (tx, ty) => tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
+  const SP = AREAS.spire;
+  const inSpire = (tx, ty) => tx >= SP.x0 && tx <= SP.x1 && ty >= SP.y0 && ty <= SP.y1;
   const CH = AREAS.clawhold;
   const inClawhold = (tx, ty) => tx >= CH.x0 && tx <= CH.x1 && ty >= CH.y0 && ty <= CH.y1;
   const WR = AREAS.witchroot;
@@ -118,6 +120,7 @@ export function makeTerrainPainter(world) {
       const n = vnoise(x / 30, y / 30, 219) * 0.8 + vnoise(x / 6, y / 6, 220) * 0.2 + (bayer(x, y) - 0.5) * 0.14;
       return n < 0.32 ? C.ice : n < 0.78 ? C.iceL : C.iceXL;
     }
+    if (t === T.HOUSE) return snowColor(x, y); // under the Spire
     if (t === T.PLATEAU) {
       if (tileAtPx(x, y - 2) === T.RIM || tileAtPx(x - 2, y) === T.RIM || tileAtPx(x + 2, y) === T.RIM) return C.snow;
       if (tileAtPx(x, y + 3) === T.CLIFF) return tileAtPx(x, y + 1) === T.CLIFF ? C.frostL : C.snowXL; // the lip of the face
@@ -397,6 +400,17 @@ export function makeTerrainPainter(world) {
       }
       case T.HOUSE: return bayer(x, y) < 0.5 ? C.slate : C.stone;
       case T.DFLOOR: {
+        if (inSpire(tx, ty)) {
+          // the astronomers' floor: polished pale glass tiles, a star chart inlaid
+          const up = tileAtPx(x, y - 6);
+          if (up === T.DWALL && bayer(x, y) < 0.7) return C.frost;
+          if (x % 16 === 0 || y % 16 === 0) return C.frostL;
+          const st = hash(Math.floor(x / 3), Math.floor(y / 3), 238);
+          if (st < 0.012) return C.white; // stars in the glass
+          if (st < 0.016) return C.iceXL;
+          const n = vnoise(x / 30, y / 30, 239) + (bayer(x, y) - 0.5) * 0.12;
+          return n < 0.32 ? C.ice : n < 0.72 ? C.iceL : C.iceXL;
+        }
         if (inClawhold(tx, ty)) {
           // the ice cave: packed snow blown in over blue ice, frost thick under the walls
           const up = tileAtPx(x, y - 6);
@@ -437,6 +451,19 @@ export function makeTerrainPainter(world) {
         return tint < 0.45 ? C.slate : tint < 0.9 ? C.stone : C.mist;
       }
       case T.DWALL: {
+        if (inSpire(tx, ty)) {
+          // walls of rimeglass blocks, a hex vein of purple crawling through some
+          const faceBelowS = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;
+          if (!faceBelowS) { const n = vnoise(x / 7, y / 7, 240) + (bayer(x, y) - 0.5) * 0.3; return n > 0.72 ? C.ice : n > 0.4 ? C.iceD : C.frostD; }
+          const fy = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS ? ly + TILE : ly;
+          if (fy < 2) return C.snowXL;
+          if (fy < 4) return C.iceXL;
+          if (fy > 29) return C.frostD;
+          const brow = Math.floor((fy - 4) / 6), bx = (x + (brow % 2) * 8) % 16;
+          if ((fy - 4) % 6 === 5 || bx === 0) return C.frost;
+          if (Math.abs(vnoise(x / 9, fy / 9 + ty, 241) - 0.5) < 0.03) return C.purpD; // a hex vein
+          return bx < 3 ? C.iceXL : bx < 9 ? C.iceL : C.ice;
+        }
         if (inClawhold(tx, ty)) {
           // walls of blue ice over dark rock, a frosted lip and icicles on the face
           const faceBelowC = at(tx, ty + 1) === T.DFLOOR || at(tx, ty + 2) === T.DFLOOR || at(tx, ty + 1) === T.STAIRS;

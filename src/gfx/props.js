@@ -909,6 +909,53 @@ export function forgeGate() {
 }
 
 // ================================================================ Frosthelm
+// The Rimeglass Spire: the old astronomers' tower of pale glass on the
+// Highfold - a tapering faceted shaft ringed with frosted bands, slit
+// windows, an arched door at its foot and a cupola holding the star-mirror.
+export function rimeSpire() {
+  const W = 60, H = 116;
+  const [c, ctx] = makeCanvas(W, H);
+  const cx = 30;
+  for (let y = 22; y < 108; y++) {
+    const half = Math.round(8 + (y - 22) * 0.07);
+    for (let x = cx - half; x <= cx + half; x++) {
+      const f = (x - (cx - half)) / (half * 2); // 0 left (lit) .. 1 right
+      let col = f < 0.18 ? 'iceXL' : f < 0.5 ? 'iceL' : f < 0.8 ? 'ice' : 'iceD';
+      if ((y - 22) % 16 === 0 || (y - 22) % 16 === 1) col = f < 0.5 ? 'frostL' : 'frost'; // frosted bands
+      if (Math.abs(x - cx) === Math.round(half * 0.45) && (y - 22) % 16 > 1) col = f < 0.5 ? 'iceL' : 'iceD'; // facet edges
+      px(ctx, x, y, col);
+    }
+  }
+  for (const wy of [34, 50, 66, 82]) { px(ctx, cx - 1, wy, 'iceD', 3, 7); px(ctx, cx, wy + 1, 'ink', 1, 5); } // slit windows
+  // the foot: a broad plinth and the arched door
+  for (let y = 106; y < 114; y++) px(ctx, cx - 16 + (y - 106 > 3 ? 0 : 1), y, y < 108 ? 'frostL' : 'frost', 32 - (y - 106 > 3 ? 0 : 2), 1);
+  for (let y = 96; y < 112; y++) { const w = y < 99 ? 2 + (y - 96) : 5; px(ctx, cx - w, y, y < 99 ? 'frostD' : 'ink', w * 2 + 1, 1); }
+  // the cupola and the star-mirror
+  for (let y = 10; y < 22; y++) { const half = Math.round(4 + (y - 10) * 0.6); px(ctx, cx - half, y, 'frostL', half, 1); px(ctx, cx, y, 'frost', half + 1, 1); }
+  for (let y = 12; y < 20; y++) { const half = Math.round(Math.sqrt(16 - (y - 16) * (y - 16))); px(ctx, cx - half, y, y < 15 ? 'white' : 'goldL', half * 2 + 1, 1); }
+  px(ctx, cx, 2, 'iceL', 1, 8); px(ctx, cx - 1, 6, 'iceL', 3, 1); px(ctx, cx, 1, 'white');
+  outline(c, 'ink');
+  return c;
+}
+// Isolde's floating ice platform (phase 2): a ragged slab of blue ice.
+export function icePlatform() {
+  const [c, ctx] = makeCanvas(40, 16);
+  shadedBlob(ctx, 20, 7, 18, 5, ['iceD', 'ice', 'iceL', 'iceXL']);
+  for (let i = 0; i < 6; i++) px(ctx, 6 + i * 5, 11 + (i % 2), 'iceL', 1, 3 + (i % 3)); // icicles under it
+  outline(c, 'ink');
+  return c;
+}
+// A wind vent (the Gale Cloak catches it): a grate with swirling air rising.
+export function windVent() {
+  return [0, 1, 2].map((f) => {
+    const [c, ctx] = makeCanvas(22, 16);
+    shadedBlob(ctx, 11, 10, 9, 4.5, ['frostD', 'frost', 'frostL', 'snowL']);
+    for (let i = -6; i <= 6; i += 3) px(ctx, 11 + i, 9, 'ink', 1, 3);
+    for (let k = 0; k < 3; k++) { const y = 6 - ((k * 3 + f * 2) % 7); px(ctx, 6 + k * 4 + (f % 2), y, 'snowXL', 2, 1); px(ctx, 7 + k * 4, y - 1, 'white'); }
+    return c;
+  });
+}
+
 // Frost Prison: a translucent block of ice that encases whoever is inside.
 export function iceBlock() {
   const [c, ctx] = makeCanvas(22, 26);

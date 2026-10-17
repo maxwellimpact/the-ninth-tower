@@ -28,5 +28,10 @@
   "name": "CLIMBING CLAWS",
   "icon": "icon_claws",
   "text": "TAP A CLIFF FACE SCORED WITH CLAW MARKS TO CLIMB IT, UP OR DOWN."
+ },
+ "cloak": {
+  "name": "GALE CLOAK",
+  "icon": "icon_cloak",
+  "text": "TAP A WIND VENT TO CATCH THE UPDRAFT AND GLIDE ACROSS A CHASM OR OFF A LEDGE."
  }
 }

@@ -15,7 +15,8 @@
 // Sluices (the Abbey): a lever swaps the water between two basins ('w' / 'v'),
 // like red and blue pegs. Drained basin floor is walkable; flooded needs the
 // Tide Charm to swim.
-import { Unit, Breakable, Golem, Murk, Huntsman, Vulk } from './units.js';
+import { Unit, Breakable, Golem, Murk, Huntsman, Vulk, Isolde } from './units.js';
+import HERO_DATA from '../data/heroes.json';
 import { audio } from '../audio/synth.js';
 import DUNGEONS from '../data/dungeons.json';
 
@@ -271,6 +272,8 @@ export class DungeonKit {
       }
       else if (ch === '*') { const b = new Brazier(sc, this, x, y, room); this.braziers.push(b); (room.braziers ??= []).push(b); sc.breakables.push(b); sc.nav.block(x, y); }
       else if (ch === 'I') this.illusions.push({ x, y });
+      else if (ch === 'J') this.addGlide(x, y);
+      else if (ch === 'M') this.addFrozen(x, y, room);
       else if (ch === '_') this.bridges.push({ x, y });
       else if (/[1-9]/.test(ch)) this.addChest(x, y, ch, room);
       else if (this.foeKinds[ch] || this.def.elite?.[ch]) room.foes.push({ ch, x, y });
@@ -348,6 +351,48 @@ export class DungeonKit {
     sc.addInteractable({ x: px(x), y: px(y), reach: 34, standOff: 14, h: 20, kind: 'post', id: `${this.id}_${ch}`, pair: `${this.id}_${p.pair}`, land: [pxT + p.land[0], pyT + p.land[1]], interact: (h, o) => sc.grapple(o) });
   }
 
+  // A glide pad (Rimeglass Spire): a wind vent on the lip of a chasm. With the
+  // Gale Cloak, tap it and the party glides straight across to the far lip.
+  addGlide(x, y) {
+    const sc = this.sc;
+    const dir = DIRS.find(([dx, dy]) => this.at(x + dx, y + dy) === '~');
+    if (!dir) return;
+    let land = null;
+    for (let k = 1; k <= 16 && !land; k++) { const c = this.at(x + dir[0] * k, y + dir[1] * k); if (c !== '~') land = WALLISH.has(c) ? null : [x + dir[0] * k, y + dir[1] * k]; if (c !== '~') break; }
+    if (!land) return;
+    sc.add.sprite(px(x), px(y), 'windvent').setDepth(-24).play('windvent');
+    sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 2, h: 12, kind: 'glide', interact: () => {
+      if (sc.busy) return;
+      if (!sc.state.relics.includes('cloak')) { if (!this.hinted.has('glide')) { this.hinted.add('glide'); } sc.bark(sc.leader, 'THE WIND ROARS UP OUT OF THE CHASM. WITH SOMETHING TO CATCH IT, WE COULD GLIDE ACROSS.'); return; }
+      sc.leader.x = px(x); sc.leader.y = px(y);
+      sc.glideTo(px(land[0]), px(land[1]), () => sc.autosave('glide'));
+    } });
+  }
+
+  // Mirelle, frozen in the Spire (Thaw): she stands encased in the room with
+  // the braziers; when they all burn, the ice melts and she joins.
+  addFrozen(x, y, room) {
+    const sc = this.sc;
+    if (sc.state.recruited.includes('mirelle')) return;
+    const s = sc.add.sprite(px(x), px(y), 'mirelle', 'idle_down_0').setOrigin(0.5, 0.75).setTint(0xc8f0ff).setDepth(px(y));
+    const ice = sc.add.image(px(x), px(y) + 6, 'iceblock').setOrigin(0.5, 1).setScale(1.3, 1.5).setAlpha(0.42).setDepth(px(y) + 1);
+    sc.nav.block(x, y);
+    const o = sc.addInteractable({ x: px(x), y: px(y), reach: 30, standOff: 20, h: 24, kind: 'npc', interact: () => sc.bark(sc.leader, (room.braziers || []).length ? "THERE'S SOMEONE IN THERE, FROZEN SOLID. THOSE BRAZIERS - IF WE LIT THEM, MAYBE THE ICE WOULD GIVE." : "THERE'S SOMEONE FROZEN IN THERE.") });
+    this.frozen = { x, y, room, s, ice, o };
+  }
+
+  checkThaw() {
+    const f = this.frozen, sc = this.sc;
+    if (!f || f.thawing || !(f.room.braziers || []).every((b) => b.lit)) return;
+    f.thawing = true;
+    sc.time.delayedCall(600, () => {
+      sc.fx.burst('foam', px(f.x), px(f.y) - 10, 30); audio.sfx('bash', { pitch: 1.6 }); sc.shake(200, 0.006);
+      f.ice.destroy(); f.s.clearTint(); sc.nav.unblock(f.x, f.y); sc.removeInteractable(f.o);
+      const lines = (HERO_DATA.find((h) => h.id === 'mirelle')?.recruit || []).map((text) => ({ who: 'MIRELLE', text }));
+      sc.events.emit('dialogue', lines, () => { f.s.destroy(); this.frozen = null; sc.addRecruit('mirelle', px(f.x), px(f.y), true); });
+    });
+  }
+
   // ------------------------------------------------------------- doors
   // A door is shut if a fight in a room it borders is under way, or (shutters)
   // a room it borders has plates that aren't all down, or (key / boss) it's
@@ -372,6 +417,7 @@ export class DungeonKit {
       this.save(!left);
     }
     this.refreshDoors(silent);
+    this.checkThaw();
   }
 
   // ------------------------------------------------------------- the Lens
@@ -672,6 +718,8 @@ export class DungeonKit {
         ? (x, y, o) => new Huntsman(sc, x, y, { ...o, shadow: true, arena })
         : b.kind === 'vulk'
           ? (x, y, o) => new Vulk(sc, x, y, { ...o, shadow: true, arena })
+        : b.kind === 'isolde'
+          ? (x, y, o) => new Isolde(sc, x, y, { ...o, shadow: true, arena })
         : (x, y, o) => new Golem(sc, x, y - 24, { ...o, shadow: true });
     return this._bossDef = { id: this.id, flag: this.bossFlag, style: b.style || 'shadow', cfg, rect: [arena.x0, arena.y0, arena.x1, arena.y1 - 3], gate: [this.gateAt.x, this.gateAt.y], make }; // rect stops 3 rows short: walk a few steps in before it wakes
   }

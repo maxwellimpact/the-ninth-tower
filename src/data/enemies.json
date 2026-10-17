@@ -1090,5 +1090,30 @@
    "rimeglass": 2
   },
   "named": true
+ },
+ "isolde": {
+  "name": "ISOLDE THE RIMEGUARD",
+  "maxHp": 1900,
+  "speed": 40,
+  "aggro": 220,
+  "reach": 40,
+  "windup": 0.55,
+  "recover": 0.75,
+  "dmg": 32,
+  "xp": 260,
+  "gold": [
+   45,
+   60
+  ],
+  "r": 8,
+  "zone": "front",
+  "zr": 30,
+  "scale": 1.6,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "rimeglass": 3,
+   "silver": 2
+  }
  }
 }

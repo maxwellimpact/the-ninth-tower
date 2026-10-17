@@ -241,6 +241,7 @@ export function computeStats(id, level, equip, hs = null) {
   if (traits.includes('cdr')) s.cdr += 0.1;
   if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
   if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'wanderer')) s.speed = Math.round(s.speed * 1.08); // Wanderer's Charm
+  if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'windrunner')) s.speed = Math.round(s.speed * 1.1); // Windrunner Leathers
   if (hs?.skills?.passive.includes('clarity')) s.cdr += 0.1 + 0.02 * ((hs.skills.ranks.clarity || 1) - 1); // Clarity (Arcane)
   s.cdr = Math.min(0.3, s.cdr);
   // equipped stat passives

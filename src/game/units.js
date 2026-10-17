@@ -356,7 +356,8 @@ export class Hero extends Unit {
       const far = this.passive('eagleeye') && dist(this, target) > 70;
       // Quiver of Embers: every 4th arrow bursts into fire
       const blast = this.hasPerk('embers') && (this.emberShots = (this.emberShots || 0) + 1) % 4 === 0;
-      sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: far ? 0.15 : 0, life: 0.8, blast, element: blast ? 'fire' : undefined });
+      const wind = this.windCrit; this.windCrit = false;
+      sc.spawnProjectile({ owner: this, x: this.x + nx * 8, y: this.y - 8, vx: nx * 280, vy: ny * 280, dmg: this.stats.atk, kind: 'arrow', target, basic: true, critBonus: wind ? 1 : far ? 0.15 : 0, life: 0.8, blast, element: blast ? 'fire' : undefined });
       return;
     }
     if (this.def.id === 'mirelle') {
@@ -445,6 +446,7 @@ export class Hero extends Unit {
     audio.sfx('dodge');
     this.scene.fx.dust(this.x, this.y);
     if (this.hasPerk('nightsilk')) new Gadget(this.scene, this, 'decoy', this.x, this.y); // Nightsilk Coat
+    if (this.hasPerk('windrunner')) this.windCrit = true; // Windrunner Leathers: the next shot crits
   }
 
   // The leader is never stuck in a swing: moving, picking another target or a
@@ -1167,8 +1169,8 @@ export function freezeHero(h, t = 1.2) {
 
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith']);
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -3441,6 +3443,218 @@ export class Vulk extends Enemy {
     this.clearZone();
     for (const v of this.vents) v.s?.destroy();
     for (const b of this.slag) { if (!b.plugged) { this.scene.nav.unblock(Math.floor(b.x / 16), Math.floor(b.y / 16)); this.scene.removeInteractable(b.o); } b.s.destroy(); }
+    this.scene.onBossKilled(this, src);
+    this.destroy();
+  }
+}
+
+// -------------------------------------------------------- Isolde the Rimeguard
+// Malgrim's ice knight, Mirelle's sister. Her Shadow guards the Rimeglass
+// Spire's star-mirror; the true knight forms out of ice at the Ward Stone.
+//  1: a frost-lance duel - thrusts, a lunge across the arena, and a lance of
+//     ice hurled down a marked line
+//  2 (<65%; the Shadow at <50%): she rises onto a floating ice platform out of
+//     reach and rains shards on marked spots, while wind vents open round the
+//     arena - glide up on one (Gale Cloak) to knock her down. She drops on her
+//     own after a while, so nobody is ever stuck.
+//  3 (<30%, the true knight only): a blizzard, and frost armour that turns
+//     most blows until Mirelle reaches her - or fire cracks it, or it gives.
+export class Isolde extends Enemy {
+  constructor(scene, x, y, opts = {}) {
+    super(scene, 'isolde', x, y, opts);
+    this.boss = true;
+    this.phase = 1;
+    this.home = { x, y };
+    this.arena = opts.arena || null;
+    this.isShadow = !!opts.shadow;
+    if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; }
+    this.lanceT = 4; this.lungeT = 7; this.vents = []; this.aloft = null; this.armor = false; this.fireHits = 0;
+    this.restoreTint();
+  }
+  restoreTint() {
+    const t = this.statusColor();
+    if (t) this.sprite.setTint(t);
+    else if (this.isShadow) this.sprite.setTint(0x8a6cc4);
+    else if (this.armor) this.sprite.setTint(0xd6efff);
+    else this.sprite.clearTint();
+  }
+  knock(dx, dy, p) { if (!this.aloft) super.knock(dx, dy, p * 0.12); }
+  stun(t) { if (!this.aloft) super.stun(t * 0.3); }
+  setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
+  heroes() { return this.scene.party.filter((h) => h.alive && !h.downed); }
+  clampArena(x, y) {
+    const A = this.arena;
+    if (!A) return { x, y };
+    return { x: Math.max((A.x0 + 1) * 16, Math.min(A.x1 * 16, x)), y: Math.max((A.y0 + 1) * 16, Math.min(A.y1 * 16, y)) };
+  }
+  hintMsg(t) { const sc = this.scene; if (!this.msgT || sc.time.now > this.msgT) { this.msgT = sc.time.now + 2500; sc.floatText(this.x, this.y - 70, t, 'fontPlain', 0x9fe6ff); } }
+
+  damage(amount, src, opts) {
+    if (this.aloft) { this.hintMsg("SHE'S OUT OF REACH - RIDE THE WIND UP TO HER!"); return 0; }
+    if (this.armor) {
+      if (this.lastElement === 'fire' && ++this.fireHits >= 3) this.breakArmor('THE FIRE CRACKS HER FROST ARMOUR!');
+      else { amount *= 0.25; this.hintMsg('FROST ARMOUR!'); }
+    }
+    if (this.staggerT > 0) amount *= 1.3;
+    const r = Enemy.prototype.damage.call(this, amount, src, opts);
+    if (!this.alive) return r;
+    const f = this.hp / this.maxHp;
+    if (this.phase === 1 && f < (this.isShadow ? 0.5 : 0.65)) this.enterPhase(2);
+    else if (this.phase === 2 && f < 0.3 && !this.isShadow) this.enterPhase(3);
+    return r;
+  }
+
+  enterPhase(n) {
+    const sc = this.scene;
+    this.phase = n;
+    audio.sfx('frost', { pitch: 0.5 });
+    sc.shake(400, 0.01);
+    this.clearZone(); this.state = 'chase'; this.t = 0;
+    if (n === 2) this.rise();
+    else {
+      sc.floatText(this.x, this.y - 70, 'A BLIZZARD HOWLS IN!', 'fontGold');
+      this.armor = true; this.armorT = 12; this.fireHits = 0; this.restoreTint();
+      this.blizzard = sc.add.rectangle(0, 0, sc.scale.width + 4, sc.scale.height + 4, 0xe8f4ff, 0.18).setOrigin(0).setScrollFactor(0).setDepth(100000 - 45);
+      this.pulseT = 3;
+      const mir = sc.party.find((h) => h.def.id === 'mirelle' && !h.downed);
+      if (mir) sc.time.delayedCall(2500, () => {
+        if (!this.alive || !this.armor) return;
+        sc.bark(mir, "ISOLDE! IT'S ME. IT'S MIRELLE. YOU DON'T HAVE TO GUARD HIS COLD ANY MORE.");
+        sc.time.delayedCall(2200, () => { if (this.alive && this.armor) { sc.floatText(this.x, this.y - 64, '...MIRELLE?', 'font', 0xffffff); this.breakArmor('HER GUARD DROPS!'); } });
+      });
+    }
+  }
+
+  breakArmor(msg) {
+    if (!this.armor) return;
+    this.armor = false; this.restoreTint();
+    const sc = this.scene;
+    sc.fx.burst('foam', this.x, this.y - 30, 24); audio.sfx('bash', { pitch: 1.5 });
+    sc.floatText(this.x, this.y - 70, msg, 'fontGold');
+    this.staggerT = 2.5; this.stunT = Math.max(this.stunT, 2); this.clearZone();
+  }
+
+  // phase 2: up onto an ice platform over the middle of the arena
+  rise() {
+    const sc = this.scene;
+    const c = this.clampArena(this.home.x, this.home.y);
+    sc.fx.burst('foam', this.x, this.y - 10, 18);
+    this.x = c.x; this.y = c.y; this.clearPath?.();
+    this.aloft = { t: 0, dur: this.isShadow ? 9 : 13, shardT: 1.2 };
+    this.plat = sc.add.image(this.x, this.y - 22, 'iceplat').setDepth(this.y + 20);
+    sc.floatText(this.x, this.y - 80, 'SHE RISES ON THE ICE!', 'fontGold');
+    // wind vents open round the arena: glide up on one to knock her down
+    for (const [dx, dy] of [[-80, 30], [80, 30], [0, 70]]) {
+      const p = this.clampArena(c.x + dx, c.y + dy);
+      if (sc.nav.solidAtPx(p.x, p.y)) continue;
+      const v = { x: p.x, y: p.y, s: sc.add.sprite(p.x, p.y, 'windvent').setDepth(-24).play('windvent') };
+      v.o = sc.addInteractable({ x: p.x, y: p.y, reach: 26, standOff: 4, h: 12, kind: 'glide', interact: () => this.rideVent(v) });
+      this.vents.push(v);
+    }
+    const who = sc.party.find((h) => !h.downed) || sc.leader;
+    sc.time.delayedCall(1000, () => sc.bark(who, sc.state.relics.includes('cloak') ? 'THOSE VENTS! RIDE THE WIND UP TO HER - THE GALE CLOAK WILL CATCH IT!' : "SHE'S UP ON THE ICE... IF ONLY WE COULD RIDE THAT WIND."));
+  }
+
+  rideVent(v) {
+    const sc = this.scene, L = sc.leader;
+    if (!this.aloft || sc.busy) return;
+    if (!sc.state.relics.includes('cloak')) { sc.bark(L, "THE WIND'S STRONG ENOUGH TO LIFT SOMEONE... WITH SOMETHING TO CATCH IT."); return; }
+    L.x = v.x; L.y = v.y;
+    sc.glideTo(this.x, this.y + 6, () => this.knockDown(true));
+  }
+
+  knockDown(byParty) {
+    const sc = this.scene;
+    if (!this.aloft) return;
+    this.aloft = null;
+    for (const v of this.vents) { v.s.destroy(); sc.removeInteractable(v.o); }
+    this.vents = [];
+    this.plat?.destroy(); this.plat = null;
+    sc.fx.burst('foam', this.x, this.y - 20, 28); sc.fx.slam(this.x, this.y, 40); sc.shake(400, 0.012); audio.sfx('bash');
+    if (byParty) { this.staggerT = 3; this.stunT = Math.max(this.stunT, 3); sc.floatText(this.x, this.y - 64, 'KNOCKED FROM THE ICE!', 'fontGold'); }
+    else for (const h of this.heroes()) if (Math.hypot(h.x - this.x, h.y - this.y) < 40 + h.r && h.invuln <= 0) { h.damage(this.s.dmg * sc.difficulty.dmg, this); h.knock(h.x - this.x, h.y - this.y, 120); }
+    this.state = 'chase'; this.t = 0;
+  }
+
+  updateAloft(dt) {
+    const sc = this.scene, A = this.aloft;
+    A.t += dt;
+    this.play('idle');
+    A.shardT -= dt;
+    if (A.shardT <= 0) {
+      A.shardT = this.isShadow ? 1.4 : 1.1;
+      for (const h of this.heroes().slice(0, 2)) {
+        const z = { x: h.x + (Math.random() - 0.5) * 20, y: h.y + (Math.random() - 0.5) * 14, r: 16, until: 1 };
+        sc.dangers.push(z);
+        const g = sc.fx.telegraph(z.x, z.y, z.r, 1);
+        sc.time.delayedCall(1000, () => {
+          g.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z);
+          if (!this.alive) return;
+          sc.fx.burst('foam', z.x, z.y - 6, 10); audio.sfx('frost', { pitch: 1.5 });
+          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - z.x, k.y - z.y) < z.r + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, null); chillHero(k, 2); }
+        });
+      }
+    }
+    if (A.t >= A.dur) { // she comes down by herself, onto a marked spot
+      const z = { x: this.x, y: this.y, r: 40, until: 0.8 };
+      if (!A.landing) { A.landing = true; sc.dangers.push(z); this.landG = sc.fx.telegraph(this.x, this.y, 40, 0.8); sc.time.delayedCall(800, () => { this.landG?.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z); if (this.alive) this.knockDown(false); }); }
+    }
+  }
+
+  // a lance of ice hurled down a marked line
+  throwLance(t) {
+    const sc = this.scene;
+    this.lanceT = this.phase === 1 ? 6 : 5;
+    const [nx, ny] = norm(t.x - this.x, t.y - this.y);
+    this.face(nx, ny); this.anim = ''; this.play('windup');
+    const zones = [], gfx = [];
+    for (let i = 1; i <= 7; i++) { const z = { x: this.x + nx * i * 22, y: this.y + ny * i * 22, r: 11, until: 0.8 }; zones.push(z); sc.dangers.push(z); gfx.push(sc.fx.telegraph(z.x, z.y, z.r, 0.8)); }
+    sc.floatText(this.x, this.y - 64, 'SHE DRAWS BACK HER LANCE...', 'fontPlain', 0x9fe6ff);
+    sc.time.delayedCall(800, () => {
+      for (const g of gfx) g.destroy();
+      sc.dangers = sc.dangers.filter((z) => !zones.includes(z));
+      if (!this.alive || this.aloft) return;
+      const s = sc.add.image(this.x, this.y - 14, 'arrow').setRotation(Math.atan2(ny, nx)).setScale(2.4, 1.6).setTint(0xd6efff).setDepth(100000 - 21);
+      sc.tweens.add({ targets: s, x: this.x + nx * 160, y: this.y - 14 + ny * 160, duration: 300, onComplete: () => s.destroy() });
+      audio.sfx('dash', { pitch: 1.3 });
+      for (const h of this.heroes()) if (h.invuln <= 0 && zones.some((z) => Math.hypot(h.x - z.x, h.y - z.y) < z.r + h.r)) { h.damage(this.s.dmg * 0.9 * sc.difficulty.dmg, this); chillHero(h, 2); }
+    });
+  }
+
+  update(dt) {
+    if (!this.alive) return;
+    if (this.introT > 0) { super.update(dt); return; }
+    this.staggerT = Math.max(0, (this.staggerT || 0) - dt);
+    if (this.aloft) {
+      this.updateStatus(dt);
+      this.updateAloft(dt);
+      this.sync(dt);
+      if (this.aloft) { this.sprite.y -= 30; this.shadow.setAlpha(0.15); this.plat?.setPosition(this.x, this.y - 22).setDepth(this.y + 20); this.sprite.setDepth(this.y + 21); }
+      return;
+    }
+    if (this.armor) {
+      this.armorT -= dt;
+      if (this.armorT <= 0) this.breakArmor('HER FROST ARMOUR GIVES WAY!');
+    }
+    if (this.phase === 3 && this.blizzard) {
+      this.pulseT -= dt;
+      if (this.pulseT <= 0) { this.pulseT = 4; for (const h of this.heroes()) { chillHero(h, 2); h.damage(this.s.dmg * 0.2 * this.scene.difficulty.dmg, null); } this.scene.fx.burst('foam', this.x, this.y - 20, 12); }
+    }
+    const t = this.target;
+    if (this.engaged && this.state === 'chase' && !(this.stunT > 0) && t?.alive && this.onScreen()) {
+      this.lanceT -= dt; this.lungeT -= dt;
+      const d = Math.hypot(t.x - this.x, t.y - this.y);
+      if (this.lanceT <= 0 && d > 50) this.throwLance(t);
+      else if (this.lungeT <= 0 && d > 56 && d < 150 && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2)) { this.lungeT = 8; this.beginCharge(t); }
+    }
+    super.update(dt);
+  }
+
+  die(src) {
+    this.alive = false;
+    this.clearZone();
+    for (const v of this.vents) { v.s.destroy(); this.scene.removeInteractable(v.o); }
+    this.plat?.destroy(); this.blizzard?.destroy();
     this.scene.onBossKilled(this, src);
     this.destroy();
   }

@@ -1183,5 +1183,36 @@
   },
   "perk": "penitent",
   "desc": "WHEN AN ALLY GOES DOWN, THE WHOLE PARTY GETS A FROST SHIELD. WORN BY SOMEONE WHO HAD A LOT TO MAKE UP FOR."
+ },
+ "galeheart_longbow": {
+  "name": "GALEHEART LONGBOW",
+  "hero": "wren",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "bow_gale",
+  "stats": {
+   "atk": 15,
+   "crit": 0.05
+  },
+  "element": "storm",
+  "perk": "galeheart",
+  "desc": "STORM. POWER SHOT CHAINS LIGHTNING TO TWO MORE FOES. STRUNG WITH SOMETHING THAT HUMS IN THE WIND.",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "windrunner_leathers": {
+  "name": "WINDRUNNER LEATHERS",
+  "hero": "wren",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "leathers_ranger@6",
+  "stats": {
+   "def": 11,
+   "hp": 18
+  },
+  "perk": "windrunner",
+  "desc": "+10% MOVE SPEED. AFTER A DODGE, THE NEXT SHOT CRITS. FOUND WHERE ONLY THE WIND COULD TAKE YOU."
  }
 }

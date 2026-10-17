@@ -291,6 +291,66 @@ export async function clawhold() {
   return log;
 }
 
+// The Rimeglass Spire (Frosthelm): the key wing, the Gale Cloak, gliding the
+// chasm, thawing Mirelle with the braziers, the Gauntlets vault, the east
+// ledge, the big key, and Isolde's Shadow (knocked off her ice by a vent).
+export async function spire() {
+  const log = [];
+  const sc = window.__scene;
+  for (const h of sc.party) { h.maxHp *= 50; h.hp = h.maxHp; }
+  await enter('spireIn');
+  const c = ctx('spire');
+  log.push({ step: 'entered', area: sc.area, at: c.at() });
+  await c.killAll();
+  log.push({ step: 'west wing fight', ...(await c.enterFight(5, 55)) });
+  c.tp(5, 57); log.push({ step: 'key', opened: await c.openChest('1'), keys: c.k.keys });
+  c.tp(50, 54); log.push({ step: 'east door', unlocked: await c.unlock(52, 54) });
+  c.tp(56, 55); await step(30); await c.killAll();
+  c.tp(57, 54); await c.openChest('3'); await step(30);
+  log.push({ step: 'gale cloak', relics: [...sc.state.relics] });
+  const pad = sc.interactables.find((o) => o.kind === 'glide' && Math.floor(o.x / 16) === c.k.ox + 30 && Math.floor(o.y / 16) === c.k.oy + 52);
+  c.tp(30, 53); await step(10); pad.interact(sc.leader); for (let i = 0; i < 60 && sc.busy; i++) await step(10); await step(20);
+  log.push({ step: 'glided the chasm', at: c.at() });
+  await c.killAll();
+  const shutter = c.door(30, 31);
+  log.push({ step: 'mirelle frozen', frozen: !!c.k.frozen, shutterShut: !!shutter.closed });
+  for (const b of c.k.braziers) c.k.light(b);
+  for (let i = 0; i < 30; i++) { await step(10); if (sc.scene.get('UI').dialogOpen) break; }
+  const { closeDialog } = await import('./goto.js');
+  for (let i = 0; i < 6; i++) { const ui = sc.scene.get('UI'); if (ui.dialogOpen) { const done = ui.onDone; closeDialog(); done?.(); } await step(10); }
+  await step(30);
+  log.push({ step: 'thawed', recruited: sc.state.recruited.includes('mirelle'), active: [...sc.state.active], shutterOpen: !shutter.closed });
+  c.tp(15, 38); log.push({ step: 'vault sealed', unlocked: await c.unlock(13, 38) });
+  sc.state.relics.push('gauntlets');
+  log.push({ step: 'vault (gauntlets)', unlocked: await c.unlock(13, 38) });
+  c.tp(9, 39); log.push({ step: 'crown of rime', opened: await c.openChest('8') });
+  const pad2 = sc.interactables.find((o) => o.kind === 'glide' && Math.floor(o.x / 16) === c.k.ox + 47 && Math.floor(o.y / 16) === c.k.oy + 38);
+  c.tp(46, 38); await step(10); pad2.interact(sc.leader); for (let i = 0; i < 60 && sc.busy; i++) await step(10); await step(20);
+  await c.killAll();
+  c.tp(55, 38); log.push({ step: 'east ledge', at: c.at(), opened: await c.openChest('6') });
+  c.tp(30, 27); await step(40); await c.killAll(); await step(40); await c.killAll();
+  c.tp(18, 21); log.push({ step: 'map', opened: await c.openChest('2') });
+  c.tp(43, 25); log.push({ step: 'star-key', opened: await c.openChest('5'), big: c.k.big });
+  c.tp(30, 19); log.push({ step: 'boss door', unlocked: await c.unlock(30, 17) });
+  c.tp(30, 15); await c.tapTile(30, 7, 260);
+  for (let i = 0; i < 30 && !sc.golem; i++) await step(10);
+  for (let i = 0; i < 60 && sc.busy; i++) await step(10);
+  const g = sc.golem;
+  log.push({ step: 'isolde rises', boss: g?.bossName, shadow: g?.isShadow, level: g?.level });
+  for (let i = 0; i < 60 && g?.alive && g.phase === 1; i++) { g.damage(200, sc.leader); await step(10); }
+  await step(60);
+  log.push({ step: 'phase 2: aloft', aloft: !!g?.aloft, vents: g?.vents.length, hitWhileAloft: g?.aloft ? g.damage(200, sc.leader) : null });
+  const v = g?.vents[0];
+  if (v) { v.o.interact(sc.leader); for (let i = 0; i < 80 && (sc.busy || g.aloft); i++) await step(10); }
+  log.push({ step: 'knocked down', aloft: !!g?.aloft, stagger: g?.staggerT > 0 });
+  for (let i = 0; i < 200 && g?.alive; i++) { g.damage(300, sc.leader); await step(15); for (let k = 0; k < 20 && sc.busy; k++) await step(10); }
+  await step(240);
+  log.push({ step: 'the shadow shatters', dead: !g?.alive, flag: !!sc.flags.isoldeDefeated, vines: sc.vines.filter((q) => q.ward.def.id === 'frost').map((q) => q.dead) });
+  log.push({ step: 'back stairs', present: !!sc.interactables.find((o) => o.kind === 'warp' && o.warp.id === 'spireBack') });
+  log.push({ errs: window.__errs || [] });
+  return log;
+}
+
 // A fresh real game (not the lab): Brann, Pip and Sable at `level`, with the
 // given relics, at the start of the world. Clears the saved game first.
 export async function boot({ level = 6, relics = ['grapple'], state = null } = {}) {

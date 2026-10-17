@@ -178,6 +178,15 @@ export const WEAPONS = {
     for (const k of [-2, 2]) for (let t = 0; t <= 1; t++) px(ctx, Math.round(hx + c * t - s * k), Math.round(hy + s * t + c * k), st.jaw || 'steelL');
     px(ctx, Math.round(hx - s), Math.round(hy + c), st.head || 'steel'); px(ctx, Math.round(hx + s), Math.round(hy - c), st.head || 'steel');
   },
+  // frost lance (Isolde): a long shaft of pale steel ending in a leaf of ice
+  lance(ctx, h, ang, glow, st = {}) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const len = st.len || 18;
+    ray(ctx, h.x - c * 7, h.y - s * 7, ang, len, st.shaft || 'steel');
+    ray(ctx, h.x - c * 7 + -s, h.y - s * 7 + c, ang, len - 2, st.shaftD || 'steelD');
+    for (let i = 0; i < 6; i++) { const w = i < 2 ? 1 : i < 4 ? 2 : 1; for (let k = -w; k <= w; k++) px(ctx, Math.round(h.x + c * (len - 7 + i) - s * k * 0.6), Math.round(h.y + s * (len - 7 + i) + c * k * 0.6), k < 0 ? (st.tipL || 'iceXL') : (st.tip || 'iceL')); }
+    px(ctx, Math.round(h.x + c * (len - 8)), Math.round(h.y + s * (len - 8)), st.guard || 'blueL');
+  },
   spear(ctx, h, ang) {
     const c = Math.cos(ang), s = Math.sin(ang);
     ray(ctx, h.x - c * 6, h.y - s * 6, ang, 17, 'woodL');

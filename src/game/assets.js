@@ -2,7 +2,7 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
@@ -76,6 +76,9 @@ export const GROUPS = {
       s.textures.addCanvas('post', P.grapplePost());
       s.textures.addCanvas('clawmarks', P.clawMarks());
       s.textures.addCanvas('iceblock', P.iceBlock());
+      s.textures.addCanvas('house_spire', P.rimeSpire());
+      s.textures.addCanvas('iceplat', P.icePlatform());
+      frames(s, 'windvent', P.windVent(), 6);
       s.textures.addCanvas('icewall', P.iceWall());
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
@@ -194,6 +197,7 @@ export const GROUPS = {
       creature(s, 'raider', buildRaider(), { idle: 4, walk: 8, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'troll', buildTroll(), { idle: 2, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'icewraith', WRAITH, iceRecolor);
+      registerPuppet(s, 'isolde', ISOLDE, rimeRecolor);
     }],
     ['highlands', (s) => {
       for (let k = 0; k < 6; k++) s.textures.addCanvas(`snowpine${k}`, P.snowPine(k));

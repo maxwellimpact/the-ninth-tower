@@ -1003,6 +1003,17 @@ const ICONS = {
     '....bBBBBb....',
     '.....bbbb.....',
   ],
+  cloak: [
+    '....SSSSSS....',
+    '...SwwwwwwS...',
+    '..SwWWWWWWwS..',
+    '.SwWWWWWWWWwS.',
+    '.SwWWBWWBWWwS.',
+    'SwWWBWWWWBWWwS',
+    'SwWBWWWWWWBWwS',
+    'SwBWWWWWWWWBwS',
+    '.SSS.SSSS.SSS.',
+  ],
   claws: [
     '.KW.KW.KW.....',
     '.KW.KW.KW.....',
