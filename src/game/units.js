@@ -209,6 +209,13 @@ export class Hero extends Unit {
     this.poison = { dps: Math.max(dps, this.poison?.dps || 0), t: Math.max(t, this.poison?.t || 0), next: this.poison?.next ?? 0.6 };
     this.sprite.setTint(0xb8ff9a);
   }
+  // Burning (fire shots, breath, molten ground): a short fire DoT. Flameproof
+  // gear and Purify keep it off.
+  addBurn(dps, t = 3) {
+    if (this.downed || this.purifyT > 0 || this.hasPerk('flameproof') || this.hasTrait('heatproof')) return;
+    this.burn = { dps: Math.max(dps, this.burn?.dps || 0), t: Math.max(t, this.burn?.t || 0), next: this.burn?.next ?? 0.5 };
+    this.sprite.setTint(0xffb08a);
+  }
   buffMul(stat) { return this.buffs[stat]?.mul || 1; }
 
   heal(amt) {
@@ -418,6 +425,7 @@ export class Hero extends Unit {
     this.clearPath();
     audio.sfx('dodge');
     this.scene.fx.dust(this.x, this.y);
+    if (this.hasPerk('nightsilk')) new Gadget(this.scene, this, 'decoy', this.x, this.y); // Nightsilk Coat
   }
 
   // The leader is never stuck in a swing: moving, picking another target or a
@@ -481,6 +489,27 @@ export class Hero extends Unit {
     if (a.t >= a.dur) { this.action = null; this.anim = ''; }
   }
 
+  // signature effects of uniques that tick on their own
+  updatePerks(dt) {
+    const sc = this.scene;
+    this.fightCheckT = (this.fightCheckT || 0) - dt;
+    if (this.fightCheckT <= 0) { this.fightCheckT = 1; if (!sc.enemies.some((e) => e.alive && e.engaged)) this.phoenixUsed = false; } // once per fight
+    // Lionheart Helm: below 40% HP, a roar every 3s pulls nearby foes onto Brann
+    if (this.hasPerk('lionheart') && !this.downed && this.hp < this.maxHp * 0.4) {
+      this.lionT = (this.lionT ?? 0) - dt;
+      if (this.lionT <= 0) {
+        const near = sc.enemies.filter((e) => e.alive && e.engaged && !e.boss && dist(e, this) < 90);
+        if (near.length) {
+          this.lionT = 3;
+          for (const e of near) e.setTaunt(this, 1.5);
+          sc.fx.ring(this.x, this.y - 6, 'ringGold', 3);
+          sc.floatText(this.x, this.y - 34, 'ROAR!', 'fontGold');
+          audio.sfx('roar', { pitch: 1.2 });
+        }
+      }
+    }
+  }
+
   damage(amount, src) {
     if (!this.alive || this.downed) return 0;
     if (this.invuln > 0) { this.scene.floatText(this.x, this.y - 28, 'DODGE', 'fontPlain'); return 0; }
@@ -498,7 +527,8 @@ export class Hero extends Unit {
     if (this.wallT > 0) amount *= 0.2;
     if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
     if (this.action?.type === 'harvest') this.scene.cancelHarvest(this);
-    amount = Math.max(1, Math.round(mitigate(amount, this.stats.def * this.buffMul('def'), src?.level || 1)));
+    const lion = this.hasPerk('lionheart') && this.hp < this.maxHp * 0.4 ? 1.25 : 1; // Lionheart Helm
+    amount = Math.max(1, Math.round(mitigate(amount, this.stats.def * this.buffMul('def') * lion, src?.level || 1)));
     this.addUlt((amount / this.maxHp) * tuning.ultTakeFull); // losing a whole health bar is worth ~25
     const ret = this.passive('retribution');
     if (ret) { const bash = this.skills.find((k) => k.id === 'bash'); if (bash) bash.t = Math.max(0, bash.t - 0.5 - 0.1 * (ret - 1)); }
@@ -509,6 +539,10 @@ export class Hero extends Unit {
       if (!amount) { this.scene.floatText(this.x, this.y - 28, 'BLOCK', 'fontPlain'); audio.sfx('block'); return 0; }
     }
     this.hp -= amount;
+    if (this.hasPerk('aegis') && (this.aegisHits = (this.aegisHits || 0) + 1) % 5 === 0) { // Aegis of Dawn: every 5th hit taken heals the party 8%
+      for (const p of this.scene.party) if (p.alive && !p.downed) p.heal(Math.round(p.maxHp * 0.08));
+      this.scene.fx.ring(this.x, this.y - 6, 'ringGold', 2.4);
+    }
     if (src?.affix === 'vampiric') src.vampHeal(amount, this);
     this.flash(90, 0xff5050);
     audio.sfx('hurt');
@@ -529,6 +563,15 @@ export class Hero extends Unit {
   }
 
   goDown() {
+    if (this.hasPerk('phoenix') && !this.phoenixUsed) { // Phoenix Robe: once a fight, rise again
+      this.phoenixUsed = true;
+      this.hp = Math.round(this.maxHp * 0.4); this.invuln = 1.5; this.burn = null; this.poison = null;
+      const sc = this.scene;
+      sc.fx.burst('ember', this.x, this.y - 10, 30); sc.fx.ring(this.x, this.y - 6, 'ringGold', 3);
+      sc.floatText(this.x, this.y - 34, 'REBORN!', 'fontGold', 0xffffff, true);
+      audio.sfx('fireImpact');
+      return;
+    }
     this.hp = 0;
     this.downed = true;
     this.action = null;
@@ -598,6 +641,19 @@ export class Hero extends Unit {
       }
       if (this.poison.t <= 0) { this.poison = null; if (this.flashT <= 0) this.sprite.clearTint(); }
     }
+    if (this.burn && !this.downed) {
+      this.burn.t -= dt; this.burn.next -= dt;
+      if (this.burn.next <= 0) {
+        this.burn.next += 0.5;
+        const d = Math.max(1, Math.round(this.burn.dps * 0.5));
+        this.hp -= d;
+        this.scene.floatText(this.x + (Math.random() * 8 - 4), this.y - 22, `${d}`, 'font', 0xffa060);
+        this.scene.fx.burst('ember', this.x, this.y - 10, 2);
+        if (this.hp <= 0) this.goDown();
+      }
+      if (this.burn.t <= 0) { this.burn = null; if (this.flashT <= 0) this.sprite.clearTint(); }
+    }
+    this.updatePerks(dt);
     if (!this.downed) this.addUlt(dt * tuning.ultPassive); // slow passive recharge (~45s)
     this.hs.hp = this.hp;
     for (const s of this.skills) s.t = Math.max(0, s.t - dt);
@@ -1068,10 +1124,10 @@ export class Enemy extends Unit {
     const dur = weak * (1 + (src.passive ? src.passive('attunement') ? 0.5 + 0.1 * (src.passive('attunement') - 1) : 0 : 0));
     const base = src.stats.atk;
     const sc = this.scene;
-    if (el === 'fire') this.status.burn = { t: 3 * dur, tick: 0.5, next: 0.5, dmg: base * 0.12 };
+    if (el === 'fire') this.status.burn = { t: 3 * dur * (src.hasPerk?.('circlet') ? 1.5 : 1), tick: 0.5, next: 0.5, dmg: base * 0.12 }; // Ember Circlet: +50%
     else if (el === 'venom') {
-      const n = Math.min(5, (this.status.poison?.n || 0) + 1);
-      this.status.poison = { t: 4 * dur, tick: 0.6, next: this.status.poison?.next ?? 0.6, dmg: base * 0.09, n };
+      const n = Math.min(src.hasPerk?.('wyrmfang') ? 7 : 5, (this.status.poison?.n || 0) + 1); // Wyrmfang: stacks to 7
+      this.status.poison = { t: 4 * dur, tick: 0.6, next: this.status.poison?.next ?? 0.6, dmg: base * 0.09, n, src };
     } else if (el === 'frost') {
       const n = (this.status.chill?.n || 0) + 1;
       this.status.chill = { t: 3 * dur, n };
@@ -1334,6 +1390,12 @@ export class Enemy extends Unit {
     if (this.marked) { const sk = this.marked.sk; if (sk) sk.t = 0; this.scene.floatText(this.x, this.y - 40, 'MARK RESET', 'fontPlain', 0xff6a6a); }
     if (this.affix === 'volatile') this.volatileBlast();
     if (this.s.ai === 'bomber' && !this.burst) this.beetleBurst(14); // it pops when it dies, too
+    const pz = this.status?.poison; // Wyrmfang pair: the poison jumps to whoever's near
+    if (pz?.src?.alive && pz.src.hasPerk?.('wyrmfang') && pz.src.hasPerk('twinfang')) {
+      const sc = this.scene, near = sc.enemies.filter((e) => e !== this && e.alive && Math.hypot(e.x - this.x, e.y - this.y) < 48);
+      for (const e of near) for (let i = 0; i < Math.min(3, pz.n); i++) e.applyElement('venom', pz.src);
+      if (near.length) { sc.fx.burst('heal', this.x, this.y - 8, 12); sc.floatText(this.x, this.y - 34, 'SPREAD', 'fontPlain', 0x9cff7a); }
+    }
     this.clearZone();
     this.scene.onEnemyKilled(this, src);
     this.destroy();
@@ -1910,7 +1972,7 @@ export class Enemy extends Unit {
       if (B.t >= 0.8 && !B.done) {
         B.done = true;
         audio.sfx('fireCast', { pitch: 0.6 }); sc.shake(250, 0.006);
-        for (const z of B.zones) { sc.fx.burst('ember', z.x, z.y - 4, 10); for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.9 * sc.difficulty.dmg, this); h.status ??= {}; } }
+        for (const z of B.zones) { sc.fx.burst('ember', z.x, z.y - 4, 10); for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.9 * sc.difficulty.dmg, this); h.addBurn(this.s.dmg * 0.1, 3); } }
       }
       if (B.t >= 1.1) { for (const g of B.gfx) g.destroy(); sc.dangers = sc.dangers.filter((z) => !B.zones.includes(z)); this.breath = null; this.state = 'recover'; this.t = 0; }
       return true;
@@ -2949,7 +3011,7 @@ export class Vulk extends Enemy {
         zone.until = 4;
         sc.tweens.add({ targets: pud, alpha: 0, duration: 4000, onComplete: () => { pud.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone); } });
         let k = 0;
-        sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null); } });
+        sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) { h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null); h.addBurn(this.s.dmg * 0.08, 2); } } });
         void k;
       });
     }
@@ -3047,16 +3109,21 @@ const GADGET = {
   turret: { tex: 'gadget_turret', hp: 0.6, life: 12, r: 6 },
   bot: { tex: 'gadget_bot', hp: 0.4, life: 8, r: 5 },
   clank: { tex: 'gadget_clank', hp: 2.2, life: 12, r: 11 },
+  decoy: { tex: null, hp: 0.3, life: 2, r: 6 }, // Nightsilk Coat: a shadow of the owner
 };
 export class Gadget extends Unit {
   constructor(scene, owner, kind, x, y, m = 1) {
     const g = GADGET[kind];
-    super(scene, x, y, { key: g.tex, frame: 'idle_0', maxHp: Math.round(owner.maxHp * g.hp), team: 'party', r: g.r, shadow: kind === 'clank' ? 'shadowL' : 'shadow' });
+    super(scene, x, y, { key: g.tex || owner.sprite.texture.key, frame: g.tex ? 'idle_0' : owner.sprite.frame.name, maxHp: Math.round(owner.maxHp * g.hp), team: 'party', r: g.r, shadow: kind === 'clank' ? 'shadowL' : 'shadow' });
     this.kind = kind; this.owner = owner; this.m = m;
     this.life = g.life * (kind === 'turret' && owner.hasPerk?.('turret2') ? 2 : 1);
     this.ally = true; this.gadget = true;
     this.t = 0.4;
-    this.sprite.play(`${g.tex}_idle`);
+    if (g.tex) this.sprite.play(`${g.tex}_idle`);
+    else {
+      this.sprite.setOrigin(0.5, 0.75).setFlipX(owner.flip).setTint(0x8a5cc8).setAlpha(0.6);
+      for (const e of scene.enemies) if (e.alive && e.engaged && !e.boss && Math.hypot(e.x - x, e.y - y) < 90) e.setTaunt(this, 2);
+    }
     if (kind === 'clank') this.sprite.setOrigin(0.5, 44 / 48);
     scene.fx.puff(x, y - 6, 'spark');
     (scene.allies ??= []).push(this);

@@ -9,7 +9,7 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { rollGearDrop, ensureItems } from '../game/itemgen.js';
+import { rollGearDrop, ensureItems, makeItem, tierForLevel } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
 import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
@@ -684,8 +684,13 @@ export class Game extends Phaser.Scene {
         if (p.life <= 0) { p.dead = true; p.s.destroy(); }
         continue;
       }
+      if (hit?.hasPerk?.('bulwark') && hit.action?.type !== 'attack' && !hit.downed) { // Bulwark of Aldermere: blocks shots from the front
+        const [fx, fy] = hit.facingVec(), [sx, sy] = norm(-p.vx, -p.vy);
+        if (fx * sx + fy * sy > 0.35) { audio.sfx('block'); this.fx.burst('spark', p.x, p.y, 6); this.floatText(hit.x, hit.y - 28, 'BLOCK', 'fontPlain'); p.dead = true; p.s.destroy(); continue; }
+      }
       if (hit) {
         hit.damage(p.dmg, p.from);
+        if (p.kind === 'ember') hit.addBurn?.(p.dmg * 0.12, 3);
         this.fx.burst(p.kind === 'arrow' || !p.kind ? 'spark' : 'curse', p.x, p.y, 4);
         if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
         if (p.kind === 'web' && hit.buff) { hit.buff('slow', 0.05, 1.4); this.floatText(hit.x, hit.y - 34, 'WEBBED', 'fontPlain', 0xc9cfe0); }
@@ -1203,6 +1208,12 @@ export class Game extends Phaser.Scene {
         if (f[0] * dx + f[1] * dy < -0.3) amount *= 1.2 + 0.04 * (am - 1);
       }
     }
+    if (hero && crit && target.view && src.hasPerk('raven') && this.time.now > (src.ravenT || 0)) { // Raven Mask
+      const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
+      const [dx, dy] = norm(src.x - target.x, src.y - target.y);
+      const st = src.skills.find((k) => k.id === 'step');
+      if (st && st.t > 0 && f[0] * dx + f[1] * dy < -0.3) { st.t = 0; src.ravenT = this.time.now + 1000; this.floatText(src.x, src.y - 34, 'STEP READY', 'fontPlain', 0xb48cff); }
+    }
     target.lastElement = el;
     const hpBefore = target.hp;
     const dealt = target.damage(amount, src, { crit, knock });
@@ -1257,7 +1268,7 @@ export class Game extends Phaser.Scene {
     else if (o.kind === 'arrow') { if (o.pierce) s.setScale(1.4); if (o.element === 'frost') s.setTint(0x9fe6ff); }
     else {
       s.play('firebolt');
-      if (o.kind === 'fireball') s.setScale(o.echo ? 1.2 : 1.6);
+      if (o.kind === 'fireball') s.setScale(o.split ? 1 : o.echo ? 1.2 : 1.6);
       const el = o.owner?.stats?.element;
       if (o.echo || o.kind === 'missile') s.setTint(0xd28cff);
       else if (el === 'frost') s.setTint(0x9fe6ff);
@@ -1330,6 +1341,10 @@ export class Game extends Phaser.Scene {
         if (p.kind === 'missile') { this.fx.puff(p.x, p.y, 'sparkCurse'); if (hit) this.dealDamage(p.owner, hit, p.dmg, { knock: 20, spell: true }); continue; }
         audio.sfx('fireImpact');
         this.fx.burst('ember', p.x, p.y, p.kind === 'fireball' ? 22 : 8);
+        if (p.kind === 'fireball' && !p.split && !p.echo && p.owner.hasPerk?.('sunspire')) { // Sunspire Staff: it splits in three
+          const a0 = Math.atan2(p.vy, p.vx);
+          for (const da of [-0.7, 0, 0.7]) this.spawnProjectile({ owner: p.owner, x: p.x, y: p.y, vx: Math.cos(a0 + da) * 150, vy: Math.sin(a0 + da) * 150, dmg: p.dmg * 0.4, kind: 'fireball', aoe: 16, element: 'fire', spell: true, split: true, life: 0.35 });
+        }
         if (p.aoe) {
           this.fx.ring(p.x, p.y + 6, 'ringGold', (p.aoe / 8) * 1.2);
           this.shake(90, 0.005);
@@ -1686,7 +1701,13 @@ export class Game extends Phaser.Scene {
     this.fx.burst('curse', b.x, b.y - 20, 60);
     for (let i = 0; i < 4; i++) this.time.delayedCall(i * 150, () => this.fx.dust(b.x + (i - 1.5) * 12, b.y));
     for (let i = 0; i < 18; i++) this.dropCoin(b.x, b.y);
-    (B.cfg.drops || []).forEach((id, i) => this.time.delayedCall(300 + i * 200, () => this.dropLoot(id, b.x + (i - 1.5) * 14, b.y + 6)));
+    const drops = [...(B.cfg.drops || [])];
+    for (let i = 0; i < (B.cfg.rares || 0); i++) { // generated Rares for the party, at the boss's tier
+      const hero = this.state.active[Math.floor(Math.random() * this.state.active.length)];
+      const id = makeItem(hero, ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)], tierForLevel(b.level), 'rare');
+      if (id) drops.push(id);
+    }
+    drops.forEach((id, i) => this.time.delayedCall(300 + i * 200, () => this.dropLoot(id, b.x + (i - (drops.length - 1) / 2) * 14, b.y + 6)));
     this.state.gold += B.cfg.gold || 0;
     for (const h of this.party) if (!h.downed) h.gainXp(b.s.xp);
     this.golem = null;
@@ -1712,7 +1733,7 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(700 + Math.random() * 300, () => {
       const L = this.leader;
       this.tweens.add({ targets: c, x: L.x, y: L.y - 10, duration: 260, ease: 'Quad.easeIn', onComplete: () => {
-        c.destroy(); this.state.gold += this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1; audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
+        c.destroy(); this.state.gold += (this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1) + (this.party.some((h) => h.hasPerk('signet')) && Math.random() < 0.15 ? 1 : 0); // Frog King's Signet: +15% audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
       } });
     });
   }
@@ -1980,7 +2001,7 @@ export class Game extends Phaser.Scene {
     img.setTexture('chestOpen');
     audio.sfx('chest');
     this.fx.burst('gold', img.x, img.y - 10, 24);
-    this.state.gold += c.gold || 0;
+    this.state.gold += Math.round((c.gold || 0) * (this.party.some((h) => h.hasPerk('signet')) ? 1.15 : 1));
     const loot = c.items || [];
     gainItems(this.state, loot);
     addMats(this.state, c.mats || {});
@@ -2286,7 +2307,7 @@ export class Game extends Phaser.Scene {
       addMats(st, next.mats || {});
       if (next.blessing) { st.flags.blessing = true; for (const h of this.party) h.refreshGear(); }
       if (next.items) { gainItems(st, next.items); this.time.delayedCall(1200, () => this.events.emit('loot', { ids: next.items })); }
-      const what = [next.gold ? `${next.gold} GOLD` : null, ...Object.entries(next.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`), ...Object.entries(next.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean).join(', ');
+      const what = [...(next.items || []).map((id) => `THE ${items[id].name}`), next.gold ? `${next.gold} GOLD` : null, ...Object.entries(next.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`), ...Object.entries(next.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean).join(', ');
       audio.sfx('chest');
       this.events.emit('dialogue', [
         { ...K, text: `GOLDEN FLIES! ${st.flies.length} OF THEM! OH, MY ROYAL TONGUE IS TINGLING.` },

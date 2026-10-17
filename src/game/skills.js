@@ -71,6 +71,12 @@ export const SKILL_FX = {
             hit = true;
           }
           if (hit) audio.sfx('bash');
+          if (h.hasPerk('emberbrand')) { // Emberbrand: the bash sets the ground alight
+            const g = sc.add.ellipse(fx, fy, 52, 30, 0xff7b2e, 0.3).setDepth(-25);
+            sc.fx.burst('ember', fx, fy - 4, 12);
+            sc.tweens.add({ targets: g, alpha: 0, duration: 3000, onComplete: () => g.destroy() });
+            sc.time.addEvent({ delay: 500, repeat: 5, callback: () => { for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - fx, e.y - fy) < 26 + e.r) { sc.dealDamage(h, e, h.stats.atk * 0.2 * m, { knock: 0, element: 'fire' }); } } });
+          }
         },
       });
       return true;

@@ -37,11 +37,12 @@
    "hp": 25,
    "atk": 2
   },
-  "desc": "WORN BY THE KING'S CHAMPION. IT ROARS. A LITTLE.",
+  "desc": "BELOW 40% HP: +25% DEF, AND A ROAR EVERY 3S DRAWS NEARBY FOES. WORN BY THE KING'S CHAMPION. IT ROARS. A LITTLE.",
   "fx": {
    "type": "radiant",
    "at": "head"
-  }
+  },
+  "perk": "lionheart"
  },
  "guard_plate": {
   "name": "GUARD PLATE",
@@ -76,11 +77,12 @@
    "def": 12,
    "hp": 40
   },
-  "desc": "FORGED IN THE FIRST LIGHT OF ALDERMERE.",
+  "desc": "EVERY 5TH HIT BRANN TAKES HEALS THE PARTY 8%. FORGED IN THE FIRST LIGHT OF ALDERMERE.",
   "fx": {
    "type": "radiant",
    "at": "body"
-  }
+  },
+  "perk": "aegis"
  },
  "iron_sword": {
   "name": "IRON SWORD",
@@ -118,12 +120,13 @@
    "atk": 9,
    "crit": 0.05
   },
-  "desc": "THE BLADE NEVER QUITE STOPS SMOULDERING.",
+  "desc": "FIRE. SHIELD BASH SETS THE GROUND ALIGHT. THE BLADE NEVER QUITE STOPS SMOULDERING.",
   "fx": {
    "type": "flame",
    "at": "weapon"
   },
-  "element": "fire"
+  "element": "fire",
+  "perk": "emberbrand"
  },
  "round_shield": {
   "name": "ROUND SHIELD",
@@ -161,11 +164,12 @@
    "def": 10,
    "hp": 20
   },
-  "desc": "A WALL WITH A HANDLE.",
+  "desc": "BLOCKS SHOTS FROM THE FRONT WHILE BRANN ISN'T SWINGING. A WALL WITH A HANDLE.",
   "fx": {
    "type": "radiant",
    "at": "offhand"
-  }
+  },
+  "perk": "bulwark"
  },
  "apprentice_hat": {
   "name": "APPRENTICE HAT",
@@ -204,11 +208,12 @@
    "atk": 6,
    "crit": 0.08
   },
-  "desc": "WARM TO THE TOUCH. WARMER TO THE THOUGHT.",
+  "desc": "FIRE STATUSES LAST 50% LONGER. +8% CRIT. WARM TO THE TOUCH. WARMER TO THE THOUGHT.",
   "fx": {
    "type": "flame",
    "at": "head"
-  }
+  },
+  "perk": "circlet"
  },
  "apprentice_robe": {
   "name": "APPRENTICE ROBE",
@@ -245,11 +250,12 @@
    "hp": 25,
    "atk": 4
   },
-  "desc": "THE HEM IS ACTUALLY ON FIRE. DO NOT WASH.",
+  "desc": "ONCE A FIGHT, PIP RISES AGAIN AT 40% HP WHEN DOWNED. THE HEM IS ACTUALLY ON FIRE. DO NOT WASH.",
   "fx": {
    "type": "phoenix",
    "at": "body"
-  }
+  },
+  "perk": "phoenix"
  },
  "oak_staff": {
   "name": "OAK STAFF",
@@ -287,12 +293,13 @@
   "stats": {
    "atk": 9
   },
-  "desc": "CARVED FROM A TOWER THAT IS NOT THE NINTH.",
+  "desc": "FIRE. FIREBALL SPLITS INTO THREE WHERE IT LANDS. CARVED FROM A TOWER THAT IS NOT THE NINTH.",
   "fx": {
    "type": "sun",
    "at": "weapon"
   },
-  "element": "fire"
+  "element": "fire",
+  "perk": "sunspire"
  },
  "worn_tome": {
   "name": "WORN TOME",
@@ -372,11 +379,12 @@
    "def": 5,
    "crit": 0.1
   },
-  "desc": "THE LAST THING MANY GOBLINS SAW. ALSO, BIRDS.",
+  "desc": "CRITS FROM BEHIND RESET SHADOW STEP. THE LAST THING MANY GOBLINS SAW. ALSO, BIRDS.",
   "fx": {
    "type": "shadow",
    "at": "head"
-  }
+  },
+  "perk": "raven"
  },
  "leather_jacket": {
   "name": "LEATHER JACKET",
@@ -412,11 +420,12 @@
    "hp": 20,
    "crit": 0.05
   },
-  "desc": "WOVEN FROM SHADOWS AND QUESTIONABLE DEALS.",
+  "desc": "DODGING LEAVES A SHADOW THAT DRAWS FOES FOR 2S. WOVEN FROM SHADOWS AND QUESTIONABLE DEALS.",
   "fx": {
    "type": "shadow",
    "at": "body"
-  }
+  },
+  "perk": "nightsilk"
  },
  "steel_dagger": {
   "name": "STEEL DAGGER",
@@ -455,12 +464,13 @@
    "atk": 7,
    "crit": 0.06
   },
-  "desc": "STILL A LITTLE VENOMOUS. HANDLE WITH CARE.",
+  "desc": "VENOM. POISON STACKS TO 7. STILL A LITTLE VENOMOUS. HANDLE WITH CARE.",
   "fx": {
    "type": "venom",
    "at": "weapon"
   },
-  "element": "venom"
+  "element": "venom",
+  "perk": "wyrmfang"
  },
  "parrying_dagger": {
   "name": "PARRYING DAGGER",
@@ -496,12 +506,13 @@
    "atk": 5,
    "crit": 0.05
   },
-  "desc": "THE OTHER FANG. THE WYRM WANTS THEM BOTH BACK.",
+  "desc": "VENOM. WITH WYRMFANG: POISON SPREADS WHEN ITS TARGET DIES. THE WYRM WANTS THEM BOTH BACK.",
   "fx": {
    "type": "venom",
    "at": "offhand"
   },
-  "element": "venom"
+  "element": "venom",
+  "perk": "twinfang"
  },
  "widows_band": {
   "name": "WIDOW'S BAND",
@@ -862,7 +873,7 @@
    "hp": 22
   },
   "perk": "flameproof",
-  "desc": "THE CINDERREACH HEAT CAN'T TOUCH YOU. SMELLS FAINTLY OF SCORCHED GNOME.",
+  "desc": "IMMUNE TO THE CINDERREACH HEAT AND TO BURNING. SMELLS FAINTLY OF SCORCHED GNOME.",
   "fx": {
    "type": "phoenix",
    "at": "body"
@@ -897,5 +908,17 @@
   },
   "perk": "kiss",
   "desc": "HEALS 2% OF THE DAMAGE YOU DEAL. +10 HP. THE HOLLOW'S LAST BITE."
+ },
+ "frog_signet": {
+  "name": "FROG KING'S SIGNET",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@6",
+  "stats": {
+   "hp": 8
+  },
+  "perk": "signet",
+  "desc": "+15% GOLD FROM COINS AND CHESTS. +8 HP. IT'S A LITTLE DAMP."
  }
 }

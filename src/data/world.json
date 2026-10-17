@@ -2742,7 +2742,10 @@
    "gold": 300,
    "potions": {
     "antidote": 3
-   }
+   },
+   "items": [
+    "frog_signet"
+   ]
   },
   {
    "n": 15,
@@ -2761,6 +2764,16 @@
    "blessing": true,
    "items": [
     "mitre_of_good_cheer"
+   ]
+  },
+  {
+   "n": 30,
+   "gold": 800,
+   "potions": {
+    "elixir": 3
+   },
+   "items": [
+    "bulwark_of_aldermere"
    ]
   }
  ],
@@ -3112,17 +3125,14 @@
    ],
    "hpMul": 1.3,
    "dmgMul": 1.15,
-   "drops": [
-    "aegis_of_dawn",
-    "bulwark_of_aldermere",
-    "orb_of_echoes"
-   ],
+   "drops": [],
    "gold": 80,
    "fall": [
     "THE GATEWARDEN FALLS",
     "NOTHING GUARDS THE WARD STONE NOW. BREAK IT!"
    ],
-   "kind": "golem"
+   "kind": "golem",
+   "rares": 2
   },
   {
    "id": "murkWarden",
