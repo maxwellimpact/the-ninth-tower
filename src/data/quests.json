@@ -1116,9 +1116,7 @@
     "mats": {
      "silk": 4
     },
-    "gear": {
-     "rarity": "rare"
-    }
+    "item": "nightsilk_coat"
    }
   },
   "ghostcapStew": {
@@ -1641,6 +1639,112 @@
     "item": "clockwork_goggles",
     "recruit": "gizmo"
    }
+  },
+  "flicker": {
+   "title": "BOUNTY: FLICKER",
+   "giver": "emberboard",
+   "region": "cinder",
+   "offer": [
+    "BOUNTY: AN IMP CALLED FLICKER HAS BEEN SETTING FIRE TO THINGS AROUND THE HOT SPRINGS. MOSTLY TENTS. ONCE, A DWARF.",
+    "IT NEVER STANDS STILL AND IT NEVER STOPS GIGGLING. BRING SOMETHING FAST - OR SOMETHING COLD."
+   ],
+   "accept": "CATCH THE IMP.",
+   "thanks": [
+    "COAL: FLICKER'S OUT? THE SPRINGS'LL BE QUIET FOR ONCE. IT DROPPED THIS - A LITTLE CIRCLET, STILL WARM. SUITS A WIZARD, I RECKON."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND FLICKER NEAR THE HOT SPRINGS",
+     "at": [
+      126,
+      168
+     ],
+     "r": 7,
+     "units": [
+      [
+       "imp",
+       126,
+       168
+      ],
+      [
+       "imp",
+       123,
+       170
+      ],
+      [
+       "imp",
+       129,
+       170
+      ]
+     ],
+     "elite": 0,
+     "name": "FLICKER"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM QUARTERMASTER COAL",
+     "npc": "coal"
+    }
+   ],
+   "reward": {
+    "gold": 200,
+    "xp": 420,
+    "item": "ember_circlet"
+   }
+  },
+  "lamplighter": {
+   "title": "BOUNTY: THE LAMPLIGHTER",
+   "giver": "fenboard",
+   "region": "marsh",
+   "offer": [
+    "BOUNTY: A HEXED THING WITH A LANTERN WALKS THE FEN AT DUSK. TRAVELLERS FOLLOW ITS LIGHT AND WALK STRAIGHT INTO THE DEEP WATER.",
+    "LOCALS CALL IT THE LAMPLIGHTER. DON'T FOLLOW THE LIGHT. HIT IT."
+   ],
+   "accept": "PUT OUT THE LIGHT.",
+   "thanks": [
+    "MAG: THE LAMPLIGHTER'S GONE? AND IT LEFT ITS LANTERN... FUNNY. THE FLAME'S GONE GOLD NOW, NOT GREEN. FEELS ALMOST HOLY. YOUR MONK MIGHT LIKE IT."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND THE LAMPLIGHTER IN THE EASTERN FEN",
+     "at": [
+      86,
+      108
+     ],
+     "r": 7,
+     "units": [
+      [
+       "witchling",
+       86,
+       108
+      ],
+      [
+       "wisp",
+       83,
+       110
+      ],
+      [
+       "wisp",
+       89,
+       110
+      ]
+     ],
+     "elite": 0,
+     "name": "THE LAMPLIGHTER"
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM MAG",
+     "npc": "mag"
+    }
+   ],
+   "reward": {
+    "gold": 180,
+    "xp": 380,
+    "item": "lantern_of_the_faithful"
+   }
   }
  },
  "npcs": [
@@ -1903,7 +2007,8 @@
     "A NOTICE: 'LOST: ONE BOOT. LEFT. THE LEECHES HAVE THE RIGHT ONE.'"
    ],
    "errands": [
-    "snapjaw"
+    "snapjaw",
+    "lamplighter"
    ]
   },
   {
@@ -2169,7 +2274,8 @@
    ],
    "errands": [
     "drakeBounty",
-    "smokestack"
+    "smokestack",
+    "flicker"
    ]
   },
   {

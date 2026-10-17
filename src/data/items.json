@@ -780,5 +780,122 @@
    "type": "phoenix",
    "at": "head"
   }
+ },
+ "mitre_of_good_cheer": {
+  "name": "MITRE OF GOOD CHEER",
+  "hero": "oake",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "mitre_cheer",
+  "stats": {
+   "def": 5,
+   "hp": 18
+  },
+  "perk": "cheer",
+  "desc": "OPTIMISM SHIELDS CAN REACH 30% HP. IT IS VERY HARD TO FROWN IN THIS HAT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "head"
+  }
+ },
+ "vestments_of_the_undimmed": {
+  "name": "VESTMENTS OF THE UNDIMMED",
+  "hero": "oake",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "vestments_undimmed",
+  "stats": {
+   "def": 9,
+   "hp": 26
+  },
+  "perk": "undimmed",
+  "desc": "THE WHOLE PARTY REGENERATES 2% HP EVERY 5 SECONDS. THE STITCHING GLOWS FAINTLY AT NIGHT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  }
+ },
+ "dawnhammer": {
+  "name": "DAWNHAMMER",
+  "hero": "oake",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "hammer_dawn",
+  "stats": {
+   "atk": 11,
+   "crit": 0.04
+  },
+  "perk": "dawnhammer",
+  "element": "light",
+  "desc": "LIGHT. SMITE LEAPS TO TWO MORE FOES. FORGED FOR A SAINT WHO HATED MORNINGS.",
+  "fx": {
+   "type": "phoenix",
+   "at": "weapon"
+  }
+ },
+ "lantern_of_the_faithful": {
+  "name": "LANTERN OF THE FAITHFUL",
+  "hero": "oake",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "relic_lantern",
+  "stats": {
+   "atk": 4,
+   "hp": 16
+  },
+  "perk": "faithful",
+  "element": "light",
+  "desc": "LIGHT. SANCTUARY WALKS WITH OAKE. THE LAMPLIGHTER'S LAST FLAME, STILL BURNING.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
+ },
+ "flameproof_overalls": {
+  "name": "FLAMEPROOF OVERALLS",
+  "hero": "gizmo",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "overalls_flame",
+  "stats": {
+   "def": 12,
+   "hp": 22
+  },
+  "perk": "flameproof",
+  "desc": "THE CINDERREACH HEAT CAN'T TOUCH YOU. SMELLS FAINTLY OF SCORCHED GNOME.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  }
+ },
+ "turret_mk2": {
+  "name": "TURRET MK. II",
+  "hero": "gizmo",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "gadget_turret2",
+  "stats": {
+   "atk": 5,
+   "hp": 12
+  },
+  "perk": "turret2",
+  "element": "storm",
+  "desc": "STORM. TURRETS FIRE LIGHTNING AND LAST TWICE AS LONG. MK. I IS NOT DISCUSSED.",
+  "fx": {
+   "type": "shadow",
+   "at": "offhand"
+  }
+ },
+ "vampires_kiss": {
+  "name": "VAMPIRE'S KISS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@5",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "kiss",
+  "desc": "HEALS 2% OF THE DAMAGE YOU DEAL. +10 HP. THE HOLLOW'S LAST BITE."
  }
 }

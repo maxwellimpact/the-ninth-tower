@@ -303,7 +303,10 @@
     "gold": 150,
     "potions": {
      "elixir": 2
-    }
+    },
+    "items": [
+     "dawnhammer"
+    ]
    }
   },
   "boss": {
@@ -632,7 +635,10 @@
     },
     "potions": {
      "elixir": 2
-    }
+    },
+    "items": [
+     "vampires_kiss"
+    ]
    }
   },
   "boss": {
@@ -839,7 +845,10 @@
     },
     "potions": {
      "elixir": 2
-    }
+    },
+    "items": [
+     "phoenix_robe"
+    ]
    }
   },
   "boss": {

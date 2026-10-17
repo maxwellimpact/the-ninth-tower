@@ -3,14 +3,15 @@
 //   reload first (it boots a fresh game), then
 //   const H = await import('/tools/hero-skill-test.js'); await H.run('oake')
 // Reports, per skill: did it cast, damage dealt to foes, healing/shields on
-// the party, gadgets out, and any errors thrown.
+// the party, gadgets out, and any errors thrown. Pass { equip } to test uniques.
 import { go, step } from './goto.js';
 import skillData from '../src/data/skills.json';
 
-export async function run(hero, { foes = ['goblin', 'goblin', 'archer', 'knight'] } = {}) {
+export async function run(hero, { foes = ['goblin', 'goblin', 'archer', 'knight'], equip = {} } = {}) {
   const { newState } = await import('/src/game/state.js');
   const st = newState(hero);
   st.recruited = [hero, 'brann', 'pip']; st.active = [...st.recruited];
+  Object.assign(st.heroes[hero].equip, equip); // e.g. { weapon: 'dawnhammer' } to test a unique's perk
   st.pos = { x: 24 * 16 + 8, y: 40 * 16 + 8 };
   const sc = await go(24, 40, { state: st, level: 12, clear: true });
   const h = sc.party.find((p) => p.def.id === hero);

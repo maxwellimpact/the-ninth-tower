@@ -44,7 +44,7 @@ function healBy(src, t, amt, quiet = false) {
   t.heal(amt);
   const over = amt - room;
   if (over > 0 && src.passive?.('optimism')) {
-    const cap = Math.round(t.maxHp * 0.15);
+    const cap = Math.round(t.maxHp * (src.hasPerk?.('cheer') ? 0.3 : 0.15)); // Mitre of Good Cheer
     t.shield = Math.min(cap, (t.shield || 0) + over); t.shieldT = Math.max(t.shieldT || 0, 6);
   }
 }
@@ -660,6 +660,22 @@ export const SKILL_FX = {
           sc.tweens.add({ targets: g, alpha: 0, scaleX: 3, duration: 300, onComplete: () => g.destroy() });
           sc.dealDamage(h, target, h.stats.atk * 1.5 * m * (unholy(target) ? 1.5 : 1), { knock: 20, element: 'light', spell: true });
           audio.sfx('frost', { pitch: 1.8 });
+          if (h.hasPerk('dawnhammer')) { // Dawnhammer: the light jumps to two more
+            let from = target; const hit = new Set([target]);
+            for (let i = 0; i < 2; i++) {
+              const nx = sc.enemies.filter((e) => e.alive && !hit.has(e) && sc.fairTarget(e) && dist(e, from) < 70).sort((a, b) => dist(a, from) - dist(b, from))[0];
+              if (!nx) break;
+              hit.add(nx);
+              const f = from;
+              sc.time.delayedCall(90 * (i + 1), () => {
+                if (!nx.alive) return;
+                const ln = sc.add.line(0, 0, f.x, f.y - 14, nx.x, nx.y - 14, 0xfff0a0, 0.9).setOrigin(0).setLineWidth(2).setDepth(nx.y + 10).setBlendMode(Phaser.BlendModes.ADD);
+                sc.tweens.add({ targets: ln, alpha: 0, duration: 250, onComplete: () => ln.destroy() });
+                sc.dealDamage(h, nx, h.stats.atk * 0.9 * m * (unholy(nx) ? 1.5 : 1), { knock: 10, element: 'light', spell: true });
+              });
+              from = nx;
+            }
+          }
         },
       });
       return true;
@@ -668,9 +684,11 @@ export const SKILL_FX = {
   },
   sanctuary: {
     cast(h, { m }) {
-      const sc = h.scene, x = h.x, y = h.y;
+      const sc = h.scene, follow = h.hasPerk('faithful'); // Lantern of the Faithful: the circle walks with Oake
+      let x = h.x, y = h.y;
       h.act('sanctuary', 0.5, 'cast');
       const g = sc.add.ellipse(x, y, 84, 52, 0xfff0a0, 0.18).setStrokeStyle(1, 0xfff0a0, 0.8).setDepth(-25);
+      if (follow) { const mv = () => { if (!g.active) return; if (!h.downed) { x = h.x; y = h.y; g.setPosition(x, y); } }; sc.events.on('update', mv); g.once('destroy', () => sc.events.off('update', mv)); }
       sc.time.addEvent({ delay: 500, repeat: 11, callback: () => { for (const p of sc.party) if (p.alive && !p.downed && Math.hypot(p.x - x, (p.y - y) * 1.6) < 42) healBy(h, p, Math.round(p.maxHp * 0.035 * m), true); } });
       sc.tweens.add({ targets: g, alpha: 0, duration: 6000, ease: 'Quad.easeIn', onComplete: () => g.destroy() });
       audio.sfx('heal', { pitch: 0.8 });

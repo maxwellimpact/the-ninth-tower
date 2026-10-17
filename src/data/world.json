@@ -1428,20 +1428,18 @@
    "id": "watchtower",
    "x": 162,
    "y": 19,
-   "items": [
-    "ember_circlet",
-    "nightsilk_coat"
-   ],
-   "gold": 40
+   "items": [],
+   "gold": 120,
+   "potions": {
+    "elixir": 1
+   }
   },
   {
    "id": "witchhut",
    "x": 40,
    "y": 99,
-   "items": [
-    "phoenix_robe"
-   ],
-   "gold": 30,
+   "items": [],
+   "gold": 90,
    "mats": {
     "herb": 3
    }
@@ -1450,10 +1448,8 @@
    "id": "cave",
    "x": 224,
    "y": 9,
-   "items": [
-    "raven_mask"
-   ],
-   "gold": 30,
+   "items": [],
+   "gold": 90,
    "mats": {
     "crystal": 2
    }
@@ -1464,8 +1460,7 @@
    "y": 101,
    "items": [
     "wyrmfang",
-    "wyrmfang_twin",
-    "emberbrand"
+    "wyrmfang_twin"
    ],
    "gold": 60
   },
@@ -1536,6 +1531,43 @@
    "gold": 60,
    "potions": {
     "salve": 2
+   }
+  },
+  {
+   "id": "gloamChapel",
+   "x": 10,
+   "y": 178,
+   "needs": "lantern",
+   "locked": "A CHEST IN THE CHAPEL'S CRYPT, BLACK AS PITCH. WE CAN'T EVEN FIND THE LATCH WITHOUT A LIGHT.",
+   "items": [
+    "vestments_of_the_undimmed"
+   ],
+   "gold": 60
+  },
+  {
+   "id": "gloamWorkshop",
+   "x": 89,
+   "y": 171,
+   "needs": "lantern",
+   "locked": "A GNOMISH STRONGBOX, DEEP IN A LIGHTLESS WORKSHOP. SOMETHING TICKS INSIDE. WE NEED A LIGHT TO SEE THE DIALS.",
+   "items": [
+    "turret_mk2"
+   ],
+   "gold": 60,
+   "mats": {
+    "ore": 3
+   }
+  },
+  {
+   "id": "cinderMine",
+   "x": 112,
+   "y": 194,
+   "items": [
+    "flameproof_overalls"
+   ],
+   "gold": 70,
+   "mats": {
+    "brimstone": 2
    }
   }
  ],
@@ -1945,6 +1977,30 @@
    "y": 150,
    "lines": [
     "ST. CINDER'S. UP THE STEPS. MIND THE MONKS, THEY BLESS YOU WHETHER YOU LIKE IT OR NOT."
+   ]
+  },
+  {
+   "x": 12,
+   "y": 176,
+   "lines": [
+    "THE CHAPEL OF THE UNDIMMED.",
+    "WHOEVER TENDS THE FLAME, TENDS US ALL."
+   ]
+  },
+  {
+   "x": 91,
+   "y": 170,
+   "lines": [
+    "TINKERWORKS. KNOCK TWICE.",
+    "(THE DOOR HAS BEEN KNOCKED DOWN.)"
+   ]
+  },
+  {
+   "x": 114,
+   "y": 193,
+   "lines": [
+    "OLD SEAM NO. 4 - CLOSED.",
+    "TOO HOT EVEN FOR DWARVES. THAT'S SAYING SOMETHING."
    ]
   }
  ],
@@ -2702,7 +2758,10 @@
   {
    "n": 20,
    "gold": 500,
-   "blessing": true
+   "blessing": true,
+   "items": [
+    "mitre_of_good_cheer"
+   ]
   }
  ],
  "shrines": [
@@ -3120,7 +3179,9 @@
     "x1": 88,
     "y1": 192
    },
-   "drops": [],
+   "drops": [
+    "raven_mask"
+   ],
    "gold": 140,
    "fall": [
     "THE PALE HUNTSMAN FALLS",
@@ -3148,7 +3209,9 @@
     "x1": 162,
     "y1": 200
    },
-   "drops": [],
+   "drops": [
+    "emberbrand"
+   ],
    "gold": 150,
    "fall": [
     "FORGEMASTER VULK FALLS",

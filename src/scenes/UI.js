@@ -215,16 +215,16 @@ export class UI extends Phaser.Scene {
     const colX = (c) => 6 + L0 + c * 38;
     const rowB = H - 40, rowT = rowB - 40;
     this.rowMode = this.W > this.H && W - L0 >= 260; // any landscape phone (the compact row needs ~230px, even with notch insets)
-    this.grpG ??= this.add.graphics().setDepth(-1);
+    if (!this.grpG?.scene) this.grpG = this.add.graphics().setDepth(-1); // rebuilt after a scene restart (old ones are destroyed)
     this.grpG.clear();
     this.rowKey = null; // re-pack the landscape row on the next frame
     if (this.rowMode) {
-      this.groupLbl ??= [this.add.bitmapText(0, 0, 'fontGold', ''), this.add.bitmapText(0, 0, 'font', 'ALLIES')];
+      if (!this.groupLbl?.[0].scene) this.groupLbl = [this.add.bitmapText(0, 0, 'fontGold', ''), this.add.bitmapText(0, 0, 'font', 'ALLIES')];
       this.rowY = H - this.ultBtn.size - 5;
     } else {
       [[this.dodgeBtn, 0, rowB], [this.skillBtns[0], 1, rowB], [this.skillBtns[1], 2, rowB], [this.skillBtns[2], 3, rowB],
         [this.ultBtn, 0, rowT], [this.allyBtns[0], 1, rowT], [this.allyBtns[1], 2, rowT]].forEach(([b, c, y]) => { b.x = colX(c); b.y = y; });
-      this.groupLbl?.forEach((t) => t.setVisible(false));
+      this.groupLbl?.forEach((t) => t.scene && t.setVisible(false));
     }
     for (const b of [this.ultBtn, ...this.allyBtns, this.dodgeBtn, ...this.skillBtns]) b.lbl.setPosition(b.x + b.size / 2, b.y + b.size + 2);
     // icons only in the landscape row (keyboard hints are already hidden on touch screens)

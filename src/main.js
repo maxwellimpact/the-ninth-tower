@@ -44,7 +44,7 @@ let lastErr = 0;
 game.step = (time, delta) => {
   try { step(time, delta); } catch (e) {
     console.error('[loop]', e);
-    (window.__errs ??= []).push(`[loop] ${e.stack?.split('\n').slice(0, 3).join(' | ') || e}`); // test harness sees these too
+    (window.__errs ??= []).push(`[loop] ${e.stack?.split('\n').slice(0, 6).join(' | ') || e}`); // test harness sees these too
     if (performance.now() - lastErr > 3000) { lastErr = performance.now(); showError(e); }
   }
 };

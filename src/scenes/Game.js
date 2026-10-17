@@ -106,7 +106,7 @@ export class Game extends Phaser.Scene {
   create(data) {
     const st = (this.state = data.state);
     st.stats ??= { kills: 0, levelUps: [] };
-    this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; // fresh on every (re)start
+    this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
     ensureItems(st);
@@ -624,7 +624,7 @@ export class Game extends Phaser.Scene {
     if (this.heatT > 0) return;
     this.heatT = 3;
     for (const h of this.party) {
-      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.stats?.passives?.includes('heatproof')) continue;
+      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.stats?.passives?.includes('heatproof')) continue;
       const lvl = Math.max(heat, this.inHeat(h.x, h.y));
       const floor = h.maxHp * 0.15;
       if (h.hp <= floor) continue;
@@ -634,6 +634,15 @@ export class Game extends Phaser.Scene {
       this.floatText(h.x, h.y - 30, lvl === 2 ? 'SCORCHED' : 'HEAT', 'fontPlain', 0xffa060);
     }
     this.cameras.main.flash(120, 255, 120, 40, false, null);
+  }
+
+  // party-wide unique perks that tick on their own
+  updatePerks(dt) {
+    this.regenT = (this.regenT ?? 5) - dt;
+    if (this.regenT > 0) return;
+    this.regenT = 5;
+    if (!this.party.some((h) => !h.downed && h.hasPerk('undimmed'))) return; // Vestments of the Undimmed: 2% every 5s
+    for (const h of this.party) if (h.alive && !h.downed && h.hp < h.maxHp) { h.heal(Math.max(1, Math.round(h.maxHp * 0.02))); this.fx.burst('heal', h.x, h.y - 10, 2); }
   }
 
   // ============================================================ enemy arrows
@@ -1046,6 +1055,11 @@ export class Game extends Phaser.Scene {
     if (pin) m.push({ ...pin, kind: 'quest', always: true });
     for (const n of this.nodes) if (n.ready) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
     if (this.dungeon) m.push(...this.dungeon.markers());
+    if (this.party.some((h) => !h.downed && h.hasPerk('clockwork'))) { // Clockwork Goggles: chests within 6 tiles show, explored or not
+      const L = tile(this.leader), near = (c) => Math.hypot(c.x - L.x, c.y - L.y) <= 6;
+      const shut = this.dungeon ? this.dungeon.chests.filter((c) => !c.opened) : W.chests.filter((c) => !this.flags[`chest_${c.id}`]);
+      for (const c of shut) if (near(c)) m.push({ x: c.x, y: c.y, kind: 'chest', always: true });
+    }
     const a = this.areaRect();
     return m.filter((k) => k.x >= a.x0 && k.x <= a.x1 && k.y >= a.y0 && k.y <= a.y1 && (k.always || this.minimap.isExplored(k.x, k.y)));
   }
@@ -1221,6 +1235,7 @@ export class Game extends Phaser.Scene {
     }
     if (hero && src.hasTrait('lifesteal') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.03);
     if (hero && src.hasPerk('bloodfang') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.05);
+    if (hero && src.hasPerk('kiss') && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.02); // Vampire's Kiss
     if (hero && src.buffs?.primal && !src.downed) src.hp = Math.min(src.maxHp, src.hp + dealt * 0.2);
     this.fx.hit(target.x, target.y - (target.boss ? 24 : 8), crit);
     this.floatText(target.x + (Math.random() * 8 - 4), target.y - (target.boss ? 50 : 20), `${dealt}`, crit ? 'fontGold' : 'font', 0xffffff, crit);
@@ -1959,6 +1974,7 @@ export class Game extends Phaser.Scene {
 
   openChest(c, img, h) {
     const flag = `chest_${c.id}`;
+    if (c.needs && !this.flags[flag] && !this.state.relics.includes(c.needs)) { this.events.emit('dialogue', [{ who: 'CHEST', text: c.locked || 'IT WON\'T OPEN. NOT YET.' }]); return; } // a relic opens it (C8)
     if (this.flags[flag]) { this.events.emit('dialogue', [{ who: 'CHEST', text: "IT'S EMPTY. YOU ALREADY LOOTED IT. SHAMELESS." }]); return; }
     this.flags[flag] = true;
     img.setTexture('chestOpen');
@@ -2269,11 +2285,12 @@ export class Game extends Phaser.Scene {
       addPotions(st, next.potions || {});
       addMats(st, next.mats || {});
       if (next.blessing) { st.flags.blessing = true; for (const h of this.party) h.refreshGear(); }
+      if (next.items) { gainItems(st, next.items); this.time.delayedCall(1200, () => this.events.emit('loot', { ids: next.items })); }
       const what = [next.gold ? `${next.gold} GOLD` : null, ...Object.entries(next.potions || {}).map(([k, n]) => `${n} ${CRAFT.consumables[k].name}`), ...Object.entries(next.mats || {}).map(([k, n]) => `${n} ${CRAFT.materials[k].name}`)].filter(Boolean).join(', ');
       audio.sfx('chest');
       this.events.emit('dialogue', [
         { ...K, text: `GOLDEN FLIES! ${st.flies.length} OF THEM! OH, MY ROYAL TONGUE IS TINGLING.` },
-        { ...K, text: next.blessing ? `${st.flies.length} FLIES! I GRANT YOU THE BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER. ALSO, ${next.gold} GOLD.` : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
+        { ...K, text: next.blessing ? `${st.flies.length} FLIES! I GRANT YOU THE BLESSING OF THE FROG KING: YOUR PARTY IS HARDIER, FOREVER. ALSO, ${next.gold} GOLD${next.items ? ', AND A HAT OF GREAT CHEER. IT WAS MY FATHER\'S' : ''}.` : `A KING REWARDS LOYALTY. TAKE THIS: ${what}.` },
       ], () => this.autosave('frog'));
       this.events.emit('party');
       return;
@@ -2991,6 +3008,7 @@ export class Game extends Phaser.Scene {
     this.updateWarps();
     this.quests.update(dt);
     this.updateHeat(dt);
+    this.updatePerks(dt);
     this.dungeon?.update(dt);
     this.groupT = (this.groupT || 0) - dt;
     if (this.groupT <= 0) { this.groupT = 0.4; this.updateGroups(0.4); }

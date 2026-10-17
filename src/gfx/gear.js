@@ -326,6 +326,14 @@ const BODY = {
     up: ['mMMMMMMm', 'mMMRRMMm', 'mMMRRMMm', '.mMRRMm.', '.rRRRRr.', '.mMMMMm.'],
     swayFrom: 6, legs: ['bone', 'night', 'woodD'], arms: ['white', 'bone', 'skin'],
   },
+  // Vestments of the Undimmed: white and gold with a rising sun on the chest
+  vestments_undimmed: {
+    map: { M: 'white', m: 'bone', L: 'fireL', R: 'goldL', r: 'redD', S: 'redL' },
+    down: ['mMMMMMMm', 'mMMLLMMm', 'mMLRRLMm', '.mMLLMm.', '.rSSSSr.', '.mMMMMm.'],
+    side: ['mMMMMm', 'mMMLMm', 'mMLRLm', '.mMLMm', '.rSSSr', '.mMMMm'],
+    up: ['mMMMMMMm', 'mMMRRMMm', 'mMMRRMMm', '.mMRRMm.', '.rSSSSr.', '.mMMMMm.'],
+    swayFrom: 6, legs: ['bone', 'night', 'woodD'], arms: ['white', 'bone', 'skin'],
+  },
   // ---- Gizmo
   overalls_work: {
     map: { D: 'blue', d: 'blueD', S: 'redL', s: 'red', G: 'gold', P: 'blueL' },
@@ -503,6 +511,7 @@ const OFFHAND = {
   relic_lantern: { draw: relicDraw({ k: 'hairBlD', c: 'gold', g: 'fireL', w: 'goldL' }, true) },
   gadget_box: { draw: gadgetDraw({ k: 'steelD', c: 'steel', l: 'redL', g: 'gold' }) },
   gadget_turret: { draw: gadgetDraw({ k: 'hairBlD', c: 'gold', l: 'blueL', g: 'goldL' }) },
+  gadget_turret2: { draw: gadgetDraw({ k: 'night', c: 'blue', l: 'white', g: 'crystalL' }) }, // Turret Mk. II: storm-blue
   hatchet_plain: { weaponL: { kind: 'axe', style: { len: 7 } } },
   hatchet_bearded: { weaponL: { kind: 'axe', style: { len: 7, bearded: true } } },
 };
