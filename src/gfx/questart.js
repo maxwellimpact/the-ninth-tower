@@ -2,36 +2,56 @@
 // ruin bells, Marla's goods cart and the tavern rumour board.
 import { makeCanvas, grid, outline, px } from './pixel.js';
 import { PAL } from './palette.js';
+import { shadedBlob } from './creatures.js';
 
-const DOG = { B: 'dirtL', b: 'dirt', d: 'dirtD', W: 'bone', E: 'ink', N: 'ink', T: 'redL' };
+// Biscuit: a scruffy brown mutt, big enough to read as a dog beside the
+// heroes (a sit and a run, facing right; flip for left). Floppy ears, a white
+// blaze down the chest, a red collar and a tail that never stops.
+const DOGC = ['dirtD', 'dirt', 'dirtL', 'sand'];
+function dogFrame({ sit = false, step = 0, wag = 0 }) {
+  const [c, ctx] = makeCanvas(36, 28);
+  const dot = (x, y, col, w = 1, h = 1) => px(ctx, Math.round(x), Math.round(y), col, w, h);
+  const foot = 25;
+  let hx, hy;
+  if (sit) {
+    // tail sweeping the ground behind, side to side
+    for (let i = 0; i < 6; i++) dot(10 - i, foot - 1 - (wag ? i * 0.6 : 0) + (wag ? 0 : i * 0.1), i > 3 ? 'dirtL' : 'dirt', 2, 2);
+    shadedBlob(ctx, 14, 19, 6, 5.5, DOGC); // haunch
+    dot(10, foot - 1, 'dirtD', 5, 1); dot(10, foot, 'dirtD', 4, 1); // back paw
+    shadedBlob(ctx, 19, 15, 4, 6, DOGC); // chest, upright
+    for (let y = 13; y <= 20; y++) dot(20 + (y > 17 ? 0 : 1), y, y % 3 ? 'bone' : 'white', 2, 1); // the blaze
+    for (const lx of [18, 21]) { dot(lx, 19, lx === 18 ? 'dirtD' : 'dirt', 2, foot - 19); dot(lx, foot, lx === 18 ? 'dirtD' : 'dirtL', 3, 1); } // front legs
+    dot(18, 10, 'redD', 5, 1); dot(18, 11, 'red', 5, 1); dot(21, 12, 'goldL'); // collar and tag
+    hx = 21; hy = 7;
+  } else {
+    const by = 15 - (step === 1 ? 1 : 0);
+    // tail up and waving from the rump
+    for (let i = 0; i < 6; i++) dot(8 - i * 0.6 - (wag ? i * 0.4 : 0), by - 3 - i * (wag ? 0.9 : 1.2), i > 3 ? 'dirtL' : 'dirt', 2, 2);
+    // legs: far pair darker, a trotting stride
+    const sw = step ? 2 : -2;
+    for (const [lx, d, col] of [[11, sw, 'dirtD'], [14, -sw, 'dirt'], [23, -sw, 'dirtD'], [26, sw, 'dirt']]) {
+      for (let y = by + 3; y <= foot; y++) dot(lx + (d * (y - by - 3)) / (foot - by - 3), y, col, 2, 1);
+      dot(lx + d - 1, foot, 'dirtD', 3, 1);
+    }
+    shadedBlob(ctx, 17, by, 9, 4.5, DOGC); // body
+    shadedBlob(ctx, 25, by - 1, 4, 4.5, DOGC); // chest
+    for (let x = 23; x <= 27; x++) dot(x, by + 2 + (x === 25 ? 1 : 0), 'bone', 1, 1); // white chest
+    dot(24, by - 5, 'redD', 2, 4); dot(26, by - 4, 'red', 1, 3); // collar
+    hx = 28; hy = by - 6;
+  }
+  shadedBlob(ctx, hx, hy, 4.5, 4, DOGC); // head
+  for (let i = 0; i < 4; i++) dot(hx + 3 + i, hy + 0.5, i < 2 ? 'dirtL' : 'sand', 1, 3); // the short muzzle
+  dot(hx + 7, hy + 0.5, 'ink', 1, 2); // nose
+  dot(hx + 3, hy + 3, 'dirtD', 4, 1); // jaw line
+  if (!sit) dot(hx + 4, hy + 4, 'redL', 2, 2); // tongue out at a trot
+  dot(hx + 1, hy - 1, 'ink', 2, 2); dot(hx + 1, hy - 1, 'white'); // eye
+  // the floppy ear, hanging past the cheek
+  dot(hx - 3, hy - 4, 'dirtD', 3, 1); dot(hx - 3, hy - 3, 'dirtD', 3, 3); dot(hx - 2, hy, 'dirtD', 2, 2);
+  outline(c, 'ink');
+  return c;
+}
 export function dogFrames() {
-  const sit = [
-    '....bb......',
-    '...bBBb.....',
-    '..bBEBBd....',
-    '..NBBBBd....',
-    '...TBBb.....',
-    '...bBBBb....',
-    '..bBWBBBb.b.',
-    '..bBWBBBbb..',
-    '..bB.bB.b...',
-    '..dd.dd.....',
-  ];
-  const sit2 = sit.map((r, i) => (i === 6 ? '..bBWBBBb..b' : i === 7 ? '..bBWBBBbbb.' : r));
-  const run = [
-    '............',
-    '.bb.........',
-    'bBBb......b.',
-    'BEBBbbbbbb..',
-    'NBBBBBBBBb..',
-    '.TbBWBBBBb..',
-    '...bWBBBb...',
-    '..b.b..b.b..',
-    '.d.....d....',
-    '............',
-  ];
-  const run2 = run.map((r, i) => (i === 7 ? '...bb..bb...' : i === 8 ? '...d....d...' : r));
-  return [sit, sit2, run, run2].map((rows) => { const [c, ctx] = makeCanvas(14, 12); grid(ctx, rows, DOG, 1, 1); outline(c, 'ink'); return c; });
+  return [dogFrame({ sit: true }), dogFrame({ sit: true, wag: 1 }), dogFrame({ step: 0 }), dogFrame({ step: 1, wag: 1 })];
 }
 
 export function glintFrames() {

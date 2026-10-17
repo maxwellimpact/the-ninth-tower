@@ -288,8 +288,8 @@
   "name": "THOUSAND CUTS",
   "short": "CUTS",
   "icon": "icon_cuts",
-  "desc": "BLINKS BETWEEN UP TO SIX FOES, CRITTING EACH.",
-  "upgrade": "L20 TOME: UP TO 10 FOES, AND IT RECASTS FREE IF THE LAST ONE FALLS."
+  "desc": "STREAKS BETWEEN UP TO FIVE FOES, CRITTING EACH.",
+  "upgrade": "L20 TOME: UP TO 8 FOES, AND IT RECASTS FREE IF THE LAST ONE FALLS."
  },
  "mend": {
   "discipline": "cleric",

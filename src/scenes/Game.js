@@ -1887,22 +1887,47 @@ export class Game extends Phaser.Scene {
         break;
       }
       case 'thousand_cuts': {
-        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, legend ? 12 : tome ? 10 : 6); // Whisper & Wane: 12
+        // Paced so each cut reads on a phone: a dark streak from where she was
+        // to the next foe, she lands beside it, a beat, then the slash. Fewer
+        // targets than the old 0.13s blur, but every one is visible.
+        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, legend ? 10 : tome ? 8 : 5); // Whisper & Wane: 10
         if (!targets.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         const home = { x: h.x, y: h.y };
-        h.invuln = 0.15 * targets.length + 0.4;
+        const STEP = 320, SLASH = 110; // ms per foe; the cut lands this long after she arrives
+        h.invuln = (STEP * targets.length + 500) / 1000;
         h.zipping = true;
         sc.floatText(h.x, h.y - 36, 'THOUSAND CUTS!', 'fontGold', 0xffffff, true);
-        targets.forEach((e, i) => this.time.delayedCall(130 * i, () => {
+        const lift = h.sprite.y - h.y;
+        const streak = (fx, fy, tx, ty) => { for (let k = 1; k <= 6; k++) this.fx.ghost(h, { x: fx + (tx - fx) * (k / 7), y: fy + (ty - fy) * (k / 7) + lift, tint: 0x2a1840, alpha: 0.25 + 0.1 * k, dur: 200 + 45 * k }); };
+        const slash = (e, dir) => { // a bright cut across the foe that fades fast
+          const g = this.add.graphics().setDepth(e.y + 40);
+          const a = dir > 0 ? -0.7 : 0.7, cx = e.x, cy = e.y - 10, L = 14;
+          g.lineStyle(3, 0xd9b8ff, 0.9).lineBetween(cx - Math.cos(a) * L, cy - Math.sin(a) * L, cx + Math.cos(a) * L, cy + Math.sin(a) * L);
+          g.lineStyle(1, 0xffffff, 1).lineBetween(cx - Math.cos(a) * (L - 2), cy - Math.sin(a) * (L - 2), cx + Math.cos(a) * (L - 2), cy + Math.sin(a) * (L - 2));
+          this.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
+        };
+        let from = { x: h.x, y: h.y };
+        targets.forEach((e, i) => this.time.delayedCall(STEP * i, () => {
           if (!e.alive) return;
-          this.fx.ghost(h);
-          h.x = e.x - 10; h.y = e.y + 2; h.face(1, 0); h.anim = ''; h.play('attack'); h.sync(0);
+          const side = from.x <= e.x ? -1 : 1; // land on the side she came from
+          const bx = e.x + side * 12, by = e.y + 2;
+          streak(from.x, from.y, bx, by);
+          this.fx.puff(from.x, from.y, 'sparkCurse');
+          h.x = bx; h.y = by; h.face(-side, 0); h.anim = ''; h.play('idle'); h.sync(0);
           this.fx.puff(h.x, h.y, 'sparkCurse');
-          audio.sfx('stab');
-          this.dealDamage(h, e, h.stats.atk * 2.5, { crit: true, knock: 60 });
+          audio.sfx('dash', { pitch: 1.1 + i * 0.05 });
+          from = { x: bx, y: by };
+          this.time.delayedCall(SLASH, () => {
+            if (!e.alive || !h.zipping) return;
+            h.anim = ''; h.play('attack');
+            slash(e, -side);
+            audio.sfx('stab');
+            this.dealDamage(h, e, h.stats.atk * 2.5, { crit: true, knock: 40 });
+          });
         }));
-        this.time.delayedCall(130 * targets.length + 120, () => {
-          this.fx.ghost(h); h.x = home.x; h.y = home.y; h.zipping = false; h.anim = '';
+        this.time.delayedCall(STEP * targets.length + 120, () => {
+          streak(h.x, h.y, home.x, home.y);
+          h.x = home.x; h.y = home.y; h.zipping = false; h.anim = '';
           this.fx.puff(h.x, h.y, 'sparkCurse');
           if (tome && !h.cutsRecast && !targets[targets.length - 1].alive) { h.cutsRecast = true; h.ult = 100; this.floatText(h.x, h.y - 36, 'AGAIN!', 'fontGold'); } // once per charge
           else h.cutsRecast = false;
