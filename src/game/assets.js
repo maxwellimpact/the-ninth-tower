@@ -2,10 +2,10 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, ghostRecolor, paleRecolor, scaleRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -184,6 +184,14 @@ export const GROUPS = {
   ],
   // Frosthelm (Wave 3)
   frost: [
+    ['frost foes', (s) => {
+      creature(s, 'frostwolf', buildWolf(), { idle: 2, walk: 9, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'rimehorn', buildRimehorn(), { idle: 2, walk: 5, windup: 6, attack: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'throw']);
+      creature(s, 'sentinel', buildSentinel(), { idle: 2, walk: 2, windup: 8, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'raider', buildRaider(), { idle: 4, walk: 8, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'troll', buildTroll(), { idle: 2, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      registerPuppet(s, 'icewraith', WRAITH, iceRecolor);
+    }],
     ['highlands', (s) => {
       for (let k = 0; k < 6; k++) s.textures.addCanvas(`snowpine${k}`, P.snowPine(k));
       for (let k = 0; k < 4; k++) {

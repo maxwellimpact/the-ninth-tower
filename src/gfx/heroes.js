@@ -148,6 +148,8 @@ export const ghostRecolor = recolorer(RAMP_GHOST, true);
 export const paleRecolor = recolorer(RAMP_PALE, false); // the Pale Huntsman: drained, but solid
 const RAMP_SCALE = [[52, 18, 16], [142, 46, 26], [214, 102, 38], [255, 196, 104]];
 export const scaleRecolor = recolorer(RAMP_SCALE, false); // Salamander Warriors: red scales
+const RAMP_ICE = [[34, 62, 112], [104, 160, 214], [168, 214, 244], [232, 248, 255]];
+export const iceRecolor = recolorer(RAMP_ICE, true); // Ice Wraiths: glassy blue, footless
 function recolorer(RAMP, fade) {
   const done = new WeakSet(); // frames can share a canvas: recolour each once
   return (canvas) => {
@@ -181,4 +183,6 @@ export const HUNTSMAN = { ...composeHero('skull', { head: 'hood_antler', body: '
 export const SALAMANDER = { ...composeHero('lizard', { head: null, body: 'scale_armor', weapon: 'sword_long@4', offhand: 'shield_hex' }), id: 'salamander', name: 'Salamander Warrior' };
 // Forgemaster Vulk: the salamander smith, horned and plated, with his great forge-axe
 export const VULK = { ...composeHero('lizard', { head: 'crown_forge', body: 'apron_forge', weapon: 'axe_bearded@5', offhand: null }), id: 'vulk', name: 'Forgemaster Vulk' };
+// Ice Wraith: a hooded, footless shape of frost that drifts through walls (iceRecolor)
+export const WRAITH = { ...composeHero('pip', { head: 'hood_shadow@3', body: 'robe_scholar@1', weapon: 'none', offhand: null }), id: 'icewraith', name: 'Ice Wraith' };
 export const WITCHLING = { ...composeHero('hag', { head: 'hat_hag', body: 'shawl_hag', weapon: 'staff_bog', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

@@ -1140,10 +1140,27 @@ export class Hero extends Unit {
 
 // ---------------------------------------------------------------- Enemies
 const ENEMY = enemyData;
+// Frosthelm's cold on a hero: Chill slows for a moment (wolf bites, wraith
+// touches, icicles); Freeze roots them briefly (the Rimehorn's snowballs).
+// Coldproof gear and Purify keep both off.
+export function chillHero(h, t = 2) {
+  if (!h?.buff || h.downed || h.purifyT > 0 || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward')) return;
+  h.buff('slow', 0.65, t);
+  const now = h.scene.time.now;
+  if (!(h.chillTxtT > now)) { h.chillTxtT = now + 1500; h.scene.floatText(h.x, h.y - 34, 'CHILLED', 'fontPlain', 0x9fdcff); }
+}
+export function freezeHero(h, t = 1.2) {
+  if (!h?.buff || h.downed || h.purifyT > 0 || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward')) return;
+  h.buff('slow', 0.04, t);
+  h.flash?.(t * 1000, 0x9fe6ff);
+  h.scene.floatText(h.x, h.y - 34, 'FROZEN', 'fontPlain', 0x9fe6ff);
+  h.scene.fx.burst('foam', h.x, h.y - 8, 10);
+}
+
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
-const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk' };
-const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk']);
+const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll' };
+const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
 // what makes it dangerous and how to answer it.
@@ -1231,6 +1248,9 @@ export class Enemy extends Unit {
     if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play(`${this.tex}_flipped`); this.anim = `${this.tex}_flipped`; this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
     this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain');
   }
+
+  // turrets (the Hex Sentinel) never get shoved about
+  knock(dx, dy, power) { if (this.s?.anchored) return; super.knock(dx, dy, power); }
 
   // flying foes drift over water and walls
   moveBy(dx, dy) { if (this.s.flying) { this.x += dx; this.y += dy; } else super.moveBy(dx, dy); }
@@ -1596,6 +1616,8 @@ export class Enemy extends Unit {
     if (s.ai === 'trail' && this.engaged) this.aiTrail(dt);
     if (s.ai === 'bomber' && this.engaged && this.aiBomber(dt)) { this.sync(dt); return; }
     if (s.ai === 'drake' && this.engaged && this.aiDrake(dt)) { this.sync(dt); return; }
+    if (s.ai === 'sled' && this.engaged && this.aiSled(dt)) { this.sync(dt); return; }
+    if (s.ai === 'troll' && this.engaged && this.aiTroll(dt)) { this.sync(dt); return; }
     if (this.affix) this.affixTick(dt);
     // elites read the party's telegraphed area attacks (Meteor, Volley) and step out
     if ((this.elite || this.named) && !this.boss && this.state !== 'charging' && sc.partyZones?.length) {
@@ -1619,6 +1641,7 @@ export class Enemy extends Unit {
       return;
     }
     this.chargeCd = Math.max(0, (this.chargeCd || 0) - dt);
+    this.snowCd = Math.max(0, (this.snowCd ?? 1.5) - dt);
     this.tongueCd = Math.max(0, (this.tongueCd || 0) - dt);
     this.t += dt * this.slow;
 
@@ -1672,7 +1695,8 @@ export class Enemy extends Unit {
         if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
         if (s.ai === 'mab' && (this.tongueCd ?? 3) <= 0 && d > 60 && d < s.pullRange && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
         if (s.ai === 'web' && this.webCd <= 0 && d > 30 && d < 110 && this.onScreen() && this.scene.shotClear(this.x, this.y, t.x, t.y) && this.takeToken(t)) { this.spitWeb(t); break; }
-        if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2) && this.takeToken(t)) { this.beginCharge(t); break; }
+        if (s.ai === 'rimehorn' && this.snowCd <= 0 && d > 56 && d < 150 && this.onScreen() && this.scene.shotClear(this.x, this.y, t.x, t.y) && this.takeToken(t)) { this.beginThrow(t); break; }
+        if ((s.ai === 'charge' || (s.ai === 'rimehorn' && this.chargeReady)) && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2) && this.takeToken(t)) { this.beginCharge(t); break; }
         // melee: surround the target; only a few may wind up on it at once (the
         // rest wait just outside reach for a turn)
         const free = this.tokenFree(t);
@@ -1681,6 +1705,15 @@ export class Enemy extends Unit {
         this.waiting = !free; // holding outside reach for a turn (not stuck)
         if (Math.hypot(slot.x - this.x, slot.y - this.y) > 3) this.stepTo(slot, dt, free ? 1 : 0.6);
         else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); }
+        break;
+      }
+      case 'throwWind': {
+        this.play('throw');
+        if (this.t >= 0.75) {
+          this.clearZone();
+          this.state = 'recover'; this.t = 0; this.snowCd = 5.5; this.chargeReady = true;
+          if (this.aimAt) sc.spawnEnemyArrow(this, this.aimAt, s.dmg * 0.7 * sc.difficulty.dmg * this.affixDmg(), 'snowball');
+        }
         break;
       }
       case 'tongueWind': {
@@ -1881,7 +1914,24 @@ export class Enemy extends Unit {
   }
 
   // Boar charge: paw the ground (telegraphed line), then rush in a straight line.
+  // Rimehorn: rears up, scoops a snowball and flings it (an aim line marks the
+  // throw); a hero it hits is frozen in place, and its next move is a charge.
+  beginThrow(t) {
+    this.clearZone();
+    this.state = 'throwWind'; this.t = 0;
+    this.face(t.x - this.x, t.y - this.y);
+    this.aimAt = { x: t.x, y: t.y - 6 };
+    this.zone = { x: t.x, y: t.y, r: 12, until: 0.75 };
+    this.scene.dangers.push(this.zone);
+    const g = this.scene.add.graphics().setDepth(-2), st = { p: 0 };
+    const draw = () => { if (g.active) g.clear().lineStyle(2, 0x9fdcff, 0.25 + st.p * 0.6).lineBetween(this.x, this.y - 14, this.aimAt.x, this.aimAt.y); };
+    draw(); this.scene.tweens.add({ targets: st, p: 1, duration: 750, onUpdate: draw });
+    this.zoneGfx = g;
+    audio.sfx('swing', { pitch: 0.5 });
+  }
+
   beginCharge(t) {
+    this.chargeReady = false;
     this.clearZone(); // never leave an old warning marker behind
     this.state = 'chargeWindup';
     this.t = 0;
@@ -2071,6 +2121,102 @@ export class Enemy extends Unit {
       return true;
     }
     return false;
+  }
+
+  // Snow Goblin Raider: never stands to fight. It runs its sled in fast passes
+  // past the party, dropping fused bombs behind it (each marked where it
+  // lands), pauses at the end of a run to turn, then goes again.
+  aiSled(dt) {
+    const sc = this.scene, t = this.target;
+    if (!this.sled) {
+      if (!t || this.state !== 'chase' || !this.onScreen(-20)) return false;
+      // a run that passes beside the target and carries on well beyond it
+      const [nx, ny] = norm(t.x - this.x, t.y - this.y), side = Math.random() < 0.5 ? 1 : -1;
+      const ax = t.x - ny * side * 18 + nx * 90, ay = t.y + nx * side * 18 + ny * 90;
+      const [dx, dy] = norm(ax - this.x, ay - this.y);
+      this.sled = { dx, dy, t: 0, dur: Math.min(1.8, Math.hypot(ax - this.x, ay - this.y) / 150), dropT: 0.25 };
+      this.face(dx, dy);
+      audio.sfx('dash');
+    }
+    const S = this.sled;
+    S.t += dt;
+    if (S.t < S.dur) {
+      const ox = this.x, oy = this.y;
+      this.moveBy(S.dx * 150 * dt, S.dy * 150 * dt);
+      this.play('walk');
+      if (Math.random() < 0.6) sc.fx.burst('foam', this.x - S.dx * 10, this.y + 2, 1);
+      if (Math.hypot(this.x - ox, this.y - oy) < 150 * dt * 0.3) S.t = S.dur; // ran into something: end the run
+      S.dropT -= dt;
+      if (S.dropT <= 0) { S.dropT = 0.38; this.dropBomb(); }
+      return true;
+    }
+    if (S.t < S.dur + 0.9) { this.play(S.t < S.dur + 0.5 ? 'windup' : 'idle'); return true; } // turning round: the moment to hit it
+    this.sled = null;
+    return true;
+  }
+
+  dropBomb() {
+    const sc = this.scene, x = this.x, y = this.y + 2, r = 18;
+    const z = { x, y, r, until: 0.9 };
+    sc.dangers.push(z);
+    const tg = sc.fx.telegraph(x, y, r, 0.9);
+    const bomb = sc.add.circle(x, y - 2, 3, 0x1a1423).setDepth(y);
+    const dmg = this.s.dmg * 0.8 * sc.difficulty.dmg;
+    sc.time.delayedCall(900, () => {
+      bomb.destroy(); tg?.destroy?.();
+      sc.dangers = sc.dangers.filter((k) => k !== z);
+      sc.fx.slam(x, y, r); sc.fx.burst('foam', x, y - 4, 12); audio.sfx('bash', { pitch: 1.3 });
+      for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - x, h.y - y) <= r + h.r) { h.damage(dmg, { x, y }); }
+    });
+  }
+
+  // Avalanche Troll: pounds the ground with both fists, bringing icicles down
+  // on marked spots around the party; heals itself unless it's Burning.
+  aiTroll(dt) {
+    const sc = this.scene, t = this.target;
+    if (!this.status?.burn && this.hp < this.maxHp) {
+      this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.012 * dt);
+      this.regenTxtT = (this.regenTxtT ?? 3) - dt;
+      if (this.regenTxtT <= 0) { this.regenTxtT = 5; sc.floatText(this.x, this.y - 60, 'REGENERATING - BURN IT!', 'fontPlain', 0x8cff8c); }
+    }
+    this.poundT = (this.poundT ?? 5) - dt;
+    if (this.pound) {
+      const P = this.pound;
+      P.t += dt;
+      this.play('windup');
+      if (P.t >= 0.9 && !P.slammed) {
+        P.slammed = true;
+        this.anim = ''; this.sprite.play(`${this.tex}_attack`); this.anim = `${this.tex}_attack`;
+        sc.fx.slam(this.x, this.y, 40); sc.shake(300, 0.01); audio.sfx('bash', { pitch: 0.6 });
+        for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - this.x, h.y - this.y) <= 40 + h.r) { h.damage(this.s.dmg * sc.difficulty.dmg, this); h.knock(h.x - this.x, h.y - this.y, 120); }
+      }
+      if (P.t >= 2.1) {
+        // the icicles land
+        for (const z of P.zones) {
+          sc.fx.burst('foam', z.x, z.y - 6, 10); audio.sfx('frost', { pitch: 1.6 });
+          for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.7 * sc.difficulty.dmg, null); chillHero(h, 2.5); }
+        }
+        for (const g of P.gfx) g?.destroy?.();
+        for (const s of P.spikes) sc.tweens.add({ targets: s, alpha: 0, duration: 400, delay: 300, onComplete: () => s.destroy() });
+        sc.dangers = sc.dangers.filter((z) => !P.zones.includes(z));
+        this.pound = null; this.state = 'recover'; this.t = 0;
+      } else if (P.t >= 1.5 && !P.falling) {
+        P.falling = true; // icicles dropping into view over their marks
+        for (const z of P.zones) { const s = sc.add.image(z.x, z.y - 120, 'arrow').setRotation(Math.PI / 2).setScale(2, 1.4).setTint(0xd6efff).setDepth(z.y + 30); P.spikes.push(s); sc.tweens.add({ targets: s, y: z.y - 6, duration: 600, ease: 'Quad.easeIn' }); }
+      }
+      return true;
+    }
+    if (!t || this.state !== 'chase' || !this.onScreen() || this.poundT > 0) return false;
+    this.poundT = 8;
+    const zones = [], gfx = [];
+    const targets = sc.party.filter((h) => h.alive && !h.downed);
+    for (const h of targets) zones.push({ x: h.x, y: h.y, r: 15, until: 2.1 });
+    for (let k = zones.length; k < 6; k++) { const a = Math.random() * Math.PI * 2, rr = 40 + Math.random() * 50; zones.push({ x: this.x + Math.cos(a) * rr, y: this.y + Math.sin(a) * rr * 0.8, r: 15, until: 2.1 }); }
+    for (const z of zones) { sc.dangers.push(z); gfx.push(sc.fx.telegraph(z.x, z.y, z.r, 2.1)); }
+    this.zone = { x: this.x, y: this.y, r: 40, until: 0.9 }; sc.dangers.push(this.zone); gfx.push(sc.fx.telegraph(this.x, this.y, 40, 0.9));
+    this.pound = { t: 0, zones: [...zones, this.zone], gfx, spikes: [] };
+    sc.floatText(this.x, this.y - 64, 'IT RAISES BOTH FISTS...', 'fontPlain', 0x9fdcff);
+    return true;
   }
 
   beetleBurst(r) {
@@ -2296,7 +2442,7 @@ export class Enemy extends Unit {
     const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
     for (const h of sc.party) {
       if (!h.alive || h.downed) continue;
-      if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.damage(dmg, this);
+      if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(dmg, this); if (this.s.chill) chillHero(h); }
     }
     for (const a of sc.allies || []) if (a.alive && Math.hypot(a.x - z.x, a.y - z.y) <= z.r + a.r) a.damage(dmg, this);
   }

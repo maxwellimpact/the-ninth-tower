@@ -568,7 +568,9 @@ export function eggSac() {
 // Built like the boar: a lean grid body in profile, lit along the back,
 // with a glowing eye, pricked ears and a tail that trails into mist.
 const HOUND = { d: 'blueD', b: 'blue', L: 'blueL', W: 'white', E: 'glowL', k: 'ink', m: 'mist' };
-function houndFrame({ step = 0, crouch = 0, leap = 0, blink = false }) {
+// Frosthelm's Frost Wolf: the hound's build in a thick pale coat, a bushy grey tail
+const WOLF = { d: 'frostD', b: 'frost', L: 'frostL', W: 'snowL', E: 'goldL', k: 'ink', m: 'frostL' }; // grey, so it shows on snow
+function houndFrame({ step = 0, crouch = 0, leap = 0, blink = false, pal = HOUND }) {
   const [c, ctx] = makeCanvas(32, 32);
   const body = [
     '................LL.L..',
@@ -583,21 +585,78 @@ function houndFrame({ step = 0, crouch = 0, leap = 0, blink = false }) {
   ];
   const b = blink ? body.map((r) => r.replace('E', 'd')) : body;
   const y0 = 11 + crouch - leap;
-  grid(ctx, b, HOUND, 5, y0);
+  grid(ctx, b, pal, 5, y0);
   const legs = leap ? ['....bb.......bb.....', '.....b........b.....'] : step % 2
     ? ['....bb....bb..bb.bb..', '....b......b..b...b..', '...bb.....bb..bb..bb.']
     : ['.....bb..bb....bb.bb.', '.....b...b.....b..b..', '....bb..bb....bb..bb.'];
-  grid(ctx, legs, HOUND, 5, y0 + 9);
+  grid(ctx, legs, pal, 5, y0 + 9);
   outline(c, 'ink');
   return c;
 }
-export function buildHound() {
+export function buildHound(pal = HOUND) {
   return {
-    idle: [houndFrame({}), houndFrame({ step: 0, crouch: 0 })],
-    walk: [0, 1, 0, 1].map((st, i) => houndFrame({ step: st, crouch: i % 2 })),
-    windup: [houndFrame({ crouch: 2 }), houndFrame({ crouch: 2, step: 1 })],
-    attack: [houndFrame({ leap: 3 }), houndFrame({ step: 1 })],
-    hurt: [houndFrame({ blink: true })],
+    idle: [houndFrame({ pal }), houndFrame({ step: 0, crouch: 0, pal })],
+    walk: [0, 1, 0, 1].map((st, i) => houndFrame({ step: st, crouch: i % 2, pal })),
+    windup: [houndFrame({ crouch: 2, pal }), houndFrame({ crouch: 2, step: 1, pal })],
+    attack: [houndFrame({ leap: 3, pal }), houndFrame({ step: 1, pal })],
+    hurt: [houndFrame({ blink: true, pal })],
+  };
+}
+// ---------------------------------------------------------------- Frost Wolf
+// A grey timber wolf in profile, bigger than the hounds so it reads as a
+// wolf: a long snout with a black nose, upright pointed ears, a thick pale
+// ruff at the neck, a dark saddle down the back, long legs and a bushy tail
+// with a pale tip. Crouches with its hackles up, leaps with jaws open
+// (48x36, feet at y=28).
+const WOLFC = ['frostD', 'frost', 'frostL', 'snowL'];
+function wolfFrame({ step = 0, crouch = 0, leap = 0, open = false, blink = false }) {
+  const [c, ctx] = makeCanvas(48, 36);
+  const dot = (x, y, col, w = 1, h = 1) => px(ctx, Math.round(x), Math.round(y), col, w, h);
+  const by = 17 + crouch - leap * 2; // body centre line
+  // tail: bushy, sweeping down and back from the rump, a pale tip
+  for (let i = 0; i < 10; i++) { // hangs from the rump in a soft curve, fullest in the middle
+    const tx = 11 - i * 0.75 - (i > 5 ? (i - 5) * 0.2 : 0), ty = by - 2 + i * 1.05 - (leap ? i * 0.7 : 0);
+    const w = i < 2 ? 2 : i < 7 ? 3 : 2;
+    dot(tx - w + 1, ty, i > 7 ? 'snowL' : i % 3 === 0 ? 'frostD' : 'frost', w, 2);
+  }
+  // legs (far pair darker): long and thin, stepping; stretched out in a leap
+  const legs = leap
+    ? [[14, by + 4, -4, 'frostD'], [17, by + 4, -2, 'frost'], [30, by + 2, 4, 'frostD'], [33, by + 2, 5, 'frost']]
+    : [[14, by + 4, step ? 1 : -1, 'frostD'], [17, by + 4, step ? -1 : 1, 'frost'], [29, by + 4, step ? -1 : 1, 'frostD'], [32, by + 4, step ? 1 : -1, 'frost']];
+  for (const [lx, ly, sw, col] of legs) {
+    const foot = 28 - (leap ? 4 : 0);
+    for (let y = ly; y <= foot; y++) dot(lx + sw * (y - ly) / Math.max(1, foot - ly), y, col, 2, 1);
+    dot(lx + sw - 1 + (leap ? 0 : 0), foot, 'frostD', 3, 1); // paw
+  }
+  // body, the dark saddle and pale belly
+  shadedBlob(ctx, 22, by, 11, 5.5, WOLFC);
+  for (let x = 13; x <= 29; x++) dot(x, by - 5 + Math.abs(x - 21) * 0.08, 'frostD', 1, 2); // saddle
+  for (let x = 16; x <= 28; x += 2) dot(x, by + 4, 'snowL', 2, 1); // belly fur
+  if (crouch) for (let x = 18; x <= 28; x += 2) dot(x, by - 7, 'frostD', 1, 2); // hackles up
+  // the ruff: thick pale fur at the neck and chest
+  shadedBlob(ctx, 31, by - 1, 5, 6, ['frost', 'frostL', 'snowL', 'snowXL']);
+  // head, lowered when crouching
+  const hx = 37 + leap, hy = by - 6 + crouch * 1.5 + leap;
+  shadedBlob(ctx, hx, hy, 4.5, 4, WOLFC);
+  // ears: upright, pointed, dark-tipped
+  for (const ex of [hx - 4, hx]) { dot(ex + 1, hy - 8, 'frostD'); dot(ex + 1, hy - 7, 'frostD', 1, 1); dot(ex, hy - 6, 'frost', 2, 1); dot(ex, hy - 5, 'frost', 3, 1); dot(ex + 1, hy - 5, 'snowL'); dot(ex, hy - 4, 'frost', 3, 1); }
+  // the long snout, tapering to a black nose
+  for (let i = 0; i < 7; i++) dot(hx + 3 + i, hy + 0.5 + i * 0.12, i < 2 ? 'frostL' : 'frost', 1, 3 - Math.floor(i / 4));
+  dot(hx + 10, hy + 1, 'ink', 1, 1); dot(hx + 9, hy, 'ink', 1, 1);
+  if (open) { // jaws open: the lower jaw drops, teeth showing
+    dot(hx + 3, hy + 3, 'redD', 6, 1); dot(hx + 3, hy + 4, 'frost', 6, 1); dot(hx + 4, hy + 2, 'white', 1, 1); dot(hx + 8, hy + 2, 'white', 1, 1); dot(hx + 5, hy + 4, 'white', 1, 1);
+  } else dot(hx + 4, hy + 2, 'frostD', 5, 1); // mouth line
+  dot(hx, hy - 1, blink ? 'frostD' : 'ink', 2, 1); if (!blink) dot(hx + 1, hy - 1, 'goldL');
+  outline(c, 'ink');
+  return c;
+}
+export function buildWolf() {
+  return {
+    idle: [wolfFrame({}), wolfFrame({ crouch: 0, blink: true })],
+    walk: [0, 1, 0, 1].map((st, i) => wolfFrame({ step: st, crouch: i % 2 ? 0 : 0 })),
+    windup: [wolfFrame({ crouch: 2 }), wolfFrame({ crouch: 2, open: true })],
+    attack: [wolfFrame({ leap: 2, open: true }), wolfFrame({ step: 1 })],
+    hurt: [wolfFrame({ blink: true })],
   };
 }
 
@@ -825,4 +884,153 @@ function clankFrame({ step = 0, slam = 0 }) {
 }
 export function buildClank() {
   return { idle: [clankFrame({}), clankFrame({ step: 1 })], walk: [clankFrame({ step: 0 }), clankFrame({ step: 1 })], attack: [clankFrame({ slam: 1 }), clankFrame({})] };
+}
+
+// ================================================================ Frosthelm
+const SNOWFUR = ['frost', 'snow', 'snowL', 'snowXL'];
+const MUSK = ['leatherD', 'leather', 'woodL', 'snowL']; // the Rimehorn's shaggy brown fleece, frosted at the tips
+const FROSTSKIN = ['frostD', 'frost', 'frostL', 'snowL'];
+
+// ------------------------------------------------------------------ Rimehorn
+// A great shaggy highland beast in profile: a humped body of long pale fur,
+// a low head under heavy curled horns, a snub muzzle, stumpy legs. It lowers
+// its head (windup) to charge or to scoop and fling a snowball (44x40, feet
+// near y=35).
+function rimehornFrame({ step = 0, lower = 0, rear = 0, snowball = false, eye = 'iceD' }) {
+  const [c, ctx] = makeCanvas(44, 40);
+  const y = -rear;
+  const lg = step % 2 ? [0, 2, 2, 0] : [2, 0, 0, 2];
+  // legs (far pair darker), stubby and hairy
+  [[11, 0], [16, 1], [27, 2], [32, 3]].forEach(([x, i]) => { px(ctx, x, 29 + y - lg[i] * 0.5, i % 2 ? 'frost' : 'frostD', 4, 7 - (i < 2 ? rear : 0)); px(ctx, x, 35 - lg[i] * 0.5, 'ink', 4, 1); });
+  // body: a big humped fleece, fur hanging in a ragged skirt
+  shadedBlob(ctx, 21, 22 + y, 14, 9, MUSK);
+  shadedBlob(ctx, 17, 16 + y, 9, 6, MUSK); // the hump
+  for (let i = 0; i < 12; i++) px(ctx, 9 + i * 2.3, 29 + y + (i % 3), i % 2 ? 'leather' : 'leatherD', 1, 2 + (i % 2)); // the fringe
+  for (let i = 0; i < 7; i++) px(ctx, 11 + i * 3.6, 13 + y + (i % 2) * 2, 'snowXL', 2, 1); // frost on its back
+  for (let i = 0; i < 6; i++) px(ctx, 12 + i * 4, 21 + y + (i % 2) * 3, 'leatherD', 2, 1); // tufts
+  // head: low and forward, lowering further to charge
+  const hy = 21 + y + lower * 3, hx = 36 + lower;
+  shadedBlob(ctx, hx, hy, 5, 4.5, FROSTSKIN);
+  shadedBlob(ctx, hx + 4, hy + 2, 3, 2.5, ['frostD', 'frost', 'snowD', 'snow']); // muzzle
+  px(ctx, hx + 6, hy + 2, 'ink'); // nostril
+  px(ctx, hx - 1, hy - 1, 'ink', 2, 2); px(ctx, hx, hy - 1, eye);
+  // horns: thick bone curls back over the ear and round to the front
+  for (let k = 0; k < 10; k++) { const a = -0.6 - k * 0.5, r = 6 - k * 0.25; px(ctx, Math.round(hx - 2 + Math.cos(a) * r), Math.round(hy - 3 + Math.sin(a) * r * 0.9), k > 7 ? 'bone' : k % 3 ? 'mist' : 'stone', 2, 2); }
+  px(ctx, hx - 4, hy + 3, 'bone', 1, 2);
+  if (snowball) shadedBlob(ctx, hx + 7, hy - 6, 3.5, 3.5, ['snow', 'snowL', 'snowXL', 'white']);
+  outline(c, 'ink');
+  return c;
+}
+export function buildRimehorn() {
+  return {
+    idle: [rimehornFrame({}), rimehornFrame({ step: 1 })],
+    walk: [0, 1, 0, 1].map((st) => rimehornFrame({ step: st })),
+    windup: [rimehornFrame({ lower: 1 }), rimehornFrame({ lower: 1, step: 1 })],
+    attack: [rimehornFrame({ lower: 2 }), rimehornFrame({})],
+    throw: [rimehornFrame({ rear: 2, snowball: true }), rimehornFrame({ rear: 3, snowball: true })],
+    hurt: [rimehornFrame({ eye: 'white' })],
+  };
+}
+
+// --------------------------------------------------------------- Hex Sentinel
+// A tall shard of cursed crystal on a broken plinth, a hex eye burning in its
+// face (the side it reflects spells from). The eye flares before it fires
+// (24x32, base at y=25).
+function sentinelFrame({ glow = 0, eye = 'curseL' }) {
+  const [c, ctx] = makeCanvas(24, 32);
+  shadedBlob(ctx, 12, 25, 8, 3, ['frostD', 'frost', 'frostL', 'mist']); // plinth
+  px(ctx, 5, 25, 'frostD', 14, 2);
+  for (let y = 0; y < 20; y++) {
+    const half = y < 3 ? y : y < 15 ? 4 : 4 - (y - 15) * 0.4;
+    for (let x = Math.round(12 - half); x <= Math.round(11 + half); x++) px(ctx, x, 4 + y, x < 10 ? 'iceXL' : x < 12 ? 'iceL' : x < 14 ? 'ice' : 'iceD');
+  }
+  for (let y = 7; y < 22; y += 4) px(ctx, 13, y, 'purpL', 1, 2); // the hex seams in the glass
+  px(ctx, 10, 12, 'hexD', 4, 3); px(ctx, 11, 13, glow ? 'white' : eye, 2, 1);
+  if (glow) { px(ctx, 9, 11, 'curseL', 1, 1); px(ctx, 14, 11, 'curseL', 1, 1); px(ctx, 11, 10, 'curse', 2, 1); }
+  // little shards orbiting the plinth
+  for (const [x, yy] of [[3, 20 - glow], [20, 18 + glow]]) { px(ctx, x, yy, 'iceL', 1, 3); px(ctx, x, yy, 'iceXL'); }
+  outline(c, 'ink');
+  return c;
+}
+export function buildSentinel() {
+  return {
+    idle: [sentinelFrame({}), sentinelFrame({ eye: 'curse' })],
+    walk: [sentinelFrame({})],
+    windup: [sentinelFrame({ glow: 1 }), sentinelFrame({ glow: 1, eye: 'white' })],
+    attack: [sentinelFrame({ glow: 1 }), sentinelFrame({})],
+    hurt: [sentinelFrame({ eye: 'white' })],
+  };
+}
+
+// -------------------------------------------------------- Snow Goblin Raider
+// A hex goblin in goggles and a fur hood, crouched on a wooden sled with
+// curling runners, a lit bomb held up to throw (36x28, runners at y=22).
+function raiderFrame({ bob = 0, arm = 0, bomb = true }) {
+  const [c, ctx] = makeCanvas(36, 28);
+  // the sled: plank bed and two runners curling up at the front
+  px(ctx, 6, 18, 'woodD', 22, 1); px(ctx, 6, 17, 'wood', 22, 1); px(ctx, 7, 16, 'woodL', 20, 1);
+  px(ctx, 4, 22, 'steelD', 26, 1); px(ctx, 28, 21, 'steelD', 2, 1); px(ctx, 30, 19, 'steelD', 1, 2); px(ctx, 29, 18, 'steelD', 1, 1);
+  for (const x of [9, 16, 23]) px(ctx, x, 19, 'woodD', 1, 3); // struts
+  // the goblin, crouched and leaning into the run
+  const y = bob;
+  shadedBlob(ctx, 17, 12 + y, 5, 4, ['leatherD', 'leather', 'woodL', 'snowL']); // fur coat
+  shadedBlob(ctx, 21, 7 + y, 4.5, 4, ['grassD', 'grass', 'grassL', 'grassXL']); // head
+  px(ctx, 17, 3 + y, 'snowL', 8, 2); px(ctx, 16, 5 + y, 'snow', 2, 3); // fur hood
+  px(ctx, 21, 6 + y, 'steelD', 5, 2); px(ctx, 22, 6 + y, 'iceL', 1, 1); px(ctx, 24, 6 + y, 'iceL', 1, 1); // goggles
+  px(ctx, 25, 9 + y, 'grassD', 2, 1); px(ctx, 14, 6 + y, 'grassL', 2, 1); // nose, ear
+  px(ctx, 15, 15 + y, 'grassD', 3, 1); px(ctx, 21, 15 + y, 'grassD', 3, 1); // knees
+  if (bomb) {
+    const bx = arm ? 12 : 20, by = arm ? 2 + y : 9 + y;
+    px(ctx, bx - 1, by + 2, 'grass', 2, 2); // a hand
+    shadedBlob(ctx, bx, by, 2.6, 2.6, ['ink', 'night', 'slate', 'stone']);
+    px(ctx, bx + 1, by - 3, 'woodD', 1, 2); px(ctx, bx + 1, by - 4, arm ? 'fireL' : 'fire');
+  }
+  outline(c, 'ink');
+  return c;
+}
+export function buildRaider() {
+  return {
+    idle: [raiderFrame({}), raiderFrame({ bob: 1 })],
+    walk: [raiderFrame({}), raiderFrame({ bob: 1 })],
+    windup: [raiderFrame({ arm: 1 }), raiderFrame({ arm: 1, bob: 1 })],
+    attack: [raiderFrame({ bomb: false }), raiderFrame({})],
+    hurt: [raiderFrame({ bomb: false })],
+  };
+}
+
+// ----------------------------------------------------------- Avalanche Troll
+// A hulking hunched troll: blue-grey hide, a mantle of white fur over the
+// shoulders, a small head with tusks sunk between them, long arms ending in
+// huge fists. Pounds the ground with both (56x56, feet near y=47).
+function trollFrame({ fl = 0, fr = 0, bob = 0, raise = 0, eye = 'goldL' }) {
+  const [c, ctx] = makeCanvas(56, 56);
+  const y = bob;
+  shadedBlob(ctx, 21, 44, 5, 4, FROSTSKIN); shadedBlob(ctx, 35, 44, 5, 4, FROSTSKIN); // legs
+  px(ctx, 17, 47, 'frostD', 9, 1); px(ctx, 31, 47, 'frostD', 9, 1);
+  // arms: from the shoulders down to fists (raised for the pound)
+  for (const [sx, d, f] of [[13, -1, fl], [43, 1, fr]]) {
+    const fy = 38 + y + f - raise * 18, fx = sx + d * (4 + raise * 2);
+    for (let k = 0; k <= 6; k++) shadedBlob(ctx, sx + (fx - sx) * k / 6, 22 + y + (fy - 22 - y) * k / 6, 3.5, 3.5, FROSTSKIN);
+    shadedBlob(ctx, fx, fy, 6, 5.5, FROSTSKIN);
+    px(ctx, fx - 4, fy + 2, 'frostD', 8, 1);
+  }
+  shadedBlob(ctx, 28, 32 + y, 13, 11, FROSTSKIN); // gut and chest
+  shadedBlob(ctx, 28, 36 + y, 7, 5, ['frost', 'frostL', 'snowD', 'snow']); // pale belly
+  shadedBlob(ctx, 28, 21 + y, 16, 7, SNOWFUR); // the fur mantle
+  for (let i = 0; i < 14; i++) px(ctx, 14 + i * 2.1, 26 + y + (i % 3), i % 2 ? 'snow' : 'frost', 1, 2); // mantle fringe
+  shadedBlob(ctx, 28, 18 + y, 5.5, 5, FROSTSKIN); // head, sunk low
+  px(ctx, 25, 17 + y, 'ink', 6, 2); px(ctx, 25, 17 + y, eye, 2, 1); px(ctx, 29, 17 + y, eye, 2, 1);
+  px(ctx, 24, 21 + y, 'bone', 1, 3); px(ctx, 32, 21 + y, 'bone', 1, 3); // tusks
+  for (const [x, yy] of [[18, 15], [38, 15], [28, 12]]) { px(ctx, x, yy + y, 'iceXL', 1, 3); px(ctx, x, yy + y - 1, 'iceL'); } // icicles in the fur
+  outline(c, 'ink');
+  return c;
+}
+export function buildTroll() {
+  return {
+    idle: [trollFrame({}), trollFrame({ bob: 1 })],
+    walk: [trollFrame({ fl: -2 }), trollFrame({ fr: -2, bob: 1 }), trollFrame({ fl: 2 }), trollFrame({ fr: 2, bob: 1 })],
+    windup: [trollFrame({ raise: 1, bob: -1 }), trollFrame({ raise: 1, bob: -2 })],
+    attack: [trollFrame({ fl: 6, fr: 6, bob: 2 }), trollFrame({})],
+    hurt: [trollFrame({ eye: 'white' })],
+  };
 }

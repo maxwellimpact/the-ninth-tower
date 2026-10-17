@@ -3,7 +3,7 @@ import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
-import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
+import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
 import { FX } from '../game/fx.js';
 import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
@@ -394,6 +394,7 @@ export class Game extends Phaser.Scene {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
+    if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -754,6 +755,8 @@ export class Game extends Phaser.Scene {
     else if (kind === 'ember') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 150; audio.sfx('fireCast', { pitch: 1.4 }); }
     else if (kind === 'heavy') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setScale(1.8).setTint(0xff9a8a); sp = 270; audio.sfx('dash'); }
     else if (kind === 'web') { s = this.add.image(from.x, from.y - 8, 'web0').setDepth(TOP - 21).setScale(0.45); sp = 130; audio.sfx('squish', { pitch: 1.6 }); }
+    else if (kind === 'snowball') { s = this.add.circle(from.x, from.y - 14, 4, 0xf4f8ff).setStrokeStyle(1, 0x7d8bb4).setDepth(TOP - 21); sp = 150; audio.sfx('swing', { pitch: 0.6 }); }
+    else if (kind === 'shard') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0xb8e8ff).setScale(1.2); sp = 190; audio.sfx('frost', { pitch: 1.4 }); }
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
     (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' || kind === 'web' ? 1.8 : 1.1, from, kind });
   }
@@ -792,6 +795,8 @@ export class Game extends Phaser.Scene {
         this.fx.burst(p.kind === 'arrow' || !p.kind ? 'spark' : 'curse', p.x, p.y, 4);
         if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
         if (p.kind === 'web' && hit.buff) { hit.buff('slow', 0.05, 1.4); this.floatText(hit.x, hit.y - 34, 'WEBBED', 'fontPlain', 0xc9cfe0); }
+        if (p.kind === 'snowball') { freezeHero(hit, 1.2); this.fx.burst('foam', p.x, p.y, 10); }
+        if (p.kind === 'shard') chillHero(hit, 1.6);
       }
       if (hit || wall || p.life <= 0) { p.dead = true; p.s.destroy(); }
     }
@@ -1364,6 +1369,17 @@ export class Game extends Phaser.Scene {
       const [dx, dy] = norm(src.x - target.x, src.y - target.y);
       const st = src.skills.find((k) => k.id === 'step');
       if (st && st.t > 0 && f[0] * dx + f[1] * dy < -0.3) { st.t = 0; src.ravenT = this.time.now + 1000; this.floatText(src.x, src.y - 34, 'STEP READY', 'fontPlain', 0xb48cff); }
+    }
+    // the Hex Sentinel turns spells cast at its face back on the caster
+    if (hero && spell && target.s?.reflect && target.view && !(target.stunT > 0) && !target.status?.shock) {
+      const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
+      const [dx, dy] = norm(src.x - target.x, src.y - target.y);
+      if (f[0] * dx + f[1] * dy > 0.3) {
+        src.damage(amount * 0.5, target);
+        this.fx.burst('curse', target.x, target.y - 12, 8); audio.sfx('block', { pitch: 1.4 });
+        if (!target.reflectMsgT || this.time.now > target.reflectMsgT) { target.reflectMsgT = this.time.now + 1800; this.floatText(target.x, target.y - 36, 'REFLECTED - GET BEHIND IT', 'fontPlain', 0xd9b8ff); }
+        return;
+      }
     }
     target.lastElement = el;
     const hpBefore = target.hp;

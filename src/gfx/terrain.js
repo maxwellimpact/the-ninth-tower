@@ -111,8 +111,8 @@ export function makeTerrainPainter(world) {
     }
     if (t === T.ICE) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const o = typeAt(x + dx, y + dy); if (o !== T.ICE && o !== T.WATER) return C.snowL; } // a rim of snow on the shore ice
-      if (Math.abs(vnoise(x / 14, y / 14, 217) - 0.5) < 0.014) return C.iceXL; // cracks
-      if ((x + y * 2) % 29 < 2 && vnoise(x / 20, y / 20, 218) > 0.55) return C.iceXL; // a glassy sheen
+      if (Math.abs(vnoise(x / 18, y / 18, 217) - 0.5) < 0.008 && vnoise(x / 40, y / 40, 229) > 0.55) return C.iceXL; // a few long cracks
+      if ((x + y * 2) % 41 < 1 && vnoise(x / 24, y / 24, 218) > 0.7) return C.iceXL; // the odd glint of sheen
       const n = vnoise(x / 30, y / 30, 219) * 0.8 + vnoise(x / 6, y / 6, 220) * 0.2 + (bayer(x, y) - 0.5) * 0.14;
       return n < 0.32 ? C.ice : n < 0.78 ? C.iceL : C.iceXL;
     }

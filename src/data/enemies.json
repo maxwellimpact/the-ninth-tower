@@ -936,5 +936,159 @@
    "scale": 3,
    "silver": 2
   }
+ },
+ "frostwolf": {
+  "name": "FROST WOLF",
+  "maxHp": 90,
+  "speed": 62,
+  "aggro": 120,
+  "reach": 22,
+  "windup": 0.34,
+  "recover": 0.55,
+  "dmg": 18,
+  "xp": 12,
+  "gold": [
+   1,
+   4
+  ],
+  "r": 7,
+  "zone": "front",
+  "zr": 16,
+  "ai": "pack",
+  "chill": true,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 0.45
+  }
+ },
+ "rimehorn": {
+  "name": "RIMEHORN",
+  "maxHp": 260,
+  "speed": 30,
+  "aggro": 125,
+  "reach": 30,
+  "windup": 0.8,
+  "recover": 1.0,
+  "dmg": 26,
+  "xp": 30,
+  "gold": [
+   4,
+   9
+  ],
+  "r": 10,
+  "zone": "front",
+  "zr": 24,
+  "ai": "rimehorn",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 0.6,
+   "rimeglass": 0.4
+  }
+ },
+ "icewraith": {
+  "name": "ICE WRAITH",
+  "maxHp": 100,
+  "speed": 44,
+  "aggro": 115,
+  "reach": 20,
+  "windup": 0.5,
+  "recover": 0.8,
+  "dmg": 24,
+  "xp": 16,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 14,
+  "flying": true,
+  "chill": true,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "rimeglass": 0.4
+  },
+  "alpha": 0.85,
+  "hover": 6
+ },
+ "sentinel": {
+  "name": "HEX SENTINEL",
+  "maxHp": 180,
+  "speed": 0,
+  "aggro": 130,
+  "reach": 125,
+  "windup": 0.9,
+  "recover": 1.3,
+  "dmg": 24,
+  "xp": 22,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 0,
+  "shot": "shard",
+  "reflect": true,
+  "anchored": true,
+  "weak": "storm",
+  "resist": "frost",
+  "drops": {
+   "crystal": 0.5,
+   "silver": 0.3
+  }
+ },
+ "raider": {
+  "name": "SNOW GOBLIN RAIDER",
+  "maxHp": 100,
+  "speed": 40,
+  "aggro": 135,
+  "reach": 20,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 22,
+  "xp": 15,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 14,
+  "ai": "sled",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "scrap": 0.6
+  }
+ },
+ "troll": {
+  "name": "AVALANCHE TROLL",
+  "maxHp": 1400,
+  "speed": 30,
+  "aggro": 140,
+  "reach": 32,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 42,
+  "xp": 260,
+  "gold": [
+   45,
+   70
+  ],
+  "r": 14,
+  "zone": "front",
+  "zr": 28,
+  "ai": "troll",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 3,
+   "rimeglass": 2
+  },
+  "named": true
  }
 }

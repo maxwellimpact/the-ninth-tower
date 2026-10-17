@@ -1424,6 +1424,267 @@
      203
     ]
    ]
+  },
+  {
+   "id": "fG1",
+   "units": [
+    [
+     "frostwolf",
+     64,
+     232
+    ],
+    [
+     "frostwolf",
+     67,
+     234
+    ],
+    [
+     "frostwolf",
+     62,
+     236
+    ]
+   ]
+  },
+  {
+   "id": "fG2",
+   "units": [
+    [
+     "frostwolf",
+     88,
+     232
+    ],
+    [
+     "frostwolf",
+     91,
+     230
+    ],
+    [
+     "raider",
+     86,
+     237
+    ]
+   ]
+  },
+  {
+   "id": "fG3",
+   "units": [
+    [
+     "rimehorn",
+     42,
+     251
+    ],
+    [
+     "frostwolf",
+     45,
+     254
+    ],
+    [
+     "frostwolf",
+     39,
+     255
+    ]
+   ]
+  },
+  {
+   "id": "fG4",
+   "units": [
+    [
+     "icewraith",
+     20,
+     246
+    ],
+    [
+     "icewraith",
+     26,
+     252
+    ]
+   ]
+  },
+  {
+   "id": "fG5",
+   "units": [
+    [
+     "raider",
+     14,
+     253
+    ],
+    [
+     "raider",
+     31,
+     245
+    ]
+   ]
+  },
+  {
+   "id": "fG6",
+   "units": [
+    [
+     "sentinel",
+     60,
+     258
+    ],
+    [
+     "icewraith",
+     56,
+     256
+    ],
+    [
+     "frostwolf",
+     65,
+     256
+    ]
+   ]
+  },
+  {
+   "id": "fG7",
+   "units": [
+    [
+     "rimehorn",
+     106,
+     272
+    ],
+    [
+     "raider",
+     104,
+     283
+    ]
+   ]
+  },
+  {
+   "id": "fG8",
+   "units": [
+    [
+     "frostwolf",
+     10,
+     272
+    ],
+    [
+     "frostwolf",
+     13,
+     268
+    ],
+    [
+     "icewraith",
+     8,
+     280
+    ]
+   ]
+  },
+  {
+   "id": "fG9",
+   "units": [
+    [
+     "sentinel",
+     20,
+     300
+    ],
+    [
+     "rimehorn",
+     26,
+     296
+    ]
+   ]
+  },
+  {
+   "id": "fG10",
+   "units": [
+    [
+     "sentinel",
+     50,
+     304
+    ],
+    [
+     "icewraith",
+     56,
+     300
+    ],
+    [
+     "frostwolf",
+     74,
+     302
+    ],
+    [
+     "frostwolf",
+     76,
+     306
+    ]
+   ],
+   "until": "ward_frost"
+  },
+  {
+   "id": "fG11",
+   "units": [
+    [
+     "raider",
+     98,
+     306
+    ],
+    [
+     "frostwolf",
+     100,
+     312
+    ],
+    [
+     "frostwolf",
+     95,
+     314
+    ]
+   ]
+  },
+  {
+   "id": "fG12",
+   "units": [
+    [
+     "sentinel",
+     40,
+     272
+    ],
+    [
+     "icewraith",
+     46,
+     276
+    ],
+    [
+     "rimehorn",
+     84,
+     282
+    ]
+   ]
+  },
+  {
+   "id": "fG13",
+   "units": [
+    [
+     "frostwolf",
+     70,
+     286
+    ],
+    [
+     "frostwolf",
+     74,
+     288
+    ],
+    [
+     "frostwolf",
+     66,
+     288
+    ]
+   ]
+  },
+  {
+   "id": "fG14",
+   "units": [
+    [
+     "rimehorn",
+     104,
+     244
+    ],
+    [
+     "frostwolf",
+     100,
+     240
+    ]
+   ]
   }
  ],
  "chests": [
