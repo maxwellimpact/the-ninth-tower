@@ -1214,5 +1214,126 @@
   },
   "perk": "windrunner",
   "desc": "+10% MOVE SPEED. AFTER A DODGE, THE NEXT SHOT CRITS. FOUND WHERE ONLY THE WIND COULD TAKE YOU."
+ },
+ "oathkeeper": {
+  "name": "OATHKEEPER",
+  "hero": "brann",
+  "slot": "weapon",
+  "look": "sword_long@6",
+  "stats": {
+   "atk": 22,
+   "def": 6,
+   "crit": 0.04
+  },
+  "desc": "BULWARK LASTS TWICE AS LONG, AND WHEN IT ENDS THE SHIELDS BURST AND HEAL 30%. THE OATH OF THE KING'S OWN GUARD, IN STEEL.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "whisper_wane": {
+  "name": "WHISPER & WANE",
+  "hero": "sable",
+  "slot": "weapon",
+  "look": "dagger_kris@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.1
+  },
+  "desc": "THOUSAND CUTS STRIKES UP TO 12 FOES AND STARTS AGAIN IF THE LAST ONE FALLS. TWO BLADES THAT WERE NEVER MEANT TO BE APART.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "skyfall": {
+  "name": "SKYFALL",
+  "hero": "wren",
+  "slot": "weapon",
+  "look": "bow_gale@6",
+  "stats": {
+   "atk": 21,
+   "crit": 0.08
+  },
+  "desc": "STORM OF TALONS LASTS 8S AND ITS HITS STUN. THE STRING SINGS BEFORE IT'S DRAWN.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "first_light": {
+  "name": "HAMMER OF FIRST LIGHT",
+  "hero": "oake",
+  "slot": "weapon",
+  "look": "hammer_dawn@6",
+  "stats": {
+   "atk": 20,
+   "hp": 24
+  },
+  "desc": "DAWNBREAK ALSO BURNS NEARBY FOES WITH HEAVY LIGHT. WARM IN THE HAND, ALWAYS.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "worldsplitter": {
+  "name": "WORLDSPLITTER",
+  "hero": "kesh",
+  "slot": "weapon",
+  "look": "axe_bearded@6",
+  "stats": {
+   "atk": 24,
+   "crit": 0.05
+  },
+  "desc": "PRIMAL FORM LASTS 4S LONGER AND EVERY HIT SLAMS THE GROUND. THE GROUND HAS NOTED THIS AND IS NOT HAPPY.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "heart_of_winter": {
+  "name": "HEART OF WINTER",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "look": "wand_glacier@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.06
+  },
+  "element": "frost",
+  "desc": "FROST. ABSOLUTE ZERO FREEZES BOSSES FOR 3S. THE COLD THAT WAS ALWAYS HERS, GIVEN BACK.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  }
+ },
+ "omniwrench": {
+  "name": "OMNIWRENCH",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "look": "wrench_omni@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.05
+  },
+  "desc": "CLANK LASTS 24S AND FIRES ROCKETS. IT FITS EVERY BOLT EVER MADE AND SEVERAL THAT HAVEN'T BEEN YET.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
  }
 }

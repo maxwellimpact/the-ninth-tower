@@ -3158,6 +3158,92 @@
    "errands": [
     "lostTrapper"
    ]
+  },
+  {
+   "id": "aldric",
+   "name": "SIR ALDRIC, ROYAL ARMORER",
+   "x": 33,
+   "y": 31,
+   "look": "aldric",
+   "wards": 5,
+   "voice": {
+    "pitch": 160,
+    "wave": "square",
+    "duty": 0.5,
+    "speed": 0.9
+   },
+   "shop": [
+    {
+     "gear": "oathkeeper",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "whisper_wane",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "skyfall",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "first_light",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "worldsplitter",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "heart_of_winter",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    },
+    {
+     "gear": "omniwrench",
+     "price": 1500,
+     "mats": {
+      "starmetal": 6
+     }
+    }
+   ],
+   "lines": [
+    "THE ROYAL ARMORY IS OPEN AGAIN. FIVE STONES DOWN - THE KING WOULD WEEP. WELL. HE WOULD CROAK.",
+    "LEGENDARY ARMS, FORGED FROM STARMETAL. ONE FOR EACH OF YOUR COMPANY. BRING ME STARMETAL AND GOLD."
+   ]
+  },
+  {
+   "id": "bjorna",
+   "name": "BJORNA OF THE RIMEWATCH INN",
+   "x": 48,
+   "y": 218,
+   "look": "bjorna",
+   "requires": "ward_frost",
+   "voice": {
+    "pitch": 250,
+    "wave": "triangle",
+    "speed": 0.95
+   },
+   "lines": [
+    "THE ICE KNIGHT'S GONE AND THE VILLAGERS ARE COMING BACK UP THE PASS. RIMEWATCH IS A VILLAGE AGAIN - AND A VILLAGE NEEDS AN INN.",
+    "SIT BY THE FIRE. YOU'VE EARNED A HOT CUP AND A WARM BED. FIRST ONE'S FREE. SO'S THE SECOND."
+   ]
   }
  ]
 }

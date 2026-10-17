@@ -1608,21 +1608,22 @@ export class Game extends Phaser.Scene {
     audio.sfx('ult');
     this.events.emit('ult', h);
     this.hitStop(0.12);
-    const tome = !!h.hs.ultTome; // the level-20 Ultimate Tome upgrade (C3)
+    const legend = Object.values(h.hs.equip).some((id) => items[id]?.legend); // a Legendary changes its hero's ultimate (C4)
+    const tome = !!h.hs.ultTome || legend; // the level-20 Ultimate Tome upgrade (C3); a Legendary includes it
     switch (h.ultimate.id) {
       case 'bulwark': {
         sc.shake(200, 0.008);
         sc.fx.ring(h.x, h.y, 'ringGold', 9);
         for (const p of this.party) {
           if (p.downed) continue;
-          p.shield = Math.round(p.maxHp * 0.35); p.shieldT = 6;
+          p.shield = Math.round(p.maxHp * 0.35); p.shieldT = legend ? 12 : 6; // Oathkeeper: twice as long
           sc.fx.ring(p.x, p.y - 8, 'ringBlue', 2.5);
         }
         sc.taunt(h, 150, 5);
         for (const e of this.enemies) if (e.alive && dist(e, h) < 56) this.dealDamage(h, e, h.stats.atk * 1.2, { knock: 150 });
         sc.floatText(h.x, h.y - 36, 'BULWARK!', 'fontGold', 0xffffff, true);
-        if (tome) this.time.delayedCall(6000, () => { // the shields burst into healing light
-          for (const p of this.party) if (p.alive && !p.downed) { p.heal(Math.round(p.maxHp * 0.15)); this.fx.ring(p.x, p.y - 8, 'ringGold', 2); }
+        if (tome) this.time.delayedCall(legend ? 12000 : 6000, () => { // the shields burst into healing light
+          for (const p of this.party) if (p.alive && !p.downed) { p.heal(Math.round(p.maxHp * (legend ? 0.3 : 0.15))); this.fx.ring(p.x, p.y - 8, 'ringGold', 2); }
           for (const e of this.enemies) if (e.alive && !h.downed && dist(e, h) < 56) this.dealDamage(h, e, h.stats.atk * 0.8, { knock: 90 });
           audio.sfx('shatter');
         });
@@ -1712,7 +1713,7 @@ export class Game extends Phaser.Scene {
           const cold = !!h.passive('coldheart');
           if (e.boss) {
             e.status.chill = { t: 3, n: 2, heavy: true, cold };
-            if (tome) { e.status.freeze = { t: 2, cold }; e.stunT = Math.max(e.stunT, 2); e.clearZone(); }
+            if (tome) { const ft = legend ? 3 : 2; e.status.freeze = { t: ft, cold }; e.stunT = Math.max(e.stunT, ft); e.clearZone(); } // Heart of Winter: 3s
           } else { e.status.freeze = { t: 3, cold }; e.stunT = Math.max(e.stunT, 3); e.clearZone(); }
           e.statusTint?.();
           sc.fx.burst('foam', e.x, e.y - 10, 10);
@@ -1732,7 +1733,7 @@ export class Game extends Phaser.Scene {
         break;
       }
       case 'thousand_cuts': {
-        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, tome ? 10 : 6);
+        const targets = this.enemies.filter((e) => this.fairTarget(e) && dist(e, h) < 170).sort((a, b) => dist(a, h) - dist(b, h)).slice(0, legend ? 12 : tome ? 10 : 6); // Whisper & Wane: 12
         if (!targets.length) { h.ult = 100; audio.sfx('click'); this.floatText(h.x, h.y - 30, 'NO TARGETS', 'fontPlain'); return false; }
         const home = { x: h.x, y: h.y };
         h.invuln = 0.15 * targets.length + 0.4;
@@ -1963,6 +1964,7 @@ export class Game extends Phaser.Scene {
       if (n) got[m] = n;
     }
     if (got.scrap && this.party.some((h) => h.alive && h.passive?.('scrapper'))) got.scrap = Math.ceil(got.scrap * 1.5); // Scrap Collector (Gizmo)
+    if ((e.elite || e.named) && !e.boss && Math.random() < (e.named ? 0.6 : 0.12)) got.starmetal = (got.starmetal || 0) + 1; // Starmetal: elites and bounties (C6)
     this.quests?.onKill(e);
     if (Object.keys(got).length) {
       addMats(this.state, got);
@@ -1975,6 +1977,7 @@ export class Game extends Phaser.Scene {
   onBossKilled(b) {
     const B = b.bossDef || this.bossDefs()[0];
     this.flags[B.flag] = true;
+    if (b.level >= 10) { const sm = b.isShadow ? 1 : 2; addMats(this.state, { starmetal: sm }); this.time.delayedCall(1800, () => this.floatText(b.x, b.y - 50, `+${sm} STARMETAL`, 'fontGold')); } // Starmetal from the lieutenants (C6)
     audio.sfx('shatter'); audio.sfx('roar');
     this.shake(700, 0.014);
     this.cameras.main.flash(200, 255, 255, 255);
@@ -2824,6 +2827,10 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(5200, () => this.growWardShard());
     if (down >= 2) this.flags.enchanter = true; // two stones: the Enchanter comes home
     if (down >= 3) this.flags.smithRank = Math.max(this.flags.smithRank || 0, 2);
+    if (down >= 5 && !this.flags.royalArmory) { // all five: the Royal Armory and the Blacksmith's last rank (C9)
+      this.flags.royalArmory = true; this.flags.smithRank = 3;
+      this.time.delayedCall(9000, () => this.events.emit('banner', 'THE ROYAL ARMORY OPENS', 'IN BRIGHTWATER: LEGENDARY ARMS. THE BLACKSMITH REACHES RANK 3'));
+    }
     this.hitStop(0.3);
     this.cameras.main.flash(250, 240, 200, 255);
     this.shake(500, 0.012);

@@ -164,11 +164,15 @@ export class QuestManager {
   shopTalk(npc) {
     const sc = this.sc, st = this.state;
     const lines = [this.line(npc, npc.lines[Math.floor(Math.random() * npc.lines.length)])];
-    const wares = npc.shop.filter((w) => !(w.gear && (sc.flags[`bought_${w.gear}`])));
+    const wares = npc.shop.filter((w) => !(w.gear && (sc.flags[`bought_${w.gear}`])) && !(w.gear && items[w.gear].hero && !st.recruited.includes(items[w.gear].hero)));
     lines[0].choices = [...wares.map((w) => {
       const name = w.gear ? items[w.gear].name : CRAFT.consumables[w.item].name;
-      return [`${name} ${w.price}G`, () => {
+      const matCost = Object.entries(w.mats || {}).map(([k, n]) => ` ${n} ${CRAFT.materials[k]?.short || k.toUpperCase()}`).join('');
+      return [`${name} ${w.price}G${matCost}`, () => {
         if (st.gold < w.price) { sc.events.emit('dialogue', [this.line(npc, "THAT'S NOT ENOUGH COIN, FRIEND.")]); return; }
+        const short = Object.entries(w.mats || {}).find(([k, n]) => (st.materials[k] || 0) < n);
+        if (short) { sc.events.emit('dialogue', [this.line(npc, `I NEED ${short[1]} ${CRAFT.materials[short[0]]?.name || short[0].toUpperCase()} FOR THAT. YOU HAVE ${st.materials[short[0]] || 0}.`)]); return; }
+        for (const [k, n] of Object.entries(w.mats || {})) st.materials[k] -= n;
         st.gold -= w.price; audio.sfx('coin');
         if (w.gear) { sc.flags[`bought_${w.gear}`] = true; gainItems(st, [w.gear]); sc.events.emit('loot', { ids: [w.gear] }); }
         else { addPotions(st, { [w.item]: 1 }); sc.floatText(sc.leader.x, sc.leader.y - 30, `+1 ${name}`, 'fontGold'); }
