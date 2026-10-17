@@ -1,7 +1,7 @@
 {
  "size": {
   "w": 512,
-  "h": 128,
+  "h": 256,
   "tile": 16,
   "overworldW": 192
  },
@@ -81,6 +81,18 @@
    "name": "THE SUNKEN ABBEY",
    "sub": "WHERE THE BELLS DROWNED",
    "outer": "marsh"
+  },
+  {
+   "id": "gloam",
+   "name": "GLOAMWOOD",
+   "sub": "WHERE THE LIGHT GETS LOST",
+   "outer": "gloam"
+  },
+  {
+   "id": "cinder",
+   "name": "CINDERREACH",
+   "sub": "THE BADLANDS THAT BURN",
+   "outer": "cinder"
   }
  ],
  "groups": [
@@ -961,6 +973,232 @@
     ]
    ],
    "once": true
+  },
+  {
+   "id": "gG1",
+   "units": [
+    [
+     "hound",
+     52,
+     150
+    ],
+    [
+     "hound",
+     54,
+     152
+    ],
+    [
+     "hound",
+     50,
+     153
+    ]
+   ]
+  },
+  {
+   "id": "gG2",
+   "units": [
+    [
+     "rootling",
+     62,
+     144
+    ],
+    [
+     "rootling",
+     66,
+     141
+    ],
+    [
+     "spider",
+     64,
+     147
+    ]
+   ]
+  },
+  {
+   "id": "gG3",
+   "units": [
+    [
+     "shade",
+     37,
+     178
+    ],
+    [
+     "shade",
+     41,
+     180
+    ],
+    [
+     "banshee",
+     39,
+     175
+    ]
+   ]
+  },
+  {
+   "id": "gG4",
+   "units": [
+    [
+     "spider",
+     27,
+     184
+    ],
+    [
+     "spider",
+     31,
+     186
+    ],
+    [
+     "spiderling",
+     25,
+     187
+    ],
+    [
+     "spiderling",
+     29,
+     189
+    ]
+   ]
+  },
+  {
+   "id": "gG5",
+   "units": [
+    [
+     "hound",
+     71,
+     155
+    ],
+    [
+     "hound",
+     74,
+     157
+    ],
+    [
+     "hound",
+     69,
+     158
+    ],
+    [
+     "hound",
+     73,
+     160
+    ]
+   ]
+  },
+  {
+   "id": "gG6",
+   "units": [
+    [
+     "shade",
+     69,
+     177
+    ],
+    [
+     "shade",
+     82,
+     179
+    ],
+    [
+     "banshee",
+     75,
+     191
+    ],
+    [
+     "shade",
+     80,
+     189
+    ]
+   ],
+   "until": "ward_gloam"
+  },
+  {
+   "id": "gG7",
+   "units": [
+    [
+     "rootling",
+     89,
+     170
+    ],
+    [
+     "rootling",
+     93,
+     166
+    ],
+    [
+     "banshee",
+     87,
+     175
+    ],
+    [
+     "rootling",
+     92,
+     177
+    ]
+   ]
+  },
+  {
+   "id": "gG8",
+   "units": [
+    [
+     "goblin",
+     60,
+     197
+    ],
+    [
+     "archer",
+     64,
+     199
+    ],
+    [
+     "warlock",
+     58,
+     200
+    ],
+    [
+     "goblin",
+     62,
+     195
+    ]
+   ]
+  },
+  {
+   "id": "gG9",
+   "units": [
+    [
+     "banshee",
+     12,
+     150
+    ],
+    [
+     "shade",
+     15,
+     153
+    ],
+    [
+     "shade",
+     10,
+     154
+    ]
+   ]
+  },
+  {
+   "id": "gG10",
+   "units": [
+    [
+     "spider",
+     36,
+     197
+    ],
+    [
+     "rootling",
+     39,
+     201
+    ],
+    [
+     "spider",
+     34,
+     201
+    ]
+   ]
   }
  ],
  "chests": [
@@ -1046,6 +1284,26 @@
    "potions": {
     "potion": 3,
     "elixir": 1
+   }
+  },
+  {
+   "id": "gloamLog",
+   "x": 13,
+   "y": 143,
+   "gold": 60,
+   "mats": {
+    "silk": 2,
+    "ghostcap": 2
+   }
+  },
+  {
+   "id": "gloamRidge",
+   "x": 94,
+   "y": 198,
+   "gold": 90,
+   "mats": {
+    "heartwood": 2,
+    "crystal": 2
    }
   }
  ],
@@ -1294,6 +1552,14 @@
   {
    "x": 31,
    "y": 62
+  },
+  {
+   "x": 31,
+   "y": 141
+  },
+  {
+   "x": 64,
+   "y": 164
   }
  ],
  "signs": [
@@ -1321,6 +1587,37 @@
     "EAST: THE OLD WATCHTOWER.",
     "WEST: THE VALE. AND A VERY CROSS FROG."
    ]
+  },
+  {
+   "x": 37,
+   "y": 129,
+   "lines": [
+    "GLOAMWOOD. KEEP TO THE ROADS.",
+    "IF A LIGHT IN THE TREES CALLS YOUR NAME, IT ISN'T A FRIEND. PROBABLY."
+   ]
+  },
+  {
+   "x": 95,
+   "y": 151,
+   "lines": [
+    "EAST: CINDERREACH. THE GROUND GETS WARM. THEN HOT. THEN WORSE.",
+    "WEST: GLOAMWOOD. THE GROUND GETS DARK. THEN DARKER."
+   ]
+  },
+  {
+   "x": 86,
+   "y": 152,
+   "lines": [
+    "THE HERMIT IS NOT IN.",
+    "THE HERMIT IS NEVER IN. THE HERMIT CAN SEE YOU READING THIS. - THE HERMIT"
+   ]
+  },
+  {
+   "x": 147,
+   "y": 124,
+   "lines": [
+    "SOUTH: CINDERREACH. ASH ROADS, HOT WINDS, WORSE MANNERS."
+   ]
   }
  ],
  "buildings": [
@@ -1335,6 +1632,13 @@
    "x": 21,
    "y": 29,
    "kind": "tavern"
+  },
+  {
+   "id": "elder",
+   "x": 50,
+   "y": 186,
+   "kind": "elder",
+   "landmark": true
   }
  ],
  "breakables": [
@@ -1636,6 +1940,30 @@
   [
    458,
    65
+  ],
+  [
+   6,
+   158
+  ],
+  [
+   28,
+   176
+  ],
+  [
+   62,
+   190
+  ],
+  [
+   90,
+   186
+  ],
+  [
+   82,
+   134
+  ],
+  [
+   44,
+   203
   ]
  ],
  "nodes": [
@@ -1833,6 +2161,51 @@
    "kind": "silver",
    "x": 494,
    "y": 65
+  },
+  {
+   "kind": "ghostcap",
+   "x": 20,
+   "y": 148
+  },
+  {
+   "kind": "ghostcap",
+   "x": 45,
+   "y": 186
+  },
+  {
+   "kind": "ghostcap",
+   "x": 70,
+   "y": 147
+  },
+  {
+   "kind": "ghostcap",
+   "x": 84,
+   "y": 160
+  },
+  {
+   "kind": "ghostcap",
+   "x": 12,
+   "y": 178
+  },
+  {
+   "kind": "ghostcap",
+   "x": 58,
+   "y": 182
+  },
+  {
+   "kind": "ghostcap",
+   "x": 30,
+   "y": 170
+  },
+  {
+   "kind": "herb",
+   "x": 38,
+   "y": 155
+  },
+  {
+   "kind": "herb",
+   "x": 66,
+   "y": 172
   }
  ],
  "shop": {
@@ -1925,6 +2298,11 @@
    "id": "shrinePond",
    "x": 99,
    "y": 9
+  },
+  {
+   "id": "shrineGloam",
+   "x": 7,
+   "y": 186
   }
  ],
  "lookouts": [
@@ -1941,6 +2319,13 @@
    "y": 100,
    "r": 44,
    "name": "FENWATCH LOOKOUT"
+  },
+  {
+   "id": "lookoutGloam",
+   "x": 55,
+   "y": 174,
+   "r": 46,
+   "name": "GLOAMWATCH LOOKOUT"
   }
  ],
  "wards": [
@@ -2077,6 +2462,41 @@
     ]
    ],
    "warden": "murkWardenDefeated"
+  },
+  {
+   "id": "gloam",
+   "x": 76,
+   "y": 184,
+   "r": 12,
+   "flag": "ward_gloam",
+   "guardian": "huntsmanDefeated",
+   "region": "gloam",
+   "lifts": "THE CURSE LIFTS FROM GLOAMWOOD",
+   "warden": "huntsmanWardenDefeated",
+   "vines": [
+    [
+     [
+      76,
+      184
+     ],
+     [
+      70,
+      186.5
+     ],
+     [
+      63,
+      189
+     ],
+     [
+      57,
+      189
+     ],
+     [
+      50,
+      186.6
+     ]
+    ]
+   ]
   }
  ],
  "murk": {
@@ -2294,6 +2714,75 @@
    "y": 67,
    "quirk": "I SNEEZE SPARKS. I'VE SET FIRE TO THREE HATS AND A GOAT. THE GOAT WAS FINE.",
    "home": "NOT ONE SPARK ALL WEEK. THE GOAT SENDS ITS REGARDS."
+  },
+  {
+   "id": "timmons",
+   "name": "TIMMONS THE TINKER",
+   "look": "piet",
+   "x": 58,
+   "y": 150,
+   "quirk": "EVERYTHING I TOUCH TURNS TO MOSS. THIS WAS A SPOON. NOW IT'S A MOSS SPOON.",
+   "home": "I'M MENDING POTS IN BRIGHTWATER NOW. NOT ONE OF THEM HAS SPROUTED."
+  },
+  {
+   "id": "weft",
+   "name": "GRANNY WEFT",
+   "look": "ada",
+   "x": 24,
+   "y": 154,
+   "quirk": "MY SHADOW WANDERS OFF AT NIGHT. LAST WEEK IT CAME HOME WEARING SOMEONE ELSE'S HAT.",
+   "home": "MY SHADOW STAYS PUT NOW. I KEPT THE HAT."
+  },
+  {
+   "id": "pipkin",
+   "name": "PIPKIN THE PEDLAR",
+   "look": "tam",
+   "x": 80,
+   "y": 163,
+   "quirk": "I CAN ONLY SPEAK IN RHYME. IT'S A CRIME. ALL THE TIME. ...SEE?",
+   "home": "PROSE! BLESSED PROSE! I'VE BEEN TALKING FOR SIX HOURS STRAIGHT.",
+   "guard": [
+    [
+     "hound",
+     -2,
+     1
+    ],
+    [
+     "hound",
+     2,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "mayweed",
+   "name": "SISTER MAYWEED",
+   "look": "orla",
+   "x": 16,
+   "y": 184,
+   "quirk": "I GLOW IN THE DARK. THE MOTHS ADORE ME. I DO NOT ADORE THE MOTHS.",
+   "home": "NO MORE GLOWING. THE MOTHS HAVE MOVED ON TO A LAMPPOST. GOOD RIDDANCE."
+  },
+  {
+   "id": "bracken",
+   "name": "BARNABY BRACKEN",
+   "look": "hobb",
+   "x": 46,
+   "y": 196,
+   "quirk": "MY FEET HAVE TAKEN ROOT. NOT A FIGURE OF SPEECH. ACTUAL ROOTS.",
+   "home": "I CAN WALK AGAIN! I'VE BEEN WALKING IN CIRCLES ALL MORNING, JUST BECAUSE.",
+   "guard": [
+    [
+     "rootling",
+     -2,
+     -1
+    ],
+    [
+     "rootling",
+     2,
+     -1
+    ]
+   ]
   }
  ]
 }

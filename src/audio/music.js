@@ -59,6 +59,11 @@ const ARP = {
   clock: (ch, b, ev) => {
     for (let i = 0; i < 16; i += 2) ev.push([b * 16 + i, (i % 4 ? ch[2] : ch[0]) + 36, 1, i % 8 === 0 ? 0.75 : 0.4]);
   },
+  // a wind-up music box: high, plucked, slightly uneven, as if the comb is worn (Gloamwood)
+  musicbox: (ch, b, ev) => {
+    const tones = [ch[0] + 36, ch[2] + 36, ch[1] + 48, ch[2] + 36, ch[0] + 48, ch[1] + 36];
+    [0, 3, 5, 8, 11, 13].forEach((st, i) => ev.push([b * 16 + st, tones[(i + b) % 6], 1, i === 0 ? 0.85 : 0.45 + (i % 2) * 0.15]));
+  },
   // lute strums on the beat (interiors)
   lute: (ch, b, ev) => {
     const tones = [ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[2] + 24];
@@ -222,6 +227,25 @@ export const ABBEY_THEME = buildTheme({
   inst: { lead: { type: 'triangle', vol: 1.15, echo: 0.6, vibrato: 0.008 }, arp: { vol: 1.2, echo: 0.55 }, bass: { vol: 0.85 }, pad: { vol: 1.6, cutoff: 650 } },
 });
 
+// Gloamwood: hushed and uneasy - a worn music box over a hollow drone, the
+// melody wandering through the minor with a few wrong-sounding turns
+export const GLOAMWOOD_THEME = buildTheme({
+  name: 'Gloamwood', bpm: 70, key: -6, arp: 'musicbox', bass: 'hollow',
+  chords: [['A2', 'C3', 'E3'], ['F2', 'A2', 'C3'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2'],
+    ['A2', 'C3', 'E3'], ['C3', 'E3', 'G3'], ['D2', 'F2', 'A2'], ['E2', 'G#2', 'B2']],
+  melody: [
+    ['-', 4], ['E4', 4], ['A4', 6], ['G#4', 2],
+    ['A4', 4], ['C5', 4], ['F4', 8],
+    ['-', 4], ['D4', 4], ['F4', 4], ['A4', 4],
+    ['G#4', 10], ['E4', 2], ['-', 4],
+    ['-', 4], ['A4', 4], ['C5', 6], ['B4', 2],
+    ['C5', 4], ['E5', 4], ['G4', 8],
+    ['F4', 4], ['A4', 4], ['D5', 4], ['C5', 2], ['A4', 2],
+    ['B4', 12], ['-', 4],
+  ],
+  inst: { lead: { type: 'triangle', vol: 0.95, echo: 0.6, vibrato: 0.012 }, arp: { echo: 0.55, vol: 1.3 }, bass: { vol: 0.7 }, pad: { vol: 1.2, cutoff: 560 }, sub: { vol: 1.1 } },
+});
+
 // Shops and the tavern: cosy and light — a bouncy jig over oom-pah bass and
 // lute strums, no drums until a brawl breaks out
 export const HEARTH_THEME = buildTheme({
@@ -242,7 +266,7 @@ export const HEARTH_THEME = buildTheme({
 });
 
 const REGION_THEMES = {
-  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME,
+  vale: VALE_THEME, meadow: MEADOW_THEME, marsh: MISTFEN_THEME, gloam: GLOAMWOOD_THEME,
   cave: DEPTHS_THEME, grotto: DEPTHS_THEME, undercroft: UNDERCROFT_THEME, abbey: ABBEY_THEME,
   shop: HEARTH_THEME, tavern: HEARTH_THEME,
 };

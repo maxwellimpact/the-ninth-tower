@@ -679,3 +679,133 @@ export function orb() {
   outline(c, 'hexD');
   return c;
 }
+
+
+// ------------------------------------------------------------ Gloamwood
+// Gloomtree: a tall, crooked trunk with a thin, drooping canopy and hanging
+// moss. Darker than the vale's trees so the forest reads as deep and cold.
+const GLOOM_LEAF = ['gloomD', 'gloomL', 'gloomXL', 'fernL'];
+export function gloomTree(seed = 0) {
+  const W = 44, H = 58;
+  const [c, ctx] = makeCanvas(W, H);
+  const r = (i) => hash(seed, i, 71);
+  // crooked trunk: leans one way then the other
+  const lean = r(1) < 0.5 ? -1 : 1;
+  for (let y = 22; y < 54; y++) {
+    const t = (54 - y) / 32;
+    const x = Math.round(20 + lean * Math.sin(t * 2.6) * 2.5);
+    const w = y > 49 ? 7 : 5;
+    px(ctx, x - (w >> 1), y, 'barkD', w, 1);
+    px(ctx, x - (w >> 1) + 1, y, 'bark', w - 3, 1);
+    if (y % 5 === 0) px(ctx, x - 1, y, 'barkL', 1, 2);
+  }
+  // roots
+  px(ctx, 13, 53, 'barkD', 4, 2); px(ctx, 24, 53, 'barkD', 5, 2); px(ctx, 11, 54, 'barkD', 2, 1); px(ctx, 28, 54, 'barkD', 2, 1);
+  // gnarled branches
+  const branch = (x, y, dx, dy, n) => { for (let i = 0; i < n; i++) px(ctx, Math.round(x + dx * i), Math.round(y + dy * i), i % 3 ? 'bark' : 'barkD', 2, 1); };
+  branch(20, 28, -1, -0.7, 8 + Math.floor(r(2) * 4));
+  branch(21, 25, 1, -0.8, 8 + Math.floor(r(3) * 4));
+  // a thin, ragged canopy
+  const blobs = [[12 + r(4) * 3, 20, 8, 6], [31 - r(5) * 3, 18, 8, 6], [21, 13, 11, 8], [16, 8, 6, 5], [27, 7, 6, 5]];
+  for (const [x, y, rx, ry] of blobs) shadedBlob(ctx, x, y, rx, ry, GLOOM_LEAF, { bias: -0.15 });
+  // holes where the canopy is thin
+  for (let i = 0; i < 10; i++) { const x = 8 + Math.floor(r(10 + i) * 28), y = 4 + Math.floor(r(30 + i) * 18); ctx.clearRect(x, y, 2, 1); }
+  // hanging moss strands
+  for (let i = 0; i < 8; i++) {
+    const x = 9 + Math.floor(r(50 + i) * 26), y0 = 18 + Math.floor(r(60 + i) * 8), n = 3 + Math.floor(r(70 + i) * 7);
+    for (let k = 0; k < n; k++) px(ctx, x, y0 + k, k > n - 2 ? 'gloomXL' : 'fernD');
+  }
+  outline(c, 'ink');
+  return c;
+}
+
+export function fern(seed = 0) {
+  return [-1, 0, 1].map((sway) => {
+    const [c, ctx] = makeCanvas(16, 12);
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.55 + sway * 0.06 + (hash(seed, i) - 0.5) * 0.2;
+      const n = 6 + Math.floor(hash(seed, i, 2) * 3);
+      for (let k = 0; k < n; k++) {
+        const x = Math.round(8 + Math.cos(a) * k), y = Math.round(11 + Math.sin(a) * k * 0.9);
+        px(ctx, x, y, k > n - 3 ? 'fernL' : 'fern');
+        if (k > 1 && k % 2 === 0) px(ctx, x + (i < 2 ? -1 : 1), y, 'fernD');
+      }
+    }
+    outline(c, 'gloomD');
+    return c;
+  });
+}
+
+// glowing mushrooms: a faint light source in the gloom (two pulse frames)
+export function glowcap(seed = 0) {
+  return [0, 1].map((f) => {
+    const [c, ctx] = makeCanvas(14, 12);
+    for (let i = 0; i < 3; i++) {
+      const x = 1 + Math.floor(hash(seed, i) * 9), y = 4 + Math.floor(hash(seed, i, 1) * 3);
+      px(ctx, x + 1, y + 2, 'gloomXL', 1, 4);
+      px(ctx, x, y, f ? 'glowL' : 'glow', 3, 2); px(ctx, x + 1, y, 'glowL');
+    }
+    outline(c, 'gloomD');
+    return c;
+  });
+}
+
+export function stump(seed = 0) {
+  const [c, ctx] = makeCanvas(18, 14);
+  px(ctx, 3, 4, 'barkD', 12, 8); px(ctx, 4, 4, 'bark', 9, 7);
+  px(ctx, 3, 3, 'barkL', 12, 2); px(ctx, 6, 3, 'woodL', 6, 1); // cut face
+  px(ctx, 1, 11, 'barkD', 3, 2); px(ctx, 14, 11, 'barkD', 3, 2);
+  if (hash(seed, 1) < 0.6) { px(ctx, 11, 1, 'glow', 2, 2); px(ctx, 12, 3, 'gloomXL', 1, 1); }
+  outline(c, 'ink');
+  return c;
+}
+
+// a web stretched across the ground (flat decal)
+export function web(seed = 0) {
+  const [c, ctx] = makeCanvas(24, 20);
+  const cx = 12, cy = 10;
+  for (let a = 0; a < 8; a++) {
+    const ang = a * Math.PI / 4 + hash(seed, a) * 0.3;
+    for (let k = 0; k < 11; k++) px(ctx, Math.round(cx + Math.cos(ang) * k), Math.round(cy + Math.sin(ang) * k * 0.8), 'web');
+  }
+  for (let ring = 3; ring <= 9; ring += 3) for (let t = 0; t < 40; t++) {
+    const ang = t / 40 * Math.PI * 2;
+    if (hash(seed, ring * 50 + t) < 0.2) continue;
+    px(ctx, Math.round(cx + Math.cos(ang) * ring), Math.round(cy + Math.sin(ang) * ring * 0.8), 'web');
+  }
+  return c;
+}
+
+// The elder tree over Witchroot Hollow: a vast hollow trunk with a dark mouth
+// at its foot (steps down). Drawn over a solid footprint like the houses.
+export function elderTree() {
+  const W = 128, H = 128;
+  const [c, ctx] = makeCanvas(W, H);
+  // great trunk
+  for (let y = 40; y < 124; y++) {
+    const t = (y - 40) / 84;
+    const w = Math.round(38 + t * t * 34);
+    const x0 = 64 - (w >> 1);
+    px(ctx, x0, y, 'barkD', w, 1);
+    for (let x = x0 + 2; x < x0 + w - 2; x++) {
+      const n = Math.sin(x * 0.7 + y * 0.05) + Math.sin(x * 0.23 - y * 0.11);
+      px(ctx, x, y, n > 1.1 ? 'barkL' : n > -0.6 ? 'bark' : 'barkD');
+    }
+  }
+  // roots spilling out at the base
+  for (const [x, dx] of [[30, -1], [40, -1.4], [88, 1.4], [98, 1]]) for (let k = 0; k < 14; k++) px(ctx, Math.round(x + dx * k), 118 + Math.round(k * 0.35), k % 3 ? 'bark' : 'barkD', 4, 3);
+  // the hollow mouth
+  for (let y = 98; y < 124; y++) {
+    const w = Math.round(18 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 26) ** 2)));
+    px(ctx, 64 - w, y, 'ink', w * 2, 1);
+  }
+  for (let y = 100; y < 124; y += 2) px(ctx, 60, y, 'night', 8, 1);
+  // a crown of dead boughs and a few clinging leaves
+  const bough = (x, y, dx, dy, n) => { for (let i = 0; i < n; i++) px(ctx, Math.round(x + dx * i), Math.round(y + dy * i), i % 4 ? 'bark' : 'barkD', 3, 2); };
+  bough(52, 44, -1.2, -0.9, 30); bough(76, 44, 1.2, -0.9, 30); bough(60, 40, -0.4, -1, 32); bough(68, 40, 0.5, -1, 30); bough(64, 42, 0, -1, 36);
+  for (let i = 0; i < 9; i++) shadedBlob(ctx, 18 + hash(i, 1, 9) * 92, 6 + hash(i, 2, 9) * 30, 7, 5, GLOOM_LEAF, { bias: -0.2 });
+  // the vine's sigil glow in the hollow
+  px(ctx, 62, 112, 'curse', 4, 2);
+  outline(c, 'ink');
+  return c;
+}

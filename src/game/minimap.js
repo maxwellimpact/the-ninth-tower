@@ -8,7 +8,7 @@ const COL = {
   [T.GRASS]: 'grass', [T.PATH]: 'dirtL', [T.SAND]: 'sand', [T.WATER]: 'water', [T.PLATEAU]: 'grassL',
   [T.CLIFF]: 'slate', [T.STAIRS]: 'bone', [T.PAVED]: 'mist', [T.WALL]: 'bone', [T.RIM]: 'slate',
   [T.MARSH]: 'moss', [T.SHALLOW]: 'bogL', [T.BOG]: 'bogD', [T.CHASM]: 'ink', [T.CAVEFLOOR]: 'caveXL', [T.DFLOOR]: 'stone', [T.DWALL]: 'night',
-  [T.CAVEWALL]: 'caveD', [T.BRIDGE]: 'wood', [T.MOUTH]: 'ink',
+  [T.CAVEWALL]: 'caveD', [T.BRIDGE]: 'wood', [T.MOUTH]: 'ink', [T.LOAM]: 'gloomL', [T.HOUSE]: 'woodD',
 };
 const FOG = rgb('night');
 
@@ -28,9 +28,9 @@ export class MiniMap {
       this.base[i] = r; this.base[i + 1] = g; this.base[i + 2] = b; this.base[i + 3] = 255;
     }
     for (const p of world.props) {
-      if (p.type !== 'tree' && p.type !== 'deadtree') continue;
+      if (p.type !== 'tree' && p.type !== 'deadtree' && p.type !== 'gloomtree') continue;
       const i = (p.y * MAP_W + p.x) * 4;
-      const [r, g, b] = c(p.type === 'tree' ? 'leafD' : 'mudD');
+      const [r, g, b] = c(p.type === 'tree' ? 'leafD' : p.type === 'gloomtree' ? 'gloomD' : 'mudD');
       this.base[i] = r; this.base[i + 1] = g; this.base[i + 2] = b;
     }
     this.explored = this.decode(state.explored);

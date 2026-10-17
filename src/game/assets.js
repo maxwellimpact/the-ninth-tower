@@ -5,7 +5,7 @@
 import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildShade, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildBanshee } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -76,6 +76,7 @@ export const GROUPS = {
       s.textures.addCanvas('post', P.grapplePost());
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
+      s.textures.addCanvas('house_elder', P.elderTree());
       s.textures.addCanvas('boulder_cracked', P.crackedBoulder());
       s.textures.addCanvas('wall_cracked', P.crackedWall());
       frames(s, 'fly', P.goldenFly(), 8);
@@ -133,6 +134,29 @@ export const GROUPS = {
       }
     }],
     ['mushrooms', (s) => { for (let k = 0; k < 4; k++) s.textures.addCanvas(`mushrooms${k}`, P.mushrooms(k)); }],
+  ],
+  // Gloamwood (Wave 2)
+  gloam: [
+    ['gloam foes', (s) => {
+      creature(s, 'shade', buildShade(), { idle: 3, walk: 6, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'rootling', buildRootling(), { idle: 2, walk: 2, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'spider', buildSpider(1), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'spiderling', buildSpider(0.6), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'hound', buildHound(), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'banshee', buildBanshee(), { idle: 3, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'mab', buildMab(), { idle: 2, walk: 9, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      s.textures.addCanvas('eggsac', eggSac());
+    }],
+    ['gloomtrees', (s) => { for (let k = 0; k < 6; k++) s.textures.addCanvas(`gloomtree${k}`, P.gloomTree(k)); }],
+    ['undergrowth', (s) => {
+      for (let k = 0; k < 4; k++) {
+        packFrames(s, `fern${k}`, P.fern(k).map((canvas, i) => ({ name: `${i}`, canvas })));
+        s.anims.create({ key: `fern${k}`, frames: [0, 1, 2, 1].map((i) => ({ key: `fern${k}`, frame: `${i}` })), frameRate: 1.2 + k * 0.25, repeat: -1 });
+        frames(s, `glowcap${k}`, P.glowcap(k), 1.4 + k * 0.2);
+        s.textures.addCanvas(`stump${k}`, P.stump(k));
+        s.textures.addCanvas(`web${k}`, P.web(k));
+      }
+    }],
   ],
   interior: [
     ['furniture', (s) => {

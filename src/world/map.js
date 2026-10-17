@@ -16,11 +16,15 @@ export const T = {
   GRASS: 0, PATH: 1, SAND: 2, WATER: 3, PLATEAU: 4, CLIFF: 5, STAIRS: 6, PAVED: 7, WALL: 8, RIM: 9,
   MARSH: 10, SHALLOW: 11, BOG: 12, CHASM: 13, CAVEFLOOR: 14, CAVEWALL: 15, BRIDGE: 16, MOUTH: 17,
   FLOOR: 18, IWALL: 19, HOUSE: 20, DFLOOR: 21, DWALL: 22,
+  LOAM: 23, // Gloamwood forest floor
 };
 export const SOLID = new Set([T.WATER, T.CLIFF, T.WALL, T.RIM, T.BOG, T.CHASM, T.CAVEWALL, T.IWALL, T.HOUSE, T.DWALL]);
-export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG]);
+export const SOFT = new Set([T.GRASS, T.PATH, T.SAND, T.WATER, T.MARSH, T.SHALLOW, T.BOG, T.LOAM]);
 
 export const MARSH_Y = 64;
+export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
+export const RIDGE_X = 100; // the ridge between Gloamwood and Cinderreach
+export const OW_H = 208; // the overworld's walkable depth; the highlands beyond wait for Wave 3
 export const OW_W = W.size.overworldW; // overworld width; interiors live to the right of it
 
 // Separate areas share one tile grid but never share a camera view: the
@@ -47,6 +51,7 @@ export function areaAt(tx, ty) {
 export function biomeAt(tx, ty) {
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
+  if (ty >= SOUTH_Y) return tx < RIDGE_X ? 'gloam' : 'cinder';
   if (ty >= MARSH_Y) return 'marsh';
   return tx >= 96 ? 'meadow' : 'vale';
 }
@@ -56,6 +61,12 @@ export const LANDMARKS = {
   frog: { x: 44, y: 26 },
   ward: { x: 82, y: 38 },
   curse: { x: 82, y: 38, r: 15 },
+  // Gloamwood landmarks (tiles)
+  gloamCamp: { x: 30, y: 141 },
+  elderTree: { x: 50, y: 187 }, // Witchroot Hollow: steps down inside the hollow elder
+  mirrorPool: { x: 17, y: 167 },
+  hermitTower: { x: 86, y: 146 },
+  spiderLair: { x: 20, y: 196 },
 };
 
 const PATHS = [
@@ -68,6 +79,15 @@ const PATHS = [
   { w: 0.9, pts: [[96, 94], [110, 99], [124, 104]] },
   { w: 0.75, pts: [[14, 36], [14, 31]] },
   { w: 0.75, pts: [[21, 36], [21, 31]] },
+  // Wave 2: Mistfen's west road runs on south into Gloamwood ...
+  { w: 1.0, pts: [[40, 102], [38, 116], [36, 128], [32, 137], [33, 145], [40, 151], [56, 158], [68, 167], [74, 177], [76, 181]] },
+  { w: 0.85, pts: [[56, 158], [52, 168], [50, 178], [50, 185]] }, // to the elder tree
+  { w: 0.8, pts: [[56, 158], [72, 152], [84, 149]] }, // the hermit's tower
+  { w: 0.8, pts: [[40, 151], [27, 158], [21, 164]] }, // the Mirror Pool
+  { w: 0.7, pts: [[27, 158], [20, 176], [18, 186], [20, 193]] }, // a deer trail to the spider lair
+  { w: 0.9, pts: [[84, 149], [96, 152], [106, 152], [116, 150]] }, // the ridge pass into Cinderreach
+  // ... and its east road into Cinderreach
+  { w: 1.0, pts: [[124, 104], [138, 114], [148, 124], [150, 136], [146, 146]] },
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
@@ -93,10 +113,15 @@ export function buildWorld() {
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
     if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' ? T.DWALL : T.CAVEWALL); continue; }
-    if (b === 'marsh') {
+    if (y >= OW_H) { set(x, y, T.PLATEAU); continue; } // the highlands beyond (Wave 3)
+    if (b === 'gloam') {
+      set(x, y, T.LOAM);
+      // mossy clearings where the canopy breaks
+      if (vnoise(x / 11, y / 11, 140) > 0.64) set(x, y, T.GRASS);
+    } else if (b === 'marsh') {
       set(x, y, T.MARSH);
       const n = vnoise(x / 7, y / 7, 60) + (vnoise(x / 3, y / 3, 61) - 0.5) * 0.2;
-      const edge = Math.min(y - MARSH_Y, MAP_H - 1 - y);
+      const edge = Math.min(y - MARSH_Y, SOUTH_Y - 1 - y);
       if (edge > 3 && n > 0.74) set(x, y, T.BOG);
       else if (edge > 2 && n > 0.62) set(x, y, T.SHALLOW);
     } else set(x, y, T.GRASS);
@@ -171,6 +196,43 @@ export function buildWorld() {
   for (let y = 97; y <= 107; y++) { set(128, y, T.RIM); set(140, y, T.RIM); }
   rect(128, 97, 140, 97, T.RIM); // back edge
   rect(126, 108, 142, 112, T.MARSH); // firm ground at the foot of the face
+
+  // Wave 2: the southern band ---------------------------------------------
+  // the highland edge along the bottom of the world (Wave 3 lies beyond it)
+  rect(0, OW_H - 1, OW_W - 1, OW_H - 1, T.RIM);
+  // the ridge between Gloamwood and Cinderreach: a raised rock spine with one
+  // pass through it (the road at y 150-154)
+  for (let y = SOUTH_Y + 3; y < OW_H - 1; y++) {
+    if (y >= 149 && y <= 155) continue;
+    const w = Math.round(1 + vnoise(0, y / 7, 141) * 2);
+    for (let x = RIDGE_X - w; x <= RIDGE_X + 3 + w; x++) set(x, y, x === RIDGE_X - w || x === RIDGE_X + 3 + w ? T.RIM : T.PLATEAU);
+  }
+  // Gloamwood edge camp: a trodden clearing where the hunters gather
+  for (let y = 136; y <= 147; y++) for (let x = 24; x <= 37; x++) {
+    if (Math.hypot((x - 30.5) / 6, (y - 141.5) / 5) + (vnoise(x / 3, y / 3, 142) - 0.5) * 0.3 < 1 && at(x, y) !== T.PATH) set(x, y, T.GRASS);
+  }
+  // the Mirror Pool: still black water in a ring of moss
+  for (let y = 160; y <= 175; y++) for (let x = 8; x <= 27; x++) {
+    const d = Math.hypot((x - 17) / 5.4, (y - 167) / 3.8) + (vnoise(x / 3, y / 3, 143) - 0.5) * 0.25;
+    if (d < 1) set(x, y, T.WATER); else if (d < 1.45) set(x, y, T.GRASS);
+  }
+  // the elder tree: Witchroot Hollow lies under its roots. Its trunk is a
+  // solid footprint (the tree is drawn over it); the steps down sit in the
+  // hollow at its foot
+  for (let y = 178; y <= 192; y++) for (let x = 42; x <= 58; x++) {
+    if (Math.hypot((x - 50) / 7.5, (y - 186) / 6) < 1 && at(x, y) !== T.PATH) set(x, y, T.GRASS);
+  }
+  rect(47, 182, 53, 185, T.HOUSE);
+  set(50, 186, T.STAIRS);
+  // the hermit's tower: a squat ruin whose doorway is a false wall (Seer's Lens)
+  for (let y = 142; y <= 150; y++) for (let x = 82; x <= 90; x++) {
+    const d = Math.hypot(x - 86, (y - 146) * 1.1);
+    if (d < 3.2) set(x, y, T.PAVED); else if (d < 4.4) set(x, y, T.WALL);
+  }
+  // Queen Mab's lair: a hollow under the canopy, choked with webs
+  for (let y = 190; y <= 203; y++) for (let x = 12; x <= 29; x++) {
+    if (Math.hypot((x - 20) / 6.5, (y - 196.5) / 5) + (vnoise(x / 3, y / 3, 144) - 0.5) * 0.3 < 1) set(x, y, T.LOAM);
+  }
 
   // Interiors ---------------------------------------------------------------
   // Cave: tunnels + chambers carved out of rock
@@ -259,10 +321,14 @@ export function buildWorld() {
     for (const b of st.bells || []) reserve(b[0], b[1], 2);
     for (const pt of st.path || []) reserve(pt[0], pt[1], 2.5);
   }
+  // Gloamwood landmarks keep their clearings open
+  reserve(LANDMARKS.gloamCamp.x, LANDMARKS.gloamCamp.y, 7); reserve(LANDMARKS.elderTree.x, LANDMARKS.elderTree.y - 2, 9);
+  reserve(LANDMARKS.mirrorPool.x, LANDMARKS.mirrorPool.y, 8); reserve(LANDMARKS.hermitTower.x, LANDMARKS.hermitTower.y, 6);
+  reserve(LANDMARKS.spiderLair.x, LANDMARKS.spiderLair.y, 5);
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
-  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH;
+  const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM;
   const free = (x, y, pad = 1) => {
     for (let dy = -pad; dy <= pad; dy++) for (let dx = -pad; dx <= pad; dx++) {
       const tx = x + dx, ty = y + dy;
@@ -275,16 +341,18 @@ export function buildWorld() {
   // trees: world-edge forest frame, groves, and a belt between vale and fen
   for (let y = 0; y < MAP_H; y += 2) for (let x = 0; x < MAP_W; x += 2) {
     const jx = x + Math.floor(hash(x, y, 11) * 2), jy = y + Math.floor(hash(x, y, 12) * 2);
-    if (jx >= OW_W) continue;
+    if (jx >= OW_W || jy >= OW_H - 1) continue;
     const b = biomeAt(jx, jy);
-    const edge = Math.min(jx, jy, OW_W - 1 - jx, MAP_H - 1 - jy);
-    const belt = Math.abs(jy - MARSH_Y + 1) < 2.5 + vnoise(jx / 5, 0, 9) * 2;
+    const edge = Math.min(jx, jy, OW_W - 1 - jx, OW_H - 1 - jy);
+    const belt = Math.abs(jy - MARSH_Y + 1) < 2.5 + vnoise(jx / 5, 0, 9) * 2 || Math.abs(jy - SOUTH_Y + 0.5) < 2.5 + vnoise(jx / 5, 0, 19) * 2;
     const grove = vnoise(jx / 9, jy / 9, 21);
-    const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : 0.72) || belt;
-    if (!forest || hash(jx, jy, 13) < 0.15) continue;
+    // Gloamwood is the deep forest: trees everywhere the canopy doesn't break
+    const forest = edge < 4 + vnoise(jx / 5, jy / 5, 2) * 3 || grove > (b === 'marsh' ? 0.66 : b === 'gloam' ? 0.3 : 0.72) || belt;
+    if (!forest || hash(jx, jy, 13) < (b === 'gloam' ? 0.22 : 0.15)) continue;
     if (!free(jx, jy, 1) || isReserved(jx, jy)) continue;
     if (W.wards.some((wd) => Math.hypot(jx - wd.x, jy - wd.y) < 9)) continue;
-    add(b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree', jx, jy, { seed: Math.floor(hash(jx, jy, 14) * 8) });
+    const kind = b === 'gloam' && jy >= SOUTH_Y + 2 ? 'gloomtree' : b === 'marsh' && hash(jx, jy, 15) < 0.45 ? 'deadtree' : 'tree';
+    add(kind, jx, jy, { seed: Math.floor(hash(jx, jy, 14) * (kind === 'gloomtree' ? 6 : 8)) });
     claim(jx, jy);
   }
 
@@ -301,6 +369,14 @@ export function buildWorld() {
     }
     if (at(x, y) === T.SHALLOW && r < 0.08) { add('lily', x, y, { seed: x + y * 7 }); continue; }
     if (!free(x, y, 0) || isReserved(x, y)) continue;
+    if (b === 'gloam') {
+      if (at(x, y) !== T.LOAM && at(x, y) !== T.GRASS) continue;
+      if (r < 0.06) add('fern', x, y, { seed: x * 13 + y });
+      else if (r < 0.075) add('glowcap', x, y, { seed: x + y * 3 });
+      else if (r < 0.085) { add('stump', x, y, { seed: x + y * 5 }); claim(x, y); }
+      else if (r < 0.092 && Math.hypot(x - LANDMARKS.spiderLair.x, y - LANDMARKS.spiderLair.y) < 14) add('web', x, y, { seed: x * 7 + y });
+      continue;
+    }
     if (b === 'marsh') {
       const nearWater = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => at(x + dx, y + dy) === T.SHALLOW || at(x + dx, y + dy) === T.BOG);
       if (nearWater && r < 0.35) add('reeds', x, y, { seed: x * 13 + y });

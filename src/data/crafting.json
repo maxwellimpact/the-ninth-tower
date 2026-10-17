@@ -35,6 +35,18 @@
   "pearl": {
    "name": "RIVER PEARL",
    "short": "PEARL"
+  },
+  "ghostcap": {
+   "name": "GHOSTCAP",
+   "short": "GHOST"
+  },
+  "heartwood": {
+   "name": "HEARTWOOD",
+   "short": "HEART"
+  },
+  "silk": {
+   "name": "GLOOMSILK",
+   "short": "SILK"
   }
  },
  "consumables": {

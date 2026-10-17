@@ -229,6 +229,7 @@ export function computeStats(id, level, equip, hs = null) {
   const pr = (pid) => (hs?.skills?.passive.includes(pid) ? hs.skills.ranks[pid] || 0 : 0);
   if (pr('ironskin')) s.def = Math.round(s.def * (1.12 + 0.03 * (pr('ironskin') - 1)));
   if (pr('eagleeye')) s.range = Math.round(s.range * 1.2);
+  if (pr('fleet')) s.speed = Math.round(s.speed * (1.08 + 0.02 * (pr('fleet') - 1)));
   return s;
 }
 

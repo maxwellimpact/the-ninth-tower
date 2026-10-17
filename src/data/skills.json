@@ -546,5 +546,34 @@
   "short": "AMBUSH",
   "icon": "icon_ambush",
   "desc": "+20% DAMAGE FROM BEHIND (+4% PER RANK). (SHADOW)"
+ },
+ "quickshot": {
+  "discipline": "ranger",
+  "unlock": 1,
+  "name": "QUICK SHOT",
+  "short": "QUICK",
+  "icon": "icon_quickshot",
+  "cd": 6,
+  "range": 140,
+  "desc": "A FAST SHOT AT A FOE IN RANGE. ANY HERO CAN LOOSE ONE, EVEN WITH A SWORD IN HAND. (RANGER)"
+ },
+ "tripwire": {
+  "discipline": "ranger",
+  "unlock": 1,
+  "name": "SNARE",
+  "short": "SNARE",
+  "icon": "icon_tripwire",
+  "cd": 12,
+  "range": 0,
+  "desc": "LAYS A SNARE AT YOUR FEET THAT ROOTS THE FIRST FOE TO STEP ON IT FOR 2S. (RANGER)"
+ },
+ "fleet": {
+  "discipline": "ranger",
+  "unlock": 1,
+  "passive": true,
+  "name": "FLEET",
+  "short": "FLEET",
+  "icon": "icon_fleet",
+  "desc": "+8% MOVE SPEED (+2% PER RANK). (RANGER)"
  }
 }

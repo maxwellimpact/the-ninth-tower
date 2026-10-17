@@ -972,6 +972,295 @@
     "gold": 120,
     "item": "bloodfang_axe"
    }
+  },
+  "scoutAmbush": {
+   "title": "HOUNDS ON THE ROAD",
+   "giver": "tansy",
+   "region": "gloam",
+   "trigger": [
+    45,
+    160,
+    8
+   ],
+   "offer": [
+    "HEY! YOU! THESE HOUNDS HAVE BEEN CIRCLING ME SINCE DAWN. THEY'RE NOT EVEN REAL DOGS!",
+    "GIVE ME A HAND AND I'LL SHOW YOU THE SAFE WAY TO CAMP."
+   ],
+   "accept": "HOLD ON, TANSY!",
+   "thanks": [
+    "TANSY: THAT'S THE LAST TIME I SCOUT ALONE. PROBABLY.",
+    "TAKE THIS. I NICKED IT OFF A GOBLIN WHO DIDN'T NEED IT ANY MORE."
+   ],
+   "steps": [
+    {
+     "type": "defend",
+     "text": "DRIVE OFF THE HOUNDS CIRCLING TANSY",
+     "npc": "tansy",
+     "units": [
+      [
+       "hound",
+       48,
+       161
+      ],
+      [
+       "hound",
+       48,
+       165
+      ],
+      [
+       "hound",
+       44,
+       166
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CHECK ON TANSY",
+     "npc": "tansy"
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 220,
+    "gear": {
+     "rarity": "fine"
+    }
+   }
+  },
+  "lightsInTrees": {
+   "title": "THE WAILING IN THE WOOD",
+   "giver": "brisk",
+   "region": "gloam",
+   "offer": [
+    "THE BANSHEES ARE GETTING BOLD. ONE SCREAMED A HUNTER RIGHT OUT OF HIS BOOTS LAST NIGHT. HE'S STILL LOOKING FOR THEM.",
+    "PUT THREE OF THEM TO REST. AND IF ONE STARTS TO WAIL - GET A TREE BETWEEN YOU AND HER."
+   ],
+   "accept": "THREE BANSHEES.",
+   "thanks": [
+    "QUIET. I'D FORGOTTEN WHAT THAT SOUNDED LIKE.",
+    "HERE. HUNTER'S PAY, AND A HUNTER'S THANKS."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "SILENCE WAILING BANSHEES",
+     "kind": "banshee",
+     "count": 3
+    },
+    {
+     "type": "talk",
+     "text": "REPORT TO HUNTMASTER BRISK",
+     "npc": "brisk"
+    }
+   ],
+   "reward": {
+    "gold": 90,
+    "xp": 280,
+    "potions": {
+     "elixir": 1,
+     "potion": 2
+    }
+   }
+  },
+  "mabBounty": {
+   "title": "BOUNTY: QUEEN MAB",
+   "giver": "brisk",
+   "region": "gloam",
+   "requires": "lightsInTrees",
+   "offer": [
+    "BIGGEST SPIDER YOU'VE EVER SEEN. BIGGER. SHE NESTS IN THE HOLLOW SOUTHWEST OF THE MIRROR POOL, AND HER BROOD GETS BIGGER EVERY MOON.",
+    "SMASH HER EGGS BEFORE THEY HATCH. AND DON'T STAND FAR OFF - SHE'LL REEL YOU IN ON A LINE."
+   ],
+   "accept": "HUNT THE QUEEN.",
+   "thanks": [
+    "BRISK: QUEEN MAB, DEAD. I'LL DRINK TO THAT. I'LL DRINK TO IT TWICE.",
+    "HER SILK'S THE FINEST THERE IS. TAKE IT - AND THE PURSE."
+   ],
+   "steps": [
+    {
+     "type": "spawn",
+     "text": "FIND QUEEN MAB'S NEST, SOUTHWEST OF THE MIRROR POOL",
+     "at": [
+      20,
+      196
+     ],
+     "r": 7,
+     "units": [
+      [
+       "mab",
+       20,
+       196
+      ],
+      [
+       "spider",
+       16,
+       194
+      ],
+      [
+       "spider",
+       24,
+       198
+      ]
+     ]
+    },
+    {
+     "type": "talk",
+     "text": "CLAIM THE BOUNTY FROM BRISK",
+     "npc": "brisk"
+    }
+   ],
+   "reward": {
+    "gold": 220,
+    "xp": 450,
+    "mats": {
+     "silk": 4
+    },
+    "gear": {
+     "rarity": "rare"
+    }
+   }
+  },
+  "ghostcapStew": {
+   "title": "GHOSTCAP STEW",
+   "giver": "fennel",
+   "region": "gloam",
+   "offer": [
+    "THE HUNTERS ARE SICK OF SQUIRREL. I AM SICK OF SQUIRREL. THE SQUIRRELS ARE, ADMITTEDLY, ALSO SICK OF IT.",
+    "BRING ME FIVE GHOSTCAPS - THE PALE ONES THAT GLOW - AND I'LL COOK US ALL SOMETHING DECENT."
+   ],
+   "accept": "FIVE GHOSTCAPS.",
+   "thanks": [
+    "THEY GLOW EVEN IN THE POT. DON'T WORRY ABOUT IT.",
+    "HERE - SOME OF MY TONICS. THEY TASTE OF MUSHROOM. EVERYTHING TASTES OF MUSHROOM NOW."
+   ],
+   "steps": [
+    {
+     "type": "gather",
+     "text": "PICK GHOSTCAPS",
+     "mat": "ghostcap",
+     "count": 5
+    },
+    {
+     "type": "talk",
+     "text": "BRING THE GHOSTCAPS TO FENNEL",
+     "npc": "fennel",
+     "take": {
+      "ghostcap": 5
+     }
+    }
+   ],
+   "reward": {
+    "gold": 50,
+    "xp": 180,
+    "potions": {
+     "potion": 2,
+     "elixir": 1
+    }
+   }
+  },
+  "rootAndBranch": {
+   "title": "ROOT AND BRANCH",
+   "giver": "hew",
+   "region": "gloam",
+   "offer": [
+    "ROOTLINGS. STUMPS THAT THROW THORNS. THEY'VE GOT MY FAVOURITE AXE STUCK IN ONE OF THEM.",
+    "FELL FOUR OF THEM. FIRE HELPS. EVERYTHING ABOUT ROOTLINGS GOES BETTER WITH FIRE."
+   ],
+   "accept": "FOUR ROOTLINGS.",
+   "thanks": [
+    "THERE SHE IS. MY AXE. I'M NOT CRYING, IT'S THE SMOKE.",
+    "GOOD WOOD, ROOTLING HEARTWOOD. TAKE SOME. AND THIS - FOUND IT IN THE LAST ONE."
+   ],
+   "steps": [
+    {
+     "type": "kill",
+     "text": "FELL ROOTLINGS",
+     "kind": "rootling",
+     "count": 4
+    },
+    {
+     "type": "talk",
+     "text": "RETURN TO HEW",
+     "npc": "hew"
+    }
+   ],
+   "reward": {
+    "gold": 70,
+    "xp": 240,
+    "mats": {
+     "heartwood": 3
+    },
+    "gear": {
+     "rarity": "fine"
+    }
+   }
+  },
+  "guidingLight": {
+   "title": "A LIGHT THAT DOESN'T LIE",
+   "giver": "glimmer",
+   "region": "gloam",
+   "trigger": [
+    21,
+    168,
+    4
+   ],
+   "offer": [
+    "A SMALL GREEN LIGHT DRIFTS UP FROM THE REEDS OF THE MIRROR POOL. IT DOESN'T CALL YOUR NAME. IT JUST WAITS.",
+    "IT BOBS TOWARD THE DARK TREES TO THE SOUTH, AND BACK. AND AGAIN."
+   ],
+   "accept": "FOLLOW THE LIGHT.",
+   "thanks": [
+    "MOTHER MOSS: A LOCKET? FROM THE POOL'S LIGHT? THEN IT WAS ONE OF THE HONEST ONES.",
+    "THE GIRL IN THE PORTRAIT WAS A RANGER. SHE WENT LOOKING FOR THE HUNTSMAN, YEARS AGO. KEEP IT. SHE'D WANT IT WORN BY SOMEONE STILL HUNTING."
+   ],
+   "steps": [
+    {
+     "type": "follow",
+     "text": "FOLLOW THE LITTLE LIGHT SOUTH",
+     "path": [
+      [
+       20,
+       175
+      ],
+      [
+       17,
+       182
+      ],
+      [
+       11,
+       189
+      ],
+      [
+       8,
+       196
+      ]
+     ],
+     "r": 3
+    },
+    {
+     "type": "find",
+     "text": "SEARCH WHERE THE LIGHT WENT OUT",
+     "x": 8,
+     "y": 198,
+     "kind": "glint",
+     "say": "A SILVER LOCKET IN THE MOSS. INSIDE, A PORTRAIT OF A YOUNG RANGER."
+    },
+    {
+     "type": "talk",
+     "text": "SHOW THE LOCKET TO MOTHER MOSS",
+     "npc": "moss"
+    }
+   ],
+   "reward": {
+    "gold": 60,
+    "xp": 280,
+    "sp": 1,
+    "gear": {
+     "rarity": "fine",
+     "slot": "head"
+    }
+   }
   }
  },
  "npcs": [
@@ -1342,6 +1631,126 @@
     "STEP UP, STEP UP! THE FINEST RACING FROGS IN ALL MISTFEN! ALSO THE ONLY RACING FROGS IN ALL MISTFEN.",
     "PICK A FROG, PLACE YOUR BET, AND TAP WHEN THE NEEDLE'S IN THE GOLD. A GOOD TAP IS A GOOD HOP!"
    ]
+  },
+  {
+   "id": "brisk",
+   "name": "HUNTMASTER BRISK",
+   "x": 28,
+   "y": 139,
+   "look": "brisk",
+   "voice": {
+    "pitch": 200,
+    "wave": "square",
+    "duty": 0.25
+   },
+   "lines": [
+    "KEEP YOUR VOICE DOWN IN THESE WOODS. THINGS LISTEN.",
+    "WE HUNT WHAT HUNTS US. IT'S A LIVING."
+   ],
+   "errands": [
+    "lightsInTrees",
+    "mabBounty"
+   ]
+  },
+  {
+   "id": "rowan",
+   "name": "ROWAN THE TRACKER",
+   "x": 34,
+   "y": 139,
+   "look": "rowan",
+   "trainer": "ranger",
+   "voice": {
+    "pitch": 300,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "lines": [
+    "A BOW IN EVERY HAND, THAT'S MY MOTTO. EVEN THE SWORD-SWINGERS.",
+    "I TEACH THE RANGER'S CRAFT: A QUICK SHOT, A SNARE ON THE TRAIL, LIGHT FEET."
+   ]
+  },
+  {
+   "id": "fennel",
+   "name": "FENNEL THE COOK",
+   "x": 27,
+   "y": 144,
+   "look": "fennel",
+   "voice": {
+    "pitch": 160,
+    "wave": "triangle",
+    "speed": 0.9
+   },
+   "lines": [
+    "STEW'S ON. STEW'S ALWAYS ON. NOBODY ASKS WHAT'S IN IT."
+   ],
+   "errands": [
+    "ghostcapStew"
+   ]
+  },
+  {
+   "id": "hew",
+   "name": "HEW THE WOODCUTTER",
+   "x": 35,
+   "y": 144,
+   "look": "hew",
+   "voice": {
+    "pitch": 130,
+    "wave": "square",
+    "duty": 0.5
+   },
+   "lines": [
+    "THE TREES HERE FIGHT BACK. I RESPECT THAT. I STILL CUT THEM."
+   ],
+   "errands": [
+    "rootAndBranch"
+   ]
+  },
+  {
+   "id": "tansy",
+   "name": "TANSY THE SCOUT",
+   "x": 46,
+   "y": 163,
+   "look": "tansy",
+   "hidden": true,
+   "voice": {
+    "pitch": 380,
+    "wave": "square",
+    "duty": 0.125
+   },
+   "lines": [
+    "THANKS FOR THE HELP BACK THERE. I OWE YOU A ROUND OF FENNEL'S STEW. ...SORRY."
+   ]
+  },
+  {
+   "id": "moss",
+   "name": "MOTHER MOSS",
+   "x": 24,
+   "y": 162,
+   "look": "moss",
+   "voice": {
+    "pitch": 240,
+    "wave": "triangle",
+    "speed": 0.8
+   },
+   "lines": [
+    "THE POOL SHOWS YOU AS YOU ARE. MOST PEOPLE DON'T CARE FOR IT.",
+    "THE LIGHTS IN THE TREES ARE MOSTLY LIARS. MOSTLY."
+   ]
+  },
+  {
+   "id": "glimmer",
+   "name": "A SMALL LIGHT",
+   "x": 21,
+   "y": 170,
+   "look": "wisplight",
+   "hidden": true,
+   "lines": [
+    "...!"
+   ],
+   "voice": {
+    "pitch": 1100,
+    "wave": "sine"
+   }
   }
  ]
 }

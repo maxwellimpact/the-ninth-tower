@@ -397,3 +397,178 @@ export function buildMurk() {
     hurt: [murkFrame()],
   };
 }
+
+// ================================================================ Gloamwood
+// ------------------------------------------------------------------ Shade
+// A ragged hooded wraith: a smoky cloak, two pale eyes, claws when it strikes.
+// It floats, so its hem never touches the ground.
+const SHADE = ['gloomD', 'night', 'slate', 'stone'];
+function shadeFrame({ bob = 0, claws = 0, lunge = 0, eye = 'glowL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const y = 6 + bob - lunge;
+  shadedBlob(ctx, 16, y + 5, 5, 5, SHADE); // hood
+  for (let r = 0; r < 12; r++) { // cloak flaring down to a ragged hem
+    const w = 5 + Math.round(r * 0.55);
+    px(ctx, 16 - w, y + 8 + r, r % 4 === 3 ? 'night' : 'gloomD', w * 2, 1);
+    px(ctx, 16 - w + 1, y + 8 + r, 'night', 2, 1);
+  }
+  for (let i = 0; i < 6; i++) px(ctx, 9 + i * 3 + ((bob + i) % 2), y + 20, 'gloomD', 2, 1 + ((i + bob) % 3));
+  ctx.clearRect(13, y + 3, 6, 4); px(ctx, 13, y + 3, 'ink', 6, 4); // the face is a void
+  px(ctx, 14, y + 4, eye); px(ctx, 17, y + 4, eye);
+  if (claws) for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) px(ctx, 16 + sx * (9 + k), y + 9 - claws * 2 + k, 'bone');
+  outline(c, 'ink');
+  return c;
+}
+export function buildShade() {
+  return {
+    idle: [shadeFrame({ bob: 0 }), shadeFrame({ bob: 1 })],
+    walk: [shadeFrame({ bob: 0 }), shadeFrame({ bob: 1 }), shadeFrame({ bob: 2 }), shadeFrame({ bob: 1 })],
+    windup: [shadeFrame({ claws: 1, bob: 1 }), shadeFrame({ claws: 2, bob: 0, eye: 'white' })],
+    attack: [shadeFrame({ claws: 0, lunge: 2 }), shadeFrame({ claws: 1 })],
+    hurt: [shadeFrame({ eye: 'white' })],
+  };
+}
+
+// ---------------------------------------------------------------- Rootling
+// A stump that walked a little and then decided to stay: bark body, a tuft of
+// leaves, ember eyes; it flings thorns from where it stands.
+function rootlingFrame({ arm = 0, sway = 0, eye = 'fireL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  shadedBlob(ctx, 16, 19, 7, 8, ['barkD', 'bark', 'barkL', 'woodL']);
+  for (let k = 0; k < 4; k++) px(ctx, 9 + k * 4 + (k > 1 ? 1 : 0), 26, 'barkD', 2, 2); // roots
+  px(ctx, 8, 27, 'barkD', 2, 1); px(ctx, 22, 27, 'barkD', 2, 1);
+  shadedBlob(ctx, 16 + sway, 10, 6, 4, ['fernD', 'fern', 'fernL', 'grassXL']); // leafy crown
+  px(ctx, 12, 17, 'ink', 3, 2); px(ctx, 18, 17, 'ink', 3, 2); px(ctx, 13, 17, eye); px(ctx, 19, 17, eye);
+  px(ctx, 14, 21, 'barkD', 5, 1);
+  // a branch arm drawn back to throw, then flung forward
+  const ax = arm === 1 ? 26 : arm === 2 ? 25 : 23, ay = arm === 1 ? 12 : arm === 2 ? 20 : 18;
+  for (let k = 0; k <= 5; k++) px(ctx, Math.round(21 + (ax - 21) * k / 5), Math.round(19 + (ay - 19) * k / 5), 'bark', 2, 1);
+  if (arm === 1) px(ctx, ax, ay - 1, 'fernL', 2, 2);
+  outline(c, 'ink');
+  return c;
+}
+export function buildRootling() {
+  return {
+    idle: [rootlingFrame({}), rootlingFrame({ sway: 1 })],
+    walk: [rootlingFrame({}), rootlingFrame({ sway: 1 })],
+    windup: [rootlingFrame({ arm: 1 }), rootlingFrame({ arm: 1, eye: 'goldL' })],
+    attack: [rootlingFrame({ arm: 2 }), rootlingFrame({})],
+    hurt: [rootlingFrame({ eye: 'white' })],
+  };
+}
+
+// ------------------------------------------------------------ Gloom Spider
+// size 1 = spider, 0.6 = spiderling. Eight legs that scuttle in two sets.
+function spiderFrame({ step = 0, rear = 0, size = 1, tones = ['night', 'purpD', 'purp', 'curseL'], eye = 'redL', W = 32 }) {
+  const [c, ctx] = makeCanvas(W, W);
+  const cx = W / 2, cy = W - 10 - rear * 2, s = size;
+  for (let i = 0; i < 4; i++) for (const side of [-1, 1]) { // legs
+    const up = ((i + step) % 2 ? 1 : -1) * (step >= 0 ? 1 : 0);
+    const kx = cx + side * (6 + i * 1.5) * s, ky = cy - (5 + up) * s;
+    const fx = cx + side * (9 + i * 2.2) * s, fy = cy + (3 - i * 1.4 + up) * s;
+    // solid jointed legs: body -> knee (raised) -> foot, one pixel per step
+    const seg = (ax, ay, bx, by, w) => { const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)))); for (let k = 0; k <= n; k++) px(ctx, Math.round(ax + (bx - ax) * k / n), Math.round(ay + (by - ay) * k / n), 'night', w, w); };
+    const lw = s >= 2 ? 2 : 1;
+    seg(cx + side * 3 * s, cy - 1, kx, ky, lw);
+    seg(kx, ky, fx, fy, lw);
+  }
+  shadedBlob(ctx, cx, cy + 2 * s, 6 * s, 5 * s, tones); // abdomen
+  shadedBlob(ctx, cx, cy - 4 * s, 3.5 * s, 3 * s, tones); // head
+  if (s >= 1) { px(ctx, cx - 2, cy + 1, tones[3], 4, 1); px(ctx, cx - 1, cy + 3, tones[3], 2, 1); } // hourglass mark
+  px(ctx, Math.round(cx - 2 * s), Math.round(cy - 5 * s), eye); px(ctx, Math.round(cx + 1 * s), Math.round(cy - 5 * s), eye);
+  if (s >= 1) { px(ctx, cx - 1, cy - 6, eye); px(ctx, cx, cy - 6, eye); }
+  outline(c, 'ink');
+  return c;
+}
+export function buildSpider(size = 1) {
+  const f = (o) => spiderFrame({ size, ...o });
+  return {
+    idle: [f({ step: 0 }), f({ step: -1 })],
+    walk: [f({ step: 0 }), f({ step: 1 }), f({ step: 2 }), f({ step: 3 })],
+    windup: [f({ rear: 1 }), f({ rear: 2, eye: 'white' })],
+    attack: [f({ rear: 0, step: 1 }), f({ step: 0 })],
+    hurt: [f({ eye: 'white' })],
+  };
+}
+// Queen Mab: a bloated spider queen with a crown of spines and an egg-sac
+// abdomen (64x64 frames).
+export function buildMab() {
+  const tones = ['night', 'purpD', 'purp', 'curseL'];
+  const f = (o) => {
+    const c = spiderFrame({ size: 2, W: 64, tones, ...o });
+    const ctx = c.getContext('2d');
+    for (let k = -2; k <= 2; k++) px(ctx, 32 + k * 3, 64 - 10 - (o.rear || 0) * 2 - 16 - Math.abs(k) * -1, 'bone', 1, 3); // crown
+    return c;
+  };
+  return {
+    idle: [f({ step: 0 }), f({ step: -1 })],
+    walk: [f({ step: 0 }), f({ step: 1 }), f({ step: 2 }), f({ step: 3 })],
+    windup: [f({ rear: 1 }), f({ rear: 2, eye: 'white' })],
+    attack: [f({ rear: 0, step: 1 }), f({ step: 0 })],
+    hurt: [f({ eye: 'white' })],
+  };
+}
+export function eggSac() {
+  const [c, ctx] = makeCanvas(16, 16);
+  shadedBlob(ctx, 8, 9, 5, 5, ['mist', 'web', 'bone', 'white']);
+  px(ctx, 6, 8, 'purpL'); px(ctx, 9, 10, 'purpL');
+  outline(c, 'slate');
+  return c;
+}
+
+// ---------------------------------------------------------- Spectral Hound
+// A lean, pale-blue ghost hound in profile; packs of three or four.
+const HOUND = ['blueD', 'blue', 'blueL', 'white'];
+function houndFrame({ step = 0, crouch = 0, leap = 0, eye = 'glowL' }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const y = 18 + crouch - leap;
+  shadedBlob(ctx, 15, y, 8, 3.5, HOUND); // body
+  shadedBlob(ctx, 24, y - 3 + crouch, 3.5, 3, HOUND); // head
+  px(ctx, 26, y - 2 + crouch, 'blueL', 3, 2); // snout
+  px(ctx, 23, y - 7 + crouch, 'blueD', 1, 2); px(ctx, 21, y - 6 + crouch, 'blueD', 1, 2); // ears
+  px(ctx, 24, y - 4 + crouch, eye);
+  for (let k = 0; k < 4; k++) px(ctx, 6 - k, y - 1 - k + ((step + k) % 2), 'blueL'); // wispy tail
+  const legs = [[9, step % 2], [12, (step + 1) % 2], [18, (step + 1) % 2], [21, step % 2]];
+  for (const [lx, up] of legs) px(ctx, lx + (leap ? 1 : 0), y + 3, 'blue', 1, leap ? 2 : 5 - up * 2);
+  outline(c, 'blueD');
+  return c;
+}
+export function buildHound() {
+  return {
+    idle: [houndFrame({}), houndFrame({ step: 1 })],
+    walk: [0, 1, 2, 3].map((st) => houndFrame({ step: st })),
+    windup: [houndFrame({ crouch: 2 }), houndFrame({ crouch: 2, eye: 'white' })],
+    attack: [houndFrame({ leap: 3, step: 1 }), houndFrame({ step: 2 })],
+    hurt: [houndFrame({ eye: 'white' })],
+  };
+}
+
+// ---------------------------------------------------------- Wailing Banshee
+// A drifting ghost with long hair; her mouth gapes when she screams.
+function bansheeFrame({ bob = 0, scream = 0, arms = 0 }) {
+  const [c, ctx] = makeCanvas(32, 36);
+  const y = 4 + bob;
+  for (let r = 0; r < 18; r++) { // gown, fading to wisps
+    const w = 4 + Math.round(r * 0.45);
+    if (r > 13 && (r + bob) % 2) continue;
+    px(ctx, 16 - w, y + 10 + r, r > 12 ? 'mist' : 'bone', w * 2, 1);
+    px(ctx, 16 - w, y + 10 + r, 'mist', 1, 1);
+  }
+  shadedBlob(ctx, 16, y + 6, 4.5, 5, ['mist', 'bone', 'white', 'white']); // face
+  for (let k = 0; k < 9; k++) { px(ctx, 10 - (k > 5 ? 1 : 0), y + 3 + k, 'slate'); px(ctx, 21 + (k > 5 ? 1 : 0), y + 3 + k, 'slate'); } // hair
+  px(ctx, 11, y + 1, 'slate', 10, 2);
+  px(ctx, 14, y + 5, 'ink'); px(ctx, 18, y + 5, 'ink');
+  if (scream) px(ctx, 15, y + 8, 'ink', 3, 2 + scream); else px(ctx, 15, y + 9, 'slate', 3, 1);
+  if (arms) for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) px(ctx, 16 + sx * (5 + k), y + 12 - k * arms * 0.5, 'bone');
+  outline(c, 'slate');
+  return c;
+}
+export function buildBanshee() {
+  return {
+    idle: [bansheeFrame({}), bansheeFrame({ bob: 1 })],
+    walk: [bansheeFrame({}), bansheeFrame({ bob: 1 }), bansheeFrame({ bob: 2 }), bansheeFrame({ bob: 1 })],
+    windup: [bansheeFrame({ arms: 1, scream: 1 }), bansheeFrame({ arms: 2, scream: 2 })],
+    attack: [bansheeFrame({ arms: 2, scream: 3 }), bansheeFrame({ arms: 1, scream: 2 })],
+    hurt: [bansheeFrame({ scream: 1 })],
+  };
+}

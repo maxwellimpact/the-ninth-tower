@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y } from '../world/map.js';
+import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, WardStone, Breakable, AFFIXES, dist, norm } from '../game/units.js';
@@ -50,20 +50,30 @@ const THOUGHTS = {
     stir: 'THE BOG BY THE STONE IS BUBBLING... SOMETHING BIG IS WAITING IN THERE.',
     open: "SHE'S GONE. NOTHING GUARDS THE STONE NOW. BREAK IT!",
   },
+  gloam: {
+    stone: "A WARD STONE IN THE DEEP WOOD... AND A VINE, CREEPING OFF TOWARD THAT ENORMOUS TREE.",
+    vine: 'THE VINE RUNS STRAIGHT FOR THE ELDER TREE. INTO THE HOLLOW AT ITS ROOTS.',
+    below: "IT WINDS DOWN THROUGH THE ROOTS. IT'S DARK DOWN HERE - DARKER THAN IT SHOULD BE.",
+    source: "IT'S DRINKING THE ELDER'S HEARTWOOD. EVERY DAWN THE TREE EVER SAW... FEEDING THAT STONE.",
+    withered: 'THE VINE IS ROTTING AWAY! THE HEARTWOOD IS GLOWING AGAIN. BACK TO THE STONE!',
+    stir: 'HOUNDS... I HEAR HOUNDS IN THE FOG BY THE STONE. AND NO DOGS.',
+    open: 'THE HUNT IS OVER. NOTHING GUARDS THE STONE NOW. BREAK IT!',
+  },
 };
 
 // Golden Flies in the world, plus the ones won at the minigames
 export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog Races
 
-const BLOCKING = new Set(['tree', 'deadtree', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
+const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
 const NODE_KINDS = {
   herb: { base: 'herb', dur: 1.5 }, bogmoss: { base: 'herb', dur: 1.8, tint: 0xc9b46a },
   ore: { base: 'ore', dur: 2.4 }, silver: { base: 'ore', dur: 2.9, tint: 0xd8e4ff },
   crystal: { base: 'crystal', dur: 3.2 },
+  ghostcap: { base: 'herb', dur: 1.6, tint: 0x9ff2c8 },
 };
 const nodeBase = (n) => NODE_KINDS[n.kind]?.base || n.kind;
-const PROP_GROUP = { deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
+const PROP_GROUP = { gloomtree: 'gloam', fern: 'gloam', glowcap: 'gloam', stump: 'gloam', web: 'gloam', deadtree: 'marsh', reeds: 'marsh', mushrooms: 'marsh', stalagmite: 'cave', crystal: 'cave', counter: 'interior', shelf: 'interior', table: 'interior', rug: 'interior', whackboard: 'interior', fireplace: 'interior' };
 
 const BARKS = {
   start: { brann: "THE KING'S TOWN... WHAT'S LEFT OF IT.", pip: 'OOH, A RUIN! I MEAN... HOW TRAGIC.', sable: 'QUIET OUT HERE. TOO QUIET. ALSO: GOBLINS.' },
@@ -241,6 +251,14 @@ export class Game extends Phaser.Scene {
         img = this.add.image(x, y + 6, `deadtree${p.seed}`).setOrigin(0.5, 1);
         out.push(this.add.image(x + 1, y + 4, 'shadow').setAlpha(0.22).setDepth(-4));
         break;
+      case 'gloomtree':
+        img = this.add.image(x, y + 6, `gloomtree${p.seed}`).setOrigin(0.5, 1);
+        out.push(this.add.image(x + 2, y + 4, 'shadowL').setAlpha(0.3).setDepth(-4).setScale(1.2, 1.1));
+        break;
+      case 'fern': img = this.add.sprite(x, y + 4, `fern${p.seed % 4}`).setOrigin(0.5, 1).play({ key: `fern${p.seed % 4}`, startFrame: p.seed % 3 }); break;
+      case 'glowcap': img = this.add.sprite(x, y + 4, `glowcap${p.seed % 4}`).setOrigin(0.5, 1).play(`glowcap${p.seed % 4}`); img.isLight = true; break;
+      case 'stump': img = this.add.image(x, y + 4, `stump${p.seed % 4}`).setOrigin(0.5, 1); break;
+      case 'web': img = this.add.image(x, y, `web${p.seed % 4}`).setDepth(-50).setAlpha(0.7); break;
       case 'bush': img = this.add.image(x, y + 4, `${p.berries ? 'bushB' : 'bush'}${p.seed % 4}`).setOrigin(0.5, 1); break;
       case 'rock': img = this.add.image(x, y + 4, `${p.big ? 'rockB' : 'rock'}${p.seed % 4}`).setOrigin(0.5, 1); break;
       case 'tuft': img = this.add.sprite(x, y + 4, `tuft${p.seed % 4}`).setOrigin(0.5, 1).play({ key: `tuft${p.seed % 4}`, startFrame: p.seed % 3 }); break;
@@ -312,6 +330,7 @@ export class Game extends Phaser.Scene {
 
   spawnEnemy(kind, x, y, engaged = false, elite = false) {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
+    if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
     const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
@@ -547,8 +566,10 @@ export class Game extends Phaser.Scene {
     let s, sp = 210;
     if (kind === 'orb') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(2).setDepth(TOP - 21); sp = 110; audio.sfx('frost', { pitch: 0.6 }); }
     else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
+    else if (kind === 'thorn') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0x8a5c38).setScale(0.8); sp = 190; audio.sfx('swing', { pitch: 2 }); }
+    else if (kind === 'web') { s = this.add.image(from.x, from.y - 8, 'web0').setDepth(TOP - 21).setScale(0.45); sp = 130; audio.sfx('squish', { pitch: 1.6 }); }
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
-    (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' ? 1.8 : 1.1, from, kind });
+    (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' || kind === 'web' ? 1.8 : 1.1, from, kind });
   }
 
   updateEnemyShots(dt) {
@@ -579,6 +600,7 @@ export class Game extends Phaser.Scene {
         hit.damage(p.dmg, p.from);
         this.fx.burst(p.kind === 'arrow' || !p.kind ? 'spark' : 'curse', p.x, p.y, 4);
         if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
+        if (p.kind === 'web' && hit.buff) { hit.buff('slow', 0.05, 1.4); this.floatText(hit.x, hit.y - 34, 'WEBBED', 'fontPlain', 0xc9cfe0); }
       }
       if (hit || wall || p.life <= 0) { p.dead = true; p.s.destroy(); }
     }
@@ -624,6 +646,7 @@ export class Game extends Phaser.Scene {
     const px = (t) => t * TILE + TILE / 2;
     this.buildTownsfolk();
     this.buildLore();
+    this.campfireObjs = W.campfires.map((c) => ({ x: px(c.x), y: px(c.y) })); // light sources in the gloom
     for (const c of W.campfires) {
       const x = px(c.x), y = px(c.y);
       this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
@@ -689,6 +712,7 @@ export class Game extends Phaser.Scene {
     // interior's bottom wall
     this.doors = {};
     for (const b of W.buildings) {
+      if (b.landmark) continue; // the elder tree and the like: no door to dress
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
       const ext = this.add.image(bx - 6, by - 17, 'door_open').setOrigin(0).setDepth(by + 1).setVisible(false);
       const out = W.warps.find((w) => w.door && w.exit && w.building === b.id);
@@ -786,12 +810,25 @@ export class Game extends Phaser.Scene {
   updateDarkness() {
     const L = this.leader;
     const inCave = !!this.areaRect().dark;
-    this.darkRT.setVisible(inCave);
-    if (!inCave) return;
+    // Gloamwood's canopy dims the overworld: fades in over ~10 tiles as you
+    // walk in from the fen, never as dark as a cave
+    const ltx = L.x / TILE, lty = L.y / TILE;
+    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < RIDGE_X + 2 ? Math.max(0, Math.min(1, (lty - (SOUTH_Y - 4)) / 10)) : 0;
+    this.darkRT.setVisible(inCave || gloom > 0);
+    if (!inCave && gloom <= 0) return;
     const cam = this.cameras.main;
     const rt = this.darkRT;
     rt.clear();
     const lantern = this.state.relics.includes('lantern');
+    if (!inCave) {
+      rt.fill(0x060a14, gloom * (lantern ? 0.42 : 0.52));
+      const stampG = (wx, wy, sc) => { this.lightStamp ??= this.make.image({ key: 'lightMask', add: false }); this.lightStamp.setScale(sc).setOrigin(0.5); rt.erase(this.lightStamp, Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
+      stampG(L.x, L.y - 10, (lantern ? 2.8 : 2.1) + Math.sin(this.time.now / 180) * 0.03);
+      for (const h of this.party) if (h !== L) stampG(h.x, h.y - 10, 0.8);
+      for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stampG(o.x, o.y - 6, 0.45);
+      for (const c of this.campfireObjs || []) if (cam.worldView.contains(c.x, c.y)) stampG(c.x, c.y - 6, 1.6);
+      return;
+    }
     rt.fill(0x05030a, lantern ? 0.86 : 0.94);
     const light = (wx, wy, s) => rt.erase('lightMask', Math.round(wx - cam.worldView.x - 64 * s), Math.round(wy - cam.worldView.y - 64 * s)).setScale?.(1);
     const stamp = (wx, wy, s) => { this.lightStamp ??= this.make.image({ key: 'lightMask', add: false }); this.lightStamp.setScale(s).setOrigin(0.5); rt.erase(this.lightStamp, Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
@@ -1335,7 +1372,7 @@ export class Game extends Phaser.Scene {
     // below); otherwise it was left frozen where the fight happened
     for (const e of this.enemies) e.eliteTag?.setVisible(false);
     for (const e of this.enemies) {
-      if (!e.alive || e.boss || e.submerged || e.riseT > 0) continue;
+      if (!e.alive || e.boss || e.submerged || e.riseT > 0 || e.hidden) continue; // a veiled Shade shows nothing
       const hurt = e.hp < e.maxHp;
       if (!(e.engaged || (hurt && e.state !== 'idle' && e.state !== 'return'))) continue;
       const w = e.named ? 26 : e.elite ? 20 : 16;
@@ -1433,7 +1470,8 @@ export class Game extends Phaser.Scene {
   // Biome art groups wanted around a tile (shared by streaming and preloading).
   groupsNear(tx, ty, area) {
     const out = [];
-    if ((ty > MARSH_Y - 22 && area === 'overworld') || area === 'abbey') out.push('marsh');
+    if ((ty > MARSH_Y - 22 && ty < SOUTH_Y + 10 && area === 'overworld') || area === 'abbey') out.push('marsh');
+    if (ty > SOUTH_Y - 22 && tx < RIDGE_X + 22 && area === 'overworld') out.push('gloam');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
     return out;

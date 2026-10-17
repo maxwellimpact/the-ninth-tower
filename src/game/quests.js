@@ -46,6 +46,10 @@ export class QuestManager {
     if (n.look === 'board') {
       npc.s = sc.add.image(npc.px, npc.py + 6, 'board').setOrigin(0.5, 1).setDepth(npc.py);
       sc.nav.block(n.x, n.y);
+    } else if (n.look === 'wisplight') {
+      // a friendly light in the gloom: the wisp, washed ghost-green
+      npc.s = sc.add.sprite(npc.px, npc.py - 26, 'wisp', 'idle_0').play('wisp_idle').setTint(0x9ff2c8).setDepth(100000 - 50);
+      npc.flying = true;
     } else if (n.look === 'hawk') {
       npc.s = sc.add.sprite(npc.px, npc.py - 30, 'hawk', '0').play('hawk').setDepth(100000 - 50);
       npc.flying = true;

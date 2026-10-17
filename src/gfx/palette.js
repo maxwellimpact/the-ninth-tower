@@ -92,6 +92,21 @@ export const PAL = {
   caveXL: '#5a4c68',
   crystal: '#5fd4e8',
   crystalL: '#c8f6ff',
+
+  // Gloamwood (haunted forest): blue-black loam, cold moss, ghost-green glow
+  gloomD: '#121823',
+  gloom: '#1b2630',
+  gloomL: '#283a40',
+  gloomXL: '#3f5b56',
+  fernD: '#21402f',
+  fern: '#34634a',
+  fernL: '#5a9266',
+  glow: '#8ff0c0',
+  glowL: '#d8fff0',
+  web: '#c9cfe0',
+  barkD: '#221c28',
+  bark: '#3a2f40',
+  barkL: '#57485a',
 };
 
 export const hex = (k) => PAL[k] ?? k;

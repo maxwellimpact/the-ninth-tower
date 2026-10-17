@@ -948,7 +948,7 @@ export class Hero extends Unit {
 const ENEMY = enemyData;
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk' };
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac' };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
@@ -1227,6 +1227,7 @@ export class Enemy extends Unit {
   // flanks, going for the back line (the most fragile hero) instead of the leader.
   pickRole() {
     if (this.role || this.boss || this.s.ranged) return;
+    if (this.s.ai === 'pack') { this.role = 'flank'; return; } // spectral hounds always circle round
     this.role = 'front';
     const pack = this.scene.enemies.filter((e) => e.alive && !e.s.ranged && !e.boss && dist(e, this) < 140).length;
     if (pack >= 4 && Math.random() < 0.34) this.role = 'flank';
@@ -1330,13 +1331,18 @@ export class Enemy extends Unit {
     if (!this.alive) return;
     if (this.s.inert) {
       // armour pile: if nobody smashes it in time, the Hollow Guard stands back up
-      this.reformT = (this.reformT ?? 5) - dt;
+      this.reformT = (this.reformT ?? (this.s.hatch?.t || 5)) - dt;
       this.sprite.setAngle(this.reformT < 1.5 ? Math.sin(this.reformT * 40) * 4 : 0);
       if (this.reformT <= 0) {
         this.alive = false; this.destroy();
-        const g = this.scene.spawnEnemy('hollow', this.x, this.y, true);
-        g.hp = Math.round(g.maxHp * 0.5); g.reassembled = true;
-        this.scene.floatText(this.x, this.y - 30, 'IT REASSEMBLED!', 'fontPlain', 0xd9b8ff);
+        if (this.s.hatch) { // an egg sac: spiderlings spill out
+          for (let i = 0; i < this.s.hatch.n; i++) this.scene.spawnEnemy(this.s.hatch.kind, this.x + (i - 0.5) * 10, this.y + 4, true);
+          this.scene.fx.burst('spark', this.x, this.y - 4, 8); audio.sfx('squish');
+        } else {
+          const g = this.scene.spawnEnemy('hollow', this.x, this.y, true);
+          g.hp = Math.round(g.maxHp * 0.5); g.reassembled = true;
+          this.scene.floatText(this.x, this.y - 30, 'IT REASSEMBLED!', 'fontPlain', 0xd9b8ff);
+        }
       }
       this.sync(dt);
       return;
@@ -1369,6 +1375,10 @@ export class Enemy extends Unit {
     if (s.ai === 'lurk' && this.aiLurk(dt)) { this.sync(dt); return; }
     if (s.ai === 'blink' && this.engaged) { this.blinkT = (this.blinkT ?? 4) - dt; if (this.blinkT <= 0 && this.state === 'chase') this.blinkAway(); }
     if (s.ai === 'warlock' && this.engaged) this.aiWarlock(dt);
+    if (s.ai === 'shade') this.aiShade(dt);
+    if (s.ai === 'banshee' && this.engaged && this.aiBanshee(dt)) { this.sync(dt); return; }
+    if (s.ai === 'mab' && this.engaged) this.aiMab(dt);
+    if (s.ai === 'web') this.webCd = Math.max(0, (this.webCd ?? 0.3) - dt);
     if (this.affix) this.affixTick(dt);
     // elites read the party's telegraphed area attacks (Meteor, Volley) and step out
     if ((this.elite || this.named) && !this.boss && this.state !== 'charging' && sc.partyZones?.length) {
@@ -1443,6 +1453,8 @@ export class Enemy extends Unit {
           break;
         }
         if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
+        if (s.ai === 'mab' && (this.tongueCd ?? 3) <= 0 && d > 60 && d < s.pullRange && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
+        if (s.ai === 'web' && this.webCd <= 0 && d > 30 && d < 110 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1) && this.takeToken(t)) { this.spitWeb(t); break; }
         if (s.ai === 'charge' && this.chargeCd <= 0 && d > 40 && d < 130 && this.onScreen() && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 2) && this.takeToken(t)) { this.beginCharge(t); break; }
         // melee: surround the target; only a few may wind up on it at once (the
         // rest wait just outside reach for a turn)
@@ -1695,6 +1707,90 @@ export class Enemy extends Unit {
     }
   }
 
+  // Shade: all but invisible until it's close or striking. The Seer's Lens
+  // (or a reveal, like Hawk Strike) shows it.
+  aiShade(dt) {
+    const sc = this.scene;
+    this.revealT = Math.max(0, (this.revealT || 0) - dt);
+    const near = sc.party.some((h) => h.alive && !h.downed && Math.hypot(h.x - this.x, h.y - this.y) < 42);
+    const show = near || this.revealT > 0 || TOKEN_STATES.has(this.state) || this.stunT > 0 || this.flashT > 0;
+    const lens = sc.state.relics.includes('lens');
+    const want = show ? 1 : lens ? 0.6 : 0.08;
+    this.veil = (this.veil ?? want) + (want - (this.veil ?? want)) * Math.min(1, dt * 6);
+    this.sprite.setAlpha(this.veil);
+    this.hidden = this.veil < 0.4; // no health bar or name while veiled
+  }
+
+  // Gloom Spider: spits a web that roots the hero it hits.
+  spitWeb(t) {
+    this.webCd = 6;
+    this.state = 'recover'; this.t = -0.2;
+    this.face(t.x - this.x, t.y - this.y);
+    this.anim = ''; this.play('windup');
+    this.token = null;
+    this.scene.spawnEnemyArrow(this, t, this.s.dmg * 0.4 * this.scene.difficulty.dmg, 'web');
+  }
+
+  // Wailing Banshee: a scream that interrupts and staggers everyone in its
+  // line of sight close by. A ring shows its reach while she draws breath;
+  // step out of it or break line of sight (a tree, a wall).
+  aiBanshee(dt) {
+    const sc = this.scene, R = 74;
+    this.screamCd = (this.screamCd ?? 3) - dt;
+    if (this.state === 'scream') {
+      this.play('windup');
+      this.t += dt;
+      if (this.t >= 0.85) {
+        this.clearZone();
+        this.anim = ''; this.play('attack');
+        audio.sfx('roar', { pitch: 1.8 });
+        sc.fx.ring(this.x, this.y - 8, 'ringWhite', 5);
+        sc.shake(140, 0.004);
+        for (const h of sc.party) {
+          if (!h.alive || h.downed || h.invuln > 0 || Math.hypot(h.x - this.x, h.y - this.y) > R + h.r) continue;
+          if (!sc.nav.lineClear(this.x, this.y, h.x, h.y, 1)) continue; // a tree or wall breaks the scream
+          h.damage(this.s.dmg * 0.7 * sc.difficulty.dmg, this);
+          if (h.action) h.cancelAction();
+          h.buff('slow', 0.05, 0.6);
+          sc.floatText(h.x, h.y - 34, 'STAGGERED', 'fontPlain', 0xd8d3e0);
+        }
+        this.state = 'recover'; this.t = 0;
+      }
+      return true;
+    }
+    if (this.screamCd <= 0 && this.onScreen() && !TOKEN_STATES.has(this.state) && this.state !== 'recover' && sc.party.some((h) => h.alive && !h.downed && Math.hypot(h.x - this.x, h.y - this.y) < R - 10)) {
+      this.screamCd = 6.5;
+      this.state = 'scream'; this.t = 0;
+      this.zone = { x: this.x, y: this.y, r: R, until: 0.85 };
+      sc.dangers.push(this.zone);
+      this.zoneGfx = sc.fx.telegraph(this.x, this.y, R, 0.85);
+      sc.floatText(this.x, this.y - 32, 'A WAIL RISES...', 'fontPlain', 0xd8d3e0);
+      return true;
+    }
+    return false;
+  }
+
+  // Queen Mab: lays egg sacs that hatch spiderlings unless smashed, and drags
+  // heroes who keep their distance in with a web line.
+  aiMab(dt) {
+    const sc = this.scene;
+    this.tongueCd = Math.max(0, (this.tongueCd ?? 3) - dt);
+    this.eggT = (this.eggT ?? 5) - dt;
+    if (this.eggT <= 0 && !TOKEN_STATES.has(this.state)) {
+      const sacs = sc.enemies.filter((e) => e.alive && e.kind === 'eggsac').length;
+      this.eggT = 9;
+      if (sacs >= 4) return;
+      for (let i = 0; i < 2; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const x = this.x + Math.cos(a) * 26, y = this.y + Math.sin(a) * 18;
+        if (sc.nav.solidAtPx(x, y)) continue;
+        sc.spawnEnemy('eggsac', x, y, true);
+      }
+      sc.floatText(this.x, this.y - 44, 'SHE LAYS EGGS!', 'fontPlain', 0xd9b8ff);
+      audio.sfx('squish', { pitch: 0.7 });
+    }
+  }
+
   // Croaker: a tongue that drags you in for a bite.
   beginTongue(t) {
     this.clearZone(); // never leave an old warning marker behind
@@ -1716,7 +1812,7 @@ export class Enemy extends Unit {
     this.clearZone();
     this.state = 'recover'; this.t = 0; this.tongueCd = 4;
     this.anim = ''; this.sprite.play(`${this.tex}_attack`); this.anim = `${this.tex}_attack`;
-    if (!t?.alive || t.downed || t.invuln > 0 || Math.hypot(t.x - this.x, t.y - this.y) > this.s.reach + 20) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
+    if (!t?.alive || t.downed || t.invuln > 0 || Math.hypot(t.x - this.x, t.y - this.y) > (this.s.pullRange || this.s.reach) + 20) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     audio.sfx('zip');
     const [nx, ny] = norm(this.x - t.x, this.y - t.y);
     const tx = this.x - nx * 18, ty = this.y - ny * 18;

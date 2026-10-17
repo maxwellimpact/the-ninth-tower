@@ -16,5 +16,11 @@
   "first": "mend",
   "cost": 160,
   "pitch": "THE CLERIC WAY: MENDING AND WARDING."
+ },
+ "ranger": {
+  "name": "RANGER",
+  "first": "quickshot",
+  "cost": 140,
+  "pitch": "THE RANGER'S CRAFT: A QUICK SHOT FOR ANY HAND, SNARES ON THE TRAIL AND LIGHT FEET."
  }
 }

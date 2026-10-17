@@ -597,6 +597,46 @@ export const SKILL_FX = {
     ai(h) { return h.scene.party.some((p) => p.downed || (p.alive && p.hp / p.maxHp < 0.5)) ? true : null; },
   },
 
+  // ------------------------------------------------ Ranger discipline
+  quickshot: {
+    cast(h, { target, m }) {
+      const sc = h.scene;
+      if (!target || dist(h, target) > 150) return false;
+      h.face(target.x - h.x, target.y - h.y);
+      h.act('quickshot', 0.28, 'attack', {
+        hitAt: 0.12,
+        resolve: () => {
+          const [nx, ny] = norm(target.x - h.x, target.y - (h.y - 6));
+          sc.spawnProjectile({ owner: h, target, x: h.x + nx * 8, y: h.y - 8, vx: nx * 320, vy: ny * 320, dmg: h.stats.atk * 1.0 * m, kind: 'arrow', life: 0.6 });
+          audio.sfx('swing', { pitch: 1.5 });
+        },
+      });
+      return true;
+    },
+    // melee heroes use it on something they can't reach; archers in a gap between shots
+    ai(h, c) { const t = c.target; return t && dist(h, t) > (h.ranged ? 0 : 50) && dist(h, t) < 140 ? t : null; },
+  },
+  tripwire: {
+    cast(h, { m }) {
+      const sc = h.scene;
+      const x = h.x, y = h.y + 2;
+      h.act('tripwire', 0.3, 'cast');
+      const img = sc.add.image(x, y, 'snare').setDepth(y - 4).setTint(0xc9b46a);
+      const trap = { t: 20 };
+      const check = sc.time.addEvent({ delay: 100, loop: true, callback: () => {
+        trap.t -= 0.1;
+        const e = sc.enemies.find((k) => k.alive && !k.boss && !k.staged && Math.hypot(k.x - x, k.y - y) < 12 + k.r);
+        if (e || trap.t <= 0) {
+          check.remove(); img.destroy();
+          if (e) { e.stunT = Math.max(e.stunT, 2 * Math.min(1.5, m)); e.clearZone(); sc.floatText(e.x, e.y - 26, 'SNARED!', 'fontGold'); audio.sfx('block'); }
+        }
+      } });
+      audio.sfx('equip');
+      return true;
+    },
+    ai(h) { return attackers(h.scene, h, 40).length >= 1 ? true : null; },
+  },
+
   // ------------------------------------------------- Blade discipline
   sweep: {
     cast(h, { m }) {

@@ -102,6 +102,13 @@ export const FOLK = {
   iren: folk('iren', 'sable', { head: 'bandana_red@5', body: 'leather_studded@4', weapon: 'sword_long@3' }),
   bard: folk('bard', 'pip', { head: 'hat_star@3', body: 'robe_scholar@2' }),
   margo: folk('margo', 'sable', { head: 'hood_shadow@2', body: 'jacket_leather@5', weapon: 'dagger_kris@4' }),
+  // Gloamwood edge camp
+  brisk: folk('brisk', 'wren', { head: 'hood_ranger@3', body: 'leathers_ranger@4', weapon: 'bow_long@2' }),
+  rowan: folk('rowan', 'wren', { head: 'cap_ranger@5', body: 'leathers_scout@3', weapon: 'bow_hunting@4' }),
+  fennel: folk('fennel', 'brann', { head: 'kerchief@2', body: 'apron_brown@4' }),
+  hew: folk('hew', 'kesh', { head: 'warhelm_hide@2', body: 'furs_hide@3', weapon: 'axe_bearded@2' }),
+  tansy: folk('tansy', 'sable', { head: 'hood_shadow@4', body: 'leathers_scout@2', weapon: 'dagger_steel@3' }),
+  moss: folk('moss', 'pip', { head: 'hat_apprentice@4', body: 'robe_scholar@3' }),
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.

@@ -4,14 +4,15 @@
 // chunks can be painted lazily as the camera streams through a large world.
 import { rgb, curseRGB } from './palette.js';
 import { hash, vnoise, bayer, makeCanvas } from './pixel.js';
-import { T, TILE, SOFT, MAP_W, MAP_H } from '../world/map.js';
+import { T, TILE, SOFT, MAP_W, MAP_H, SOUTH_Y, RIDGE_X } from '../world/map.js';
 
 export const CHUNK = 256;
 
 const C = {};
 for (const k of ['grassD', 'grass', 'grassL', 'grassXL', 'leafD', 'leaf', 'dirtD', 'dirt', 'dirtL', 'sand', 'waterD', 'water', 'waterL', 'foam',
   'stone', 'slate', 'mist', 'bone', 'night', 'ink', 'white', 'gold', 'redL', 'blueL', 'purpL', 'woodD', 'wood', 'woodL',
-  'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD']) C[k] = rgb(k);
+  'mossD', 'moss', 'mossL', 'mossXL', 'mudD', 'mud', 'bogD', 'bog', 'bogL', 'bogXL', 'reed', 'caveD', 'cave', 'caveL', 'caveXL', 'hexD',
+  'gloomD', 'gloom', 'gloomL', 'gloomXL', 'fernD', 'fern', 'fernL', 'barkD', 'bark']) C[k] = rgb(k);
 
 export function makeTerrainPainter(world) {
   const at = world.at;
@@ -39,10 +40,30 @@ export function makeTerrainPainter(world) {
     return v < 0.27 ? C.grassD : v < 0.7 ? C.grass : C.grassL;
   }
 
+  // Gloamwood floor: blue-black loam under leaf litter, with cold moss where
+  // light gets through. Clearings (GRASS) there are mossy, never vale-green.
+  function gloamColor(x, y, clearing) {
+    const n = vnoise(x / 40, y / 40, 150) * 0.7 + vnoise(x / 9, y / 9, 151) * 0.3 + (bayer(x, y) - 0.5) * 0.12;
+    const h = hash(x, y, 152);
+    if (clearing) {
+      if (h < 0.012) return C.fernL;
+      return n < 0.35 ? C.fernD : n < 0.72 ? C.fern : C.gloomXL;
+    }
+    if (h < 0.02) return C.barkD; // twigs
+    if (h < 0.032) return hash(x, y, 153) < 0.5 ? C.mudD : C.fernD; // fallen leaves
+    return n < 0.3 ? C.gloomD : n < 0.66 ? C.gloom : C.gloomL;
+  }
+
   function pixel(x, y) {
     const t = typeAt(x, y);
     const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
     const lx = x - tx * TILE, ly = y - ty * TILE;
+    const gloam = ty >= SOUTH_Y && tx < RIDGE_X;
+    if (t === T.LOAM || (gloam && t === T.GRASS)) {
+      // a dark rim where the floor meets a road
+      if (typeAt(x, y + 2) === T.PATH || typeAt(x, y - 2) === T.PATH || typeAt(x - 2, y) === T.PATH || typeAt(x + 2, y) === T.PATH) return C.gloomD;
+      return gloamColor(x, y, t === T.GRASS);
+    }
     switch (t) {
       case T.GRASS:
       case T.PLATEAU: {
@@ -70,6 +91,16 @@ export function makeTerrainPainter(world) {
         return c;
       }
       case T.PATH: {
+        if (gloam) {
+          // a trodden forest track: dark mud with root ridges, not sandy dirt
+          const edgeG = typeAt(x + 2, y) !== T.PATH || typeAt(x - 2, y) !== T.PATH || typeAt(x, y + 2) !== T.PATH || typeAt(x, y - 2) !== T.PATH;
+          if (edgeG) return C.gloomD;
+          const hg = hash(x, y, 154);
+          if (hg < 0.03) return C.barkD;
+          if (hg < 0.06) return C.dirtD;
+          const ng = vnoise(x / 14, y / 14, 155) + (bayer(x, y) - 0.5) * 0.2;
+          return ng > 0.66 ? C.dirtD : ng > 0.3 ? C.mud : C.mudD;
+        }
         const edge = typeAt(x + 2, y) !== T.PATH || typeAt(x - 2, y) !== T.PATH || typeAt(x, y + 2) !== T.PATH || typeAt(x, y - 2) !== T.PATH;
         if (edge) return C.dirtD;
         const h = hash(x, y, 8);
