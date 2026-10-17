@@ -2,7 +2,7 @@
 // until explored. Exploration is saved as a base64 bitset in the save state.
 import { rgb } from '../gfx/palette.js';
 import { makeCanvas } from '../gfx/pixel.js';
-import { T, MAP_W, MAP_H } from '../world/map.js';
+import { T, MAP_W, MAP_H, biomeAt } from '../world/map.js';
 
 const COL = {
   [T.GRASS]: 'grass', [T.PATH]: 'dirtL', [T.SAND]: 'sand', [T.WATER]: 'water', [T.PLATEAU]: 'grassL',
@@ -23,7 +23,9 @@ export class MiniMap {
     const c = (k) => (cache[k] ??= rgb(k));
     for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
       const t = world.at(x, y);
-      const [r, g, b] = c(COL[t] || 'ink');
+      // raised rock is only grassy in the Vale: stone in the south and the fen, basalt in Cinderreach (as the terrain paints it)
+      const k = t === T.PLATEAU && y >= 64 ? (biomeAt(x, y) === 'cinder' ? 'basalt' : 'stone') : COL[t] || 'ink';
+      const [r, g, b] = c(k);
       const i = (y * MAP_W + x) * 4;
       this.base[i] = r; this.base[i + 1] = g; this.base[i + 2] = b; this.base[i + 3] = 255;
     }

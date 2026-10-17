@@ -2,6 +2,7 @@
 // legend. Opened by tapping the minimap (or N); tap anywhere to close.
 import Phaser from 'phaser';
 import { MARK, panel } from './UI.js';
+import { OW_H } from '../world/map.js';
 
 const LEGEND = [['chest', 'CHEST'], ['camp', 'CAMPFIRE'], ['recruit', 'ALLY'], ['door', 'DOOR'], ['post', 'GRAPPLE'], ['boss', 'WARD STONE'], ['npc', 'FOLK'], ['node', 'GATHER']];
 
@@ -12,10 +13,13 @@ export class WorldMap extends Phaser.Scene {
     this.g = game;
     const W = this.scale.width, H = this.scale.height;
     const portrait = H > W;
-    const legendH = portrait ? 48 : 24;
-    const a = game.areaRect();
+    const legendH = portrait ? 48 : 34; // two legend rows, then TAP TO CLOSE
+    const a = { ...game.areaRect() };
+    if (!a.interior) a.y1 = Math.min(a.y1, OW_H - 1); // the unexplorable highlands (Wave 3) stay off the map
     const aw = a.x1 - a.x0 + 1, ah = a.y1 - a.y0 + 1;
-    const s = Math.max(1, Math.floor(Math.min((W - 12) / aw, (H - 30 - legendH) / ah) * 2) / 2);
+    // whole pixels when it fits; on a short landscape phone the overworld (208 tiles tall) has to shrink to fit
+    const fit = Math.min((W - 12) / aw, (H - 30 - legendH) / ah);
+    const s = fit >= 1 ? Math.floor(fit * 2) / 2 : fit;
     const mw = aw * s, mh = ah * s;
     const mx = Math.round((W - mw) / 2), my = Math.round(18 + (H - 18 - legendH - mh) / 2);
     const g = this.add.graphics();
