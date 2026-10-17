@@ -429,7 +429,7 @@ function shieldDrawFrom(s) {
     const w = s.front[0].length;
     if (view === 'down') grid(ctx, s.front, s.map, hL.x - Math.floor(w / 2) + 1, hL.y - Math.floor(h / 2) - 1);
     else if (view === 'up') grid(ctx, s.back, s.map, hL.x - Math.floor(w / 2), hL.y - Math.floor(h / 2) - 1);
-    else grid(ctx, s.edge, s.map, 27, hL.y - Math.floor(h / 2) - 1);
+    else grid(ctx, s.edge, s.map, 29, hL.y - Math.floor(h / 2) - 1); // side-on: the far-arm shield shows past the chest, behind the sword arm
   };
 }
 
@@ -437,30 +437,25 @@ const TOMES = {
   worn: { k: 'woodD', c: 'wood', p: 'bone', m: 'gold' },
   frost: { k: 'blueD', c: 'blue', p: 'white', m: 'foam' },
 };
+// Things carried in the off hand (a book, a relic, a gadget), as opposed to a
+// shield worn on the arm: the puppet draws them behind the body when facing
+// away or side-on (far hand), in front when facing you.
+const held = (fn) => Object.assign(fn, { held: true });
 function tomeDraw(kind) { return tomeDrawFrom(TOMES[kind]); }
 function tomeDrawFrom(map) {
   const rows = ['kcck', 'cmcc', 'cccc', 'ppkp'];
-  return (ctx, view, hL) => {
-    if (view === 'side') return; // held on the far side
-    grid(ctx, rows, map, hL.x - 1, hL.y - 2);
-  };
+  return held((ctx, view, hL) => grid(ctx, rows, map, hL.x - 1, hL.y - 2));
 }
 // Oake's holy relic: a little golden reliquary held in the off hand (or a
 // lantern, for the Lantern of the Faithful)
 function relicDraw(map, lantern = false) {
   const rows = lantern ? ['.kk.', 'kggk', 'kgwk', 'kggk', '.kk.'] : ['.gg.', 'kcck', 'cwgc', 'cggc', 'kcck'];
-  return (ctx, view, hL) => {
-    if (view === 'side') return; // held on the far side
-    grid(ctx, rows, map, hL.x - 1, hL.y - 3);
-  };
+  return held((ctx, view, hL) => grid(ctx, rows, map, hL.x - 1, hL.y - 3));
 }
 // Gizmo's gadget: a little box of gears with a blinking light on a stalk
 function gadgetDraw(map) {
   const rows = ['..l.', '..k.', 'kcck', 'cgcc', 'kcck'];
-  return (ctx, view, hL) => {
-    if (view === 'side') return;
-    grid(ctx, rows, map, hL.x - 1, hL.y - 3);
-  };
+  return held((ctx, view, hL) => grid(ctx, rows, map, hL.x - 1, hL.y - 3));
 }
 function orbDraw() {
   return (ctx, view, hL, pose) => {

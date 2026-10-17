@@ -262,15 +262,16 @@ export function drawPuppet(def, view, pose = {}) {
   if (view !== 'up') back();
   const leftSideR = view === 'down'; // which arm is on screen-left
   if (view === 'up') {
-    // facing away: weapons and arms partly behind the body
+    // facing away: weapons and arms partly behind the body (and anything carried in the hand)
     weaponR(); weaponL();
+    if (def.offhand?.held) offhand();
     legsFront(ctx, def, pose, view);
     arm(ctx, shR.x, shR.y, hR.x, hR.y, armC, false);
     arm(ctx, shL.x, shL.y, hL.x, hL.y, armC, true);
     torsoGrid(ctx, torso, torsoMap, torsoX, torsoY, pose.sway || 0, def.swayFrom ?? 99);
     back();
     drawHead();
-    offhand();
+    if (!def.offhand?.held) offhand(); // a shield on the arm shows its back
   } else if (view === 'down') {
     legsFront(ctx, def, pose, view);
     torsoGrid(ctx, torso, torsoMap, torsoX, torsoY, pose.sway || 0, def.swayFrom ?? 99);
@@ -284,11 +285,12 @@ export function drawPuppet(def, view, pose = {}) {
   } else {
     // side (facing right): far arm + off-hand behind, near arm + weapon in front
     if (wL) weaponL();
+    if (def.offhand?.held) offhand(); // carried in the far hand, behind the body
     arm(ctx, shL.x, shL.y, hL.x, hL.y, [armC[1], armC[1], armC[2]], false);
     legsSide(ctx, def, pose);
     torsoGrid(ctx, torso, torsoMap, torsoX, torsoY, pose.sway || 0, def.swayFrom ?? 99);
     drawHead();
-    offhand();
+    if (!def.offhand?.held) offhand();
     if (pose.weaponBehind) weaponR();
     arm(ctx, shR.x, shR.y, hR.x, hR.y, armC, false);
     if (!pose.weaponBehind) weaponR();
