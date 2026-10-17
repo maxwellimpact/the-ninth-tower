@@ -62,6 +62,9 @@ export class UI extends Phaser.Scene {
     this.muteBtn = this.makeButton('icon_soundOn', () => this.g.toggleMute(), 'M', null, 14);
     this.dbgBtn = this.makeButton('icon_bug', () => this.toggleDebug(), '`', null, 14);
     this.pauseBtn = this.makeButton('icon_pause', () => this.togglePause(), 'P', null, 14);
+    // out of combat the fight buttons fold into this one (tap to open them again)
+    this.hudBtn = this.makeButton('icon_combat', () => { this.hudManual = true; this.hudUsedT = this.time.now; }, '', null, 24, true);
+    this.hudBtn.hideKey = true;
     this.input.keyboard?.on('keydown-P', () => this.togglePause());
 
     // minimap (2px per tile window centred on the leader); tap for the world map
@@ -133,12 +136,24 @@ export class UI extends Phaser.Scene {
 
   allies() { return this.g.party.filter((h) => h !== this.g.leader); }
 
+  // The fight buttons show while there's a fight (and 2.5 s after), or for 8 s
+  // after you open them yourself with the folded button; any fight opens them at once.
+  combatBarOpen(time) {
+    const game = this.g;
+    const fighting = !!this.boss || game.enemies.some((e) => e.alive && e.engaged);
+    if (fighting) { this.fightT = time; this.hudManual = false; return true; }
+    if (time - (this.fightT ?? -1e9) < 2500) return true;
+    if (this.hudManual && time - Math.max(this.hudUsedT || 0, this.btnTapT || 0) < 8000) return true;
+    this.hudManual = false;
+    return false;
+  }
+
   tapUI() { this.registry.set('uiTap', true); audio.sfx('click'); }
 
   makeButton(icon, fn, key, label, size = 22, round = false) {
     const b = { size, round, icon: icon ? this.add.image(0, 0, icon) : null, key: this.add.bitmapText(0, 0, 'font', key), label: label ? this.add.bitmapText(0, 0, 'font', label).setOrigin(0.5) : null, visible: true };
     b.zone = this.add.zone(0, 0, size, size).setOrigin(0).setInteractive({ useHandCursor: true });
-    b.zone.on('pointerdown', () => { if (!b.visible) return; this.tapUI(); if (this.dialogOpen) { this.advanceDialog(); return; } fn(); });
+    b.zone.on('pointerdown', () => { if (!b.visible) return; this.tapUI(); this.btnTapT = this.time.now; if (this.dialogOpen) { this.advanceDialog(); return; } fn(); });
     this.buttons.push(b);
     return b;
   }
@@ -181,6 +196,7 @@ export class UI extends Phaser.Scene {
   setButtonVisible(b, v) {
     b.visible = v;
     b.icon?.setVisible(v); b.key.setVisible(v && !b.hideKey); b.label?.setVisible(v);
+    if (!v) b.cdTxt?.setVisible(false);
     if (v) b.zone.setInteractive(); else b.zone.disableInteractive();
   }
 
@@ -594,8 +610,13 @@ export class UI extends Phaser.Scene {
     }
     const L = game.leader;
 
+    const open = this.combatBarOpen(time);
+    this.setButtonVisible(this.dodgeBtn, open); this.setButtonVisible(this.ultBtn, open);
+    this.dodgeBtn.lbl.setVisible(open && !this.rowMode); this.ultBtn.lbl.setVisible(open && !this.rowMode);
+    this.setButtonVisible(this.hudBtn, !open);
+    if (!open) { this.hudBtn.x = (this.rowMode ? 8 : 6) + this.pad.l; this.hudBtn.y = this.rowMode ? this.rowY + (this.ultBtn.size - this.hudBtn.size) / 2 : this.H - this.pad.b - 40; this.placeButton(this.hudBtn); this.drawBtn(g, this.hudBtn, 0, 0xb89a4a); }
     this.skillBtns.forEach((b, i) => {
-      const s = L.skills[i];
+      const s = open && L.skills[i];
       this.setButtonVisible(b, !!s);
       b.lbl.setVisible(!!s && !this.rowMode);
       if (!s) return;
@@ -618,7 +639,7 @@ export class UI extends Phaser.Scene {
     // companions' ultimates: the AI fires them on its own, these let you fire them yourself
     const al = this.allies();
     this.allyBtns.forEach((b, i) => {
-      const a = al[i];
+      const a = open && al[i];
       this.setButtonVisible(b, !!a);
       b.lbl.setVisible(!!a && !this.rowMode);
       if (!a) return;
