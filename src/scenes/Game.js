@@ -107,6 +107,7 @@ export class Game extends Phaser.Scene {
   create(data) {
     const st = (this.state = data.state);
     st.stats ??= { kills: 0, levelUps: [] };
+    this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
     this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
@@ -503,6 +504,8 @@ export class Game extends Phaser.Scene {
   // when you're close. Nothing without a bubble can be harvested.
   updateNodeMarker(n) {
     if (!n.s) return;
+    const v = this.cameras.main.worldView;
+    if (n.mk && (n.px < v.x - 48 || n.px > v.right + 48 || n.py < v.y - 64 || n.py > v.bottom + 48)) { n.label?.setVisible(false); return; } // off screen: nothing to redraw
     if (!n.mk) {
       n.mk = this.add.container(n.px, n.py - 26).setDepth(TOP - 40);
       n.mkBub = this.add.image(0, 0, 'bubble');
@@ -1062,6 +1065,14 @@ export class Game extends Phaser.Scene {
 
   // Points of interest for the minimap / world map (tile coords).
   mapMarkers() {
+    const now = this.time.now; // the minimap asks every frame; a quarter-second-old list is plenty
+    if (this.markCache && now - this.markCache.t < 250 && this.markCache.area === this.area) return this.markCache.m;
+    const m = this.computeMapMarkers();
+    this.markCache = { t: now, area: this.area, m };
+    return m;
+  }
+
+  computeMapMarkers() {
     const m = [];
     const tile = (o) => ({ x: Math.floor(o.x / TILE), y: Math.floor(o.y / TILE) });
     for (const o of this.interactables) {
@@ -1873,8 +1884,12 @@ export class Game extends Phaser.Scene {
       const f = { t, s, x, y, saved };
       if (!saved) {
         s.setTint(0xb48ce0);
-        f.ring = this.add.graphics().setDepth(-5);
-        f.ring.lineStyle(1, 0xd9b8ff, 0.7).strokeEllipse(x, y + 2, 26, 11).lineStyle(1, 0x8a5cc4, 0.5).strokeEllipse(x, y + 2, 18, 7);
+        if (!this.textures.exists('hexRing')) { // drawn once: a live Graphics re-issues its ~200 commands every frame
+          const g = this.make.graphics({ add: false });
+          g.lineStyle(1, 0xd9b8ff, 0.7).strokeEllipse(14, 7, 26, 11).lineStyle(1, 0x8a5cc4, 0.5).strokeEllipse(14, 7, 18, 7);
+          g.generateTexture('hexRing', 28, 14); g.destroy();
+        }
+        f.ring = this.add.image(x, y + 2, 'hexRing').setDepth(-5);
         this.tweens.add({ targets: s, y: y - 2, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
       f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', interact: () => this.talkTownsfolk(f) });
@@ -2266,6 +2281,7 @@ export class Game extends Phaser.Scene {
   }
 
   warp(w) {
+    this.cullNow = true; // the camera jumps: re-cull on the next frame, not up to three later
     if (w.door) { this.doorWarp(w); return; }
     this.busy = true;
     audio.sfx('warp');
@@ -2986,7 +3002,10 @@ export class Game extends Phaser.Scene {
         continue;
       }
       const life = v.dying ? 1 - v.dying.k : 1; // pods and motes fade out with the wither
-      for (const p of v.pods) { const a = (0.35 + Math.sin(v.t * 3 + p.ph) * 0.3) * life; v.fx.fillStyle(0xe7a6ff, a).fillCircle(p.x, p.y, 3.2).fillStyle(0xffffff, a * 0.8).fillCircle(p.x - 0.6, p.y - 0.6, 0.9); }
+      for (const p of v.pods) {
+        if (p.x < view.x - 8 || p.x > view.right + 8 || p.y < view.y - 8 || p.y > view.bottom + 8) continue; // only what's on screen (Graphics redraws every command, every frame)
+        const a = (0.35 + Math.sin(v.t * 3 + p.ph) * 0.3) * life; v.fx.fillStyle(0xe7a6ff, a).fillCircle(p.x, p.y, 3.2).fillStyle(0xffffff, a * 0.8).fillCircle(p.x - 0.6, p.y - 0.6, 0.9);
+      }
       if (v.sigil) { const a = 0.18 + Math.sin(v.t * 4) * 0.1; v.fx.fillStyle(0xffd27a, a).fillEllipse(v.sigil.x, v.sigil.y, 30, 18); }
       // motes travel toward d = 0; on the shrine vine they start gold and sour to purple
       for (let k = 0; k < Math.ceil(v.len / 70); k++) {
@@ -3122,6 +3141,30 @@ export class Game extends Phaser.Scene {
 
 
   // ============================================================== update
+  // Phaser draws every object in the display list, on screen or not, and the
+  // world keeps a lot alive (every dungeon's pieces, props, flies, markers):
+  // ~1,260 objects with ~50 in view. Each frame, anything well outside the
+  // camera is excluded from it (cameraFilter, so code that shows/hides things
+  // with setVisible is untouched). Fixed-to-screen objects and Graphics are
+  // left alone.
+  cullOffscreen() {
+    // every third frame, with a margin wide enough that nothing moving can reach the edge in between
+    if ((this.cullN = (this.cullN || 0) + 1) % 3 && !this.cullNow) return;
+    this.cullNow = false;
+    const cam = this.cameras.main, v = cam.worldView, m = 96, id = cam.id;
+    const vx0 = v.x - m, vy0 = v.y - m, vx1 = v.right + m, vy1 = v.bottom + m;
+    for (const o of this.sys.displayList.list) {
+      if (o.scrollFactorX !== 1 || o.type === 'Graphics' || o.noCull) continue;
+      const box = o.type === 'Container'; // containers here are small (node bubbles)
+      const w = box ? 48 : o.displayWidth || 0, h = box ? 48 : o.displayHeight || 0;
+      let x0, y0, x1, y1;
+      if (o.rotation) { const r = Math.max(w, h); x0 = o.x - r; y0 = o.y - r; x1 = o.x + r; y1 = o.y + r; } // turned: a generous square
+      else { x0 = o.x - w * (o.originX ?? 0.5); y0 = o.y - h * (o.originY ?? 0.5); x1 = x0 + w; y1 = y0 + h; }
+      if (x1 < vx0 || x0 > vx1 || y1 < vy0 || y0 > vy1) o.cameraFilter |= id;
+      else if (o.cameraFilter & id) o.cameraFilter &= ~id;
+    }
+  }
+
   update(time, deltaMs) {
     this.frameMs.push(deltaMs);
     if (this.frameMs.length > 60) this.frameMs.shift();
@@ -3200,7 +3243,15 @@ export class Game extends Phaser.Scene {
     }
 
     for (const h of this.party) { if (h.zipping) h.sync(dt); else h.update(dt); this.gearFx.update(h, dt); }
-    for (const e of this.enemies) e.update(dt);
+    // idle foes well off screen (they can't notice anyone from there) think every
+    // 4th frame with the time saved up; anything in a fight runs every frame
+    const fv = this.cameras.main.worldView, far = (e) => e.x < fv.x - 200 || e.x > fv.right + 200 || e.y < fv.y - 200 || e.y > fv.bottom + 200;
+    for (const e of this.enemies) {
+      let step = dt + (e.idleAcc || 0); // this frame plus any time saved up while far
+      if (!e.engaged && !e.boss && e.alive && far(e) && (e.idleN = (e.idleN || 0) + 1) % 4) { e.idleAcc = step; continue; }
+      e.idleAcc = 0;
+      e.update(Math.min(0.2, step));
+    }
     for (const g of [...(this.gadgets || [])]) g.update(dt); // Gizmo's machines
     this.drawEnemyBars();
     this.enemies = this.enemies.filter((e) => e.alive);

@@ -576,7 +576,7 @@ export class UI extends Phaser.Scene {
     this.ultBtn.icon.setTexture(u.icon || 'icon_meteor');
     const ready = L.ult >= 100 && !L.downed;
     // ready: a slow, soft breathe between two close golds (no blinking)
-    const breathe = 0.5 + 0.5 * Math.sin(time / 650);
+    const breathe = Math.round((0.5 + 0.5 * Math.sin(time / 650)) * 8) / 8; // in steps: the HUD is repainted only when it changes (see bake)
     const gold = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(0xc89b3c), Phaser.Display.Color.ValueToColor(0xf2c14e), 1, breathe);
     this.drawBtn(g, this.ultBtn, 1 - L.ult / 100, ready ? Phaser.Display.Color.GetColor(gold.r, gold.g, gold.b) : 0x6e6a87, 0x6fd3ff);
     this.ultBtn.lbl.setText(u.short || u.name).setTint(ready ? 0xfff0a0 : 0xffffff);
@@ -631,6 +631,30 @@ export class UI extends Phaser.Scene {
       this.dbgG.clear().fillStyle(0x000000, 0.6).fillRect(6, this.dbgTxt.y - 4, Math.max(170, this.dbgTxt.width + 8), lines.length * 8 + 6);
       this.drawBtn(g, this.speedDown, 0); this.drawBtn(g, this.speedUp, 0);
     }
+    this.bake(this.gfx); this.bake(this.arcG);
+  }
+
+  // The HUD is drawn as Graphics every frame, but WebGL re-processes every
+  // Graphics command on every frame (~700 here: more than the whole world
+  // costs to draw). So each HUD Graphics is kept off the camera and painted
+  // into a texture instead, repainted only when what it drew has changed.
+  bake(g) {
+    const cam = this.cameras.main, W = Math.ceil(this.scale.width), H = Math.ceil(this.scale.height);
+    if (!g.bakeRT || g.bakeW !== W || g.bakeH !== H) { // compare what we asked for: Phaser rounds the texture's own size
+      g.bakeW = W; g.bakeH = H;
+      g.bakeRT?.destroy();
+      g.bakeRT = this.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(g.depth - 0.5); // under whatever shared the Graphics' depth, as the Graphics (drawn early) was
+      g.cameraFilter |= cam.id;
+      g.bakeSig = null;
+    }
+    const cb = g.commandBuffer;
+    let h = cb.length;
+    for (let i = 0; i < cb.length; i++) { const v = cb[i]; h = (Math.imul(h, 31) + (typeof v === 'number' ? Math.round(v * 8) : 7)) | 0; }
+    if (h === g.bakeSig) return;
+    g.bakeSig = h;
+    g.cameraFilter &= ~cam.id; // the texture's own camera has to see it while drawing
+    g.bakeRT.clear().draw(g);
+    g.cameraFilter |= cam.id;
   }
 
   drawMinimap(time) {
@@ -680,7 +704,7 @@ export class UI extends Phaser.Scene {
       b.icon?.setAlpha(charging ? 0.3 : 1);
       if (charging) {
         // remaining cooldown as a dark pie, plus a bright rim arc that fills clockwise
-        const f = 1 - Math.min(1, cd);
+        const f = Math.round((1 - Math.min(1, cd)) * 48) / 48; // 48 steps round the dial (see bake)
         const a0 = -Math.PI / 2 + f * Math.PI * 2;
         g.fillStyle(C.ink, 0.82).slice(cx, cy, r - 1.5, a0, Math.PI * 1.5, false).fillPath();
         if (f > 0.01) this.arcG.lineStyle(2, arc, 1).beginPath().arc(cx, cy, r - 0.5, -Math.PI / 2, a0, false).strokePath();

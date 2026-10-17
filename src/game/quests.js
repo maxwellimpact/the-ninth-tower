@@ -443,14 +443,18 @@ export class QuestManager {
   update(dt) {
     const sc = this.sc, L = sc.leader;
     // markers: "!" when an errand is on offer, "?" when they're waiting on you
+    const recheck = !(this.markTick > 0); // offers and turn-ins change rarely: a few checks a second is plenty
+    this.markTick = recheck ? 0.2 : this.markTick - dt;
     for (const n of this.npcs) {
       if (n.requires && n.hiddenNow && sc.flags[n.requires]) this.setNpcVisible(n, true);
       if (n.wards && n.hiddenNow && !this.state.recruited.includes(n.recruitOf) && this.brokenWards() >= n.wards && this.unlocked(n)) this.setNpcVisible(n, true);
       if ((n.folk || n.needsHero) && !n.wards && n.hiddenNow && this.unlocked(n)) this.setNpcVisible(n, true);
       if (n.recruitOf && !n.hiddenNow && this.state.recruited.includes(n.recruitOf)) this.setNpcVisible(n, false); // joined the party: no double
       if (n.hiddenNow) { n.mark.setVisible(false); continue; }
-      const ready = this.turnInFor(n), offer = this.offerFor(n);
-      n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');
+      if (recheck) {
+        const ready = this.turnInFor(n), offer = this.offerFor(n);
+        n.mark.setVisible(!!(ready || offer)).setTexture(ready ? 'markA' : 'markQ');
+      }
       if (n.flying) { n.s.y = n.py - 30 + Math.sin(Date.now() / 300) * 4; n.s.x = n.px + Math.cos(Date.now() / 700) * 10; }
       if (!n.ghost && !n.flying && n.look !== 'board' && n.s.anims) {
         const d = Math.hypot(L.x - n.px, L.y - n.py);
