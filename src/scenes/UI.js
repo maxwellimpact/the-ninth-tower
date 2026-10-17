@@ -140,10 +140,16 @@ export class UI extends Phaser.Scene {
 
   // The fight buttons show while there's a fight (and 6 s after), or for 8 s
   // after you open them yourself with the folded button; any fight opens them at once.
+  // They also come up a beat early: the moment you order an attack, or when a foe
+  // on screen is nearly close enough to notice you (just inside its sight range
+  // plus a step, so foes merely somewhere nearby don't pop them open).
   combatBarOpen(time) {
-    const game = this.g;
+    const game = this.g, L = game.leader, cmd = L?.command;
     const fighting = !!this.boss || game.enemies.some((e) => e.alive && e.engaged);
-    if (fighting) { this.fightT = time; this.hudManual = false; return true; }
+    const attacking = cmd?.type === 'attack' && cmd.target?.alive && cmd.target.kind !== 'breakable';
+    const closing = !fighting && !attacking && L && game.enemies.some((e) => e.alive && !e.staged && !e.submerged && e.onScreen?.(0)
+      && Math.hypot(e.x - L.x, e.y - L.y) < (e.s?.aggro || 90) + 16);
+    if (fighting || attacking || closing) { this.fightT = time; this.hudManual = false; return true; }
     if (time - (this.fightT ?? -1e9) < 6000) return true; // a few seconds' grace: another foe often joins, and it shouldn't blink away
     if (this.hudManual && time - Math.max(this.hudUsedT || 0, this.btnTapT || 0) < 8000) return true;
     this.hudManual = false;
