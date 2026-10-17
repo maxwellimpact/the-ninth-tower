@@ -416,6 +416,9 @@ export const OUTER_REGIONS = ['marsh', 'gloam', 'cinder', 'frost'];
 export const outerWardsDown = (state) => OUTER_REGIONS.filter((r) => state.flags[`ward_${r}`]).length;
 export function regionBand(state, r) {
   if (!r) return [1, 9];
+  // the Blight Basin and the Tower: floor 24 + 2 per outer stone still standing
+  // (24-30 with all four down; 32 for an early attempt with none)
+  if (r.basin) { const f = 24 + 2 * (OUTER_REGIONS.length - outerWardsDown(state)); return [f, f + 6]; }
   if (!r.outer) return r.band;
   const floor = 6 + 4 * outerWardsDown(state);
   const frozen = state.flags[`band_${r.outer}`];

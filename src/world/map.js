@@ -28,6 +28,8 @@ export const MARSH_Y = 64;
 export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
 export const RIDGE_X = 100; // the ridge between Gloamwood and Cinderreach
 export const OW_H = 208; // the overworld's walkable depth; the highlands beyond wait for Wave 3
+export const FROST_Y = 208; // Wave 3: the southern highlands (Frosthelm west, the Blight Basin east)
+export const BASIN_X = 116; // the rough line between Frosthelm and the Basin
 export const OW_W = W.size.overworldW; // overworld width; interiors live to the right of it
 
 // Separate areas share one tile grid but never share a camera view: the
@@ -76,12 +78,15 @@ const PINS = [
   ...W.wards.map((w) => [w.x, w.y, 9]), ...W.chests.map((c) => [c.x, c.y, 2.5]), ...W.campfires.map((c) => [c.x, c.y, 3]),
   ...W.groups.flatMap((g) => g.units.map(([, x, y]) => [x, y, 2])), ...QD.npcs.map((n) => [n.x, n.y, 2]),
 ];
-const straightBiome = (tx, ty) => (ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
+export const basinEdge = (y) => BASIN_X + (vnoise(0.5, y / 14, 823) - 0.5) * 12;
+const straightBiome = (tx, ty) => (ty >= FROST_Y ? (tx < BASIN_X ? 'frost' : 'basin') : ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
 
 export function biomeAt(tx, ty) {
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
   for (const [px, py, r] of PINS) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
+  // the highlands start at a cliff line along FROST_Y, so that border stays straight
+  if (ty >= FROST_Y) return tx < basinEdge(ty) + fray(tx, ty, 810) * 0.5 ? 'frost' : 'basin';
   if (ty >= southEdge(tx) + fray(tx, ty, 805)) return tx < ridgeAt(ty) + 2 + (ty < SOUTH_Y + 4 ? fray(tx, ty, 806) : 0) ? 'gloam' : 'cinder';
   if (ty >= marshEdge(tx) + fray(tx, ty, 807)) return 'marsh';
   return tx >= meadowEdge(ty) + fray(tx, ty, 808) ? 'meadow' : 'vale';
