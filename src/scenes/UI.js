@@ -6,8 +6,9 @@ import { TRAITS } from '../game/itemgen.js';
 import { fitString } from './textfit.js';
 import { freshFor, skillsReady, xpToNext } from '../game/state.js';
 import { GLYPHS } from '../gfx/font.js';
+import { HP_WARN, HP_CRIT } from './Game.js';
 
-const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
+const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpMid: 0xf2c14e, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
@@ -598,7 +599,7 @@ export class UI extends Phaser.Scene {
       const bx = p.x - 1, bw = sz + 2, by = p.y + sz + 2;
       g.fillStyle(C.ink).fillRect(bx, by, bw, 7);
       g.fillStyle(0x3a2f52).fillRect(bx + 1, by + 1, bw - 2, 3);
-      g.fillStyle(h.downed || fr < 0.35 ? C.hpLow : C.hp).fillRect(bx + 1, by + 1, Math.round((bw - 2) * fr), 3);
+      g.fillStyle(h.downed || fr < HP_CRIT ? C.hpLow : fr < HP_WARN ? C.hpMid : C.hp).fillRect(bx + 1, by + 1, Math.round((bw - 2) * fr), 3);
       if (h.shield > 0) g.fillStyle(C.ult).fillRect(bx + 1, by + 1, Math.round((bw - 2) * Math.min(1, h.shield / h.maxHp)), 1);
       g.fillStyle(0x2b2140).fillRect(bx + 1, by + 4, bw - 2, 2);
       g.fillStyle(C.xp).fillRect(bx + 1, by + 4, Math.round((bw - 2) * xf), 2);

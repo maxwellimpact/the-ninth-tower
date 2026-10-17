@@ -79,6 +79,8 @@ export const TOTAL_FLIES = W.flies.length + 2; // + Hexling Whack and the Frog R
 const RESPAWN_SECS = 180, RESPAWN_AWAY = 480, RESPAWN_HIDDEN = 300;
 // a brief white flash on whatever you tap (people, levers, chests, foes); false keeps just the rings
 const TAP_FLASH = true;
+// hero health stages (portrait bars and the bar over a hurt hero): green, yellow below WARN, red below CRIT
+export const HP_WARN = 0.5, HP_CRIT = 0.35;
 
 const BLOCKING = new Set(['tree', 'deadtree', 'gloomtree', 'stump', 'ashtree', 'obsidian', 'vent', 'tent', 'bush', 'rock', 'pillar', 'barrel', 'stalagmite', 'counter', 'table', 'whackboard']);
 // Gathering node kinds: what they look like, how long they take, which tool
@@ -1649,6 +1651,18 @@ export class Game extends Phaser.Scene {
         e.eliteTag.setPosition(Math.round(e.x), y - 2).setVisible(true);
       }
     }
+    // heroes in trouble: below half health a bar shows over their head (yellow, then
+    // red below 35%, as on their portrait) and goes again once they're back in the green
+    for (const h of this.party) {
+      if (!h.alive || h.downed || h.zipping) continue;
+      const f = Math.max(0, h.hp / h.maxHp);
+      if (f >= HP_WARN) continue;
+      h.barH ??= h.sprite.displayHeight * h.sprite.originY;
+      const w = 16, x = Math.round(h.x - w / 2), y = Math.round(h.sprite.y - h.barH + 4);
+      g.fillStyle(0x1a1423, 0.9).fillRect(x - 1, y - 1, w + 2, 4);
+      g.fillStyle(0x3a2f52).fillRect(x, y, w, 2);
+      g.fillStyle(f < HP_CRIT ? 0xec6a5e : 0xf2c14e).fillRect(x, y, Math.max(1, Math.round(w * f)), 2);
+    }
     // elites: a slow gold ring under their feet (always, so you can pick them out before engaging)
     const rg = (this.eliteRings ??= this.add.graphics().setDepth(-5));
     rg.clear();
@@ -1891,13 +1905,53 @@ export class Game extends Phaser.Scene {
     this.loot = this.loot.filter((l) => !l.dead);
   }
 
+  // The level (stats, full health) counts at once; the celebration waits until
+  // the fight is over (see updateLevelUps) so it never interrupts a battle.
   onLevelUp(h) {
     if (h === this.leader) this.state.stats.levelUps.push({ level: h.level, t: Math.round(this.state.playTime), kills: this.state.stats.kills });
-    audio.sfx('levelUp');
-    this.time.delayedCall(900, () => this.floatText(h.x, h.y - 44, '+1 SKILL POINT', 'fontPlain', 0x8cff8c));
-    this.floatText(h.x, h.y - 34, 'LEVEL UP!', 'fontGold', 0xffffff, true);
-    this.fx.burst('gold', h.x, h.y - 10, 16);
+    (h.lvQueue ??= []).push(h.level);
     this.events.emit('party');
+  }
+
+  // Queued level-ups play once things have been calm for a moment, a hero at a time.
+  updateLevelUps(dt) {
+    const waiting = this.party.filter((h) => h.lvQueue?.length && !h.downed);
+    if (!waiting.length) { this.lvCalmT = 0; return; }
+    const calm = !this.busy && !(this.combatHold > 0) && !this.ui?.dialogOpen && !this.enemies.some((e) => e.alive && e.engaged);
+    this.lvCalmT = calm ? (this.lvCalmT || 0) + dt : 0;
+    if (this.lvCalmT < 0.8) return;
+    this.lvCalmT = 0;
+    waiting.forEach((h, i) => { const lv = h.lvQueue; h.lvQueue = []; this.time.delayedCall(i * 900, () => this.celebrateLevel(h, lv)); });
+  }
+
+  celebrateLevel(h, levels) {
+    if (!h.alive || h.downed) return;
+    const n = levels.length, lv = levels[n - 1];
+    const walking = h.isLeader && (h.path?.length || (h.direct && (h.direct.x || h.direct.y)));
+    if (!h.action && !walking) h.act('levelup', 1.1, 'cast'); // the cast pose, arm raised (never stops you mid-walk)
+    audio.sfx('levelUp');
+    // light running up the body: a bright copy of the hero, shown only in a band that climbs from feet to head
+    const spr = h.sprite;
+    const glow = this.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name).setOrigin(spr.originX, spr.originY).setTintFill(0xfff0a0).setBlendMode(Phaser.BlendModes.ADD);
+    // and a soft glow over the whole body while it climbs
+    const aura = this.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name).setOrigin(spr.originX, spr.originY).setTintFill(0xfff0a0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.35);
+    const sweep = { p: 0 };
+    this.tweens.add({ targets: sweep, p: 1, duration: 750, ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        if (!spr.active) return;
+        const fh = spr.frame.height, band = 9, top = Math.round((1 - sweep.p) * (fh + band)) - band;
+        glow.setFrame(spr.frame.name).setPosition(spr.x, spr.y).setFlipX(spr.flipX).setDepth(spr.depth + 0.5).setAlpha(0.9 - sweep.p * 0.3)
+          .setCrop(0, Math.max(0, top), spr.frame.width, Math.max(0, Math.min(band, fh - top, band + top)));
+        aura.setFrame(spr.frame.name).setPosition(spr.x, spr.y).setFlipX(spr.flipX).setDepth(spr.depth + 0.4).setAlpha(0.35 * (1 - sweep.p));
+      },
+      onComplete: () => { glow.destroy(); aura.destroy(); } });
+    for (let i = 0; i < 10; i++) {
+      const p = this.add.image(h.x + Phaser.Math.Between(-8, 8), h.y - Phaser.Math.Between(0, 6), 'px2_goldL').setDepth(TOP - 6);
+      this.tweens.add({ targets: p, y: p.y - 26 - Math.random() * 14, alpha: 0, duration: 650 + Math.random() * 300, delay: i * 50, onComplete: () => p.destroy() });
+    }
+    this.fx.ring(h.x, h.y - 2, 'ringGold', 2.4);
+    this.floatText(h.x, h.y - 36, `LEVEL ${lv}`, 'fontGold', 0xffffff, true);
+    this.time.delayedCall(800, () => this.floatText(h.x, h.y - 46, n > 1 ? `+${n} SKILL POINTS` : '+1 SKILL POINT', 'fontPlain', 0x8cff8c));
   }
 
   onHeroDowned(h) {
@@ -3341,6 +3395,7 @@ export class Game extends Phaser.Scene {
     }
     for (const g of [...(this.gadgets || [])]) g.update(dt); // Gizmo's machines
     this.drawEnemyBars();
+    this.updateLevelUps(dt);
     this.enemies = this.enemies.filter((e) => e.alive);
     for (const u of this.wardUnits()) u.update(dt);
     this.updateProjectiles(dt);
