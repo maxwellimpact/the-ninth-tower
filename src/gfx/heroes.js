@@ -125,12 +125,12 @@ export const FOLK = {
 };
 
 // Hollow Guard: an empty suit of silversteel armour animated by the curse.
-export const HOLLOW = { ...composeHero('brann', { head: 'helm_great@3', body: 'plate_guard@4', weapon: 'sword_iron@3', offhand: 'shield_round@4' }), id: 'hollow', name: 'Hollow Guard' };
+export const HOLLOW = { ...composeHero('hollow', { head: 'helm_hollow', body: 'plate_hollow', weapon: 'sword_rust', offhand: null }), id: 'hollow', name: 'Hollow Guard' };
 
 // Hex Warlock: one of Malgrim's cultists - shields its allies and calls hexlings.
-export const WARLOCK = { ...composeHero('pip', { head: 'hat_apprentice@5', body: 'robe_apprentice@5', weapon: 'staff_oak@5', offhand: null }), id: 'warlock', name: 'Hex Warlock' };
+export const WARLOCK = { ...composeHero('cultist', { head: 'hood_cultist', body: 'robe_cultist', weapon: 'staff_hex', offhand: null }), id: 'warlock', name: 'Hex Warlock' };
 // Mistfen: the Drowned (waterlogged dead) and Marsh Witchlings (Malgrim's swamp cultists).
-export const DROWNED = { ...composeHero('sable', { head: 'hood_shadow@3', body: 'jacket_leather@3', weapon: 'dagger_steel@1', offhand: null }), id: 'drowned', name: 'Drowned' };
+export const DROWNED = { ...composeHero('drowned', { head: 'weeds_drowned', body: 'rags_drowned', weapon: 'hook_rust', offhand: null }), id: 'drowned', name: 'Drowned' };
 // Gloamwood: Shades (hooded wraiths, drawn dark and veiled in play) and
 // Wailing Banshees (pale drifting ghosts; washed out and hovering in play).
 export const SHADE = { ...composeHero('sable', { head: 'hood_shadow@5', body: 'coat_nightsilk@5', weapon: 'dagger_kris@5', offhand: 'parry_kris@5' }), id: 'shade', name: 'Shade' };
@@ -172,9 +172,9 @@ function recolorCanvas(canvas, RAMP_GHOST, fade) {
   ctx.putImageData(img, 0, 0);
 }
 // The Pale Huntsman: a ranger in a deep hood with a great bow, drained pale (paleRecolor)
-export const HUNTSMAN = { ...composeHero('wren', { head: 'hood_ranger@5', body: 'leathers_ranger@5', weapon: 'bow_long@5', offhand: 'quiver_fine@5' }), id: 'huntsman', name: 'Pale Huntsman' };
+export const HUNTSMAN = { ...composeHero('skull', { head: 'hood_antler', body: 'pelt_hunter', weapon: 'bow_long@5', offhand: 'quiver_fine@5' }), id: 'huntsman', name: 'Pale Huntsman' };
 // Salamander Warrior: a scaled fighter with a horned helm, a long blade and a kite shield
-export const SALAMANDER = { ...composeHero('kesh', { head: 'warhelm_horn@4', body: 'plate_hex@3', weapon: 'sword_long@4', offhand: 'shield_kite@4' }), id: 'salamander', name: 'Salamander Warrior' };
+export const SALAMANDER = { ...composeHero('lizard', { head: null, body: 'scale_armor', weapon: 'sword_long@4', offhand: 'shield_hex' }), id: 'salamander', name: 'Salamander Warrior' };
 // Forgemaster Vulk: the salamander smith, horned and plated, with his great forge-axe
-export const VULK = { ...composeHero('kesh', { head: 'warhelm_horn@5', body: 'plate_hex@5', weapon: 'axe_bearded@5', offhand: null }), id: 'vulk', name: 'Forgemaster Vulk' };
-export const WITCHLING = { ...composeHero('pip', { head: 'hat_apprentice@3', body: 'robe_apprentice@3', weapon: 'staff_oak@3', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };
+export const VULK = { ...composeHero('lizard', { head: 'crown_forge', body: 'apron_forge', weapon: 'axe_bearded@5', offhand: null }), id: 'vulk', name: 'Forgemaster Vulk' };
+export const WITCHLING = { ...composeHero('hag', { head: 'hat_hag', body: 'shawl_hag', weapon: 'staff_bog', offhand: null }), id: 'witchling', name: 'Marsh Witchling' };

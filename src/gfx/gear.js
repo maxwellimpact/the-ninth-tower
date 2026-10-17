@@ -516,6 +516,145 @@ const OFFHAND = {
   hatchet_bearded: { weaponL: { kind: 'axe', style: { len: 7, bearded: true } } },
 };
 
+
+// ------------------------------------------------------------ enemy bodies
+// Foes built on a hero's frame get their own heads and outfits, so they read
+// as monsters and cultists, not as a tinted hero. Bases borrow the hero's
+// posing (attack / cast); heads and looks are their own.
+const reHead = (hero, headMap) => ({ ...BASE[hero], headMap }); // a hero's head shape in new colours
+// an empty suit of armour: darkness where the face was, two eye-lights
+BASE.hollow = reHead('brann', { S: 'night', s: 'ink', L: 'night', E: 'curseL', H: 'night', h: 'ink' });
+BASE.cultist = reHead('pip', { S: 'bone', s: 'mist', L: 'white', E: 'curse', Y: 'night', y: 'ink' }); // a pale bone mask in the cowl, eye-holes lit from within
+// a bog hag: mossy skin, lank black hair, yellow eyes
+BASE.hag = reHead('pip', { S: 'mossL', s: 'moss', L: 'mossXL', E: 'goldL', Y: 'night', y: 'mudD' });
+// the drowned: grey-blue waterlogged skin, weed for hair, pale pinprick eyes
+BASE.drowned = reHead('sable', { S: 'mist', s: 'stone', L: 'bone', E: 'foam', H: 'mossD', h: 'night', K: 'moss' });
+// a skull under the hood (the Pale Huntsman)
+BASE.skull = { ...BASE.wren, headMap: { S: 'bone', s: 'mist', L: 'white', E: 'ink', H: 'bone', h: 'mist' },
+  head: {
+    down: ['...hhhh...', '..hHHHHh..', '.hHHHHHHh.', '.HHHHHHHH.', '.HEEHHEEH.', '.HEEHHEEH.', '..HHEEHH..', '..sHsHsH..'],
+    side: ['...hhhh...', '..hHHHHh..', '.hHHHHHHh.', '.HHHHHHHH.', '.HHHHHEEH.', '.HHHHHEEH.', '..HHHHHEH.', '...HsHsH..'],
+    up: ['...hhhh...', '..hHHHHh..', '.hHHHHHHh.', '.HHHHHHHH.', '.HHHHHHHH.', '.hHHHHHHh.', '..hHHHHh..', '...hhhh...'],
+  } };
+// a salamander: a blunt reptile head with a crest, slit eyes and a long snout in profile
+BASE.lizard = { ...BASE.kesh, headMap: { G: 'stone', g: 'slate', k: 'night', E: 'goldL', e: 'ink', m: 'ink', C: 'mist' },
+  head: {
+    down: ['...C.C....', '..gCgCg...', '.gGGGGGGg.', 'gGEeGGEeGg', 'gGGGGGGGGg', '.gGGGGGGg.', '.gGmmmmGg.', '..gggggg..'],
+    side: ['.C.C......', '.gCgCg....', 'gGGGGGGg..', 'gGGGGEeGg.', 'gGGGGGGGGg', '.gGGGGGmmg', '.gGGGgggg.', '..ggg.....'],
+    up: ['...C.C....', '..gCgCg...', '.gGGCGGGg.', 'gGGGCGGGGg', 'gGGGCGGGGg', '.gGGCGGGg.', '.gGGGGGGg.', '..gggggg..'],
+  } };
+
+Object.assign(HEAD, {
+  // dented great helm, no plume, a broken spike; the visor glows from inside
+  helm_hollow: {
+    oy: 3, map: { W: 'mist', K: 'stone', k: 'slate', E: 'curseL', d: 'night', r: 'leatherD' },
+    down: ['..........', '....k.....', '..kWKKKk..', '.kWKdKKKk.', '.kKKKKdKk.', '.kKKKKKKk.', '.kkEkkEkk.', '.kKKdKKrk.', '.kKrKdKKk.', '..kKKKrk..', '...kkkk...'],
+    side: ['..........', '...k......', '..kWKKk...', '.kWKdKKk..', '.kKKKKdKk.', '.kKKKKKKk.', '.kKKKkkEk.', '.kKKKKdKK.', '.kKrKKdKk.', '..kKKKrk..', '...kkkk...'],
+    up: ['..........', '....k.....', '..kWKKKk..', '.kWKKdKKk.', '.kKKKKKKk.', '.kKKdKKKk.', '.kKKKKKKk.', '.kKrKKKKk.', '.kkKKKKrk.', '..kKKKKk..', '...kkkk...'],
+  },
+  // a deep pointed cowl; the face inside is shadow and two embers
+  hood_cultist: {
+    oy: 3, map: { D: 'hexD', d: 'night', R: 'curse' },
+    down: ['....d.....', '...dDd....', '...dDDd...', '..dDDDDd..', '.dDDDDDDd.', 'dDDDDDDDDd', 'dDD....DDd', 'dD......Dd', 'dD......Dd', '.dD....Dd.', '.dR....Rd.'],
+    side: ['......d...', '.....dDd..', '....dDDd..', '..dDDDDd..', '.dDDDDDDd.', 'dDDDDDDDd.', 'dDDDD.....', 'dDDD......', 'dDDD......', '.dDD......', '..dR......'],
+    up: ['....d.....', '...dDd....', '...dDDd...', '..dDDDDd..', '.dDDDDDDd.', 'dDDDDDDDDd', 'dDDDDDDDDd', 'dDDRDDDDDd', 'dDDDDDDDDd', '.dDDDDDDd.', '..dDDDDd..'],
+  },
+  // a crooked, patched witch's hat with a bent tip
+  hat_hag: {
+    oy: 6, map: { P: 'night', p: 'hexD', r: 'mud', b: 'bogL' },
+    down: ['........P.', '.......Pp.', '......PP..', '.....PpP..', '....PPPp..', '...PPPPPp.', '...PrPPPP.', '..bbbbbbb.', 'pPPPPPPPPp'],
+    side: ['P.........', 'pP........', '.PP.......', '.PpP......', '..PPPp....', '..PPPPp...', '..PPrPPP..', '..bbbbbbb.', 'pPPPPPPPP.'],
+    up: ['........P.', '.......Pp.', '......PP..', '.....PpP..', '....PPPp..', '...PPPPPp.', '...PPPPrP.', '..bbbbbbb.', 'pPPPPPPPPp'],
+  },
+  // weed draped over the head and face
+  weeds_drowned: {
+    oy: 1, map: { g: 'mossD', G: 'moss', w: 'grassD' },
+    down: ['..gGgGg...', '.gGwGGwGg.', 'gG.g..gGGg', 'g..w...g.g', '...g...w..', '.......g..'],
+    side: ['..gGgGg...', '.gGwGGwg..', 'gGGgGw....', 'g.gw.g....', '..g..w....', '.....g....'],
+    up: ['..gGgGg...', '.gGwGGwGg.', 'gGGgGGwGGg', 'gGwGGgGGwg', '.gGGwGGgg.', '..g.g.g...'],
+  },
+  // the huntsman's hood, crowned with antlers
+  hood_antler: {
+    oy: 4, map: { D: 'leafD', d: 'night', B: 'bone', b: 'mist' },
+    down: ['B.b....b.B', '.BB....BB.', '..B.dd.B..', '...dDDd...', '..dDDDDd..', '.dDDDDDDd.', 'dDDDDDDDDd', 'dDD....DDd', 'dD......Dd', 'dD......Dd', '.dD....Dd.', '.dd....dd.'],
+    side: ['B.b.......', '.BB.......', '..B.dd....', '..dDDd....', '.dDDDDd...', 'dDDDDDDd..', 'dDDDDDDDd.', 'dDDDD.....', 'dDDD......', 'dDDD......', '.dDD......', '..dd......'],
+    up: ['B.b....b.B', '.BB....BB.', '..B.dd.B..', '...dDDd...', '..dDDDDd..', '.dDDDDDDd.', 'dDDDDDDDDd', 'dDDDDDDDDd', 'dDDDDDDDDd', 'dDDDDDDDDd', '.dDDDDDDd.', '..dDDDDd..'],
+  },
+  // Vulk: an iron forge-crown with horns and a molten stone
+  crown_forge: {
+    oy: 4, map: { K: 'steel', k: 'steelD', B: 'bone', F: 'fireL', f: 'fire' },
+    down: ['B........B', 'BB.K..K.BB', '.BkKkKkKB.', '.kKKfFKKk.', '.kkkkkkkk.'],
+    side: ['B.........', 'BB.K..K...', '.BkKkKkK..', '.kKKKKfF..', '.kkkkkkk..'],
+    up: ['B........B', 'BB.K..K.BB', '.BkKkKkKB.', '.kKKKKKKk.', '.kkkkkkkk.'],
+  },
+});
+
+Object.assign(BODY, {
+  // rusted plate over a rotted purple tabard; curse-light leaks at the seams
+  plate_hollow: {
+    map: { B: 'hexD', b: 'night', W: 'mist', K: 'stone', k: 'slate', l: 'leatherD', T: 'curse', G: 'curseL', r: 'leatherD' },
+    down: ['kWKrKKWk', 'kKBBBBKk', 'kKBTBBrk', '.kBBTBk.', '.llGlll.', '.kb.Bbk.'],
+    side: ['kWKrKk', 'kKKKBk', 'kKrKBk', '.kKKTk', '.lllGl', '.kK.Bk'],
+    up: ['kWKKKKWk', 'kKKrKKKk', 'kKKkkKrk', '.kKKKKk.', '.llllll.', '.kb.Bbk.'],
+    legs: ['slate', 'night', 'stone'], arms: ['stone', 'slate', 'stone'],
+  },
+  // a cultist's robe: black with a hex-purple trim and a glowing sigil, ragged hem
+  robe_cultist: {
+    map: { P: 'hexD', p: 'night', G: 'curse', g: 'curseL', b: 'ink' }, swayFrom: 6,
+    down: ['.pPGPPGPp.', '.pPPPPPPp.', '.pPPgPPPp.', '.pbbbbbbp.', '.pPPgPPPp.', '.pPgPgPPp.', 'pPPPPPPPPp', 'pP.pP.Pp.p'],
+    side: ['..pPPG..', '..pPPPp.', '..pPgPp.', '..pbbbb.', '..pPgPp.', '..pgPgPp', '.pPPPPPp', '.p.Pp.pp'],
+    up: ['.pPPPPPPp.', '.pPPPPPPp.', '.pPPPPPPp.', '.pbbbbbbp.', '.pPPPPPPp.', '.pPPPPPPp.', 'pPPPPPPPPp', 'pP.pP.Pp.p'],
+    legs: ['night', 'ink', 'night'], arms: ['hexD', 'night', 'mist'],
+  },
+  // a hag's mossy shawl over a black dress, frayed to threads
+  shawl_hag: {
+    map: { S: 'moss', s: 'mossD', D: 'night', d: 'ink', b: 'bog' }, swayFrom: 6,
+    down: ['.sSSSSSSs.', '.sSSsSSSs.', '.ssSSSSss.', '.dDsDDsDd.', '.dDDDDDDd.', '.dDDbDDDd.', 'dDDDDDDDDd', 'd.Dd.dD.dd'],
+    side: ['..sSSS..', '..sSSSs.', '..ssSSs.', '..dDsDd.', '..dDDDd.', '..dDDbDd', '.dDDDDDd', '.d.Dd.dd'],
+    up: ['.sSSSSSSs.', '.sSSSSSSs.', '.sSSSSSSs.', '.dDDsDDDd.', '.dDDDDDDd.', '.dDDDDDDd.', 'dDDDDDDDDd', 'd.Dd.dD.dd'],
+    legs: ['night', 'ink', 'mudD'], arms: ['moss', 'mossD', 'mossL'],
+  },
+  // a drowned sailor's rags: a sodden shirt, weed and barnacles
+  rags_drowned: {
+    map: { S: 'stone', s: 'slate', g: 'mossD', m: 'mist', b: 'leatherD' },
+    down: ['sSSSSSSs', 'gSsSSsSg', 'gSSmSSSg', '.SsSSsS.', '.bbbbbb.', '.s.SS.s.'],
+    side: ['sSSSSs', 'gSsSSs', 'gSSmSs', '.SsSSs', '.bbbbb', '.s.SSs'],
+    up: ['sSSSSSSs', 'gSSsSSSg', 'gSSSSmSg', '.SSsSSS.', '.bbbbbb.', '.s.SS.s.'],
+    legs: ['slate', 'night', 'mossD'], arms: ['stone', 'slate', 'mist'],
+  },
+  // a hunter's pelt mantle with a claw trophy
+  pelt_hunter: {
+    map: { F: 'stone', f: 'slate', L: 'leafD', l: 'night', T: 'bone', b: 'leatherD' },
+    down: ['fFFFFFFf', 'FfLLLLfF', 'fLLLLLLf', '.lLTLLl.', '.bbbbbb.', '.lLLLLl.'],
+    side: ['fFFFFf', 'FfLLLl', 'fLLLLl', '.lLTLl', '.bbbbb', '.lLLLl'],
+    up: ['fFFFFFFf', 'FFFFFFFF', 'fFFFFFFf', '.lLLLLl.', '.bbbbbb.', '.lLLLLl.'],
+    legs: ['leafD', 'night', 'night'], arms: ['leafD', 'night', 'bone'],
+  },
+  // salamander scale mail
+  scale_armor: {
+    map: { S: 'stone', s: 'slate', k: 'night', l: 'leatherD', G: 'gold' },
+    down: ['kSsSsSsk', 'kSsSsSsk', 'ksSsSsSk', '.kSsSsk.', '.llGlll.', '.ksSSsk.'],
+    side: ['kSsSsk', 'kSsSsk', 'ksSsSk', '.kSsSk', '.lllGl', '.ksSsk'],
+    up: ['kSsSsSsk', 'kSsSsSsk', 'ksSsSsSk', '.kSsSsk.', '.llllll.', '.ksSSsk.'],
+    legs: ['slate', 'night', 'slate'], arms: ['stone', 'slate', 'stone'],
+  },
+  // the forgemaster's heavy apron over scale, chained at the waist
+  apron_forge: {
+    map: { S: 'stone', s: 'slate', A: 'leather', a: 'leatherD', k: 'night', C: 'steelL', F: 'fire' },
+    down: ['kSsSsSsk', 'kSAAAAsk', 'ksAaaAsk', '.kAAFAk.', '.CCCCCC.', '.kAaaAk.'],
+    side: ['kSsSsk', 'kSAAAk', 'ksAaAk', '.kAFAk', '.CCCCC', '.kAaAk'],
+    up: ['kSsSsSsk', 'kSsSsSsk', 'ksSsSsSk', '.kSsSsk.', '.CCCCCC.', '.ksSSsk.'],
+    legs: ['slate', 'night', 'slate'], arms: ['stone', 'slate', 'stone'],
+  },
+});
+
+Object.assign(WEAPON, {
+  sword_rust: { kind: 'sword', style: { len: 12, blade: 'stone', edge: 'leatherD', guard: 'slate', tip: 'mist', grip: 'night' } },
+  staff_hex: { kind: 'staff', style: { shaft: ['night', 'ink'], rim: 'bone', core: 'curse', glow: 'curseL' } },
+  staff_bog: { kind: 'staff', style: { shaft: ['bark', 'barkD'], rim: 'mud', core: 'glow', glow: 'glowL' } },
+  hook_rust: { kind: 'dagger', style: { blade: 'leather', tip: 'leatherD', guard: 'woodD' } },
+});
+
 export const LOOKS = { head: HEAD, body: BODY, weapon: WEAPON, offhand: OFFHAND };
 
 // ------------------------------------------------------------ tier recolours
