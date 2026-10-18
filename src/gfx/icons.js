@@ -574,6 +574,18 @@ const ICONS = {
     '..WBbWBBbbWBb.',
     '.SSSSSSSSSSSS.',
   ],
+  mirrorshard: [ // a jagged sliver of Malgrim's glass, still showing a little violet light
+    '.......K......',
+    '......KWk.....',
+    '.....KWPpk....',
+    '....KWPPpk....',
+    '...KWPPPpdk...',
+    '...kWPpPpd....',
+    '..KWPPCPpdk...',
+    '..kWPPPppd....',
+    '.KWPpPppdk....',
+    '.kddddddk.....',
+  ],
   pelt: [
     '..ww......ww..',
     '..wwwwwwwwww..',

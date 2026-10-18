@@ -2577,7 +2577,7 @@ export class Game extends Phaser.Scene {
     this.cameras.main.flash(160, 230, 210, 255);
     this.fx.burst('bloom', f.x, f.y - 10, 24);
     f.ring?.destroy();
-    if (f.blight) { this.tweens.add({ targets: f.blight, alpha: 0, scale: 0.6, duration: 1400, onComplete: () => f.blight.destroy() }); f.blight = null; }
+    if (f.blight) { const patch = f.blight; f.blight = null; this.tweens.add({ targets: patch, alpha: 0, scale: 0.6, duration: 1400, onComplete: () => patch.destroy() }); } // (keep our own handle: f.blight is cleared now)
     this.tweens.killTweensOf(f.s);
     f.s.clearTint().setY(f.y);
     // some hexes lash out as they break
