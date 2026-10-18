@@ -7,11 +7,13 @@ import { fitString } from './textfit.js';
 import { freshFor, skillsReady, xpToNext } from '../game/state.js';
 import { GLYPHS } from '../gfx/font.js';
 import { HP_WARN, HP_CRIT } from './Game.js';
+import QD from '../data/quests.json';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpMid: 0xf2c14e, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
+const ERRANDS_N = (id) => QD.errands[id]?.steps.length || 1; // steps in an errand (HUD tracker: "2/3")
 export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0, quest: 0xffffff, fly: 0xfff06a };
 
 // green "+" badge: this hero has skill points to spend (matches the menu's rank-up button)
@@ -617,7 +619,7 @@ export class UI extends Phaser.Scene {
       this.trackTitle.setText(dk.def.name);
       this.trackTxt.setText([`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
     } else {
-      this.trackTitle.setText(tstep ? tq.title(tid) : '');
+      this.trackTitle.setText(tstep ? `${tq.title(tid)}  ${tq.q(tid).s + 1}/${ERRANDS_N(tid)}` : '');
       this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
     }
     const L = game.leader;

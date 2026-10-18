@@ -3670,9 +3670,9 @@
     "speed": 0.85
    },
    "lines": [
-    "THIRTY OF YOU HOME, AND THE BOATS ARE RUNNING AGAIN. WHERE TO? THIRTY GOLD, ANY LANDING."
+    "TEN OF YOU HOME, AND I'VE GOT THE OLD BOAT FLOATING AGAIN. WHERE TO? THIRTY GOLD, ANY LANDING."
    ],
-   "folk": 30
+   "folk": 10
   },
   {
    "id": "ferryFen",
@@ -3689,7 +3689,7 @@
    "lines": [
     "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
    ],
-   "folk": 30
+   "folk": 10
   },
   {
    "id": "ferryGloam",
@@ -3706,7 +3706,7 @@
    "lines": [
     "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
    ],
-   "folk": 30
+   "folk": 10
   },
   {
    "id": "ferryCinder",
@@ -3723,7 +3723,7 @@
    "lines": [
     "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
    ],
-   "folk": 30
+   "folk": 10
   },
   {
    "id": "ferryFrost",
@@ -3740,7 +3740,7 @@
    "lines": [
     "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
    ],
-   "folk": 30
+   "folk": 10
   }
  ]
 }

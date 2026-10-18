@@ -1292,7 +1292,7 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
 | 3 stones | **Trainers' Hall** | All unlocked disciplines, respec, Veteran's and Ultimate Tomes; Blacksmith Rank 2 |
 | 4 stones | **Alchemist** | Greater Potions, Elixirs, tonics; Phial of Second Wind quest |
 | 5 stones | **Royal Armory** | Legendaries; Blacksmith Rank 3 |
-| Townsfolk 10 / 20 / 30 | **Bard**, **Cartographer**, **Ferryman** | Bard: music layers and lore. Cartographer: lookout map pins, Wanderer's Charm. Ferryman: boat fast travel across the lake |
+| Townsfolk 10 / 20 | **Bard** and **Ferryman** (10), **Cartographer** (20) | Bard: music layers and lore. Ferryman: boat fast travel between five landings, 30 gold (moved from 30 to 10 so it helps with errand backtracking). Cartographer: lookout map pins, Wanderer's Charm |
 
 - **Gear stock rises with the band:**
   - Marla sells the current tier as Common.

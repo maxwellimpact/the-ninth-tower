@@ -702,16 +702,30 @@ export class Menu extends Phaser.Scene {
     const act = Qm.active(), done = Object.keys(st.quests).filter((id) => st.quests[id].done);
     this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
     if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); y += 24; }
+    // each errand: what you've done (ticked), where you are now (with how far along
+    // and where to find what it asks for), and how much is left - never what's next
     for (const id of act) {
       if (y + 30 > H - 4) break;
-      const tracked = st.tracked === id;
-      panel(g, x, y, w, 27, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
-      this.t(x + 5, y + 4, ERRANDS[id].title, tracked ? 'fontGold' : 'font', undefined, w - 64);
-      this.t(x + 5, y + 15, Qm.stepText(id), 'fontPlain', undefined, w - 10);
+      const tracked = st.tracked === id, e = ERRANDS[id], q = st.quests[id];
+      const doneSteps = e.steps.slice(0, q.s), left = e.steps.length - q.s - 1, where = Qm.whereText(id);
+      const ch = 15 + doneSteps.length * 9 + 10 + (where ? 9 : 0) + 11;
+      panel(g, x, y, w, ch, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
+      this.t(x + 5, y + 4, e.title, tracked ? 'fontGold' : 'font', undefined, w - 64);
       const tag = tracked ? 'TRACKED' : 'TAP: TRACK';
       this.t(x + w - 5 - tag.length * 5, y + 4, tag, 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
-      this.btn(x, y, w, 27, () => { st.tracked = id; audio.sfx('click'); this.render(); });
-      y += 30;
+      let yy = y + 15;
+      for (const d of doneSteps) {
+        g.fillStyle(0x8cff8c).fillRect(x + 7, yy + 3, 1, 2).fillRect(x + 8, yy + 4, 1, 2).fillRect(x + 9, yy + 1, 1, 4).fillRect(x + 10, yy, 1, 2); // a tick
+        this.t(x + 15, yy, d.text, 'fontPlain', 0x7fae86, w - 20);
+        yy += 9;
+      }
+      g.fillStyle(tracked ? C.gold : 0xd8d3e0).fillTriangle(x + 7, yy, x + 7, yy + 6, x + 11, yy + 3); // you are here
+      this.t(x + 15, yy, Qm.stepText(id), 'font', undefined, w - 20);
+      yy += 10;
+      if (where) { this.t(x + 15, yy, where, 'fontPlain', 0x9fd8ff, w - 20); yy += 9; }
+      this.t(x + 15, yy + 1, `STEP ${q.s + 1} OF ${e.steps.length}${left ? `  -  ${left === 1 ? 'ONE MORE STEP' : `${left} MORE STEPS`} AFTER THIS` : '  -  THE LAST STEP'}`, 'fontPlain', 0x9d93b3, w - 20);
+      this.btn(x, y, w, ch, () => { st.tracked = id; audio.sfx('click'); this.render(); });
+      y += ch + 3;
     }
     if (done.length && y + 20 < H) {
       y += 4;

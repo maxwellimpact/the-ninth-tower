@@ -12,6 +12,8 @@ import { audio } from '../audio/synth.js';
 import { makeItem, tierForLevel } from './itemgen.js';
 import { addMats, addPotions, CRAFT, gainItems } from './state.js';
 import { makeStage } from './setpiece.js';
+import { biomeAt } from '../world/map.js';
+import ENEMIES from '../data/enemies.json';
 
 const dirTo = (dx, dy) => { const l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
 // the goods cart's three views and where each stands on its spot
@@ -729,10 +731,45 @@ export class QuestManager {
   }
 
   // ---------------------------------------------------------------- UI
+  // Places a kill or gather step can be done: world groups with that foe, and
+  // gathering nodes of that material (or foes that drop it), as tile points.
+  sources(s) {
+    if (s.type === 'kill') return W.groups.flatMap((g) => g.units.filter((u) => u[0] === s.kind).map((u) => ({ x: u[1], y: u[2] })));
+    if (s.type === 'gather') {
+      const nodes = W.nodes.filter((n) => n.kind === s.mat).map((n) => ({ x: n.x, y: n.y }));
+      if (nodes.length) return nodes;
+      const droppers = new Set(Object.entries(ENEMIES).filter(([, e]) => e.drops?.[s.mat]).map(([k]) => k));
+      return W.groups.flatMap((g) => g.units.filter((u) => droppers.has(u[0])).map((u) => ({ x: u[1], y: u[2] })));
+    }
+    return [];
+  }
+
+  // The regions those places are in, nearest first (for the errand log: "FOUND IN ...").
+  whereText(id) {
+    const s = this.step(id);
+    if (!s || (s.type !== 'kill' && s.type !== 'gather')) return '';
+    const L = this.sc.leader, tx = L ? L.x / TILE : 0, ty = L ? L.y / TILE : 0;
+    const names = [];
+    for (const p of this.sources(s).sort((a, b) => Math.hypot(a.x - tx, a.y - ty) - Math.hypot(b.x - tx, b.y - ty))) {
+      const r = W.regions.find((k) => k.id === biomeAt(p.x, p.y));
+      const n = r?.name || null;
+      if (n && !names.includes(n)) names.push(n);
+      if (names.length === 3) break;
+    }
+    if (!names.length) return '';
+    const verb = s.type === 'kill' ? 'FOUND IN' : W.nodes.some((n) => n.kind === s.mat) ? 'GROWS IN' : 'DROPPED BY FOES IN';
+    return `${verb} ${names.join(', ')}`;
+  }
+
   // Where the tracked errand wants you to go (tile coords) for map pins.
   pin(id = this.state.tracked) {
     const s = id && this.step(id);
     if (!s) return null;
+    if (s.type === 'kill' || s.type === 'gather') { // the nearest place to do it, in the area you're in
+      const L = this.sc.leader, tx = L.x / TILE, ty = L.y / TILE, a = this.sc.areaRect?.();
+      const pts = this.sources(s).filter((p) => !a || (p.x >= a.x0 && p.x <= a.x1 && p.y >= a.y0 && p.y <= a.y1));
+      return pts.sort((p, q) => Math.hypot(p.x - tx, p.y - ty) - Math.hypot(q.x - tx, q.y - ty))[0] || null;
+    }
     if (s.type === 'talk') { const n = this.npc(s.npc); return n ? { x: n.x, y: n.y } : null; }
     if (s.type === 'spawn') return { x: s.at[0], y: s.at[1] };
     if (s.type === 'follow') { const i = this.live[id]?.i || 0; const p = s.path[Math.min(i, s.path.length - 1)]; return { x: p[0], y: p[1] }; }
