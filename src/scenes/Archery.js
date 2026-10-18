@@ -1,7 +1,9 @@
 // The Archery Butts: Brightwater's range, opened once fifteen townsfolk are
 // home (Fletcher Wynn keeps it). Five arrows: the sight sweeps side to side -
 // tap to fix it - then up and down - tap to loose. Rings score 10 / 8 / 6 / 4 / 2.
-// Prizes by total; the first perfect round also wins Wynn's thumb ring.
+// Prizes by total; the first round of 44+ also wins Wynn's thumb ring. (Tuned by
+// simulating tap timing: a good player gets the ring about one round in ten, a
+// casual one about breaks even on gold, a sharp one wins a little.)
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import { panel } from './UI.js';
@@ -9,8 +11,9 @@ import { gainItems } from '../game/state.js';
 
 export const ARCHERY_FEE = 15;
 const ARROWS = 5;
-const RINGS = [[6, 10, 0xf2c14e], [12, 8, 0xec6a5e], [18, 6, 0x4e9ad0], [24, 4, 0x2b2140], [30, 2, 0xd8d3e0]]; // radius, score, colour (drawn outermost first)
-const PRIZES = [[30, 40], [40, 90], [46, 160]]; // [score at least, gold]
+const RINGS = [[7, 10, 0xf2c14e], [13, 8, 0xec6a5e], [19, 6, 0x4e9ad0], [25, 4, 0x2b2140], [31, 2, 0xd8d3e0]]; // radius, score, colour (drawn outermost first)
+const PRIZES = [[30, 15], [38, 35], [44, 60]]; // [score at least, gold]
+const RING_AT = 44; // the first round this good wins Wynn's thumb ring
 
 export class Archery extends Phaser.Scene {
   constructor() { super('Archery'); }
@@ -58,7 +61,7 @@ export class Archery extends Phaser.Scene {
   update(time, delta) {
     if (!this.sight || this.phase === 'done' || this.phase === 'flying') return;
     this.t += delta / 1000;
-    const speed = 2.3 + this.shot * 0.35; // each arrow a little quicker
+    const speed = 2.3 + this.shot * 0.3; // each arrow a little quicker
     if (this.phase === 'x') { this.sx = this.cx + Math.sin(this.t * speed) * 40; this.sy = this.cy; }
     else this.sy = this.cy + Math.sin(this.t * speed * 1.15) * 40;
     const s = this.sight.clear().lineStyle(1, 0xffffff, 1);
@@ -92,10 +95,10 @@ export class Archery extends Phaser.Scene {
   results() {
     const st = this.g.state, W = this.scale.width, H = this.scale.height;
     const gold = PRIZES.filter(([n]) => this.score >= n).map(([, gp]) => gp).pop() || 0;
-    const perfect = this.score >= ARROWS * 10;
+    const perfect = this.score >= ARROWS * 10, ringWorthy = this.score >= RING_AT;
     let ring = false;
     st.gold += gold;
-    if (perfect && !this.g.flags.fletcherRing) { this.g.flags.fletcherRing = true; gainItems(st, ['fletchers_thumb_ring']); ring = true; }
+    if (ringWorthy && !this.g.flags.fletcherRing) { this.g.flags.fletcherRing = true; gainItems(st, ['fletchers_thumb_ring']); ring = true; }
     st.archeryBest = Math.max(st.archeryBest || 0, this.score);
     this.input.removeAllListeners();
     // beside the target, so the arrows you put in it stay in view
@@ -105,10 +108,10 @@ export class Archery extends Phaser.Scene {
     panel(g, px0, py, pw, 88, 0x2b2140, 0xf2c14e);
     const line = (y, s, f = 'font') => this.add.bitmapText(pcx, y, f, s).setOrigin(0.5, 0).setDepth(11).setMaxWidth(pw - 8);
     line(py + 6, `SCORE ${this.score} / ${ARROWS * 10}`, 'fontGold');
-    line(py + 17, perfect ? 'FIVE GOLDS!' : this.score >= 40 ? 'A FINE ROUND.' : this.score >= 30 ? 'NOT BAD AT ALL.' : 'THE STRAW IS SAFE.');
+    line(py + 17, perfect ? 'FIVE GOLDS!' : ringWorthy ? 'WYNN WHISTLES.' : this.score >= 38 ? 'A FINE ROUND.' : this.score >= 30 ? 'NOT BAD AT ALL.' : 'THE STRAW IS SAFE.');
     line(py + 27, gold ? `+${gold} GOLD` : `BEST SO FAR: ${st.archeryBest}`, 'fontPlain');
     if (ring) line(py + 36, "+ WYNN'S THUMB RING", 'fontGold');
-    line(py + 46, '30/40/46+ PAYS 40/90/160G', 'fontPlain').setTint(0x9d93b3);
+    line(py + 46, '30/38/44+ PAYS 15/35/60G', 'fontPlain').setTint(0x9d93b3);
     audio.sfx(gold ? 'coin' : 'click');
     if (ring) { audio.sfx('chest'); this.g.events.emit('loot', { ids: ['fletchers_thumb_ring'] }); }
     this.g.events.emit('party');

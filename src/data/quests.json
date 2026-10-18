@@ -3677,8 +3677,8 @@
   {
    "id": "ferryFen",
    "name": "FERRY LANDING",
-   "x": 126,
-   "y": 114,
+   "x": 33,
+   "y": 64,
    "look": "board",
    "ferry": true,
    "voice": {
@@ -3687,14 +3687,31 @@
     "speed": 0.85
    },
    "lines": [
-    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+    "THE FERRY LANDING BY THE FEN CAMP. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN POLES UP THROUGH THE SHALLOWS."
    ],
    "folk": 10
   },
   {
    "id": "ferryGloam",
    "name": "FERRY LANDING",
-   "x": 18,
+   "x": 24,
+   "y": 131,
+   "look": "board",
+   "ferry": true,
+   "voice": {
+    "pitch": 150,
+    "wave": "triangle",
+    "speed": 0.85
+   },
+   "lines": [
+    "A FERRY LANDING ON THE GLOAMWOOD SHALLOWS, A SHORT WALK FROM THE HUNTERS' CAMP. RING THE BELL AND THE FERRYMAN COMES."
+   ],
+   "folk": 10
+  },
+  {
+   "id": "ferryCinder",
+   "name": "FERRY LANDING",
+   "x": 134,
    "y": 161,
    "look": "board",
    "ferry": true,
@@ -3704,32 +3721,15 @@
     "speed": 0.85
    },
    "lines": [
-    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
-   ],
-   "folk": 10
-  },
-  {
-   "id": "ferryCinder",
-   "name": "FERRY LANDING",
-   "x": 128,
-   "y": 157,
-   "look": "board",
-   "ferry": true,
-   "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
-   },
-   "lines": [
-    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+    "A FERRY LANDING AT THE HOT SPRINGS BELOW EMBERWATCH. THE BELL IS WARM TO THE TOUCH. RING IT AND THE FERRYMAN COMES."
    ],
    "folk": 10
   },
   {
    "id": "ferryFrost",
-   "name": "FERRY LANDING",
-   "x": 16,
-   "y": 244,
+   "name": "SLED POST",
+   "x": 48,
+   "y": 228,
    "look": "board",
    "ferry": true,
    "voice": {
@@ -3738,15 +3738,15 @@
     "speed": 0.85
    },
    "lines": [
-    "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
+    "THE FERRYMAN'S SLED POST OUTSIDE RIMEWATCH. NO WATER UP HERE THAT ISN'T ICE, SO HE COMES UP THE PASS BY SLED. RING THE BELL."
    ],
    "folk": 10
   },
   {
    "id": "bess",
    "name": "BESS THE CURIO-MONGER",
-   "x": 40,
-   "y": 34,
+   "x": 5,
+   "y": 30,
    "look": "bess",
    "folk": 5,
    "curio": true,
@@ -3763,8 +3763,8 @@
   {
    "id": "wynn",
    "name": "FLETCHER WYNN",
-   "x": 47,
-   "y": 34,
+   "x": 27,
+   "y": 45,
    "look": "wynn",
    "folk": 15,
    "minigame": "Archery",
@@ -3777,14 +3777,14 @@
    },
    "lines": [
     "FIFTEEN HOME. ENOUGH THAT SOMEONE WANTS TO SHOOT AT STRAW AGAIN, AND I'M THAT SOMEONE.",
-    "FIVE ARROWS. FIX THE SIGHT SIDE TO SIDE, THEN UP AND DOWN, THEN LET FLY. HIT GOLD FIVE TIMES AND MY THUMB RING IS YOURS."
+    "FIVE ARROWS. FIX THE SIGHT SIDE TO SIDE, THEN UP AND DOWN, THEN LET FLY. SCORE FORTY-FOUR OR BETTER AND MY THUMB RING IS YOURS. NOBODY HAS YET."
    ]
   },
   {
    "id": "hilde",
    "name": "HILDE OF THE STEAM HOUSE",
-   "x": 40,
-   "y": 42,
+   "x": 12,
+   "y": 44,
    "look": "hilde",
    "folk": 25,
    "bath": true,
@@ -3801,8 +3801,8 @@
   {
    "id": "mayor",
    "name": "MAYOR TOBIN",
-   "x": 47,
-   "y": 42,
+   "x": 26,
+   "y": 30,
    "look": "mayor",
    "folk": 30,
    "mayorHouse": true,

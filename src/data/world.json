@@ -2948,8 +2948,8 @@
   },
   {
    "id": "curio",
-   "x": 38,
-   "y": 33,
+   "x": 7,
+   "y": 29,
    "kind": "curio",
    "landmark": true,
    "opens": 5,
@@ -2957,8 +2957,8 @@
   },
   {
    "id": "archery",
-   "x": 45,
-   "y": 33,
+   "x": 25,
+   "y": 43,
    "kind": "archery",
    "landmark": true,
    "opens": 15,
@@ -2966,8 +2966,8 @@
   },
   {
    "id": "bath",
-   "x": 38,
-   "y": 41,
+   "x": 15,
+   "y": 43,
    "kind": "bath",
    "landmark": true,
    "opens": 25,
@@ -2975,8 +2975,8 @@
   },
   {
    "id": "mayor",
-   "x": 45,
-   "y": 41,
+   "x": 28,
+   "y": 29,
    "kind": "mayor",
    "landmark": true,
    "opens": 30,

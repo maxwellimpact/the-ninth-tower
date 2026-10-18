@@ -163,6 +163,12 @@ const PATHS = [
   { w: 0.9, pts: [[96, 94], [110, 99], [124, 104]] },
   { w: 0.75, pts: [[14, 36], [14, 31]] },
   { w: 0.75, pts: [[21, 36], [21, 31]] },
+  // Brightwater grows: paths to the homes that open as the townsfolk come back, and up to the mill
+  { w: 0.75, pts: [[7, 37], [7, 31]] },
+  { w: 0.75, pts: [[28, 35], [28, 31]] },
+  { w: 0.75, pts: [[15, 44], [25, 44]] },
+  { w: 0.7, pts: [[11, 37], [11, 31], [11, 25], [10, 21]] },
+  { w: 0.7, pts: [[24, 36], [24, 25]] }, // down to the Ferryman's jetty
   // Wave 2: Mistfen's west road runs on south into Gloamwood ...
   { w: 1.0, pts: [[40, 102], [38, 116], [36, 128], [32, 137], [33, 145], [40, 151], [56, 158], [68, 167], [74, 177], [76, 181]] },
   { w: 0.85, pts: [[56, 158], [52, 168], [50, 178], [50, 185]] }, // to the elder tree
@@ -191,6 +197,10 @@ const PATHS = [
   { w: 0.75, pts: [[14, 259], [10, 268], [9, 282], [13, 296], [24, 305], [40, 308], [52, 308]] }, // the west trail past the lake
   // the causeway: from Frosthelm's south road, through a cut in the ridge, round to the Ninth Tower's door
   { w: 1.1, pts: [[96, 301], [106, 306], [116, 309], [128, 310], [142, 309], [155, 306], [155, 270]] },
+  // short paths to the ferry landings, from each region's camp road
+  { w: 0.7, pts: [[29, 68], [33, 65]] },
+  { w: 0.7, pts: [[31, 137], [25, 132]] },
+
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
@@ -546,7 +556,7 @@ export function buildWorld() {
   for (const p of LORE) reserve(p.x, p.y, 1.5);
   for (const n of W.nodes || []) reserve(n.x, n.y, 1.5);
   for (const b of W.breakables || []) reserve(b.x, b.y, 3);
-  for (const b of W.buildings || []) reserve(b.x, b.y + 2, 4);
+  for (const b of W.buildings || []) { reserve(b.x, b.y + 2, 4); reserve(b.x, b.y - 2, 3); } // the door yard, and the roof (no tree growing through it)
   for (const w of W.warps || []) reserve(w.x, w.y, 2.5);
   for (const k of [...(W.shrines || []), ...(W.lookouts || [])]) reserve(k.x, k.y, 3);
   // errand NPCs, props and routes stay clear of trees

@@ -1056,7 +1056,7 @@ export class Game extends Phaser.Scene {
       const img = this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}${shut ? '_shut' : ''}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
       if (b.opens) this.addHome(b, img, bx, by);
-      if (b.kind === 'archery') for (const [dx, dy] of [[5, -1], [5, 2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
+      if (b.kind === 'archery') for (const [dx, dy] of [[4, -2], [6, -2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
       const ch = CHIMNEYS[b.kind];
       if (ch) { // a thread of chimney smoke, drifting off with the breeze (not from a cold, boarded-up chimney)
         const sx = bx + ch[0], sy = by + ch[1];
@@ -2788,7 +2788,8 @@ export class Game extends Phaser.Scene {
     const hero = st.recruited[Math.floor(Math.random() * st.recruited.length)];
     const gear = makeItem(hero, ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)], tier, 'rare');
     const gems = Object.keys(CRAFT.gems.kinds), gem = `${gems[Math.floor(Math.random() * gems.length)]}3`;
-    const mat = [['starmetal', 1, 650], ['pearl', 3, 260], ['silver', 4, 220], ['scale', 3, 240]][Math.floor(Math.random() * 4)];
+    const mats = [['pearl', 3, 260], ['silver', 4, 220], ['scale', 3, 240], ['crystal', 3, 200], ...(this.flags.royalArmory ? [['starmetal', 1, 650], ['starmetal', 2, 1200]] : [])]; // starmetal only once it's any use (the Royal Armory)
+    const mat = mats[Math.floor(Math.random() * mats.length)];
     st.curio = { n, offers: [
       { gear, price: Math.round(gearPrice(tier, 'rare') * 1.3) },
       { gem, price: 300 },
