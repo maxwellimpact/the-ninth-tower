@@ -19,11 +19,38 @@ export class Shop extends Phaser.Scene {
   create({ game }) {
     this.g = game;
     this.tab = 'buy';
-    this.scroll = 0;
     this.dyn = [];
+    this.list = null; // the scrolling list (see Menu.region): its own camera over rows drawn off to the right
+    this.scrollPos = { buy: 0, sell: 0 };
+    // drag anywhere in the list to scroll it, like the other menus; a drag never counts as a tap
+    this.input.on('pointerdown', (p) => {
+      this.dragged = false;
+      this.drag = this.inList(p) ? { y: p.y, from: this.list.cam.scrollY } : null;
+    });
+    this.input.on('pointermove', (p) => {
+      if (!p.isDown || !this.drag) return;
+      const dy = p.y - this.drag.y;
+      if (Math.abs(dy) > 5) this.dragged = true;
+      if (this.dragged) this.setScroll(this.drag.from - dy);
+    });
+    this.input.on('wheel', (p, o, dx, dy) => { if (this.inList(p)) this.setScroll(this.list.cam.scrollY + dy * 0.5); });
     this.input.keyboard.on('keydown-ESC', () => this.close());
-    this.input.on('wheel', (p, o, dx, dy) => { this.scroll = Math.max(0, this.scroll + Math.sign(dy)); this.render(); });
     this.render();
+  }
+
+  inList(p) { const r = this.list; return r && p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h; }
+
+  setScroll(sy) {
+    const r = this.list;
+    r.cam.scrollY = Math.round(Math.max(r.min, Math.min(r.max, sy)));
+    this.scrollPos[this.tab] = r.cam.scrollY - r.min;
+    // scrollbar on the right edge, only when there's more than fits
+    r.bar.clear();
+    const span = r.max - r.min;
+    if (span <= 0) return;
+    const th = Math.max(12, Math.round(r.h * (r.h / (r.h + span))));
+    const ty = r.y + Math.round((r.h - th) * ((r.cam.scrollY - r.min) / span));
+    r.bar.fillStyle(C.slate, 0.8).fillRect(r.x + r.w + 2, r.y, 2, r.h).fillStyle(C.gold).fillRect(r.x + r.w + 2, ty, 2, th);
   }
 
   close() { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); }
@@ -37,7 +64,8 @@ export class Shop extends Phaser.Scene {
 
   btn(x, y, w, h, fn) {
     const z = this.add.zone(x, y, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
-    z.on('pointerdown', fn);
+    z.on('pointerdown', () => { this.downZone = z; });
+    z.on('pointerup', () => { if (this.downZone !== z || this.dragged) return; this.downZone = null; fn(); });
     this.dyn.push(z);
   }
 
@@ -73,6 +101,7 @@ export class Shop extends Phaser.Scene {
   }
 
   render() {
+    if (this.list) { this.cameras.remove(this.list.cam); this.list = null; }
     for (const o of this.dyn) o.destroy();
     this.dyn = [];
     const Wd = this.scale.width, H = this.scale.height;
@@ -90,37 +119,37 @@ export class Shop extends Phaser.Scene {
       const x = 8 + i * 42, sel = tb === this.tab;
       panel(g, x, 22, 38, 14, sel ? 0x3a2f52 : C.night, sel ? C.gold : C.slate);
       this.t(x + 19 - tb.length * 2.5, 26, tb.toUpperCase(), sel ? 'fontGold' : 'fontPlain');
-      this.btn(x, 20, 38, 18, () => { audio.sfx('click'); this.tab = tb; this.scroll = 0; this.render(); });
+      this.btn(x, 20, 38, 18, () => { audio.sfx('click'); this.tab = tb; this.render(); });
     });
     const list = this.entries();
-    const rowH = 26, top = 44, x = 8, w = Wd - 16;
-    const maxRows = Math.max(1, Math.floor((H - top - 14) / rowH));
-    this.scroll = Math.min(this.scroll, Math.max(0, list.length - maxRows));
-    list.slice(this.scroll, this.scroll + maxRows).forEach((e, i) => {
-      const y = top + i * rowH;
+    const rowH = 26, top = 44, x = 8, w = Wd - 20, h = H - top - 4;
+    if (!list.length) { this.t(x, top + 4, this.tab === 'sell' ? 'NOTHING TO SELL. SPARE GEAR AND MATERIALS SHOW UP HERE.' : 'SOLD OUT!', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    // every row, drawn off to the right (OX) and seen through the list's camera
+    const OX = 5000, lg = this.add.graphics();
+    this.dyn.push(lg);
+    list.forEach((e, i) => {
+      const y = top + i * rowH, rx = x + OX;
       const can = e.sell || st.gold >= e.price;
-      panel(g, x, y, w, rowH - 3, C.night, can ? e.col : C.slate);
-      g.fillStyle(C.ink).fillRect(x + 3, y + 3, 17, 17);
-      this.dyn.push(this.add.image(x + 3, y + 3, e.icon).setOrigin(0));
-      this.t(x + 23, y + 4, e.name, 'font', e.col, w - 23 - 48);
-      this.t(x + 23, y + 13, e.sub, 'fontPlain', undefined, w - 23 - 48);
+      panel(lg, rx, y, w, rowH - 3, C.night, can ? e.col : C.slate);
+      lg.fillStyle(C.ink).fillRect(rx + 3, y + 3, 17, 17);
+      this.dyn.push(this.add.image(rx + 3, y + 3, e.icon).setOrigin(0));
+      this.t(rx + 23, y + 4, e.name, 'font', e.col, w - 23 - 48);
+      this.t(rx + 23, y + 13, e.sub, 'fontPlain', undefined, w - 23 - 48);
       const label = `${e.sell ? '+' : ''}${e.price}G`;
-      panel(g, x + w - 42, y + 5, 38, 13, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
-      this.t(x + w - 23 - label.length * 2.5, y + 8, label, can ? 'fontGold' : 'fontPlain');
-      this.btn(x, y, w, rowH - 3, () => {
+      panel(lg, rx + w - 42, y + 5, 38, 13, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
+      this.t(rx + w - 23 - label.length * 2.5, y + 8, label, can ? 'fontGold' : 'fontPlain');
+      this.btn(rx, y, w, rowH - 3, () => {
         if (e.sell) { st.gold += e.price; e.act(); audio.sfx('coin'); }
         else if (st.gold >= e.price) { st.gold -= e.price; e.act(); audio.sfx('coin'); audio.sfx('equip'); }
         else { audio.sfx('click'); return; }
         this.render();
       });
     });
-    if (!list.length) this.t(x, top + 4, this.tab === 'sell' ? 'NOTHING TO SELL. SPARE GEAR AND MATERIALS SHOW UP HERE.' : 'SOLD OUT!', 'fontPlain', 0x9d93b3).setMaxWidth(w);
-    if (list.length > maxRows) {
-      this.t(x, H - 10, `${this.scroll + 1}-${Math.min(list.length, this.scroll + maxRows)} OF ${list.length}`, 'fontPlain');
-      panel(g, Wd - 70, H - 13, 28, 11, C.night, C.slate); this.t(Wd - 62, H - 10, 'UP', 'fontPlain');
-      this.btn(Wd - 72, H - 16, 32, 16, () => { this.scroll = Math.max(0, this.scroll - maxRows); this.render(); });
-      panel(g, Wd - 38, H - 13, 30, 11, C.night, C.slate); this.t(Wd - 33, H - 10, 'DOWN', 'fontPlain');
-      this.btn(Wd - 40, H - 16, 34, 16, () => { this.scroll += maxRows; this.render(); });
-    }
+    const bottom = top + list.length * rowH;
+    const cam = this.cameras.add(x, top, w, h);
+    cam.scrollX = OX + x;
+    this.list = { x, y: top, w, h, cam, min: top, max: Math.max(top, bottom + 4 - h), bar: this.add.graphics().setDepth(100) };
+    this.dyn.push(this.list.bar);
+    this.setScroll(top + (this.scrollPos[this.tab] || 0));
   }
 }
