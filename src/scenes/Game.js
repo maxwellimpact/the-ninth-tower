@@ -1056,7 +1056,7 @@ export class Game extends Phaser.Scene {
       const img = this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}${shut ? '_shut' : ''}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
       if (b.opens) this.addHome(b, img, bx, by);
-      if (b.kind === 'archery') for (const [dx, dy] of [[4, -2], [6, -2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
+      if (b.kind === 'archery') for (const [dx, dy] of [[5, -2], [8, -2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
       const ch = CHIMNEYS[b.kind];
       if (ch) { // a thread of chimney smoke, drifting off with the breeze (not from a cold, boarded-up chimney)
         const sx = bx + ch[0], sy = by + ch[1];

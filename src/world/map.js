@@ -556,7 +556,7 @@ export function buildWorld() {
   for (const p of LORE) reserve(p.x, p.y, 1.5);
   for (const n of W.nodes || []) reserve(n.x, n.y, 1.5);
   for (const b of W.breakables || []) reserve(b.x, b.y, 3);
-  for (const b of W.buildings || []) { reserve(b.x, b.y + 2, 4); reserve(b.x, b.y - 2, 3); } // the door yard, and the roof (no tree growing through it)
+  for (const b of W.buildings || []) { reserve(b.x, b.y + 2, 4); reserve(b.x, b.y - 2, 3); if (b.kind === 'archery') reserve(b.x + 6, b.y - 2, 4); } // the door yard, the roof (no tree through it), and the archery range
   for (const w of W.warps || []) reserve(w.x, w.y, 2.5);
   for (const k of [...(W.shrines || []), ...(W.lookouts || [])]) reserve(k.x, k.y, 3);
   // errand NPCs, props and routes stay clear of trees
