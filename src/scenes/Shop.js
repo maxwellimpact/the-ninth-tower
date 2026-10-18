@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
 import W from '../data/world.json';
-import { CRAFT, sellPrice, itemName } from '../game/state.js';
+import { CRAFT, sellPrice, itemName, statDelta, compareGear } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
 import { shopGear, gearPrice, tierForLevel, registerItem } from '../game/itemgen.js';
@@ -82,7 +82,7 @@ export class Shop extends Phaser.Scene {
       const tier = tierForLevel(lv);
       for (const id of shopGear(st, tier)) {
         const it = items[id];
-        out.push({ icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, price: gearPrice(tier), col: RARITY.common.col,
+        out.push({ icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, tag: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()}`, cmp: { hero: it.hero, id }, price: gearPrice(tier), col: RARITY.common.col,
           act: () => { const nid = id.replace('#shop', `#${Math.random().toString(36).slice(2, 7)}`); registerItem(nid); st.inventory.push(nid); } });
       }
       return out;
@@ -90,7 +90,8 @@ export class Shop extends Phaser.Scene {
     const out = [];
     for (const id of new Set(st.inventory)) {
       const it = items[id];
-      out.push({ icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
+      const who = it.hero && it.hero !== 'any' ? it.hero : null;
+      out.push({ icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, tag: `${who ? who.toUpperCase() : 'ANY'} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()}`, cmp: who && st.recruited.includes(who) ? { hero: who, id } : null, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
     }
     for (const [k, m] of Object.entries(CRAFT.materials)) {
       if (!st.materials[k]) continue;
@@ -98,6 +99,35 @@ export class Shop extends Phaser.Scene {
       out.push({ icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
     }
     return out;
+  }
+
+  // Gear rows read like the hero's gear list: whose it is, then what wearing it
+  // would do against what they wear now (damage / toughness %, the raw stats in
+  // grey) and an up / down arrow by the price.
+  drawCompare(g, e, x, y, maxW, ax) {
+    const st = this.g.state, hs = st.heroes[e.cmp.hero];
+    const name = this.t(x, y + 4, e.name, 'font', e.col, maxW - e.tag.length * 5 - 8);
+    this.t(x + Math.min(name.width, maxW) + 6, y + 4, e.tag, 'fontPlain', 0x9d93b3);
+    const worn = Object.values(hs.equip).includes(e.cmp.id);
+    if (worn) { this.t(x, y + 13, 'EQUIPPED', 'fontPlain', 0xf2c14e); return; }
+    const d = statDelta(e.cmp.hero, hs.level, hs.equip, e.cmp.id), v = compareGear(e.cmp.hero, hs.level, hs.equip, e.cmp.id);
+    const parts = [];
+    if (v.dmg) parts.push([`${v.dmg > 0 ? '+' : ''}${v.dmg}% DMG`, v.dmg > 0]);
+    if (v.tough) parts.push([`${v.tough > 0 ? '+' : ''}${v.tough}% TOUGH`, v.tough > 0]);
+    if (!parts.length) parts.push(['SAME POWER', null]);
+    let xx = x;
+    for (const [str, good] of parts) { this.t(xx, y + 13, str, 'font', good === null ? 0x9d93b3 : good ? 0x8cff8c : 0xff7a7a); xx += str.length * 5 + 6; }
+    xx += 4;
+    for (const [k, label] of [['atk', 'ATK'], ['def', 'DEF'], ['maxHp', 'HP'], ['crit', 'CRIT']]) {
+      if (!d[k]) continue;
+      const str = `${d[k] > 0 ? '+' : ''}${d[k]}${k === 'crit' ? '%' : ''} ${label}`;
+      if (xx + str.length * 5 > x + maxW) break;
+      this.t(xx, y + 13, str, 'fontPlain', 0x9d93b3);
+      xx += str.length * 5 + 5;
+    }
+    const net = v.dmg + v.tough, ay = y + 11;
+    if (net > 0) g.fillStyle(C.ink).fillTriangle(ax - 5, ay + 4, ax + 5, ay + 4, ax, ay - 4).fillStyle(0x8cff8c).fillTriangle(ax - 3, ay + 3, ax + 3, ay + 3, ax, ay - 2);
+    else if (net < 0) g.fillStyle(C.ink).fillTriangle(ax - 5, ay - 4, ax + 5, ay - 4, ax, ay + 4).fillStyle(0xff7a7a).fillTriangle(ax - 3, ay - 3, ax + 3, ay - 3, ax, ay + 2);
   }
 
   render() {
@@ -133,8 +163,11 @@ export class Shop extends Phaser.Scene {
       panel(lg, rx, y, w, rowH - 3, C.night, can ? e.col : C.slate);
       lg.fillStyle(C.ink).fillRect(rx + 3, y + 3, 17, 17);
       this.dyn.push(this.add.image(rx + 3, y + 3, e.icon).setOrigin(0));
-      this.t(rx + 23, y + 4, e.name, 'font', e.col, w - 23 - 48);
-      this.t(rx + 23, y + 13, e.sub, 'fontPlain', undefined, w - 23 - 48);
+      if (e.cmp) this.drawCompare(lg, e, rx + 23, y, w - 23 - 48, rx + w - 52);
+      else {
+        this.t(rx + 23, y + 4, e.name, 'font', e.col, w - 23 - 48);
+        this.t(rx + 23, y + 13, e.sub, 'fontPlain', undefined, w - 23 - 48);
+      }
       const label = `${e.sell ? '+' : ''}${e.price}G`;
       panel(lg, rx + w - 42, y + 5, 38, 13, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
       this.t(rx + w - 23 - label.length * 2.5, y + 8, label, can ? 'fontGold' : 'fontPlain');
