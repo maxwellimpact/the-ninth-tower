@@ -84,6 +84,8 @@ export const GROUPS = {
       s.textures.addCanvas('icewall', P.iceWall());
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
+      s.textures.addCanvas('house_mill', P.mill());
+      frames(s, 'millwheel', P.millWheel(), 7);
       s.textures.addCanvas('house_elder', P.elderTree());
       for (let k = 0; k < 3; k++) s.textures.addCanvas(`tent${k}`, P.tent(k));
       s.textures.addCanvas('house_forgegate', P.forgeGate());

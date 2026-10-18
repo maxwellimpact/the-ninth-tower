@@ -926,7 +926,7 @@ export class Game extends Phaser.Scene {
       const x = px(s.x), y = px(s.y);
       this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y);
       this.nav.block(s.x, s.y);
-      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', interact: () => this.events.emit('dialogue', s.lines.map((text) => ({ who: 'SIGN', text }))) });
+      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
     }
     for (const c of W.chests) {
       const x = px(c.x), y = px(c.y);
@@ -998,6 +998,10 @@ export class Game extends Phaser.Scene {
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
       this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
+      if (b.kind === 'mill') { // its wheel, in the mill race on the east wall: seized until Gizmo mends it
+        this.millWheel = this.add.sprite(bx + 33, by + 1, 'millwheel', '0').setOrigin(0.5, 1).setDepth(by - 1);
+        if (this.state.quests?.waterWheel?.done) this.startMill(false);
+      }
     }
     // Doors: an open-doorway overlay on each cottage, and a door in each
     // interior's bottom wall
@@ -2233,7 +2237,7 @@ export class Game extends Phaser.Scene {
 
   kingRestored() {
     const f = LANDMARKS.frog, fx = f.x * TILE + 8, fy = f.y * TILE + 8;
-    const K = (text) => ({ who: 'KING ALDRIC', portrait: 'portrait_frog', voice: { pitch: 140, wave: 'square', duty: 0.25 }, text });
+    const K = (text) => ({ who: 'KING ALDRIC', portrait: this.textures.exists('king_portrait') ? 'king_portrait' : null, voice: { pitch: 140, wave: 'square', duty: 0.25 }, text }); // a man again: his own face
     music.setVariant('freed', 1.6);
     this.events.emit('banner', 'THE CURSE IS LIFTED', 'ALDERMERE IS FREE');
     this.time.delayedCall(2200, () => {
@@ -2561,7 +2565,7 @@ export class Game extends Phaser.Scene {
     this.flags[`taught_${npc.trainer}`] = true; // the Trainers' Hall can teach it from now on
     const D = DISCIPLINES[npc.trainer];
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
-    const intro = npc.metTrainer ? [] : npc.lines.map(line);
+    const intro = npc.metTrainer ? [] : this.quests.linesOf(npc).map(line);
     npc.metTrainer = true;
     const opts = this.party.filter((h) => h.hs.disc !== npc.trainer);
     if (!opts.length) { this.events.emit('dialogue', [...intro, line(`YOUR WHOLE PARTY ALREADY KNOWS THE ${D.name}. NOW PRACTISE.`)]); return; }
@@ -2592,7 +2596,7 @@ export class Game extends Phaser.Scene {
     const heroes = (list) => list.map((id) => ({ id, hs: st.heroes[id], name: heroInfo(id).name.toUpperCase() }));
     const pay = (g) => { if (st.gold < g) { say(`THAT'S ${g} GOLD. THE HALL DOESN'T RUN ON GOODWILL.`); return false; } st.gold -= g; audio.sfx('coin'); return true; };
     const avg = () => Math.round(this.party.reduce((a, h) => a + h.level, 0) / Math.max(1, this.party.length));
-    const menu = () => say(npc.metHall ? 'WHAT WILL IT BE?' : npc.lines.join(' '), [
+    const menu = () => say(npc.metHall ? 'WHAT WILL IT BE?' : this.quests.linesOf(npc).join(' '), [
       ['DISCIPLINES', () => {
         const known = Object.keys(DISCIPLINES).filter((d) => this.flags[`taught_${d}`]);
         if (!known.length) { say('YOU HAVEN\'T MET A SINGLE TRAINER. GO AND SHAKE SOME HANDS FIRST.'); return; }
@@ -2631,7 +2635,7 @@ export class Game extends Phaser.Scene {
   // your map, and gives the Wanderer's Charm once you've climbed them all.
   cartographerTalk(npc) {
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
-    const intro = this.flags.cartoPins ? [] : npc.lines.map(line);
+    const intro = this.flags.cartoPins ? [] : this.quests.linesOf(npc).map(line);
     this.flags.cartoPins = true; // mapMarkers shows every lookout from now on
     const climbed = W.lookouts.filter((k) => this.flags[`lookout_${k.id}`]).length, all = W.lookouts.length;
     if (climbed >= all && !this.flags.wanderer) {
@@ -2644,12 +2648,23 @@ export class Game extends Phaser.Scene {
     this.events.emit('dialogue', [...intro, line(this.flags.wanderer ? 'STILL WALKING? GOOD. THE MAP NEEDS FEET.' : `I'VE PINNED EVERY LOOKOUT TOWER ON YOUR MAP. YOU'VE CLIMBED ${climbed} OF ${all}. CLIMB THEM ALL AND I'LL HAVE SOMETHING FOR YOU.`)]);
   }
 
+  // Gizmo's repair: the mill wheel turns (and keeps turning on every visit).
+  startMill(show = true) {
+    const w = this.millWheel;
+    if (!w || w.anims.isPlaying) return;
+    w.play('millwheel');
+    if (!show) return;
+    audio.sfx('equip');
+    this.fx.burst('foam', w.x, w.y - 4, 14);
+    this.floatText(w.x, w.y - 40, 'THE WHEEL TURNS!', 'fontGold');
+  }
+
   // The Ferryman (30 townsfolk): any landing to any other, thirty gold.
   ferryTalk(npc) {
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
     const FARE = 30;
     const stops = this.quests.npcs.filter((n) => n.ferry && n.id !== npc.id && this.quests.unlocked(n));
-    const l = line(npc.lines[0]);
+    const l = line(this.quests.linesOf(npc)[0]);
     l.choices = [...stops.map((n) => [`${this.placeName(n.x * TILE + 8, n.y * TILE + 8)} (${FARE}G)`, () => {
       if (this.state.gold < FARE) { this.events.emit('dialogue', [line("THIRTY GOLD, FRIEND. THE BOAT DOESN'T ROW ITSELF.")]); return; }
       this.state.gold -= FARE; audio.sfx('coin'); this.events.emit('party');
@@ -3028,7 +3043,9 @@ export class Game extends Phaser.Scene {
   }
 
   talkFrog() {
-    const K = { who: 'KING ALDRIC', portrait: 'portrait_frog', voice: { pitch: 110, wave: 'square', duty: 0.125 } };
+    const K = this.flags.kingRestored && this.textures.exists('king_portrait')
+      ? { who: 'KING ALDRIC', portrait: 'king_portrait', voice: { pitch: 140, wave: 'square', duty: 0.25 } }
+      : { who: 'KING ALDRIC', portrait: 'portrait_frog', voice: { pitch: 110, wave: 'square', duty: 0.125 } };
     const st = this.state;
     const tiers = W.flyRewards;
     const next = tiers[st.flyRewards];

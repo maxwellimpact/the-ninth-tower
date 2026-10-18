@@ -2698,6 +2698,16 @@
     "NORTH: BRIGHTWATER. (WHAT REMAINS OF IT.)",
     "EAST: THE WARD STONE. TURN BACK. NO, REALLY.",
     "SOUTH: MISTFEN. BRING BOOTS."
+   ],
+   "later": [
+    {
+     "when": "wardBroken",
+     "lines": [
+      "NORTH: BRIGHTWATER. (WHAT REMAINS OF IT.)",
+      "EAST: THE BROKEN WARD STONE. (SOMEONE HAS SCRATCHED OUT 'TURN BACK'.)",
+      "SOUTH: MISTFEN. BRING BOOTS."
+     ]
+    }
    ]
   },
   {
@@ -2714,6 +2724,15 @@
    "lines": [
     "EAST: THE OLD WATCHTOWER.",
     "WEST: THE VALE. AND A VERY CROSS FROG."
+   ],
+   "later": [
+    {
+     "when": "kingRestored",
+     "lines": [
+      "EAST: THE OLD WATCHTOWER.",
+      "WEST: THE VALE. AND A VERY RELIEVED KING."
+     ]
+    }
    ]
   },
   {
@@ -2793,6 +2812,15 @@
    "lines": [
     "THE OLD BELFRY.",
     "IT USED TO RING THE HOURS FOR THE WHOLE WOOD. NOW THE WOOD KEEPS ITS OWN HOURS."
+   ],
+   "later": [
+    {
+     "when": "done:belfry",
+     "lines": [
+      "THE OLD BELFRY.",
+      "IT RINGS THE HOURS FOR THE WHOLE WOOD AGAIN. MOSTLY THE RIGHT ONES."
+     ]
+    }
    ]
   },
   {
@@ -2841,6 +2869,32 @@
    "lines": [
     "THE BLIGHT BASIN. THE CAUSEWAY RUNS TO THE NINTH TOWER.",
     "THE BARRIER WALLS OFF EVERYTHING ELSE. EVERY WARD STONE YOU BREAK TAKES A LAYER AWAY. TURN BACK. PLEASE."
+   ],
+   "later": [
+    {
+     "when": "malgrimDefeated",
+     "lines": [
+      "THE BLIGHT BASIN. THE CAUSEWAY RUNS TO WHAT'S LEFT OF THE NINTH TOWER.",
+      "THE BARRIER IS GONE, AND SO IS HE. (SOMEONE HAS SCRAWLED UNDERNEATH: 'TURN BACK? NEVER!')"
+     ]
+    }
+   ]
+  },
+  {
+   "x": 8,
+   "y": 21,
+   "lines": [
+    "BRIGHTWATER MILL.",
+    "(THE WHEEL HASN'T TURNED IN A YEAR. SOMEONE HAS CHALKED 'BROKE' ON THE DOOR.)"
+   ],
+   "later": [
+    {
+     "when": "done:waterWheel",
+     "lines": [
+      "BRIGHTWATER MILL.",
+      "FLOUR, BREAD AND GOOD MOODS, ALL RESTORED. (THE CHALK NOW SAYS 'FIXED BY GIZMO'.)"
+     ]
+    }
    ]
   }
  ],
@@ -2856,6 +2910,13 @@
    "x": 21,
    "y": 29,
    "kind": "tavern"
+  },
+  {
+   "id": "mill",
+   "x": 10,
+   "y": 19,
+   "kind": "mill",
+   "landmark": true
   },
   {
    "id": "elder",
@@ -3138,7 +3199,7 @@
    4
   ],
   [
-   50,
+   49,
    27
   ],
   [

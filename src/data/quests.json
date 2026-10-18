@@ -30,8 +30,8 @@
       ],
       [
        "hexling",
-       12,
-       15
+       13,
+       13
       ],
       [
        "hexling",
@@ -538,7 +538,7 @@
    ],
    "reward": {
     "gold": 80,
-    "xp": 220,
+    "xp": 310,
     "sp": 1
    }
   },
@@ -569,7 +569,7 @@
    ],
    "reward": {
     "gold": 60,
-    "xp": 200,
+    "xp": 280,
     "potions": {
      "potion": 2,
      "elixir": 1
@@ -606,7 +606,7 @@
    ],
    "reward": {
     "gold": 70,
-    "xp": 180,
+    "xp": 250,
     "gear": {
      "rarity": "fine"
     }
@@ -639,7 +639,7 @@
    ],
    "reward": {
     "gold": 90,
-    "xp": 240,
+    "xp": 340,
     "gear": {
      "rarity": "rare"
     }
@@ -676,7 +676,7 @@
    ],
    "reward": {
     "gold": 60,
-    "xp": 220,
+    "xp": 310,
     "gear": {
      "rarity": "rare"
     },
@@ -720,7 +720,7 @@
    ],
    "reward": {
     "gold": 180,
-    "xp": 320,
+    "xp": 450,
     "gear": {
      "rarity": "rare",
      "slot": "weapon"
@@ -846,7 +846,7 @@
     }
    ],
    "reward": {
-    "xp": 300,
+    "xp": 420,
     "gold": 60,
     "recruit": "kesh"
    }
@@ -926,7 +926,7 @@
     }
    ],
    "reward": {
-    "xp": 200,
+    "xp": 360,
     "recruit": "wren"
    }
   },
@@ -979,7 +979,7 @@
     }
    ],
    "reward": {
-    "xp": 260,
+    "xp": 360,
     "gold": 120,
     "item": "bloodfang_axe"
    }
@@ -1033,7 +1033,7 @@
    ],
    "reward": {
     "gold": 70,
-    "xp": 220,
+    "xp": 400,
     "gear": {
      "rarity": "fine"
     }
@@ -1067,7 +1067,7 @@
    ],
    "reward": {
     "gold": 90,
-    "xp": 280,
+    "xp": 500,
     "potions": {
      "elixir": 1,
      "potion": 2
@@ -1123,7 +1123,7 @@
    ],
    "reward": {
     "gold": 220,
-    "xp": 450,
+    "xp": 810,
     "mats": {
      "silk": 4
     },
@@ -1161,7 +1161,7 @@
    ],
    "reward": {
     "gold": 50,
-    "xp": 180,
+    "xp": 320,
     "potions": {
      "potion": 2,
      "elixir": 1
@@ -1196,7 +1196,7 @@
    ],
    "reward": {
     "gold": 70,
-    "xp": 240,
+    "xp": 430,
     "mats": {
      "heartwood": 3
     },
@@ -1263,7 +1263,7 @@
    ],
    "reward": {
     "gold": 60,
-    "xp": 280,
+    "xp": 500,
     "sp": 1,
     "gear": {
      "rarity": "fine",
@@ -1331,7 +1331,7 @@
     }
    ],
    "reward": {
-    "xp": 320,
+    "xp": 700,
     "recruit": "oake"
    }
   },
@@ -1382,7 +1382,7 @@
    ],
    "reward": {
     "gold": 240,
-    "xp": 480,
+    "xp": 1060,
     "item": "gnasher"
    }
   },
@@ -1437,7 +1437,7 @@
    ],
    "reward": {
     "gold": 260,
-    "xp": 500,
+    "xp": 1100,
     "item": "quiver_of_embers"
    }
   },
@@ -1471,7 +1471,7 @@
    ],
    "reward": {
     "gold": 70,
-    "xp": 220,
+    "xp": 480,
     "potions": {
      "salve": 3
     }
@@ -1565,7 +1565,7 @@
    ],
    "reward": {
     "gold": 110,
-    "xp": 300,
+    "xp": 660,
     "sp": 1,
     "gear": {
      "rarity": "fine"
@@ -1599,7 +1599,7 @@
    ],
    "reward": {
     "gold": 90,
-    "xp": 280,
+    "xp": 620,
     "potions": {
      "elixir": 1,
      "salve": 2
@@ -1702,7 +1702,7 @@
    ],
    "reward": {
     "gold": 200,
-    "xp": 420,
+    "xp": 920,
     "item": "ember_circlet"
    }
   },
@@ -1716,7 +1716,7 @@
    ],
    "accept": "PUT OUT THE LIGHT.",
    "thanks": [
-    "THE LAMPLIGHTER'S GONE? AND IT LEFT ITS LANTERN... FUNNY. THE FLAME'S GONE GOLD NOW, NOT GREEN. FEELS ALMOST HOLY. YOUR MONK MIGHT LIKE IT."
+    "THE LAMPLIGHTER'S GONE? AND IT LEFT ITS LANTERN... FUNNY. THE FLAME'S GONE GOLD NOW, NOT GREEN. FEELS ALMOST HOLY. SOMEONE WITH A PRAYER IN THEM MIGHT CARRY IT."
    ],
    "steps": [
     {
@@ -1755,7 +1755,7 @@
    ],
    "reward": {
     "gold": 180,
-    "xp": 380,
+    "xp": 530,
     "item": "lantern_of_the_faithful"
    }
   },
@@ -1812,7 +1812,7 @@
     }
    ],
    "reward": {
-    "xp": 400,
+    "xp": 720,
     "item": "orb_of_echoes"
    }
   },
@@ -1869,7 +1869,7 @@
     }
    ],
    "reward": {
-    "xp": 300,
+    "xp": 540,
     "item": "echo_bell"
    }
   },
@@ -1890,7 +1890,7 @@
     {
      "type": "find",
      "text": "LIGHT THE RIDGE BEACON (NORTH)",
-     "x": 156,
+     "x": 147,
      "y": 134,
      "kind": "beacon",
      "say": "THE BEACON ROARS ALIGHT!"
@@ -1918,7 +1918,7 @@
     }
    ],
    "reward": {
-    "xp": 420,
+    "xp": 920,
     "gold": 120,
     "item": "ember_heart"
    }
@@ -1968,7 +1968,7 @@
     }
    ],
    "reward": {
-    "xp": 420,
+    "xp": 920,
     "item": "hourglass_charm"
    }
   },
@@ -2049,7 +2049,7 @@
    ],
    "reward": {
     "gold": 70,
-    "xp": 260,
+    "xp": 730,
     "potions": {
      "tonic": 3
     }
@@ -2107,7 +2107,7 @@
    ],
    "reward": {
     "gold": 90,
-    "xp": 320,
+    "xp": 900,
     "item": "frostfur_tassel"
    }
   },
@@ -2165,7 +2165,7 @@
    ],
    "reward": {
     "gold": 220,
-    "xp": 460,
+    "xp": 1290,
     "item": "wolfskull_helm"
    }
   },
@@ -2216,7 +2216,7 @@
    ],
    "reward": {
     "gold": 260,
-    "xp": 520,
+    "xp": 1460,
     "item": "troll_hide_mantle"
    }
   },
@@ -2270,7 +2270,7 @@
    ],
    "reward": {
     "gold": 240,
-    "xp": 480,
+    "xp": 1340,
     "gear": {
      "rarity": "rare"
     }
@@ -2330,7 +2330,7 @@
    ],
    "reward": {
     "gold": 300,
-    "xp": 700,
+    "xp": 1680,
     "mats": {
      "starmetal": 3
     }
@@ -2385,7 +2385,7 @@
    ],
    "reward": {
     "gold": 320,
-    "xp": 740,
+    "xp": 1780,
     "gear": {
      "rarity": "rare"
     },
@@ -2444,7 +2444,7 @@
    ],
    "reward": {
     "gold": 360,
-    "xp": 800,
+    "xp": 1920,
     "gear": {
      "rarity": "rare",
      "slot": "weapon"
@@ -2464,7 +2464,7 @@
    ],
    "accept": "THREE SHARDS.",
    "thanks": [
-    "THREE TRUE SHARDS. HOLD STILL WHILE I... THERE. A MIRROR THAT SHOWS ONLY WHAT'S REALLY THERE. GIVE IT TO YOUR FROST WITCH. SHE LOOKED LIKE SHE NEEDED ONE."
+    "THREE TRUE SHARDS. HOLD STILL WHILE I... THERE. A MIRROR THAT SHOWS ONLY WHAT'S REALLY THERE. IT WANTS A WITCH'S HAND, I THINK. ONE WHO KNOWS COLD. YOU'LL KNOW WHO WHEN YOU MEET HER."
    ],
    "steps": [
     {
@@ -2484,7 +2484,7 @@
    ],
    "reward": {
     "gold": 300,
-    "xp": 700,
+    "xp": 1680,
     "item": "mirror_truths"
    }
   }
@@ -2577,6 +2577,14 @@
    },
    "errands": [
     "bells"
+   ],
+   "later": [
+    {
+     "when": "done:bells",
+     "lines": [
+      "...STILL HERE. IT TURNS OUT RESTING TAKES PRACTICE. THE BELLS HELP."
+     ]
+    }
    ]
   },
   {
@@ -2644,6 +2652,14 @@
    },
    "errands": [
     "lantern"
+   ],
+   "later": [
+    {
+     "when": "done:lantern",
+     "lines": [
+      "EVERY LAMP IN BRIGHTWATER, LIT BY THESE HANDS. AND THIS TIME I MEAN IT."
+     ]
+    }
    ]
   },
   {
@@ -2680,6 +2696,14 @@
    },
    "errands": [
     "lostPell"
+   ],
+   "later": [
+    {
+     "when": "done:lostPell",
+     "lines": [
+      "THE CAMP'S NOT MUCH. BUT IT'S DRY. MOSTLY. AND PELL'S UNDER ORDERS TO STAY OUT OF HOLES. HE'S FOUND THREE ALREADY."
+     ]
+    }
    ]
   },
   {
@@ -2717,6 +2741,14 @@
    },
    "errands": [
     "croakers"
+   ],
+   "later": [
+    {
+     "when": "done:croakers",
+     "lines": [
+      "QUIET POND. THE FISH ARE BACK. I STILL CATCH NOTHING, BUT NOW IT'S MY OWN FAULT."
+     ]
+    }
    ]
   },
   {
@@ -2737,6 +2769,15 @@
    },
    "errands": [
     "drownedBell"
+   ],
+   "later": [
+    {
+     "when": "done:drownedBell",
+     "lines": [
+      "THE BELL RANG. I HEARD IT. I THINK THE SISTERS DID TOO, WHEREVER THEY ARE.",
+      "THEY SAY SMUGGLERS KEEP A DEN ON THE LITTLE ISLE IN THE BIG POOL WEST OF HERE. ONLY A SWIMMER COULD REACH IT."
+     ]
+    }
    ]
   },
   {
@@ -2770,6 +2811,14 @@
    "errands": [
     "thePit",
     "pitChampion"
+   ],
+   "later": [
+    {
+     "when": "done:pitChampion",
+     "lines": [
+      "NO BETTING ON CREDIT. NO BETTING ON YOU, EITHER. NOBODY WILL TAKE THE ODDS."
+     ]
+    }
    ]
   },
   {
@@ -2840,6 +2889,17 @@
     "THEY SAY THE KING WAS A FINE SINGER BEFORE HE WAS A FROG. HONESTLY HE STILL IS. VERY RESONANT.",
     "ONE OLD BALLAD SAYS YOUR PIP WAS MALGRIM'S OWN APPRENTICE ONCE. THE NINTH. HE DOESN'T LIKE TO TALK ABOUT IT.",
     "BRING MORE FOLK HOME AND I'LL FIND THE CARTOGRAPHER. SHE OWES ME A SONG."
+   ],
+   "later": [
+    {
+     "when": "kingRestored",
+     "lines": [
+      "TEN OF US HOME AND COUNTING! I'VE ADDED A NEW VERSE TO THE VALE'S SONG. LISTEN - YOU CAN HEAR THE HARP NOW.",
+      "THE KING SINGS WITH ME SOME EVENINGS NOW. STILL VERY RESONANT. HE STILL CROAKS ON THE HIGH NOTES, AND WE DON'T MENTION IT.",
+      "ONE OLD BALLAD SAYS YOUR PIP WAS MALGRIM'S OWN APPRENTICE ONCE. THE NINTH. HE DOESN'T LIKE TO TALK ABOUT IT.",
+      "I'VE WRITTEN A WHOLE NEW SONG ABOUT THE TOWER COMING DOWN. IT'S MOSTLY ABOUT YOU. SOME OF IT EVEN RHYMES."
+     ]
+    }
    ]
   },
   {
@@ -2877,6 +2937,15 @@
    "errands": [
     "lightsInTrees",
     "mabBounty"
+   ],
+   "later": [
+    {
+     "when": "ward_gloam",
+     "lines": [
+      "THE WOOD'S QUIETER SINCE THE HUNT ENDED. I KEEP MY VOICE DOWN ANYWAY. HABIT.",
+      "WE HUNT WHAT HUNTS US. THERE'S LESS OF IT NOW. I'M ALMOST BORED."
+     ]
+    }
    ]
   },
   {
@@ -3037,6 +3106,32 @@
    ],
    "errands": [
     "monkTrial"
+   ],
+   "later": [
+    {
+     "when": "joined:oake",
+     "lines": [
+      "THE HEARTHSTONE BURNS COLD NOW. WE PRAY. IT DOES NOT ANSWER.",
+      "BROTHER OAKE WAS RIGHT ABOUT THE MINERS AND I WAS WRONG. I HAVE TOLD HIM SO. IN WRITING. I HEAR HE FRAMED IT."
+     ]
+    },
+    {
+     "when": "ward_cinder",
+     "lines": [
+      "THE HEARTHSTONE BURNS AGAIN. WE PRAYED FOR A YEAR, AND IN THE END IT WAS A STRANGER WITH A SWORD WHO ANSWERED. THE LIGHT MOVES IN STRANGE WAYS.",
+      "WE GAVE UP ON THE MINERS. I AM NOT PROUD OF IT."
+     ]
+    },
+    {
+     "when": [
+      "ward_cinder",
+      "joined:oake"
+     ],
+     "lines": [
+      "THE HEARTHSTONE BURNS AGAIN. WE PRAYED FOR A YEAR, AND IN THE END IT WAS A STRANGER WITH A SWORD WHO ANSWERED. THE LIGHT MOVES IN STRANGE WAYS.",
+      "BROTHER OAKE WAS RIGHT ABOUT THE MINERS AND I WAS WRONG. I HAVE TOLD HIM SO. IN WRITING. I HEAR HE FRAMED IT."
+     ]
+    }
    ]
   },
   {
@@ -3103,13 +3198,21 @@
    },
    "lines": [
     "THE MONKS SAID WE WERE TOO FAR GONE. BROTHER OAKE SAID 'NONSENSE' AND STAYED."
+   ],
+   "later": [
+    {
+     "when": "joined:oake",
+     "lines": [
+      "BROTHER OAKE WENT OFF WITH YOU LOT. LEFT US A NOTE: 'BACK SOON. PROBABLY. ALMOST CERTAINLY.' WE'RE FINE. HE WAS RIGHT ABOUT THAT TOO."
+     ]
+    }
    ]
   },
   {
    "id": "gizmo",
    "name": "GIZMO",
-   "x": 26,
-   "y": 32,
+   "x": 12,
+   "y": 21,
    "look": "gizmo",
    "wards": 2,
    "voice": {
@@ -3163,6 +3266,14 @@
    ],
    "errands": [
     "belfry"
+   ],
+   "later": [
+    {
+     "when": "done:belfry",
+     "lines": [
+      "THE BELFRY SINGS AGAIN. I CAN'T PULL THE ROPES, BUT I CAN LISTEN. IT'S ENOUGH. IT'S MORE THAN ENOUGH."
+     ]
+    }
    ]
   },
   {
@@ -3183,6 +3294,15 @@
    ],
    "errands": [
     "signalFires"
+   ],
+   "later": [
+    {
+     "when": "done:signalFires",
+     "lines": [
+      "EMBERWATCH STANDS. AND NOW EVERYONE CAN SEE IT STANDING.",
+      "THE CARAVANS ARE COMING UP THE ROAD AGAIN. SLOWLY. WITH A GREAT DEAL OF COMPLAINING."
+     ]
+    }
    ]
   },
   {
@@ -3203,6 +3323,15 @@
    ],
    "errands": [
     "mastersTools"
+   ],
+   "later": [
+    {
+     "when": "ward_cinder",
+     "lines": [
+      "THE FORGEMASTER'S GONE. I WENT DOWN TO HIS BENCH AFTERWARDS AND SAT THERE A WHILE.",
+      "HE KEPT PERFECT TIME, ONCE. I'LL KEEP IT FOR HIM NOW."
+     ]
+    }
    ]
   },
   {
@@ -3378,6 +3507,15 @@
    ],
    "errands": [
     "lostTrapper"
+   ],
+   "later": [
+    {
+     "when": "ward_frost",
+     "lines": [
+      "THE ICE KNIGHT'S GONE. THE VILLAGERS ARE GOING BACK DOWN TO THEIR HOMES, AND I'M LEFT WITH A CAMP FULL OF EMPTY TENTS. GOOD.",
+      "THE SPIRE STOPPED GLOWING THE NIGHT THE STONE BROKE. SOMEONE SHOULD GO UP AND LOOK. NOT ME."
+     ]
+    }
    ]
   },
   {
@@ -3447,6 +3585,15 @@
    "lines": [
     "THE ROYAL ARMORY IS OPEN AGAIN. FIVE STONES DOWN - THE KING WOULD WEEP. WELL. HE WOULD CROAK.",
     "LEGENDARY ARMS, FORGED FROM STARMETAL. ONE FOR EACH OF YOUR COMPANY. BRING ME STARMETAL AND GOLD."
+   ],
+   "later": [
+    {
+     "when": "kingRestored",
+     "lines": [
+      "THE ROYAL ARMORY IS OPEN AND THE KING IS A KING. HE CAME DOWN TO WATCH THE FORGE YESTERDAY AND DIDN'T CROAK ONCE.",
+      "LEGENDARY ARMS, FORGED FROM STARMETAL. ONE FOR EACH OF YOUR COMPANY. BRING ME STARMETAL AND GOLD."
+     ]
+    }
    ]
   },
   {
@@ -3484,6 +3631,15 @@
    ],
    "errands": [
     "shatteredMirror"
+   ],
+   "later": [
+    {
+     "when": "malgrimDefeated",
+     "lines": [
+      "NINE YEARS I WATCHED THAT TOWER. NOW I WATCH THE RUBBLE. IT'S A LOT LESS WORK.",
+      "I MIGHT GO HOME. I'VE FORGOTTEN WHERE IT IS. THAT'S ALL RIGHT - I'LL WALK UNTIL SOMETHING LOOKS FAMILIAR."
+     ]
+    }
    ]
   },
   {

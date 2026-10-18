@@ -1139,3 +1139,114 @@ export function furTent(seed = 0) {
   outline(c, 'ink');
   return c;
 }
+
+// Brightwater's watermill on the lake shore, in the cottages' 3/4 view: a
+// fieldstone ground floor, a timber-framed loft with a sack hoist under the
+// gable, a steep slate roof (blue-grey, so it doesn't read as the red shop or
+// the thatched tavern) with a little dormer and a weathervane. The wheel is
+// its own sprite on the east wall (see millWheel). Footprint 3 tiles wide.
+export function mill() {
+  const W = 56, H = 78;
+  const [c, ctx] = makeCanvas(W, H);
+  const L = 3, R = W - 4, roofTop = 6, ridge = 16, eave = 44, loftBot = 56, wallBot = H - 3;
+  // --- stone ground floor: rough coursed fieldstone, mortar lines, a dark plinth
+  for (let y = loftBot; y <= wallBot; y++) for (let x = L + 1; x <= R - 1; x++) {
+    const row = Math.floor((y - loftBot) / 4), off = (row % 2) * 4;
+    const joint = (y - loftBot) % 4 === 3 || (x + off) % 8 === 0;
+    const h = hash(Math.floor((x + off) / 8), row, 77);
+    px(ctx, x, y, joint ? 'slate' : h < 0.3 ? 'mist' : h < 0.8 ? 'stone' : 'bone');
+  }
+  for (let x = L + 1; x <= R - 1; x++) px(ctx, x, wallBot, 'slate');
+  for (let y = loftBot; y < wallBot; y++) { px(ctx, R - 1, y, 'slate'); px(ctx, R - 2, y, 'stone'); } // shaded east corner
+  // --- timber-framed loft: plaster panels between dark beams, with a cross brace
+  for (let y = eave - 1; y < loftBot; y++) for (let x = L + 2; x <= R - 2; x++) {
+    const beam = x === L + 2 || x === R - 2 || x === 18 || x === 37 || y === loftBot - 1;
+    px(ctx, x, y, beam ? 'woodD' : (x * 5 + y * 3) % 19 === 0 ? 'mist' : 'bone');
+  }
+  for (let i = 0; i < 10; i++) { px(ctx, L + 4 + i, eave + 1 + i, 'woodD'); px(ctx, R - 4 - i, eave + 1 + i, 'woodD'); } // braces in the end panels
+  for (let x = L + 2; x <= R - 2; x++) { px(ctx, x, eave - 1, 'stone'); px(ctx, x, eave, 'mist'); } // shadow under the eave
+  px(ctx, L + 2, loftBot, 'woodD', R - L - 3, 1); // the jetty beam over the stone
+  // loft hatch with the sack hoist: a beam out under the eave, a rope and a sack
+  px(ctx, 22, eave + 2, 'woodD', 12, 10); px(ctx, 23, eave + 3, 'wood', 10, 8); px(ctx, 27, eave + 3, 'woodD', 1, 8);
+  px(ctx, 26, eave - 3, 'woodD', 4, 2); px(ctx, 28, eave - 1, 'leather', 1, 7);
+  px(ctx, 26, eave + 6, 'sand', 5, 6); px(ctx, 27, eave + 6, 'bone', 3, 1); px(ctx, 26, eave + 11, 'dirtL', 5, 1); // the hanging sack
+  // --- the door (arched, plank) and two small deep windows in the stone
+  const dx = 23;
+  px(ctx, dx - 1, wallBot - 14, 'slate', 12, 14); px(ctx, dx, wallBot - 15, 'slate', 10, 1);
+  px(ctx, dx, wallBot - 13, 'wood', 10, 13); px(ctx, dx + 1, wallBot - 14, 'wood', 8, 1);
+  for (const x of [dx + 3, dx + 6]) px(ctx, x, wallBot - 13, 'woodD', 1, 13);
+  px(ctx, dx, wallBot - 9, 'steelD', 10, 1); px(ctx, dx, wallBot - 4, 'steelD', 10, 1); // iron straps
+  px(ctx, dx + 8, wallBot - 7, 'gold', 1, 2);
+  px(ctx, dx - 2, wallBot + 1, 'stone', 14, 2); px(ctx, dx - 2, wallBot + 1, 'bone', 14, 1);
+  for (const wx of [L + 6, R - 13]) {
+    px(ctx, wx, loftBot + 5, 'slate', 8, 8); px(ctx, wx + 1, loftBot + 6, 'fire', 6, 6); px(ctx, wx + 1, loftBot + 6, 'fireL', 3, 3);
+    px(ctx, wx + 4, loftBot + 6, 'woodD', 1, 6); px(ctx, wx, loftBot + 13, 'bone', 8, 1);
+  }
+  // flour sacks and a spare millstone by the door
+  for (const [sx, sy] of [[L + 2, wallBot - 6], [L + 7, wallBot - 5]]) { px(ctx, sx, sy, 'sand', 5, 6); px(ctx, sx + 1, sy - 1, 'bone', 3, 1); px(ctx, sx + 4, sy + 1, 'dirtL', 1, 5); }
+  for (let a = 0; a < 28; a++) { const t = (a / 28) * Math.PI * 2; px(ctx, Math.round(R - 7 + Math.cos(t) * 4.5), Math.round(wallBot - 5 + Math.sin(t) * 4.5), a % 4 ? 'stone' : 'mist'); }
+  px(ctx, R - 8, wallBot - 6, 'slate', 2, 2);
+  // --- roof: steep slate, back slope, ridge, big front slope in staggered courses
+  for (let y = roofTop; y <= eave - 2; y++) {
+    const inset = y < ridge ? Math.max(0, Math.round((ridge - y) * 0.5)) : 0;
+    for (let x = L - 1 + inset; x <= R + 1 - inset; x++) {
+      const back = y < ridge, row = Math.floor((y - ridge) / 3), off = (row % 2) * 2;
+      let col = back ? ((x + y) % 4 === 0 ? 'blueD' : 'steelD')
+        : (y - ridge) % 3 === 2 ? 'blueD' : (x + off) % 4 === 0 ? 'steelD' : y - ridge < 8 ? 'steel' : 'steelD';
+      if (!back && y > ridge + 14 && hash(x, y, 79) < 0.025) col = 'mossD'; // a little moss low on the slates
+      if (y === ridge) col = 'steelL';
+      if (y === eave - 2) col = 'blueD';
+      if (x <= L + inset && y >= ridge) col = 'steelL';
+      if (x >= R - inset) col = 'blueD';
+      px(ctx, x, y, col);
+    }
+  }
+  // dormer on the front slope
+  px(ctx, 13, ridge + 6, 'blueD', 10, 3); px(ctx, 14, ridge + 9, 'woodD', 8, 7); px(ctx, 15, ridge + 10, 'fire', 6, 5); px(ctx, 15, ridge + 10, 'fireL', 2, 2); px(ctx, 18, ridge + 10, 'woodD', 1, 5);
+  px(ctx, 12, ridge + 5, 'steelL', 12, 1);
+  // chimney and the weathervane (a little iron rooster)
+  px(ctx, R - 12, roofTop - 2, 'slate', 6, 12); px(ctx, R - 12, roofTop - 2, 'stone', 6, 2); px(ctx, R - 11, roofTop, 'night', 4, 1);
+  px(ctx, 19, 0, 'ink', 1, roofTop + 1); px(ctx, 16, 1, 'ink', 7, 1); px(ctx, 20, 2, 'ink', 3, 2); px(ctx, 16, 2, 'ink', 1, 1); px(ctx, 22, 1, 'ink', 1, 1);
+  outline(c, 'ink');
+  return c;
+}
+
+// The mill's waterwheel, seen face-on on the east wall: a rim of planks, eight
+// spokes, paddles round the edge, an iron hub and the lake foaming over its
+// foot. Four frames turning; frame 0 alone is the seized wheel.
+export function millWheel() {
+  const S = 34, cx = 16.5, cy = 15.5, R0 = 13.5;
+  return [0, 1, 2, 3].map((f) => {
+    const [c, ctx] = makeCanvas(S, S);
+    const rot = (f / 4) * (Math.PI / 4); // eight spokes: a quarter of their spacing per frame
+    // paddles sticking out past the rim
+    for (let i = 0; i < 12; i++) {
+      const a = rot + (i / 12) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = R0 - 1; r <= R0 + 2; r += 0.5) px(ctx, Math.round(cx + ca * r), Math.round(cy + sa * r), r > R0 + 1 ? 'woodD' : 'wood');
+    }
+    // the rim (two rings of plank)
+    for (let a = 0; a < 96; a++) {
+      const t = (a / 96) * Math.PI * 2, ct = Math.cos(t), st = Math.sin(t);
+      const lit = ct + st < -0.3; // lit from the top-left
+      px(ctx, Math.round(cx + ct * R0), Math.round(cy + st * R0), lit ? 'woodL' : 'wood');
+      px(ctx, Math.round(cx + ct * (R0 - 1.5)), Math.round(cy + st * (R0 - 1.5)), 'woodD');
+    }
+    // spokes
+    for (let i = 0; i < 8; i++) {
+      const a = rot + (i / 8) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = 2; r < R0 - 1.5; r += 0.5) px(ctx, Math.round(cx + ca * r), Math.round(cy + sa * r), i % 2 ? 'woodD' : 'wood');
+    }
+    // hub and axle
+    px(ctx, Math.round(cx) - 2, Math.round(cy) - 2, 'steelD', 4, 4); px(ctx, Math.round(cx) - 1, Math.round(cy) - 1, 'steel', 2, 2); px(ctx, Math.round(cx) - 1, Math.round(cy) - 2, 'steelL', 1, 1);
+    outline(c, 'ink');
+    // the lake over its foot: water and foam (foam churns while it turns)
+    // (an oval that thins at the ends, in the lake's own blues, so it sits in the water rather than on it)
+    for (let y = S - 6; y < S; y++) for (let x = 0; x < S; x++) {
+      const k = (y - (S - 6)) / 6, half = (R0 - 2) * Math.sqrt(Math.max(0, 1 - (1 - k) * (1 - k) * 0.7));
+      if (Math.abs(x - cx) > half) continue;
+      const top = y === S - 6, churn = hash(x + f * 5, y, 82);
+      px(ctx, x, y, top ? (churn < 0.55 ? 'foam' : 'waterL') : churn < 0.22 ? 'foam' : churn < 0.5 ? 'waterL' : y > S - 3 ? 'waterD' : 'water');
+    }
+    return c;
+  });
+}

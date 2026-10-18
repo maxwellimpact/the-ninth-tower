@@ -104,6 +104,23 @@ export class QuestManager {
 
   line(npc, text) { return { who: npc.name, voice: npc.voice, text }; }
 
+  // What an NPC (or a sign) says now. `later` lists newer lines that take over
+  // as the world changes; the last one whose condition holds wins. Conditions:
+  // a flag ("ward_cinder"), "done:<errand>", "joined:<hero>", or "!" before any
+  // of those for the opposite.
+  holds(cond) {
+    const not = cond.startsWith('!'), c = not ? cond.slice(1) : cond;
+    const [k, v] = c.includes(':') ? c.split(':') : ['flag', c];
+    const yes = k === 'done' ? !!this.q(v)?.done : k === 'joined' ? this.state.recruited.includes(v) : !!this.sc.flags[v];
+    return not ? !yes : yes;
+  }
+
+  linesOf(def) {
+    let lines = def.lines;
+    for (const l of def.later || []) if ([].concat(l.when).every((c) => this.holds(c))) lines = l.lines;
+    return lines;
+  }
+
   talk(npc) {
     const sc = this.sc;
     const L = sc.leader;
@@ -120,7 +137,8 @@ export class QuestManager {
     if (npc.ferry) { sc.ferryTalk(npc); return; }
     if (npc.minigame) {
       // a game host: their pitch the first time, then straight to the offer
-      const lines = (npc.metHost ? npc.lines.slice(-1) : npc.lines).map((t) => this.line(npc, t));
+      const said = this.linesOf(npc);
+      const lines = (npc.metHost ? said.slice(-1) : said).map((t) => this.line(npc, t));
       npc.metHost = true;
       lines[lines.length - 1].choices = [[`RACE (${RACE_BET}G)`, () => sc.openOverlay(npc.minigame)], ['NOT NOW', () => {}]];
       sc.events.emit('dialogue', lines);
@@ -128,13 +146,19 @@ export class QuestManager {
     }
     if (npc.service) {
       // Brightwater services open the matching crafting screen
-      const lines = npc.lines.map((t) => this.line(npc, t));
+      const lines = this.linesOf(npc).map((t) => this.line(npc, t));
       sc.events.emit('dialogue', lines.slice(npc.met ? lines.length - 1 : 0), () => { npc.met = true; sc.openMenu({ tab: 'craft', craftTab: npc.service === 'smith' ? 'upgrade' : 'gems' }); });
       return;
     }
     // an errand of theirs is in progress: remind; otherwise small talk
     const doing = (npc.errands || []).find((id) => this.q(id) && !this.q(id).done);
-    const text = doing ? `${ERRANDS[doing].title}: ${this.step(doing).text}.` : npc.lines[Math.floor(Math.random() * npc.lines.length)];
+    const said = this.linesOf(npc);
+    let text = doing ? `${ERRANDS[doing].title}: ${this.step(doing).text}.` : said[Math.floor(Math.random() * said.length)];
+    if (this.isBoard(npc)) { // nothing to take: why not
+      const pile = this.pileUnder(npc), wait = pile.map((k) => ERRANDS[k].requires).find((r) => r && !this.q(r)?.done);
+      if (wait) text = `${doing ? `${text} ` : ''}(THE NEXT NOTICE IS PINNED UNDER '${ERRANDS[wait].title}'. FINISH THAT ONE FIRST.)`;
+      else if (!pile.length && !doing) text = 'EVERY NOTICE HERE HAS BEEN CLAIMED. NOTHING LEFT BUT PIN-HOLES.';
+    }
     sc.events.emit('dialogue', [this.line(npc, text)]);
   }
 
@@ -151,7 +175,7 @@ export class QuestManager {
       sc.autosave('vendor');
       return;
     }
-    const lines = [this.line(npc, npc.lines[Math.floor(Math.random() * npc.lines.length)])];
+    const said = this.linesOf(npc), lines = [this.line(npc, said[Math.floor(Math.random() * said.length)])];
     lines[0].choices = [[`BUY ${name} (${v.price}G)`, () => {
       if (st.gold < v.price) { sc.events.emit('dialogue', [this.line(npc, "THAT'S NOT ENOUGH COIN, FRIEND.")]); return; }
       st.gold -= v.price; addPotions(st, { [v.item]: 1 });
@@ -164,7 +188,7 @@ export class QuestManager {
   // A shop with a few things: consumables by the one, gear and charms once each.
   shopTalk(npc) {
     const sc = this.sc, st = this.state;
-    const lines = [this.line(npc, npc.lines[Math.floor(Math.random() * npc.lines.length)])];
+    const said = this.linesOf(npc), lines = [this.line(npc, said[Math.floor(Math.random() * said.length)])];
     const wares = npc.shop.filter((w) => !(w.gear && (sc.flags[`bought_${w.gear}`])) && !(w.gear && items[w.gear].hero && !st.recruited.includes(items[w.gear].hero)));
     lines[0].choices = [...wares.map((w) => {
       const name = w.gear ? items[w.gear].name : CRAFT.consumables[w.item].name;
@@ -183,9 +207,20 @@ export class QuestManager {
     sc.events.emit('dialogue', lines);
   }
 
+  // Boards hand out their notices one at a time, top of the pile first: say so.
+  isBoard(npc) { return npc.look === 'board' && !npc.ferry; }
+  pileUnder(npc, id) { return (npc.errands || []).filter((k) => k !== id && !this.q(k)); }
+
   offer(id, npc) {
     const e = ERRANDS[id];
     const lines = e.offer.map((t) => this.line(npc, t));
+    const pile = this.isBoard(npc) ? this.pileUnder(npc, id) : [], more = pile.length;
+    if (more) {
+      const free = pile.some((k) => !ERRANDS[k].requires || this.q(ERRANDS[k].requires)?.done);
+      const wait = pile.map((k) => ERRANDS[k].requires).find((r) => r && !this.q(r)?.done);
+      const after = free ? 'TAKE THIS ONE TO SEE THE NEXT.' : `${more === 1 ? 'IT WAITS' : 'THEY WAIT'} ${wait === id ? 'UNTIL THIS ONE IS DONE' : `ON '${ERRANDS[wait].title}'`}.`;
+      lines.push(this.line(npc, `(${more === 1 ? 'ONE MORE NOTICE IS' : `${['', '', 'TWO', 'THREE', 'FOUR', 'FIVE'][more] || more} MORE NOTICES ARE`} PINNED UNDERNEATH. ${after})`));
+    }
     lines[lines.length - 1].choices = [[e.accept, () => this.start(id)], ['NOT NOW', () => {}]];
     this.sc.events.emit('dialogue', lines);
   }
@@ -376,6 +411,7 @@ export class QuestManager {
     this.clearLive(id);
     if (this.state.tracked === id) this.state.tracked = this.active()[0] || null;
     const finish = () => {
+      if (id === 'waterWheel') sc.startMill(); // the mill turns as Gizmo said it would
       const got = this.reward(e.reward);
       audio.sfx('levelUp');
       sc.events.emit('banner', 'ERRAND COMPLETE', got);
