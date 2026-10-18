@@ -1,7 +1,7 @@
 // World props and FX sprites. All return canvases (or arrays of frames).
 // Anchor convention: props sit with their ground contact at the canvas
 // bottom-centre unless noted.
-import { makeCanvas, grid, px, outline, hash, bayer } from './pixel.js';
+import { makeCanvas, grid, px, outline, hash, bayer, vnoise } from './pixel.js';
 import { shadedBlob } from './creatures.js';
 
 const LEAF = ['leafD', 'leaf', 'grass', 'grassL'];
@@ -1260,4 +1260,32 @@ export function millWheel() {
     }
     return c;
   });
+}
+
+// A patch of the spreading blight (the Basin's dead violet earth, a step
+// beyond each standing Ward Stone): a ragged blob with faint glowing cracks,
+// dithered out at the edge so it eats into the ground rather than sitting on
+// it, a dead tuft or two and the odd bone. Gone when the region's stone falls.
+export function blightPatch(seed = 0, W = 64, H = 40) {
+  const [c, ctx] = makeCanvas(W, H);
+  const cx = W / 2, cy = H / 2;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const nx = (x - cx) / (W / 2), ny = (y - cy) / (H / 2);
+    const d = Math.hypot(nx, ny) + (vnoise(x / 9, y / 9, 300 + seed) - 0.5) * 0.7;
+    if (d > 1) continue;
+    if (d > 0.72 && bayer(x, y) < (d - 0.72) / 0.28) continue; // ragged, dithered edge
+    const cr = Math.abs(vnoise(x / 11, y / 11, 310 + seed) - 0.5);
+    let col;
+    if (cr < 0.018 && d < 0.8) col = hash(x, y, 311 + seed) < 0.5 ? 'curse' : 'purp'; // the glowing cracks
+    else if (cr < 0.035 && d < 0.85) col = 'hexD';
+    else { const n = vnoise(x / 6, y / 6, 320 + seed) + (bayer(x, y) - 0.5) * 0.2; col = d > 0.82 ? (n < 0.5 ? 'purpD' : 'hexD') : n < 0.35 ? 'hexD' : n < 0.7 ? 'night' : 'purpD'; }
+    px(ctx, x, y, col);
+  }
+  // a few dead, grey tufts and maybe a bone
+  for (let i = 0; i < 3; i++) {
+    const tx = Math.round(cx + (hash(seed, i, 330) - 0.5) * W * 0.6), ty = Math.round(cy + (hash(seed, i, 331) - 0.5) * H * 0.5);
+    px(ctx, tx, ty - 2, 'slate', 1, 3); px(ctx, tx - 2, ty - 1, 'slate', 1, 2); px(ctx, tx + 2, ty - 1, 'stone', 1, 2);
+  }
+  if (hash(seed, 9, 332) < 0.5) { const bx = Math.round(cx + (hash(seed, 8, 333) - 0.5) * W * 0.4), by = Math.round(cy + 3); px(ctx, bx, by, 'bone', 4, 1); px(ctx, bx - 1, by - 1, 'bone', 1, 3); px(ctx, bx + 4, by - 1, 'bone', 1, 3); }
+  return c;
 }

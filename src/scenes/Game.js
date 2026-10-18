@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
+import QDATA from '../data/quests.json';
 import { CHIMNEYS } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R } from '../world/map.js';
+import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Isolde, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
@@ -920,9 +921,45 @@ export class Game extends Phaser.Scene {
 
   get dungeon() { return this.dungeons?.[this.area] || null; }
 
+  // The blight spreads a step beyond each standing Ward Stone: patches of the
+  // Basin's dead violet earth scattered over the region it holds (clear of
+  // camps, towns and the stone's own curse), all laid out the same every game.
+  // They wash away in a wave from the stone when it breaks.
+  buildBlight() {
+    const FLAG = { vale: 'wardBroken', meadow: 'wardBroken', marsh: 'ward_marsh', gloam: 'ward_gloam', cinder: 'ward_cinder', frost: 'ward_frost' };
+    const keepClear = [...W.campfires, ...QDATA.npcs, ...W.npcs, ...W.signs, ...W.chests, ...W.townsfolk].map((k) => [k.x, k.y]);
+    this.blight = [];
+    for (let ty = 4; ty < MAP_H - 4; ty += 6) for (let tx = 4; tx < OW_W - 4; tx += 6) {
+      const x = tx + Math.floor(vnoise(tx, ty, 341) * 5), y = ty + Math.floor(vnoise(ty, tx, 342) * 5);
+      const reg = biomeAt(x, y), flag = FLAG[reg];
+      if (!flag || this.flags[flag]) continue;
+      if (vnoise(x / 13, y / 13, 343 + reg.length) < 0.77) continue; // patches, not a carpet
+      if (this.nav.isSolid(x, y) || this.nav.isWater(x + 1, y) || this.nav.isWater(x - 1, y)) continue;
+      if (keepClear.some(([kx, ky]) => Math.hypot(kx - x, ky - y) < 9)) continue;
+      if (this.wards.some((w) => Math.hypot((x + 0.5) * TILE - w.C.x, (y + 0.5) * TILE - w.C.y) < w.C.R + 2 * TILE)) continue; // the stone's curse already covers it
+      const img = this.add.image(x * TILE + 8, y * TILE + 8, `blight${Math.floor(vnoise(x, y, 344) * 6) % 6}`).setDepth(-88).setAlpha(0.85).setFlipX(vnoise(y, x, 345) < 0.5);
+      this.blight.push({ img, flag });
+    }
+  }
+
+  // a stone fell: its blight withers in a wave outward from the stone
+  clearBlight(flag, cx, cy) {
+    for (const b of this.blight || []) {
+      if (b.flag !== flag || !b.img.active) continue;
+      const d = Math.hypot(b.img.x - cx, b.img.y - cy);
+      this.time.delayedCall(700 + d * 2.2, () => {
+        if (!b.img.active) return;
+        this.fx.burst('bloom', b.img.x, b.img.y - 4, 6);
+        this.tweens.add({ targets: b.img, alpha: 0, scale: 0.7, duration: 900, onComplete: () => b.img.destroy() });
+      });
+    }
+    this.blight = (this.blight || []).filter((b) => b.flag !== flag);
+  }
+
   buildLandmarks() {
     const px = (t) => t * TILE + TILE / 2;
     this.buildTownsfolk();
+    this.buildBlight();
     this.buildLore();
     this.campfireObjs = W.campfires.map((c) => ({ x: px(c.x), y: px(c.y) })); // light sources in the gloom
     for (const c of W.campfires) {
@@ -2441,6 +2478,7 @@ export class Game extends Phaser.Scene {
           g.generateTexture('hexRing', 28, 14); g.destroy();
         }
         f.ring = this.add.image(x, y + 2, 'hexRing').setDepth(-5);
+        f.blight = this.add.image(x, y + 4, `blight${(i % 3) + 3}`).setDepth(-88).setAlpha(0.95); // the blight they caught, pooled at their feet
         this.tweens.add({ targets: s, y: y - 2, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
       f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', interact: () => this.talkTownsfolk(f) });
@@ -2495,6 +2533,7 @@ export class Game extends Phaser.Scene {
     this.cameras.main.flash(160, 230, 210, 255);
     this.fx.burst('bloom', f.x, f.y - 10, 24);
     f.ring?.destroy();
+    if (f.blight) { this.tweens.add({ targets: f.blight, alpha: 0, scale: 0.6, duration: 1400, onComplete: () => f.blight.destroy() }); f.blight = null; }
     this.tweens.killTweensOf(f.s);
     f.s.clearTint().setY(f.y);
     // some hexes lash out as they break
@@ -3161,6 +3200,7 @@ export class Game extends Phaser.Scene {
     const region = W.regions.find((r) => r.outer === def.region);
     if (region) this.flags[`band_${def.region}`] = regionBand(this.state, region);
     this.flags[def.flag] = true;
+    this.clearBlight(def.flag, w.C.x, w.C.y);
     this.removeVines(w);
     if (def.id === 'vale') this.flags.smithRank = Math.max(this.flags.smithRank || 0, 1); // the Blacksmith returns (C9)
     const down = this.wards.filter((k) => this.flags[k.def.flag]).length;

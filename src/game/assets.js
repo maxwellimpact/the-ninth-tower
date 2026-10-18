@@ -85,6 +85,7 @@ export const GROUPS = {
       s.textures.addCanvas('house_shop', P.house('shop'));
       s.textures.addCanvas('house_tavern', P.house('tavern'));
       s.textures.addCanvas('house_mill', P.mill());
+      [[64, 40], [80, 48], [56, 34], [72, 44], [96, 56], [48, 30]].forEach(([w, h], k) => s.textures.addCanvas(`blight${k}`, P.blightPatch(k * 7 + 3, w, h)));
       frames(s, 'millwheel', P.millWheel(), 7);
       s.textures.addCanvas('house_elder', P.elderTree());
       for (let k = 0; k < 3; k++) s.textures.addCanvas(`tent${k}`, P.tent(k));
