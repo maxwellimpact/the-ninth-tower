@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CHIMNEYS } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
@@ -998,6 +999,16 @@ export class Game extends Phaser.Scene {
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
       this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
+      const ch = CHIMNEYS[b.kind];
+      if (ch) { // a thread of chimney smoke, drifting off with the breeze
+        const sx = bx + ch[0], sy = by + ch[1];
+        const puff = this.time.addEvent({ delay: 520, loop: true, callback: () => {
+          if (!this.cameras.main.worldView.contains(sx, sy + 40)) return;
+          const s = this.add.circle(sx + (Math.random() - 0.5) * 2, sy, 2, 0xd8d3e0, 0.55).setDepth(by + 50);
+          this.tweens.add({ targets: s, x: sx + 6 + Math.random() * 6, y: sy - 22 - Math.random() * 8, scale: 2.6, alpha: 0, duration: 2200, ease: 'Sine.easeOut', onComplete: () => s.destroy() });
+        } });
+        this.events.once('shutdown', () => puff.remove());
+      }
       if (b.kind === 'mill') { // its wheel, in the mill race on the east wall: seized until Gizmo mends it
         this.millWheel = this.add.sprite(bx + 33, by + 1, 'millwheel', '0').setOrigin(0.5, 1).setDepth(by - 1);
         if (this.state.quests?.waterWheel?.done) this.startMill(false);

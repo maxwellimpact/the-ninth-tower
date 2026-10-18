@@ -426,76 +426,85 @@ export function lootBag(rarityColor = 'goldL') {
 }
 
 // ------------------------------------------------------------ buildings
-// Top-down 3/4 cottage to match the rest of the art: the roof (seen from
-// above, lit from the NW) dominates; a short front wall with the door shows
-// beneath it. Footprint is 3 tiles wide; the door is bottom-centre.
-export function house(kind = 'shop') {
-  const W = 56, H = 64;
-  const [c, ctx] = makeCanvas(W, H);
+// Top-down 3/4 cottage to match the rest of the art: a hipped roof that narrows
+// toward the ridge, rows of tiles (or thatch) growing taller toward the eave,
+// an overhanging eave with a fascia board and the shadow it throws, and the
+// plastered, timbered front wall with the door bottom-centre. Footprint is 3
+// tiles wide. The tavern's chimney smokes (CHIMNEYS).
+export const CHIMNEYS = { tavern: [11, -64], mill: [13, -77] }; // smoke spout, from the sprite's bottom-centre
+const HW = 56, HH = 64, HL = 3, HR = HW - 4, WALL_BOT = HH - 3;
+
+// plaster + timber front wall, windows, door, step (shared with the current look)
+function frontWall(ctx, top, kind) {
   const thatch = kind === 'tavern';
-  const roofTop = 2, ridge = 12, eave = 40, wallBot = H - 3;
-  const L = 3, R = W - 4;
-  // --- front wall (plaster + timber frame), under the eave
-  for (let y = eave - 2; y <= wallBot; y++) for (let x = L + 2; x <= R - 2; x++) {
-    const beam = x === L + 2 || x === R - 2 || x === Math.round(W / 2) - 9 || x === Math.round(W / 2) + 8 || y === wallBot;
+  for (let y = top; y <= WALL_BOT; y++) for (let x = HL + 2; x <= HR - 2; x++) {
+    const beam = x === HL + 2 || x === HR - 2 || x === Math.round(HW / 2) - 9 || x === Math.round(HW / 2) + 8 || y === WALL_BOT;
     px(ctx, x, y, beam ? 'woodD' : (x * 7 + y * 3) % 23 === 0 ? 'mist' : 'bone');
   }
-  // wall shading: right side darker, under-eave shadow band
-  for (let x = L + 2; x <= R - 2; x++) { px(ctx, x, eave - 2, 'stone'); px(ctx, x, eave - 1, 'mist'); }
-  for (let y = eave; y < wallBot; y++) px(ctx, R - 3, y, 'mist');
-  // door (centre) + step
-  const dx = Math.round(W / 2) - 5;
-  px(ctx, dx - 1, wallBot - 14, 'woodD', 12, 14);
-  px(ctx, dx, wallBot - 13, thatch ? 'wood' : 'blueD', 10, 13);
-  px(ctx, dx, wallBot - 13, thatch ? 'woodL' : 'blue', 10, 1);
-  px(ctx, dx + 4, wallBot - 13, 'woodD', 1, 13);
-  px(ctx, dx + 7, wallBot - 7, 'gold', 1, 2);
-  px(ctx, dx - 2, wallBot + 1, 'stone', 14, 2); px(ctx, dx - 2, wallBot + 1, 'mist', 14, 1);
-  // windows with warm light
-  for (const wx of [L + 5, R - 12]) {
-    px(ctx, wx, eave + 4, 'woodD', 9, 8); px(ctx, wx + 1, eave + 5, 'fire', 7, 6); px(ctx, wx + 1, eave + 5, 'fireL', 3, 3); px(ctx, wx + 4, eave + 5, 'woodD', 1, 6); px(ctx, wx + 1, eave + 8, 'woodD', 7, 1);
-    px(ctx, wx - 1, eave + 12, 'woodD', 11, 1);
-    if (!thatch) { px(ctx, wx, eave + 13, 'grass', 9, 2); px(ctx, wx + 2, eave + 13, 'redL', 1, 1); px(ctx, wx + 6, eave + 13, 'goldL', 1, 1); } // flower box
+  for (let y = top; y < WALL_BOT; y++) px(ctx, HR - 3, y, 'mist');
+  const dx = Math.round(HW / 2) - 5;
+  px(ctx, dx - 1, WALL_BOT - 14, 'woodD', 12, 14);
+  px(ctx, dx, WALL_BOT - 13, thatch ? 'wood' : 'blueD', 10, 13);
+  px(ctx, dx, WALL_BOT - 13, thatch ? 'woodL' : 'blue', 10, 1);
+  px(ctx, dx + 4, WALL_BOT - 13, 'woodD', 1, 13);
+  px(ctx, dx + 7, WALL_BOT - 7, 'gold', 1, 2);
+  px(ctx, dx - 2, WALL_BOT + 1, 'stone', 14, 2); px(ctx, dx - 2, WALL_BOT + 1, 'mist', 14, 1);
+  const wy = Math.max(top + 4, WALL_BOT - 17);
+  for (const wx of [HL + 5, HR - 12]) {
+    px(ctx, wx, wy, 'woodD', 9, 8); px(ctx, wx + 1, wy + 1, 'fire', 7, 6); px(ctx, wx + 1, wy + 1, 'fireL', 3, 3); px(ctx, wx + 4, wy + 1, 'woodD', 1, 6); px(ctx, wx + 1, wy + 4, 'woodD', 7, 1);
+    px(ctx, wx - 1, wy + 8, 'woodD', 11, 1);
+    if (!thatch) { px(ctx, wx, wy + 9, 'grass', 9, 2); px(ctx, wx + 2, wy + 9, 'redL', 1, 1); px(ctx, wx + 6, wy + 9, 'goldL', 1, 1); }
   }
-  // --- roof: back slope (top strip), ridge, front slope (big)
-  for (let y = roofTop; y <= eave; y++) {
-    const inset = y < ridge ? Math.max(0, Math.round((ridge - y) * 0.4)) : 0;
-    for (let x = L + inset; x <= R - inset; x++) {
-      const edgeL = x <= L + inset + 1, edgeR = x >= R - inset - 1;
+  // hanging sign by the door
+  if (thatch) {
+    px(ctx, dx + 13, wy - 3, 'woodD', 8, 1); px(ctx, dx + 14, wy - 2, 'woodD', 1, 2); px(ctx, dx + 19, wy - 2, 'woodD', 1, 2);
+    px(ctx, dx + 13, wy, 'wood', 8, 7); px(ctx, dx + 15, wy + 1, 'gold', 3, 4); px(ctx, dx + 18, wy + 2, 'gold', 1, 2); px(ctx, dx + 15, wy + 1, 'white', 3, 1);
+  } else {
+    px(ctx, dx - 9, wy - 3, 'woodD', 8, 1); px(ctx, dx - 8, wy - 2, 'woodD', 1, 2); px(ctx, dx - 3, wy - 2, 'woodD', 1, 2);
+    px(ctx, dx - 9, wy, 'wood', 8, 7); px(ctx, dx - 7, wy + 2, 'redL', 3, 4); px(ctx, dx - 7, wy + 1, 'bone', 3, 1);
+  }
+}
+
+const TILE = { lit: 'redL', mid: 'red', dark: 'redD', cap: 'bone' };
+const STRAW = { lit: 'dirtL', mid: 'dirt', dark: 'dirtD', cap: 'woodL' };
+
+export function house(kind = 'shop') {
+  const [c, ctx] = makeCanvas(HW, HH);
+  const thatch = kind === 'tavern', P = thatch ? STRAW : TILE;
+  const top = 3, ridge = 7, eave = 31;
+  frontWall(ctx, eave + 1, kind);
+  // shadow the eave throws on the wall
+  for (let x = HL + 2; x <= HR - 2; x++) { px(ctx, x, eave + 1, 'slate'); px(ctx, x, eave + 2, 'stone'); px(ctx, x, eave + 3, x % 2 ? 'mist' : 'bone'); }
+  // the back slope: a thin dark band above the ridge
+  for (let y = top; y < ridge; y++) { const ins = 10 + (ridge - y); for (let x = HL + ins; x <= HR - ins; x++) px(ctx, x, y, y === top ? P.dark : P.mid); }
+  // the front slope: a trapezoid, narrow at the ridge, overhanging at the eave
+  for (let y = ridge; y <= eave; y++) {
+    const t = (y - ridge) / (eave - ridge);
+    const ins = Math.round((1 - t) * 9) - 2; // -2 at the eave: the overhang
+    const row = Math.floor(Math.pow(t, 0.75) * 6); // rows grow taller toward you
+    const rowStart = Math.ceil(ridge + Math.pow(row / 6, 1 / 0.75) * (eave - ridge));
+    for (let x = HL + ins; x <= HR - ins; x++) {
       let col;
       if (thatch) {
-        const streak = hash(x, Math.floor(y / 3), 41);
-        const back = y < ridge;
-        col = back ? (streak < 0.3 ? 'dirt' : 'dirtL') : streak < 0.18 ? 'dirtD' : streak < 0.6 ? 'dirt' : 'dirtL';
-        if (!back && (y - ridge) % 7 === 6 && hash(x, y, 42) < 0.7) col = 'dirtD'; // thatch layers
-        if (y === eave || (y === eave - 1 && x % 3 === 0)) col = 'dirtD';    // shaggy eave
+        const s = hash(x, Math.floor(y / 2), 41);
+        col = y - rowStart === 0 && hash(x, y, 42) < 0.8 ? P.dark : s < 0.2 ? P.dark : s < 0.65 ? P.mid : P.lit;
       } else {
-        const back = y < ridge;
-        const row = Math.floor((y - ridge) / 4);
         const off = (row % 2) * 3;
-        if (back) col = (x + y) % 5 === 0 ? 'red' : 'redL';
-        else if ((y - ridge) % 4 === 3) col = 'redD';
-        else if ((x + off) % 6 === 0) col = 'redD';
-        else col = y - ridge < 6 ? 'redL' : 'red';
-        if (y === eave) col = 'redD';
+        col = y === rowStart ? P.dark : (x + off) % (5 + Math.round(t * 2)) === 0 ? P.dark : t < 0.35 ? P.lit : P.mid;
       }
-      if (y === ridge) col = thatch ? 'woodL' : 'bone';
-      if (y === ridge - 1) col = thatch ? 'dirtL' : 'redL';
-      if (edgeL && y >= ridge) col = thatch ? 'dirtL' : 'redL';
-      if (edgeR) col = thatch ? 'dirtD' : 'redD';
+      if (x <= HL + ins + 1) col = P.lit;     // the lit hip on the left
+      if (x >= HR - ins - 1) col = P.dark;     // the shaded hip on the right
+      if (y === ridge) col = P.cap;          // ridge cap
       px(ctx, x, y, col);
     }
   }
-  // chimney (tavern) / sign (shop)
-  if (thatch) {
-    px(ctx, R - 14, roofTop + 2, 'slate', 7, 12); px(ctx, R - 14, roofTop + 2, 'stone', 7, 2); px(ctx, R - 13, roofTop + 4, 'night', 5, 1);
-    // hanging mug sign by the door
-    px(ctx, dx + 13, eave + 1, 'woodD', 8, 1); px(ctx, dx + 14, eave + 2, 'woodD', 1, 2); px(ctx, dx + 19, eave + 2, 'woodD', 1, 2);
-    px(ctx, dx + 13, eave + 4, 'wood', 8, 7); px(ctx, dx + 15, eave + 5, 'gold', 3, 4); px(ctx, dx + 18, eave + 6, 'gold', 1, 2); px(ctx, dx + 15, eave + 5, 'white', 3, 1);
-  } else {
-    px(ctx, dx - 9, eave + 1, 'woodD', 8, 1); px(ctx, dx - 8, eave + 2, 'woodD', 1, 2); px(ctx, dx - 3, eave + 2, 'woodD', 1, 2);
-    px(ctx, dx - 9, eave + 4, 'wood', 8, 7); px(ctx, dx - 7, eave + 6, 'redL', 3, 4); px(ctx, dx - 7, eave + 5, 'bone', 3, 1); // potion sign
-  }
+  // hip lines from the ridge ends down to the eave corners
+  for (let y = ridge; y <= eave; y++) { const t = (y - ridge) / (eave - ridge), ins = Math.round((1 - t) * 9) - 2; px(ctx, HL + ins + 2, y, thatch ? 'woodL' : 'redL'); px(ctx, HR - ins - 2, y, P.dark); }
+  // the eave: fascia board along the overhang
+  px(ctx, HL - 2, eave + 1, 'woodD', HR - HL + 5, 1);
+  if (thatch) for (let x = HL - 2; x <= HR + 2; x += 2) px(ctx, x, eave + 1, P.dark, 1, 2); // shaggy straw ends
+  // chimney (tavern), standing up through the roof
+  if (thatch) { px(ctx, HR - 16, 0, 'slate', 7, 14); px(ctx, HR - 16, 0, 'stone', 7, 2); px(ctx, HR - 15, 2, 'night', 5, 1); }
   outline(c, 'ink');
   return c;
 }
@@ -1186,27 +1195,29 @@ export function mill() {
   for (const [sx, sy] of [[L + 2, wallBot - 6], [L + 7, wallBot - 5]]) { px(ctx, sx, sy, 'sand', 5, 6); px(ctx, sx + 1, sy - 1, 'bone', 3, 1); px(ctx, sx + 4, sy + 1, 'dirtL', 1, 5); }
   for (let a = 0; a < 28; a++) { const t = (a / 28) * Math.PI * 2; px(ctx, Math.round(R - 7 + Math.cos(t) * 4.5), Math.round(wallBot - 5 + Math.sin(t) * 4.5), a % 4 ? 'stone' : 'mist'); }
   px(ctx, R - 8, wallBot - 6, 'slate', 2, 2);
-  // --- roof: steep slate, back slope, ridge, big front slope in staggered courses
-  for (let y = roofTop; y <= eave - 2; y++) {
-    const inset = y < ridge ? Math.max(0, Math.round((ridge - y) * 0.5)) : 0;
-    for (let x = L - 1 + inset; x <= R + 1 - inset; x++) {
-      const back = y < ridge, row = Math.floor((y - ridge) / 3), off = (row % 2) * 2;
-      let col = back ? ((x + y) % 4 === 0 ? 'blueD' : 'steelD')
-        : (y - ridge) % 3 === 2 ? 'blueD' : (x + off) % 4 === 0 ? 'steelD' : y - ridge < 8 ? 'steel' : 'steelD';
-      if (!back && y > ridge + 14 && hash(x, y, 79) < 0.025) col = 'mossD'; // a little moss low on the slates
-      if (y === ridge) col = 'steelL';
-      if (y === eave - 2) col = 'blueD';
-      if (x <= L + inset && y >= ridge) col = 'steelL';
-      if (x >= R - inset) col = 'blueD';
+  // --- roof: hipped slate like the cottages, narrowing to the ridge, courses growing toward the eave
+  const rTop = 6, rRidge = 11, rEave = eave - 1;
+  for (let y = rTop; y < rRidge; y++) { const ins = 10 + (rRidge - y); for (let x = L + ins; x <= R - ins; x++) px(ctx, x, y, y === rTop ? 'blueD' : 'steelD'); }
+  for (let y = rRidge; y <= rEave; y++) {
+    const t = (y - rRidge) / (rEave - rRidge), ins = Math.round((1 - t) * 9) - 2;
+    const row = Math.floor(Math.pow(t, 0.75) * 7), rowStart = Math.ceil(rRidge + Math.pow(row / 7, 1 / 0.75) * (rEave - rRidge)), off = (row % 2) * 3;
+    for (let x = L + ins; x <= R - ins; x++) {
+      let col = y === rowStart ? 'blueD' : (x + off) % (5 + Math.round(t * 2)) === 0 ? 'blueD' : t < 0.3 ? 'steelL' : t < 0.7 ? 'steel' : 'steelD';
+      if (y > rRidge + 16 && hash(x, y, 79) < 0.02) col = 'mossD'; // a little moss low on the slates
+      if (x <= L + ins + 1) col = 'steelL';
+      if (x >= R - ins - 1) col = 'blueD';
+      if (y === rRidge) col = 'bone';
       px(ctx, x, y, col);
     }
   }
+  for (let y = rRidge; y <= rEave; y++) { const t = (y - rRidge) / (rEave - rRidge), ins = Math.round((1 - t) * 9) - 2; px(ctx, L + ins + 2, y, 'steelL'); px(ctx, R - ins - 2, y, 'blueD'); }
+  px(ctx, L - 2, rEave + 1, 'woodD', R - L + 5, 1); // fascia along the overhang
   // dormer on the front slope
-  px(ctx, 13, ridge + 6, 'blueD', 10, 3); px(ctx, 14, ridge + 9, 'woodD', 8, 7); px(ctx, 15, ridge + 10, 'fire', 6, 5); px(ctx, 15, ridge + 10, 'fireL', 2, 2); px(ctx, 18, ridge + 10, 'woodD', 1, 5);
-  px(ctx, 12, ridge + 5, 'steelL', 12, 1);
-  // chimney and the weathervane (a little iron rooster)
-  px(ctx, R - 12, roofTop - 2, 'slate', 6, 12); px(ctx, R - 12, roofTop - 2, 'stone', 6, 2); px(ctx, R - 11, roofTop, 'night', 4, 1);
-  px(ctx, 19, 0, 'ink', 1, roofTop + 1); px(ctx, 16, 1, 'ink', 7, 1); px(ctx, 20, 2, 'ink', 3, 2); px(ctx, 16, 2, 'ink', 1, 1); px(ctx, 22, 1, 'ink', 1, 1);
+  px(ctx, 13, rRidge + 9, 'blueD', 10, 3); px(ctx, 14, rRidge + 12, 'woodD', 8, 7); px(ctx, 15, rRidge + 13, 'fire', 6, 5); px(ctx, 15, rRidge + 13, 'fireL', 2, 2); px(ctx, 18, rRidge + 13, 'woodD', 1, 5);
+  px(ctx, 12, rRidge + 8, 'steelL', 12, 1);
+  // chimney standing up through the roof, and the weathervane (a little iron rooster) on the ridge
+  px(ctx, R - 14, 1, 'slate', 6, 14); px(ctx, R - 14, 1, 'stone', 6, 2); px(ctx, R - 13, 3, 'night', 4, 1);
+  px(ctx, 22, 3, 'ink', 1, rRidge - 3); px(ctx, 19, 3, 'ink', 7, 1); px(ctx, 23, 1, 'ink', 3, 2); px(ctx, 19, 2, 'ink', 1, 1); px(ctx, 25, 0, 'ink', 1, 1);
   outline(c, 'ink');
   return c;
 }
