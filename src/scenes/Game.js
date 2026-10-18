@@ -435,7 +435,20 @@ export class Game extends Phaser.Scene {
   enterArea(id) {
     this.area = id;
     this.fitCameraBounds();
+    this.veilArea();
     this.events.emit('area', id);
+  }
+
+  // Inside a building, cave, dungeon or Tower floor, nothing beyond its own
+  // walls shows: the rest of the map (other interiors packed alongside) is
+  // painted over in the backdrop colour. Out in the overworld, no veil.
+  veilArea() {
+    const a = AREAS[this.area];
+    this.areaVeil ??= this.add.graphics().setDepth(99990);
+    const g = this.areaVeil.clear();
+    if (!a?.interior) return;
+    const x0 = a.x0 * TILE, y0 = a.y0 * TILE, x1 = (a.x1 + 1) * TILE, y1 = (a.y1 + 1) * TILE, F = 4000;
+    g.fillStyle(0x16121f, 1).fillRect(x0 - F, y0 - F, x1 - x0 + 2 * F, F).fillRect(x0 - F, y1, x1 - x0 + 2 * F, F).fillRect(x0 - F, y0, F, y1 - y0).fillRect(x1, y0, F, y1 - y0);
   }
 
   // Camera bounds = the area. An area smaller than the screen is centred:

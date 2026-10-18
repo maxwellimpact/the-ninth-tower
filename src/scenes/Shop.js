@@ -55,6 +55,14 @@ export class Shop extends Phaser.Scene {
 
   close() { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); }
 
+  // a line under the title saying what just happened (bought, sold, not enough gold)
+  toast(text, tint) {
+    this.toastTxt?.destroy();
+    const W = this.scale.width;
+    const t = this.toastTxt = this.add.bitmapText(Math.round(W / 2), 9, 'font', fitString(text, W - 200, 1)).setOrigin(0.5, 0).setTint(tint).setDepth(50);
+    this.tweens.add({ targets: t, alpha: 0, delay: 1400, duration: 500, onComplete: () => { if (this.toastTxt === t) this.toastTxt = null; t.destroy(); } });
+  }
+
   t(x, y, str, font = 'font', tint, maxW = 0, maxLines = 1) {
     const o = this.add.bitmapText(Math.round(x), Math.round(y), font, maxW > 0 ? fitString(str, maxW, maxLines) : String(str).toUpperCase());
     if (tint !== undefined) o.setTint(tint);
@@ -75,15 +83,19 @@ export class Shop extends Phaser.Scene {
       const out = W.shop.stock.map((s) => {
         const isPotion = !!CRAFT.consumables[s.id];
         const def = isPotion ? CRAFT.consumables[s.id] : CRAFT.materials[s.id];
-        return { icon: `icon_${s.id}`, name: def.name, sub: isPotion ? def.desc : 'CRAFTING MATERIAL', price: s.price, col: 0xd8d3e0, act: () => { if (isPotion) st.potions[s.id] = (st.potions[s.id] || 0) + 1; else st.materials[s.id] = (st.materials[s.id] || 0) + 1; } };
+        const have = (isPotion ? st.potions[s.id] : st.materials[s.id]) || 0;
+        return { key: `buy:${s.id}`, icon: `icon_${s.id}`, name: def.name, sub: `${isPotion ? def.desc : 'CRAFTING MATERIAL'}  -  YOU HAVE ${have}`, price: s.price, col: 0xd8d3e0, done: `+1 ${def.name}  (NOW ${have + 1})`, act: () => { if (isPotion) st.potions[s.id] = (st.potions[s.id] || 0) + 1; else st.materials[s.id] = (st.materials[s.id] || 0) + 1; } };
       });
       // Marla stocks the current tier's Common gear for everyone in the party
       const lv = Math.round(this.g.party.reduce((a, h) => a + h.level, 0) / this.g.party.length);
       const tier = tierForLevel(lv);
+      st.shopBought ??= {};
       for (const id of shopGear(st, tier)) {
+        if (st.shopBought[id]) continue; // bought: gone from the shelf until Marla's next tier of stock
         const it = items[id];
         out.push({ icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, tag: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()}`, cmp: { hero: it.hero, id }, price: gearPrice(tier), col: RARITY.common.col,
-          act: () => { const nid = id.replace('#shop', `#${Math.random().toString(36).slice(2, 7)}`); registerItem(nid); st.inventory.push(nid); } });
+          key: `gear:${id}`, done: `BOUGHT ${it.name}  -  IT'S IN YOUR BAG`,
+          act: () => { const nid = id.replace('#shop', `#${Math.random().toString(36).slice(2, 7)}`); registerItem(nid); st.inventory.push(nid); st.shopBought[id] = true; } });
       }
       return out;
     }
@@ -91,12 +103,12 @@ export class Shop extends Phaser.Scene {
     for (const id of new Set(st.inventory)) {
       const it = items[id];
       const who = it.hero && it.hero !== 'any' ? it.hero : null;
-      out.push({ icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, tag: `${who ? who.toUpperCase() : 'ANY'} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()}`, cmp: who && st.recruited.includes(who) ? { hero: who, id } : null, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
+      out.push({ key: `sell:${id}`, done: `SOLD ${itemName(id)}`, icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, tag: `${who ? who.toUpperCase() : 'ANY'} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()}`, cmp: who && st.recruited.includes(who) ? { hero: who, id } : null, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
     }
     for (const [k, m] of Object.entries(CRAFT.materials)) {
       if (!st.materials[k]) continue;
       const shopPrice = W.shop.stock.find((s) => s.id === k)?.price || 10;
-      out.push({ icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
+      out.push({ key: `sellmat:${k}`, done: `SOLD 1 ${m.name}  (${st.materials[k] - 1} LEFT)`, icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
     }
     return out;
   }
@@ -171,11 +183,18 @@ export class Shop extends Phaser.Scene {
       const label = `${e.sell ? '+' : ''}${e.price}G`;
       panel(lg, rx + w - 42, y + 5, 38, 13, can ? 0x2f5d3a : C.night, can ? 0x8cff8c : C.slate);
       this.t(rx + w - 23 - label.length * 2.5, y + 8, label, can ? 'fontGold' : 'fontPlain');
+      if (this.pressed?.key === e.key && this.time.now - this.pressed.t < 60) { // the row you just bought from / sold: a flash so the tap clearly landed
+        const fl = this.add.rectangle(rx, y, w, rowH - 3, 0xffffff, 0.55).setOrigin(0);
+        this.dyn.push(fl);
+        this.tweens.add({ targets: fl, alpha: 0, duration: 450 });
+      }
       this.btn(rx, y, w, rowH - 3, () => {
         if (e.sell) { st.gold += e.price; e.act(); audio.sfx('coin'); }
         else if (st.gold >= e.price) { st.gold -= e.price; e.act(); audio.sfx('coin'); audio.sfx('equip'); }
-        else { audio.sfx('click'); return; }
+        else { audio.sfx('click'); this.toast(`NOT ENOUGH GOLD - ${e.price}G`, 0xff7a7a); return; }
+        this.pressed = { key: e.key, t: this.time.now };
         this.render();
+        this.toast(e.done || (e.sell ? 'SOLD' : 'BOUGHT'), 0x8cff8c);
       });
     });
     const bottom = top + list.length * rowH;
