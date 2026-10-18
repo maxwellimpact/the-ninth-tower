@@ -508,6 +508,15 @@ export class Game extends Phaser.Scene {
   // Harvesting is a timed action: the hero swings a tool (pickaxe / sickle)
   // until the bar fills. Rarer materials take longer. Moving or getting hit
   // interrupts it.
+  // Where a hero stands to work a node: right beside it, on the side they came
+  // from (so the swing or the picking faces it), on open ground.
+  harvestSpot(n, h) {
+    const side = h.x < n.px ? -1 : 1;
+    const tries = [[side * 11, 2], [-side * 11, 2], [0, 11], [0, -9]];
+    for (const [dx, dy] of tries) { const x = n.px + dx, y = n.py + dy; if (!this.nav.solidAtPx(x, y)) return { x, y }; }
+    return null;
+  }
+
   harvest(n, h) {
     if (!n.ready) { this.floatText(n.px, n.py - 16, `REGROWS IN ${Math.ceil(n.t)}S`, 'fontPlain'); return; }
     if (!n.s || h.action) return;
@@ -1045,7 +1054,7 @@ export class Game extends Phaser.Scene {
     // Gathering nodes (sprites created once their biome art exists)
     this.nodes = W.nodes.map((n) => ({ ...n, px: n.x * TILE + 8, py: n.y * TILE + 8, ready: true, t: 0, s: null }));
     for (const n of this.nodes) {
-      n.o = this.addInteractable({ x: n.px, y: n.py, reach: 22, standOff: 12, h: 12, kind: 'node', node: n, interact: (h) => this.harvest(n, h) });
+      n.o = this.addInteractable({ x: n.px, y: n.py, reach: 22, standOff: 12, h: 12, kind: 'node', node: n, interact: (h) => this.harvest(n, h), approach: (h) => this.harvestSpot(n, h) });
     }
     // Townsfolk NPCs (sprites appear when interior art is loaded)
     this.npcs = W.npcs.map((n) => {

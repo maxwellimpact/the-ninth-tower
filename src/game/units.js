@@ -779,8 +779,10 @@ export class Hero extends Unit {
       return;
     }
     if (c && c.type === 'interact') {
-      if (dist(this, c.obj) < (c.obj.reach || 20)) { this.clearPath(); this.command = null; c.obj.interact(this, c.obj); return; }
-      if (!this.path) this.setGoal(c.obj.x, c.obj.y + (c.obj.standOff ?? 8));
+      // some things want you right beside them (a gathering node): walk to that spot first
+      const spot = c.spot ??= c.obj.approach?.(this);
+      if (spot ? dist(this, spot) < 3 : dist(this, c.obj) < (c.obj.reach || 20)) { this.clearPath(); this.command = null; c.obj.interact(this, c.obj); return; }
+      if (!this.path) this.setGoal(spot ? spot.x : c.obj.x, spot ? spot.y : c.obj.y + (c.obj.standOff ?? 8));
       if (!this.followPath(dt) && !this.path) { this.command = null; }
       return;
     }
