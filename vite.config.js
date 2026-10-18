@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execSync } from 'child_process';
+
+// the commit a build came from, shown small on the title screen (so a phone
+// still holding a cached older build is easy to spot)
+let BUILD = 'dev';
+try { BUILD = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* not a git checkout */ }
 
 // Dev-only: POST a data URL to /__snap?name=foo.png and it lands in
 // ./snapshots/foo.png. Used to pull sprite sheets / screenshots out of the
@@ -26,6 +32,7 @@ const snapshots = {
 export default defineConfig({
   base: './',
   plugins: [snapshots],
+  define: { __BUILD__: JSON.stringify(BUILD) },
   build: {
     rollupOptions: {
       input: { main: resolve(__dirname, 'index.html'), lab: resolve(__dirname, 'lab.html') },

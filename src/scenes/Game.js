@@ -3889,6 +3889,12 @@ export class Game extends Phaser.Scene {
     const dt = Math.min(0.05, deltaMs / 1000) * sp;
     const L = this.leader;
     const view = this.cameras.main.worldView;
+    // safety net: a companion standing in water (without the Tide Charm) or a wall, however it got there, steps back beside the leader
+    if (!this.busy && !this.loading && (this.stuckCheckT = (this.stuckCheckT || 0) + dt) > 1) {
+      this.stuckCheckT = 0;
+      const nav = this.nav, inBad = (h) => { const tx = Math.floor(h.x / TILE), ty = Math.floor(h.y / TILE); return this.canSwim ? nav.solid[ty * nav.w + tx] === 1 : nav.isSolid(tx, ty); };
+      if (this.party.some((h) => h !== L && !h.downed && !h.zipping && !h.lift && inBad(h))) this.settleParty();
+    }
     // up a lookout the view is zoomed out: stream terrain for the wider area (prefetched during the climb)
     // walking over to a lookout: start painting its wide view before the climb
     if (!this.onLookout) {

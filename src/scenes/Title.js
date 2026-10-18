@@ -37,7 +37,7 @@ export class Title extends Phaser.Scene {
     this.add.circle(tx, base - 94, 2, 0xe7a6ff);
 
     this.add.bitmapText(W / 2, 22, 'fontGold', 'THE NINTH TOWER').setOrigin(0.5).setScale(3);
-    this.add.bitmapText(W / 2, 42, 'fontPlain', 'WAVE 2 PREVIEW').setOrigin(0.5);
+    this.add.bitmapText(W / 2, 42, 'fontPlain', `BUILD ${typeof __BUILD__ === 'string' ? __BUILD__ : 'DEV'}`.toUpperCase()).setOrigin(0.5); // which build this is (a cached older one shows an older number)
     const save = loadState();
     if (save) this.saveMenu(save);
     else this.heroSelect();
