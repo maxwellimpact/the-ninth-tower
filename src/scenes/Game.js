@@ -234,6 +234,7 @@ export class Game extends Phaser.Scene {
         const o = this.nav.nearestOpen(ltx, lty + 2, 8) || this.nav.nearestOpen(ltx, lty, 8);
         if (o) this.party.forEach((h, i) => { h.x = o[0] * TILE + 8 + (i ? (i === 1 ? -10 : 10) : 0); h.y = o[1] * TILE + 8 + (i ? 8 : 0); h.lift = 0; h.sync(0); });
       }
+      this.settleParty();
       this.loading = false;
       this.busy = false;
       this.calmT = 1.5; // a moment to get bearings before anything nearby notices you
@@ -2945,6 +2946,7 @@ export class Game extends Phaser.Scene {
       },
     };
     this.prepareAt(tx, ty, ui, 2).then(() => {
+      this.settleParty();
       this.calmT = 1;
       if (curtain) curtain.done(); // fades over the camera fade-in
       onReady();
@@ -3058,8 +3060,32 @@ export class Game extends Phaser.Scene {
       this.fx.puff(h.x, h.y, 'spark');
     }
     this.setLeader(this.party.includes(L) ? L : this.party[0], true);
+    this.settleParty();
     this.events.emit('partyChanged');
     this.autosave('party');
+  }
+
+  // Companions placed around the leader (loading a save, a warp, a campfire
+  // swap) can land in water or a wall, or across water from the leader: move
+  // each one that did to the nearest open tile beside the leader instead.
+  settleParty() {
+    const L = this.leader, nav = this.nav;
+    if (!L || !nav) return;
+    const ltx = Math.floor(L.x / TILE), lty = Math.floor(L.y / TILE), taken = new Set([`${ltx},${lty}`]);
+    const ok = (tx, ty) => !nav.isSolid(tx, ty) && !taken.has(`${tx},${ty}`) && nav.lineClear(L.x, L.y, tx * TILE + 8, ty * TILE + 8, 2);
+    for (const h of this.party) {
+      if (h === L) continue;
+      const tx = Math.floor(h.x / TILE), ty = Math.floor(h.y / TILE);
+      if (!nav.isSolid(tx, ty) && nav.lineClear(L.x, L.y, h.x, h.y, 2)) { taken.add(`${tx},${ty}`); continue; }
+      let spot = null;
+      for (let r = 1; r <= 4 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        if (ok(ltx + dx, lty + dy)) spot = [ltx + dx, lty + dy];
+      }
+      if (!spot) spot = [ltx, lty]; // nowhere else: share the leader's tile rather than stand in the water
+      taken.add(`${spot[0]},${spot[1]}`);
+      h.x = spot[0] * TILE + 8 + (h.x % 2 ? 2 : -2); h.y = spot[1] * TILE + 8; h.lift = 0; h.clearPath(); h.sync(0);
+    }
   }
 
   talkFrog() {
