@@ -418,7 +418,7 @@ export function addPotions(state, p = {}) { for (const [k, n] of Object.entries(
 export const OUTER_REGIONS = ['marsh', 'gloam', 'cinder', 'frost'];
 export const outerWardsDown = (state) => OUTER_REGIONS.filter((r) => state.flags[`ward_${r}`]).length;
 export function regionBand(state, r) {
-  if (state.flags?.postgame) return [30, 35]; // after Malgrim: every band rises (C1)
+  if (state.flags?.postgame) return [26, 35]; // after Malgrim: every band rises, starting near the party and climbing with it to the cap (C1)
   if (!r) return [1, 9];
   // the Blight Basin and the Tower: floor 24 + 2 per outer stone still standing
   // (24-30 with all four down; 32 for an early attempt with none)

@@ -2255,7 +2255,7 @@ export class Game extends Phaser.Scene {
         this.scene.launch('Credits', { onDone: () => {
           this.scene.resume();
           this.flags.postgame = true;
-          this.events.emit('banner', 'THE WORLD IS YOURS', 'EVERY REGION NOW RISES TO LEVELS 30-35');
+          this.events.emit('banner', 'THE WORLD IS YOURS', 'EVERY REGION NOW RISES TO LEVELS 26-35');
           this.autosave('ending');
         } });
       }));

@@ -18,7 +18,7 @@
  "attackTokens": 2,
  "enemyHpGrowth": 0.25,
  "enemyDmgGrowth": 0.13,
- "enemyXpGrowth": 0.15,
+ "enemyXpGrowth": 0.22,
  "enemyGoldGrowth": 0.1,
  "overLevelGrace": 3,
  "overLevelPenalty": 0.25,

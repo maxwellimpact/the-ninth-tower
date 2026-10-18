@@ -35,7 +35,7 @@ const LINES = [
   ['AND YOU, FOR PLAYING', 'fontPlain'],
   ['', 'fontPlain'],
   ['THE WORLD STAYS OPEN.', 'fontGold'],
-  ['EVERY REGION NOW RISES TO LEVELS 30-35,', 'fontPlain'],
+  ['EVERY REGION NOW RISES TO LEVELS 26-35,', 'fontPlain'],
   ['AND HEXBORN REMNANTS ROAM THE LAND.', 'fontPlain'],
 ];
 
