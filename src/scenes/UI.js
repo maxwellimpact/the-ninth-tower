@@ -620,7 +620,8 @@ export class UI extends Phaser.Scene {
       this.trackTxt.setText([`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
     } else {
       this.trackTitle.setText(tstep ? `${tq.title(tid)}  ${tq.q(tid).s + 1}/${ERRANDS_N(tid)}` : '');
-      this.trackTxt.setText(tstep ? tq.stepText(tid) : '');
+      const steam = (game.state.steamT || 0) > 0 ? `STEAMED: +15% XP ${Math.ceil(game.state.steamT / 60)}M` : ''; // the steam house's soak
+      this.trackTxt.setText([tstep ? tq.stepText(tid) : '', steam].filter(Boolean).join('\n'));
     }
     const L = game.leader;
 

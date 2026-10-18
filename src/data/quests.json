@@ -3741,6 +3741,80 @@
     "A LANDING FOR THE FERRY. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN COMES."
    ],
    "folk": 10
+  },
+  {
+   "id": "bess",
+   "name": "BESS THE CURIO-MONGER",
+   "x": 40,
+   "y": 34,
+   "look": "bess",
+   "folk": 5,
+   "curio": true,
+   "voice": {
+    "pitch": 300,
+    "wave": "triangle",
+    "speed": 1
+   },
+   "lines": [
+    "FIVE OF YOU HOME AND I CAN FINALLY OPEN THE SHUTTERS. CURIOS! ODDMENTS! THINGS I CAN'T ENTIRELY EXPLAIN!",
+    "I GET NEW STOCK EVERY TIME YOU REST AT A FIRE. DON'T ASK WHERE FROM. I DON'T ASK YOU WHERE YOU GO."
+   ]
+  },
+  {
+   "id": "wynn",
+   "name": "FLETCHER WYNN",
+   "x": 47,
+   "y": 34,
+   "look": "wynn",
+   "folk": 15,
+   "minigame": "Archery",
+   "play": "SHOOT",
+   "fee": 15,
+   "voice": {
+    "pitch": 220,
+    "wave": "square",
+    "speed": 1
+   },
+   "lines": [
+    "FIFTEEN HOME. ENOUGH THAT SOMEONE WANTS TO SHOOT AT STRAW AGAIN, AND I'M THAT SOMEONE.",
+    "FIVE ARROWS. FIX THE SIGHT SIDE TO SIDE, THEN UP AND DOWN, THEN LET FLY. HIT GOLD FIVE TIMES AND MY THUMB RING IS YOURS."
+   ]
+  },
+  {
+   "id": "hilde",
+   "name": "HILDE OF THE STEAM HOUSE",
+   "x": 40,
+   "y": 42,
+   "look": "hilde",
+   "folk": 25,
+   "bath": true,
+   "voice": {
+    "pitch": 260,
+    "wave": "triangle",
+    "speed": 1
+   },
+   "lines": [
+    "TWENTY-FIVE OF US HOME, AND THE SPRING UNDER THE HOUSE STARTED STEAMING THE DAY THE LAST HEX BROKE. COINCIDENCE? PROBABLY NOT.",
+    "A SOAK MENDS EVERY ACHE, AND YOU'LL LEARN FASTER FOR A WHILE AFTER. TRUST ME."
+   ]
+  },
+  {
+   "id": "mayor",
+   "name": "MAYOR TOBIN",
+   "x": 47,
+   "y": 42,
+   "look": "mayor",
+   "folk": 30,
+   "mayorHouse": true,
+   "voice": {
+    "pitch": 180,
+    "wave": "square",
+    "speed": 1
+   },
+   "lines": [
+    "EVERY LAST ONE OF US, HOME. I'VE WRITTEN A SPEECH. IT'S FOUR HOURS LONG. YOU'VE EARNED A SHORTER VERSION.",
+    "BRIGHTWATER OWES YOU EVERYTHING. TAKE THE KEY TO THE TOWN. IT DOESN'T OPEN ANYTHING, BUT EVERYONE WILL KNOW YOU BY IT."
+   ]
   }
  ]
 }

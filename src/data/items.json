@@ -1403,5 +1403,29 @@
   "element": "shadow",
   "perk": "truths",
   "desc": "SHADOW. TURNS BACK ONE PROJECTILE EVERY 5S. MADE FROM THE SHARDS OF HIS MIRRORS, IT SHOWS ONLY WHAT'S REALLY THERE."
+ },
+ "fletchers_thumb_ring": {
+  "name": "FLETCHER'S THUMB RING",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@5",
+  "stats": {
+   "atk": 3,
+   "crit": 0.06
+  },
+  "desc": "+6% CRIT, +3 ATK. WYNN'S OWN, WORN SMOOTH BY FORTY YEARS OF BOWSTRINGS. FIVE GOLDS EARNED IT."
+ },
+ "key_brightwater": {
+  "name": "KEY TO BRIGHTWATER",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_luck@6",
+  "stats": {
+   "hp": 15
+  },
+  "perk": "brightkey",
+  "desc": "+10% XP AND GOLD FOR THE WHOLE PARTY. +15 HP. A BRASS KEY THE SIZE OF YOUR HAND. IT DOESN'T OPEN ANYTHING. EVERYONE KNOWS WHAT IT MEANS."
  }
 }

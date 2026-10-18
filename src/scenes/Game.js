@@ -11,14 +11,14 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { rollGearDrop, ensureItems, makeItem, tierForLevel } from '../game/itemgen.js';
+import { rollGearDrop, ensureItems, makeItem, tierForLevel, gearPrice } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
 import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS } from '../game/state.js';
+import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS, itemName, gemName } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
@@ -969,6 +969,13 @@ export class Game extends Phaser.Scene {
       this.tweens.add({ targets: glow, alpha: 0.06, scale: 0.9, duration: 220, yoyo: true, repeat: -1 });
       this.nav.block(c.x, c.y);
       this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
+      // a lazy thread of woodsmoke over every fire
+      const puff = this.time.addEvent({ delay: 600 + (c.x % 5) * 70, loop: true, callback: () => {
+        if (!this.cameras.main.worldView.contains(x, y)) return;
+        const p = this.add.circle(x + (Math.random() - 0.5) * 3, y - 8, 2, 0xb8b0c4, 0.5).setDepth(y + 40);
+        this.tweens.add({ targets: p, x: x + 4 + Math.random() * 6, y: y - 30 - Math.random() * 8, scale: 2.4, alpha: 0, duration: 2000, ease: 'Sine.easeOut', onComplete: () => p.destroy() });
+      } });
+      this.events.once('shutdown', () => puff.remove());
     }
     for (const s of W.signs) {
       const x = px(s.x), y = px(s.y);
@@ -1042,15 +1049,19 @@ export class Game extends Phaser.Scene {
       if (w.exit && !w.door) o.needsLight = true;
     }
     // Brightwater buildings
+    this.homes = {};
     for (const b of W.buildings) {
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
-      this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}`).setOrigin(0.5, 1).setDepth(by);
+      const shut = b.opens && this.folkCount() < b.opens; // a Brightwater home still boarded up
+      const img = this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}${shut ? '_shut' : ''}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
+      if (b.opens) this.addHome(b, img, bx, by);
+      if (b.kind === 'archery') for (const [dx, dy] of [[5, -1], [5, 2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
       const ch = CHIMNEYS[b.kind];
-      if (ch) { // a thread of chimney smoke, drifting off with the breeze
+      if (ch) { // a thread of chimney smoke, drifting off with the breeze (not from a cold, boarded-up chimney)
         const sx = bx + ch[0], sy = by + ch[1];
         const puff = this.time.addEvent({ delay: 520, loop: true, callback: () => {
-          if (!this.cameras.main.worldView.contains(sx, sy + 40)) return;
+          if (!this.cameras.main.worldView.contains(sx, sy + 40) || (b.opens && this.folkCount() < b.opens)) return;
           const s = this.add.circle(sx + (Math.random() - 0.5) * 2, sy, 2, 0xd8d3e0, 0.55).setDepth(by + 50);
           this.tweens.add({ targets: s, x: sx + 6 + Math.random() * 6, y: sy - 22 - Math.random() * 8, scale: 2.6, alpha: 0, duration: 2200, ease: 'Sine.easeOut', onComplete: () => s.destroy() });
         } });
@@ -2329,7 +2340,7 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(700 + Math.random() * 300, () => {
       const L = this.leader;
       this.tweens.add({ targets: c, x: L.x, y: L.y - 10, duration: 260, ease: 'Quad.easeIn', onComplete: () => {
-        c.destroy(); this.state.gold += (this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1) + (this.party.some((h) => h.hasPerk('signet')) && Math.random() < 0.15 ? 1 : 0); // Frog King's Signet: +15% audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
+        c.destroy(); this.state.gold += (this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1) + (this.party.some((h) => h.hasPerk('signet')) && Math.random() < 0.15 ? 1 : 0) + (this.party.some((h) => h.hasPerk('brightkey')) && Math.random() < 0.1 ? 1 : 0); // Frog King's Signet: +15% audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
       } });
     });
   }
@@ -2468,8 +2479,8 @@ export class Game extends Phaser.Scene {
       const [hx, hy] = saved ? homes[i] : [t.x, t.y];
       const x = px(hx), y = px(hy);
       const s = this.add.sprite(x, y, t.look, 'idle_down_0').setOrigin(0.5, 0.75).play(`${t.look}_idle_down`).setDepth(y);
-      this.add.image(x + 1, y + 1, 'shadow').setAlpha(0.2).setDepth(-4);
-      const f = { t, s, x, y, saved };
+      const sh = this.add.image(x + 1, y + 1, 'shadow').setAlpha(0.2).setDepth(-4);
+      const f = { t, s, x, y, saved, sh };
       if (!saved) {
         s.setTint(0xb48ce0);
         if (!this.textures.exists('hexRing')) { // drawn once: a live Graphics re-issues its ~200 commands every frame
@@ -2482,9 +2493,42 @@ export class Game extends Phaser.Scene {
         this.tweens.add({ targets: s, y: y - 2, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
       f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', interact: () => this.talkTownsfolk(f) });
-      this.nav.block(hx, hy);
+      if (saved) f.home = { x, y }, f.idleT = 1 + Math.random() * 5; // home again: they potter about
+      else this.nav.block(hx, hy);
       (this.townsfolk ??= []).push(f);
     });
+  }
+
+  // Rescued townsfolk potter about near their spot in Brightwater: a few steps
+  // somewhere open, a pause, a few steps back. They stop to face you when you're near.
+  updateTownsfolk(dt) {
+    const L = this.leader, view = this.cameras.main.worldView;
+    for (const f of this.townsfolk || []) {
+      if (!f.home || !f.s.visible || !view.contains(f.home.x, f.home.y)) continue;
+      const look = f.t.look, near = Math.hypot(L.x - f.x, L.y - f.y) < 40;
+      if (near || this.ui?.dialogOpen) { // stop and look at whoever came over
+        f.goal = null;
+        const dx = L.x - f.x, dy = L.y - f.y, v = Math.abs(dx) > Math.abs(dy) ? 'side' : dy > 0 ? 'down' : 'up';
+        if (f.s.anims.currentAnim?.key !== `${look}_idle_${v}`) f.s.play(`${look}_idle_${v}`);
+        f.s.setFlipX(v === 'side' && dx < 0);
+        continue;
+      }
+      if (!f.goal) {
+        if ((f.idleT -= dt) > 0) continue;
+        const a = Math.random() * Math.PI * 2, r = 10 + Math.random() * 26;
+        const gx = f.home.x + Math.cos(a) * r, gy = f.home.y + Math.sin(a) * r * 0.7;
+        if (this.nav.solidAtPx(gx, gy) || !this.nav.lineClear(f.x, f.y, gx, gy, 3)) { f.idleT = 1; continue; }
+        f.goal = { x: gx, y: gy };
+      }
+      const dx = f.goal.x - f.x, dy = f.goal.y - f.y, d = Math.hypot(dx, dy), sp = 18 * dt;
+      const v = Math.abs(dx) > Math.abs(dy) ? 'side' : dy > 0 ? 'down' : 'up';
+      if (d <= sp) { f.goal = null; f.idleT = 3 + Math.random() * 6; f.s.play(`${look}_idle_${v}`); continue; }
+      f.x += (dx / d) * sp; f.y += (dy / d) * sp;
+      if (f.s.anims.currentAnim?.key !== `${look}_walk_${v}`) f.s.play(`${look}_walk_${v}`);
+      f.s.setFlipX(v === 'side' && dx < 0).setPosition(f.x, f.y).setDepth(f.y);
+      f.sh.setPosition(f.x + 1, f.y + 1);
+      f.o.x = f.x; f.o.y = f.y;
+    }
   }
 
   // Free spots around the Brightwater hamlet for rescued townsfolk to live.
@@ -2550,9 +2594,11 @@ export class Game extends Phaser.Scene {
     });
     this.time.delayedCall(t.guard ? 3200 : 1400, () => {
       this.tweens.add({ targets: f.s, alpha: 0, x: f.x + 30, duration: 900, onComplete: () => f.s.setVisible(false) });
+      this.tweens.add({ targets: f.sh, alpha: 0, duration: 900 });
       this.removeInteractable(f.o);
       this.nav.unblock?.(Math.floor(f.x / TILE), Math.floor(f.y / TILE));
     });
+    this.openHomes(n);
     if (n >= 10 && !this.flags.bard) {
       this.flags.bard = true;
       this.time.delayedCall(5200, () => { this.events.emit('banner', 'THE BARD HAS COME HOME', 'TILLY PLAYS BY THE TAVERN DOOR - LISTEN FOR THE HARP'); music.setBard(true); audio.sfx('levelUp'); });
@@ -2708,6 +2754,94 @@ export class Game extends Phaser.Scene {
     this.events.emit('dialogue', [...intro, line(this.flags.wanderer ? 'STILL WALKING? GOOD. THE MAP NEEDS FEET.' : `I'VE PINNED EVERY LOOKOUT TOWER ON YOUR MAP. YOU'VE CLIMBED ${climbed} OF ${all}. CLIMB THEM ALL AND I'LL HAVE SOMETHING FOR YOU.`)]);
   }
 
+  // Brightwater's homes: boarded up until enough townsfolk are back, then open
+  // with a keeper and something worth coming for (DESIGN: townsfolk rewards).
+  addHome(b, img, bx, by) {
+    const KEEPER = { curio: 'bess', archery: 'wynn', bath: 'hilde', mayor: 'mayor' };
+    const home = { b, img, keeper: KEEPER[b.kind] };
+    this.homes[b.id] = home;
+    this.addInteractable({ x: bx, y: by - 4, reach: 26, standOff: 14, h: 18, kind: 'sign', interact: () => {
+      const n = this.folkCount();
+      if (n < b.opens) {
+        this.events.emit('dialogue', [{ who: b.name, text: `BOARDED UP. A NOTE ON THE DOOR: 'WE CAUGHT THE HEX. WE'LL BE BACK WHEN BRIGHTWATER IS.' (OPENS WITH ${b.opens} TOWNSFOLK HOME - ${n} SO FAR.)` }]);
+        return;
+      }
+      const k = this.quests.npc(home.keeper);
+      if (k) this.quests.talk(k);
+    } });
+  }
+
+  // a rescue brought the count to a home's number: it opens, there and then
+  openHomes(n) {
+    for (const home of Object.values(this.homes || {})) {
+      if (home.b.opens !== n) continue;
+      home.img.setTexture(`house_${home.b.kind}`);
+      this.time.delayedCall(6500, () => { this.events.emit('banner', `${home.b.name} IS OPEN`, `IN BRIGHTWATER - ${n} TOWNSFOLK HOME`); audio.sfx('unlock'); });
+    }
+  }
+
+  // Bess's curios: three things, new stock after every rest at a campfire
+  curioStock() {
+    const st = this.state, n = st.rests || 0;
+    if (st.curio?.n === n) return st.curio;
+    const lv = Math.round(this.party.reduce((a, h) => a + h.level, 0) / this.party.length), tier = tierForLevel(lv);
+    const hero = st.recruited[Math.floor(Math.random() * st.recruited.length)];
+    const gear = makeItem(hero, ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)], tier, 'rare');
+    const gems = Object.keys(CRAFT.gems.kinds), gem = `${gems[Math.floor(Math.random() * gems.length)]}3`;
+    const mat = [['starmetal', 1, 650], ['pearl', 3, 260], ['silver', 4, 220], ['scale', 3, 240]][Math.floor(Math.random() * 4)];
+    st.curio = { n, offers: [
+      { gear, price: Math.round(gearPrice(tier, 'rare') * 1.3) },
+      { gem, price: 300 },
+      { mat: mat[0], count: mat[1], price: mat[2] },
+    ], sold: [] };
+    return st.curio;
+  }
+
+  curioTalk(npc) {
+    const st = this.state, line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    const c = this.curioStock();
+    const label = (o) => o.gear ? itemName(o.gear) : o.gem ? gemName(o.gem) : `${o.count} ${CRAFT.materials[o.mat].name}`;
+    const intro = this.flags.metBess ? [] : this.quests.linesOf(npc).slice(0, 1).map(line);
+    this.flags.metBess = true;
+    const l = line(c.sold.length >= 3 ? 'SOLD OUT! REST AT A FIRE AND COME BACK. I\'LL HAVE FOUND SOMETHING.' : 'WHAT CATCHES YOUR EYE?');
+    l.choices = [...c.offers.map((o, i) => [c.sold.includes(i) ? `${label(o)} - SOLD` : `${label(o)} ${o.price}G`, () => {
+      if (c.sold.includes(i)) { this.curioTalk(npc); return; }
+      if (st.gold < o.price) { this.events.emit('dialogue', [line("THAT'S MORE THAN YOU'VE GOT, DEAR. IT'LL KEEP UNTIL YOUR NEXT REST.")]); return; }
+      st.gold -= o.price; c.sold.push(i); audio.sfx('coin');
+      if (o.gear) { gainItems(st, [o.gear]); this.events.emit('loot', { ids: [o.gear] }); }
+      if (o.gem) { st.gems[o.gem] = (st.gems[o.gem] || 0) + 1; this.floatText(this.leader.x, this.leader.y - 30, `+1 ${gemName(o.gem)}`, 'fontGold'); }
+      if (o.mat) { addMats(st, { [o.mat]: o.count }); this.floatText(this.leader.x, this.leader.y - 30, `+${o.count} ${CRAFT.materials[o.mat].name}`, 'fontGold'); }
+      this.events.emit('party'); this.autosave('curio');
+    }]), ['NOT NOW', () => {}]];
+    this.events.emit('dialogue', [...intro, l]);
+  }
+
+  // the steam house: a soak heals everyone and makes them quicker learners for a while
+  bathTalk(npc) {
+    const st = this.state, line = (t) => ({ who: npc.name, voice: npc.voice, text: t }), FEE = 40;
+    const intro = this.flags.metHilde ? [] : this.quests.linesOf(npc).map(line);
+    this.flags.metHilde = true;
+    const l = line((st.steamT || 0) > 0 ? `STILL STEAMING? YOU'VE ${Math.ceil(st.steamT / 60)} MINUTES OF IT LEFT. ANOTHER SOAK TOPS IT BACK UP.` : 'A SOAK? FORTY GOLD.');
+    l.choices = [[`SOAK (${FEE}G)`, () => {
+      if (st.gold < FEE) { this.events.emit('dialogue', [line('FORTY GOLD, LOVE. THE SPRING IS FREE, THE TOWELS ARE NOT.')]); return; }
+      st.gold -= FEE; st.steamT = 600; audio.sfx('heal');
+      for (const h of this.party) { if (h.downed) h.revive(1); h.hp = h.maxHp; this.fx.heal(h.x, h.y); }
+      this.events.emit('banner', 'A GOOD LONG SOAK', 'HP RESTORED  -  +15% XP FOR 10 MINUTES');
+      this.events.emit('party'); this.autosave('bath');
+    }], ['NOT NOW', () => {}]];
+    this.events.emit('dialogue', [...intro, l]);
+  }
+
+  // the mayor: the town's thanks, once
+  mayorTalk(npc) {
+    const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
+    if (this.flags.townKey) { this.events.emit('dialogue', [line('THE WHOLE TOWN, HOME. I STILL CAN\'T QUITE BELIEVE IT. DROP IN ANY TIME - THE KETTLE\'S ALWAYS ON.')]); return; }
+    this.flags.townKey = true;
+    gainItems(this.state, ['key_brightwater']); addMats(this.state, { starmetal: 2 }); this.state.gold += 1000;
+    this.autosave('mayor');
+    this.events.emit('dialogue', [...this.quests.linesOf(npc).map(line), line('AND A PURSE FROM ALL OF US - A THOUSAND GOLD AND TWO PIECES OF STARMETAL. DON\'T ARGUE. IT\'S BEEN VOTED.')], () => { this.events.emit('loot', { ids: ['key_brightwater'] }); this.events.emit('party'); });
+  }
+
   // Gizmo's repair: the mill wheel turns (and keeps turning on every visit).
   startMill(show = true) {
     const w = this.millWheel;
@@ -2734,6 +2868,7 @@ export class Game extends Phaser.Scene {
   }
 
   rest() {
+    this.state.rests = (this.state.rests || 0) + 1; // Bess restocks
     for (const h of this.party) { if (h.downed) h.revive(1); h.hp = h.maxHp; this.fx.heal(h.x, h.y); }
     audio.sfx('heal');
     this.autosave('rest');
@@ -2751,7 +2886,7 @@ export class Game extends Phaser.Scene {
     img.setTexture('chestOpen');
     audio.sfx('chest');
     this.fx.burst('gold', img.x, img.y - 10, 24);
-    this.state.gold += Math.round((c.gold || 0) * (this.party.some((h) => h.hasPerk('signet')) ? 1.15 : 1));
+    this.state.gold += Math.round((c.gold || 0) * (this.party.some((h) => h.hasPerk('signet')) ? 1.15 : 1) * (this.party.some((h) => h.hasPerk('brightkey')) ? 1.1 : 1));
     const loot = c.items || [];
     gainItems(this.state, loot);
     addMats(this.state, c.mats || {});
@@ -3929,6 +4064,7 @@ export class Game extends Phaser.Scene {
     const dt = Math.min(0.05, deltaMs / 1000) * sp;
     const L = this.leader;
     const view = this.cameras.main.worldView;
+    if (!this.busy && (this.state.steamT || 0) > 0) this.state.steamT = Math.max(0, this.state.steamT - dt);
     // safety net: a companion standing in water (without the Tide Charm) or a wall, however it got there, steps back beside the leader
     if (!this.busy && !this.loading && (this.stuckCheckT = (this.stuckCheckT || 0) + dt) > 1) {
       this.stuckCheckT = 0;
@@ -4032,6 +4168,7 @@ export class Game extends Phaser.Scene {
     this.quests.update(dt);
     this.updateHeat(dt);
     this.updateCold(dt);
+    this.updateTownsfolk(dt);
     this.updateChains(dt);
     this.updatePerks(dt);
     this.dungeon?.update(dt);

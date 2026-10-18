@@ -2945,6 +2945,42 @@
    "y": 268,
    "kind": "tower",
    "landmark": true
+  },
+  {
+   "id": "curio",
+   "x": 38,
+   "y": 33,
+   "kind": "curio",
+   "landmark": true,
+   "opens": 5,
+   "name": "BESS'S CURIOS"
+  },
+  {
+   "id": "archery",
+   "x": 45,
+   "y": 33,
+   "kind": "archery",
+   "landmark": true,
+   "opens": 15,
+   "name": "THE ARCHERY BUTTS"
+  },
+  {
+   "id": "bath",
+   "x": 38,
+   "y": 41,
+   "kind": "bath",
+   "landmark": true,
+   "opens": 25,
+   "name": "THE STEAM HOUSE"
+  },
+  {
+   "id": "mayor",
+   "x": 45,
+   "y": 41,
+   "kind": "mayor",
+   "landmark": true,
+   "opens": 30,
+   "name": "THE MAYOR'S HOUSE"
   }
  ],
  "breakables": [

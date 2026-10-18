@@ -615,8 +615,11 @@ export class Hero extends Unit {
   }
 
   gainXp(n) {
-    const hs = this.hs;
+    const hs = this.hs, sc = this.scene;
     if (hs.level >= tuning.levelCap) { hs.xp = 0; return; }
+    if ((sc.state?.steamT || 0) > 0) n *= 1.15; // a soak at the steam house
+    if (sc.party?.some((h) => h.hasPerk?.('brightkey'))) n *= 1.1; // the Key to Brightwater
+    n = Math.round(n);
     hs.xp += n;
     if (hs.xp >= xpToNext(hs.level)) {
       hs.xp -= xpToNext(hs.level);

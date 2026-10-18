@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Archery } from './scenes/Archery.js';
 import { audio } from './audio/synth.js';
 import { Boot } from './scenes/Boot.js';
 import { Loading } from './scenes/Loading.js';
@@ -40,7 +41,7 @@ const game = new Phaser.Game({
   zoom: f.zoom,
   scale: { mode: Phaser.Scale.NONE },
   input: { activePointers: 2 },
-  scene: [Boot, Title, Game, UI, Menu, WorldMap, Shop, Minigame, FrogRace, FxLab, Loading, Credits],
+  scene: [Boot, Title, Game, UI, Menu, WorldMap, Shop, Minigame, FrogRace, Archery, FxLab, Loading, Credits],
 });
 
 // Phaser stops requesting frames if anything throws inside the loop, which

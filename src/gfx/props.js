@@ -431,48 +431,71 @@ export function lootBag(rarityColor = 'goldL') {
 // an overhanging eave with a fascia board and the shadow it throws, and the
 // plastered, timbered front wall with the door bottom-centre. Footprint is 3
 // tiles wide. The tavern's chimney smokes (CHIMNEYS).
-export const CHIMNEYS = { tavern: [11, -64], mill: [13, -77] }; // smoke spout, from the sprite's bottom-centre
+export const CHIMNEYS = { tavern: [11, -64], bath: [11, -64], mill: [13, -77] }; // smoke spout, from the sprite's bottom-centre
 const HW = 56, HH = 64, HL = 3, HR = HW - 4, WALL_BOT = HH - 3;
 
-// plaster + timber front wall, windows, door, step (shared with the current look)
-function frontWall(ctx, top, kind) {
-  const thatch = kind === 'tavern';
+// Each cottage's look: roof, door colour, the sign that says what's inside,
+// flower boxes, a chimney. The Brightwater homes that open as townsfolk come
+// home also have a boarded-up version (house(kind, true)).
+const ROOFS = {
+  tile: { lit: 'redL', mid: 'red', dark: 'redD', cap: 'bone', hip: 'redL' },
+  thatch: { lit: 'dirtL', mid: 'dirt', dark: 'dirtD', cap: 'woodL', hip: 'woodL', straw: true },
+  slate: { lit: 'steelL', mid: 'steel', dark: 'blueD', cap: 'bone', hip: 'steelL' },
+  moss: { lit: 'grassL', mid: 'leaf', dark: 'leafD', cap: 'mossL', hip: 'grassL' },
+};
+const HOUSES = {
+  shop: { roof: 'tile', door: ['blueD', 'blue'], sign: 'potion', flowers: true },
+  tavern: { roof: 'thatch', door: ['wood', 'woodL'], sign: 'mug', chimney: true },
+  curio: { roof: 'moss', door: ['purpD', 'purp'], sign: 'gem', flowers: true },
+  archery: { roof: 'thatch', door: ['wood', 'woodL'], sign: 'target' },
+  bath: { roof: 'slate', door: ['blueD', 'blue'], sign: 'steam', chimney: true },
+  mayor: { roof: 'tile', door: ['purpD', 'purp'], sign: 'crest', flowers: true, flag: true },
+};
+
+// hanging signs, 8x7, drawn at (x, y)
+function hangSign(ctx, x, y, sign) {
+  px(ctx, x, y - 3, 'woodD', 8, 1); px(ctx, x + 1, y - 2, 'woodD', 1, 2); px(ctx, x + 6, y - 2, 'woodD', 1, 2);
+  px(ctx, x, y, 'wood', 8, 7);
+  if (sign === 'potion') { px(ctx, x + 2, y + 2, 'redL', 3, 4); px(ctx, x + 2, y + 1, 'bone', 3, 1); }
+  if (sign === 'mug') { px(ctx, x + 2, y + 1, 'gold', 3, 4); px(ctx, x + 5, y + 2, 'gold', 1, 2); px(ctx, x + 2, y + 1, 'white', 3, 1); }
+  if (sign === 'gem') { px(ctx, x + 3, y + 1, 'purpL', 2, 1); px(ctx, x + 2, y + 2, 'purpL', 4, 2); px(ctx, x + 3, y + 4, 'purp', 2, 1); px(ctx, x + 3, y + 2, 'white'); }
+  if (sign === 'target') { px(ctx, x + 2, y + 1, 'bone', 4, 5); px(ctx, x + 3, y + 2, 'redL', 2, 3); px(ctx, x + 1, y + 3, 'bone', 1, 1); px(ctx, x + 6, y + 3, 'bone', 1, 1); }
+  if (sign === 'steam') { px(ctx, x + 1, y + 4, 'blueL', 6, 2); px(ctx, x + 2, y + 1, 'bone', 1, 2); px(ctx, x + 4, y + 2, 'bone', 1, 2); px(ctx, x + 6, y + 1, 'bone', 1, 2); }
+  if (sign === 'crest') { px(ctx, x + 2, y + 1, 'gold', 4, 4); px(ctx, x + 3, y + 5, 'gold', 2, 1); px(ctx, x + 3, y + 2, 'redL', 2, 2); }
+}
+
+// plaster + timber front wall, windows, door, step; boarded: planks over it all, the windows dark
+function frontWall(ctx, top, cfg, boarded) {
   for (let y = top; y <= WALL_BOT; y++) for (let x = HL + 2; x <= HR - 2; x++) {
     const beam = x === HL + 2 || x === HR - 2 || x === Math.round(HW / 2) - 9 || x === Math.round(HW / 2) + 8 || y === WALL_BOT;
-    px(ctx, x, y, beam ? 'woodD' : (x * 7 + y * 3) % 23 === 0 ? 'mist' : 'bone');
+    px(ctx, x, y, beam ? 'woodD' : (x * 7 + y * 3) % 23 === 0 ? 'mist' : boarded && (x * 3 + y * 5) % 17 === 0 ? 'stone' : 'bone');
   }
   for (let y = top; y < WALL_BOT; y++) px(ctx, HR - 3, y, 'mist');
   const dx = Math.round(HW / 2) - 5;
   px(ctx, dx - 1, WALL_BOT - 14, 'woodD', 12, 14);
-  px(ctx, dx, WALL_BOT - 13, thatch ? 'wood' : 'blueD', 10, 13);
-  px(ctx, dx, WALL_BOT - 13, thatch ? 'woodL' : 'blue', 10, 1);
+  px(ctx, dx, WALL_BOT - 13, cfg.door[0], 10, 13);
+  px(ctx, dx, WALL_BOT - 13, cfg.door[1], 10, 1);
   px(ctx, dx + 4, WALL_BOT - 13, 'woodD', 1, 13);
   px(ctx, dx + 7, WALL_BOT - 7, 'gold', 1, 2);
   px(ctx, dx - 2, WALL_BOT + 1, 'stone', 14, 2); px(ctx, dx - 2, WALL_BOT + 1, 'mist', 14, 1);
   const wy = Math.max(top + 4, WALL_BOT - 17);
   for (const wx of [HL + 5, HR - 12]) {
-    px(ctx, wx, wy, 'woodD', 9, 8); px(ctx, wx + 1, wy + 1, 'fire', 7, 6); px(ctx, wx + 1, wy + 1, 'fireL', 3, 3); px(ctx, wx + 4, wy + 1, 'woodD', 1, 6); px(ctx, wx + 1, wy + 4, 'woodD', 7, 1);
+    px(ctx, wx, wy, 'woodD', 9, 8);
+    if (boarded) { px(ctx, wx + 1, wy + 1, 'night', 7, 6); for (let i = 0; i < 7; i++) { px(ctx, wx + 1 + i, wy + 1 + Math.round(i * 5 / 6), 'wood'); px(ctx, wx + 7 - i, wy + 1 + Math.round(i * 5 / 6), 'woodL'); } }
+    else { px(ctx, wx + 1, wy + 1, 'fire', 7, 6); px(ctx, wx + 1, wy + 1, 'fireL', 3, 3); px(ctx, wx + 4, wy + 1, 'woodD', 1, 6); px(ctx, wx + 1, wy + 4, 'woodD', 7, 1); }
     px(ctx, wx - 1, wy + 8, 'woodD', 11, 1);
-    if (!thatch) { px(ctx, wx, wy + 9, 'grass', 9, 2); px(ctx, wx + 2, wy + 9, 'redL', 1, 1); px(ctx, wx + 6, wy + 9, 'goldL', 1, 1); }
+    if (cfg.flowers) { px(ctx, wx, wy + 9, boarded ? 'dirtD' : 'grass', 9, 2); if (!boarded) { px(ctx, wx + 2, wy + 9, 'redL', 1, 1); px(ctx, wx + 6, wy + 9, 'goldL', 1, 1); } }
   }
-  // hanging sign by the door
-  if (thatch) {
-    px(ctx, dx + 13, wy - 3, 'woodD', 8, 1); px(ctx, dx + 14, wy - 2, 'woodD', 1, 2); px(ctx, dx + 19, wy - 2, 'woodD', 1, 2);
-    px(ctx, dx + 13, wy, 'wood', 8, 7); px(ctx, dx + 15, wy + 1, 'gold', 3, 4); px(ctx, dx + 18, wy + 2, 'gold', 1, 2); px(ctx, dx + 15, wy + 1, 'white', 3, 1);
-  } else {
-    px(ctx, dx - 9, wy - 3, 'woodD', 8, 1); px(ctx, dx - 8, wy - 2, 'woodD', 1, 2); px(ctx, dx - 3, wy - 2, 'woodD', 1, 2);
-    px(ctx, dx - 9, wy, 'wood', 8, 7); px(ctx, dx - 7, wy + 2, 'redL', 3, 4); px(ctx, dx - 7, wy + 1, 'bone', 3, 1);
-  }
+  if (boarded) { // two planks nailed across the door
+    for (let i = 0; i < 12; i++) { px(ctx, dx - 1 + i, WALL_BOT - 11 + Math.round(i * 0.35), 'woodL', 1, 2); px(ctx, dx - 1 + i, WALL_BOT - 4 - Math.round(i * 0.35), 'wood', 1, 2); }
+  } else if (cfg.sign) hangSign(ctx, cfg.sign === 'mug' || cfg.sign === 'target' || cfg.sign === 'steam' ? dx + 13 : dx - 9, wy, cfg.sign);
 }
 
-const TILE = { lit: 'redL', mid: 'red', dark: 'redD', cap: 'bone' };
-const STRAW = { lit: 'dirtL', mid: 'dirt', dark: 'dirtD', cap: 'woodL' };
-
-export function house(kind = 'shop') {
+export function house(kind = 'shop', boarded = false) {
+  const cfg = HOUSES[kind] || HOUSES.shop, P = ROOFS[cfg.roof], thatch = !!P.straw;
   const [c, ctx] = makeCanvas(HW, HH);
-  const thatch = kind === 'tavern', P = thatch ? STRAW : TILE;
   const top = 3, ridge = 7, eave = 31;
-  frontWall(ctx, eave + 1, kind);
+  frontWall(ctx, eave + 1, cfg, boarded);
   // shadow the eave throws on the wall
   for (let x = HL + 2; x <= HR - 2; x++) { px(ctx, x, eave + 1, 'slate'); px(ctx, x, eave + 2, 'stone'); px(ctx, x, eave + 3, x % 2 ? 'mist' : 'bone'); }
   // the back slope: a thin dark band above the ridge
@@ -486,25 +509,26 @@ export function house(kind = 'shop') {
     for (let x = HL + ins; x <= HR - ins; x++) {
       let col;
       if (thatch) {
-        const s = hash(x, Math.floor(y / 2), 41);
-        col = y - rowStart === 0 && hash(x, y, 42) < 0.8 ? P.dark : s < 0.2 ? P.dark : s < 0.65 ? P.mid : P.lit;
+        const sh = hash(x, Math.floor(y / 2), 41);
+        col = y - rowStart === 0 && hash(x, y, 42) < 0.8 ? P.dark : sh < 0.2 ? P.dark : sh < 0.65 ? P.mid : P.lit;
       } else {
         const off = (row % 2) * 3;
         col = y === rowStart ? P.dark : (x + off) % (5 + Math.round(t * 2)) === 0 ? P.dark : t < 0.35 ? P.lit : P.mid;
       }
+      if (boarded && hash(x, y, 43) < 0.04) col = P.dark; // a few slipped tiles
       if (x <= HL + ins + 1) col = P.lit;     // the lit hip on the left
-      if (x >= HR - ins - 1) col = P.dark;     // the shaded hip on the right
-      if (y === ridge) col = P.cap;          // ridge cap
+      if (x >= HR - ins - 1) col = P.dark;    // the shaded hip on the right
+      if (y === ridge) col = P.cap;           // ridge cap
       px(ctx, x, y, col);
     }
   }
   // hip lines from the ridge ends down to the eave corners
-  for (let y = ridge; y <= eave; y++) { const t = (y - ridge) / (eave - ridge), ins = Math.round((1 - t) * 9) - 2; px(ctx, HL + ins + 2, y, thatch ? 'woodL' : 'redL'); px(ctx, HR - ins - 2, y, P.dark); }
+  for (let y = ridge; y <= eave; y++) { const t = (y - ridge) / (eave - ridge), ins = Math.round((1 - t) * 9) - 2; px(ctx, HL + ins + 2, y, P.hip); px(ctx, HR - ins - 2, y, P.dark); }
   // the eave: fascia board along the overhang
   px(ctx, HL - 2, eave + 1, 'woodD', HR - HL + 5, 1);
   if (thatch) for (let x = HL - 2; x <= HR + 2; x += 2) px(ctx, x, eave + 1, P.dark, 1, 2); // shaggy straw ends
-  // chimney (tavern), standing up through the roof
-  if (thatch) { px(ctx, HR - 16, 0, 'slate', 7, 14); px(ctx, HR - 16, 0, 'stone', 7, 2); px(ctx, HR - 15, 2, 'night', 5, 1); }
+  if (cfg.chimney) { px(ctx, HR - 16, 0, 'slate', 7, 14); px(ctx, HR - 16, 0, 'stone', 7, 2); px(ctx, HR - 15, 2, 'night', 5, 1); }
+  if (cfg.flag) { px(ctx, 12, 0, 'woodD', 1, 9); px(ctx, 13, 0, boarded ? 'stone' : 'gold', 6, 4); if (!boarded) px(ctx, 14, 1, 'redL', 2, 2); } // the town banner on the ridge
   outline(c, 'ink');
   return c;
 }
@@ -1287,5 +1311,17 @@ export function blightPatch(seed = 0, W = 64, H = 40) {
     px(ctx, tx, ty - 2, 'slate', 1, 3); px(ctx, tx - 2, ty - 1, 'slate', 1, 2); px(ctx, tx + 2, ty - 1, 'stone', 1, 2);
   }
   if (hash(seed, 9, 332) < 0.5) { const bx = Math.round(cx + (hash(seed, 8, 333) - 0.5) * W * 0.4), by = Math.round(cy + 3); px(ctx, bx, by, 'bone', 4, 1); px(ctx, bx - 1, by - 1, 'bone', 1, 3); px(ctx, bx + 4, by - 1, 'bone', 1, 3); }
+  return c;
+}
+
+// A straw archery butt on a little trestle, its painted face toward you (the range by Wynn's house).
+export function strawButt() {
+  const [c, ctx] = makeCanvas(22, 26);
+  px(ctx, 4, 16, 'woodD', 2, 10); px(ctx, 16, 16, 'woodD', 2, 10); px(ctx, 3, 22, 'wood', 16, 2); // trestle
+  shadedBlob(ctx, 11, 11, 9, 9, ['dirtD', 'dirt', 'dirtL', 'sand']); // the straw boss
+  for (const [r, col] of [[7, 'bone'], [5, 'blue'], [3, 'redL'], [1, 'gold']]) for (let a = 0; a < 40; a++) { const t = (a / 40) * Math.PI * 2; for (let rr = r - 1; rr <= r; rr += 0.5) px(ctx, Math.round(11 + Math.cos(t) * rr), Math.round(11 + Math.sin(t) * rr * 0.95), col); }
+  px(ctx, 10, 10, 'gold', 2, 2);
+  px(ctx, 14, 6, 'woodD', 1, 4); px(ctx, 13, 5, 'bone', 3, 1); // an arrow in it
+  outline(c, 'ink');
   return c;
 }

@@ -137,12 +137,22 @@ export class QuestManager {
     if (npc.shop) { this.shopTalk(npc); return; }
     if (npc.vendor) { this.vendorTalk(npc); return; }
     if (npc.ferry) { sc.ferryTalk(npc); return; }
+    if (npc.curio) { sc.curioTalk(npc); return; }
+    if (npc.bath) { sc.bathTalk(npc); return; }
+    if (npc.mayorHouse) { sc.mayorTalk(npc); return; }
     if (npc.minigame) {
       // a game host: their pitch the first time, then straight to the offer
       const said = this.linesOf(npc);
       const lines = (npc.metHost ? said.slice(-1) : said).map((t) => this.line(npc, t));
       npc.metHost = true;
-      lines[lines.length - 1].choices = [[`RACE (${RACE_BET}G)`, () => sc.openOverlay(npc.minigame)], ['NOT NOW', () => {}]];
+      const fee = npc.fee; // a game that takes its fee up front (the frog races take a bet inside instead)
+      lines[lines.length - 1].choices = [[`${npc.play || 'RACE'} (${fee || RACE_BET}G)`, () => {
+        if (fee) {
+          if (this.state.gold < fee) { sc.events.emit('dialogue', [this.line(npc, `${fee} GOLD A ROUND, FRIEND. COME BACK WHEN YOUR PURSE IS HEAVIER.`)]); return; }
+          this.state.gold -= fee; audio.sfx('coin'); sc.events.emit('party');
+        }
+        sc.openOverlay(npc.minigame);
+      }], ['NOT NOW', () => {}]];
       sc.events.emit('dialogue', lines);
       return;
     }

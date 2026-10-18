@@ -130,6 +130,11 @@ export const FOLK = {
   marek: folk('marek', 'brann', { head: 'helm_iron@1', body: 'plate_guard@1', weapon: 'sword_long@1' }), // the Basin's last watcher
   bjorna: folk('bjorna', 'brann', { head: 'kerchief@3', body: 'apron_brown@4' }), // the Rimewatch innkeeper (once Frosthelm is free)
   aldric: folk('aldric', 'brann', { head: 'helm_lion@6', body: 'plate_guard@6' }), // the Royal Armorer (five stones)
+  // Brightwater's homes, opened as the townsfolk come back
+  bess: folk('bess', 'pip', { head: 'hat_star@6', body: 'robe_phoenix@4' }), // the curio-monger
+  wynn: folk('wynn', 'wren', { head: 'cap_ranger@4', body: 'leathers_ranger@2', weapon: 'bow_long@4' }), // the fletcher
+  hilde: folk('hilde', 'pip', { head: 'kerchief@6', body: 'apron_blue@3' }), // keeps the steam house
+  mayor: folk('mayor', 'brann', { head: 'helm_lion@3', body: 'robe_scholar@6' }), // Mayor Tobin
   ferryman: folk('ferryman', 'oake', { head: 'hood_monk@3', body: 'jacket_leather@3', weapon: 'staff_oak@1' }), // the lake's boatman (30 townsfolk)
   kaari: folk('kaari', 'wren', { head: 'hood_ranger@5', body: 'furs_hide@2', weapon: 'bow_hunting@3' }), // Rimewatch's warden
 };

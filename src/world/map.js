@@ -283,6 +283,7 @@ export function buildWorld() {
   rect(20, 27, 22, 29, T.HOUSE);
   // the watermill on the lake's west shore, its wheel in a short mill race cut from the lake
   rect(9, 17, 11, 19, T.HOUSE);
+  for (const b of W.buildings || []) if (b.opens) rect(b.x - 1, b.y - 2, b.x + 1, b.y, T.HOUSE); // the homes that open as townsfolk come back
   for (const [x, y] of [[12, 17], [12, 18], [13, 18], [14, 18], [12, 19], [13, 19], [14, 19], [15, 19], [16, 19]]) set(x, y, T.WATER);
   wall(38, 20, 39, 21); wall(48, 21, 50, 21); // collapsed house corners in the ruins
   set(47, 25, T.STAIRS); // steps down to the Undercroft
