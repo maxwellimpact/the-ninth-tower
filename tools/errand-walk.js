@@ -133,13 +133,13 @@ export async function run(id) {
         if (!n) note.problem = `npc ${s.npc} not found`;
         else if (n.hiddenNow) note.problem = `npc ${s.npc} hidden`;
       } else if (s.type === 'kill') {
-        const where = W.groups.filter((gr) => gr.units.some((u) => !s.kind || u[0] === s.kind));
+        const kinds = [].concat(s.kind || []), where = W.groups.filter((gr) => gr.units.some((u) => !kinds.length || kinds.includes(u[0])));
         note.worldGroups = where.length;
         if (!where.length) note.problem = `no world group has ${s.kind}`;
-        const gp = where[0]?.units.find((u) => !s.kind || u[0] === s.kind);
+        const gp = where[0]?.units.find((u) => !kinds.length || kinds.includes(u[0]));
         if (gp) await moveTo(sc, gp[1], gp[2] + 2);
         for (let k = 0; k < s.count + 2 && sc.quests.q(id).s === sIdx; k++) {
-          const f = sc.spawnEnemy(s.kind || 'goblin', sc.leader.x + 40, sc.leader.y, true);
+          const f = sc.spawnEnemy(kinds[0] || 'goblin', sc.leader.x + 40, sc.leader.y, true);
           f.damage(f.maxHp * 3, sc.leader); await wait(sc, 4);
         }
       } else if (s.type === 'gather') {

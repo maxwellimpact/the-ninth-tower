@@ -466,7 +466,7 @@ export class QuestManager {
   onKill(e) {
     for (const id of this.active()) {
       const s = this.step(id);
-      if (s?.type === 'kill' && (!s.kind || s.kind === e.kind)) { this.q(id).n++; if (this.q(id).n >= s.count) this.advance(id); }
+      if (s?.type === 'kill' && (!s.kind || [].concat(s.kind).includes(e.kind))) { this.q(id).n++; if (this.q(id).n >= s.count) this.advance(id); }
     }
   }
 
@@ -744,7 +744,7 @@ export class QuestManager {
   // Places a kill or gather step can be done: world groups with that foe, and
   // gathering nodes of that material (or foes that drop it), as tile points.
   sources(s) {
-    if (s.type === 'kill') return W.groups.flatMap((g) => g.units.filter((u) => u[0] === s.kind).map((u) => ({ x: u[1], y: u[2] })));
+    if (s.type === 'kill') return W.groups.flatMap((g) => g.units.filter((u) => [].concat(s.kind).includes(u[0])).map((u) => ({ x: u[1], y: u[2] })));
     if (s.type === 'gather') {
       const nodes = W.nodes.filter((n) => n.kind === s.mat).map((n) => ({ x: n.x, y: n.y }));
       if (nodes.length) return nodes;

@@ -7,13 +7,11 @@ import { fitString } from './textfit.js';
 import { freshFor, skillsReady, xpToNext } from '../game/state.js';
 import { GLYPHS } from '../gfx/font.js';
 import { HP_WARN, HP_CRIT } from './Game.js';
-import QD from '../data/quests.json';
 
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, stone: 0x6e6a87, gold: 0xf2c14e, goldL: 0xfff0a0, hp: 0x73b25a, hpMid: 0xf2c14e, hpLow: 0xec6a5e, bone: 0xd8d3e0, ult: 0x6f93e0, ultFull: 0xfff0a0, xp: 0xc8a0ff, boss: 0xc0394b };
 export const RARITY = { common: { col: 0xd8d3e0, label: 'COMMON' }, fine: { col: 0x6fd3a0, label: 'FINE' }, rare: { col: 0x6f93e0, label: 'RARE' }, unique: { col: 0xf2c14e, label: 'UNIQUE' }, legendary: { col: 0xff9a3c, label: 'LEGENDARY' } };
 
 // Marker colours shared by the minimap and the world map.
-const ERRANDS_N = (id) => QD.errands[id]?.steps.length || 1; // steps in an errand (HUD tracker: "2/3")
 export const MARK = { chest: 0xf2c14e, camp: 0xff7b2e, recruit: 0x8cff8c, door: 0xe7a6ff, npc: 0x6fd3a0, post: 0xc4cfe2, boss: 0xb24ce6, node: 0x4e9ad0, quest: 0xffffff, fly: 0xfff06a };
 
 // green "+" badge: this hero has skill points to spend (matches the menu's rank-up button)
@@ -287,7 +285,6 @@ export class UI extends Phaser.Scene {
     panel(this.mmFrame, this.mmX - 1, this.mmY - 1, this.MM.w + 2, this.MM.h + 2, 0x2b2140, 0x6e6a87);
     this.coin.setPosition(W - 102, 8 + T0);
     this.goldTxt.setPosition(W - 92, 9 + T0);
-    this.toast.setPosition(W - 8, 72);
     const tw = Math.max(this.MM.w + 30, Math.min(160, W - 100));
     this.trackTitle.setPosition(W - 6, this.mmY + this.MM.h + 4);
     this.trackTxt.setPosition(W - 6, this.mmY + this.MM.h + 13).setMaxWidth(tw);
@@ -445,15 +442,15 @@ export class UI extends Phaser.Scene {
   // over the action. Stacks if several drop at once.
   smallLoot(n, it, r) {
     const right = this.W - 6 - (this.pad?.r || 0);
-    const y = this.mmY + this.MM.h + 26 + (this.smallLootN || 0) * 12;
-    this.smallLootN = (this.smallLootN || 0) + 1;
+    const y = this.mmY + this.MM.h + 26 + (this.smallLoots?.length || 0) * 12; // update() keeps the stack under the tracker
     const img = this.add.image(right, y, itemTex(this, n.id)).setOrigin(1, 0.5).setScale(0.75).setDepth(40);
     // outlined white text (like the LV labels) so it reads over any ground
     const t = this.add.bitmapText(right - 14, y - 3, 'font', fitString(`+ ${it.name}`, Math.min(130, this.W - 120))).setOrigin(1, 0).setDepth(40);
-    const objs = [img, t];
+    const objs = [img, t], line = { img, t };
+    (this.smallLoots ||= []).push(line);
     for (const o of objs) o.setAlpha(0);
     this.tweens.add({ targets: objs, alpha: 1, duration: 150 });
-    this.tweens.add({ targets: objs, alpha: 0, delay: 1800, duration: 300, onComplete: () => { for (const o of objs) o.destroy(); this.smallLootN = Math.max(0, this.smallLootN - 1); } });
+    this.tweens.add({ targets: objs, alpha: 0, delay: 1800, duration: 300, onComplete: () => { for (const o of objs) o.destroy(); this.smallLoots = this.smallLoots.filter((l) => l !== line); } });
     this.time.delayedCall(250, () => this.nextLoot());
   }
 
@@ -619,10 +616,14 @@ export class UI extends Phaser.Scene {
       this.trackTitle.setText(dk.def.name);
       this.trackTxt.setText([`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
     } else {
-      this.trackTitle.setText(tstep ? `${tq.title(tid)}  ${tq.q(tid).s + 1}/${ERRANDS_N(tid)}` : '');
+      this.trackTitle.setText(tstep ? tq.title(tid) : ''); // no step fraction: next to a kill count ("3/6") a "1/2" read as the count
       const steam = (game.state.steamT || 0) > 0 ? `STEAMED: +15% XP ${Math.ceil(game.state.steamT / 60)}M` : ''; // the steam house's soak
       this.trackTxt.setText([tstep ? tq.stepText(tid) : '', steam].filter(Boolean).join('\n'));
     }
+    // the SAVED notice and pickup lines stack under the tracker, however many lines it has right now
+    let lootTop = this.trackTxt.text ? this.trackTxt.y + this.trackTxt.height + 9 : this.trackTitle.text ? this.trackTitle.y + 17 : this.mmY + this.MM.h + 9;
+    if (this.toast.alpha > 0) { this.toast.setPosition(this.trackTxt.x, lootTop - 3); lootTop += 12; }
+    (this.smallLoots || []).forEach((o, i) => { const y = lootTop + i * 12; o.img.y = y; o.t.y = y - 3; });
     const L = game.leader;
 
     const open = this.combatBarOpen(time);

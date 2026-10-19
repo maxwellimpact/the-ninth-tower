@@ -180,7 +180,7 @@
    "giver": "board",
    "region": "vale",
    "offer": [
-    "NOTICE: HEX GOBLINS ARE RAIDING THE VALE ROADS. THE TAVERN PAYS FOR EVERY SIX DRIVEN OFF. - BRUNO"
+    "NOTICE: GOBLINS ARE RAIDING THE VALE ROADS. THE TAVERN PAYS FOR EVERY SIX DRIVEN OFF - ARCHERS COUNT. - BRUNO"
    ],
    "accept": "TAKE THE NOTICE.",
    "thanks": [
@@ -189,8 +189,11 @@
    "steps": [
     {
      "type": "kill",
-     "text": "DEFEAT HEX GOBLINS",
-     "kind": "goblin",
+     "text": "DEFEAT GOBLINS",
+     "kind": [
+      "goblin",
+      "archer"
+     ],
      "count": 6
     },
     {
