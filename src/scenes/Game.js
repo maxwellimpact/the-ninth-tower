@@ -1555,7 +1555,8 @@ export class Game extends Phaser.Scene {
   tapFeedback(x, y, ring, target, size = 1.4) {
     this.fx.ring(x, y, ring, size);
     if (!TAP_FLASH) return;
-    const spr = target?.sprite?.active ? target.sprite : this.spriteAt(x, y - (target?.h || 12) / 2);
+    const own = target?.sprite?.active ? target.sprite : target?.node?.s?.active ? target.node.s : null; // a harvest node flashes its own rock or plant
+    const spr = own || this.spriteAt(x, y - (target?.h || 12) / 2, x, y);
     if (!spr) return;
     // a white copy of its current frame laid over it, fading out: the real sprite (its tint, its animation) is untouched
     const f = this.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name).setOrigin(spr.originX, spr.originY)
@@ -1564,16 +1565,19 @@ export class Game extends Phaser.Scene {
   }
 
   // The world sprite drawn at a spot (props, NPCs, levers): the topmost small one there, never a hero.
-  spriteAt(x, y) {
+  // With an anchor (the tapped thing's foot), the one standing closest to it wins,
+  // so a tree whose canopy hangs over a rock doesn't flash instead of the rock.
+  spriteAt(x, y, ax = null, ay = null) {
     const heroes = new Set(this.party.map((h) => h.sprite));
-    let best = null;
+    let best = null, bd = Infinity;
     for (const o of this.children.list) {
       if ((o.type !== 'Sprite' && o.type !== 'Image') || !o.visible || o.alpha < 0.2 || o.depth < -20 || heroes.has(o) || !o.frame) continue;
       const w = o.displayWidth, h = o.displayHeight;
       if (w > 96 || h > 96) continue; // ground, terrain chunks, big overlays
       const left = o.x - w * o.originX, top = o.y - h * o.originY;
       if (x < left - 3 || x > left + w + 3 || y < top - 3 || y > top + h + 3) continue;
-      if (!best || o.depth > best.depth) best = o;
+      if (ax !== null) { const d = Math.hypot(o.x - ax, o.y - ay); if (d < bd) { bd = d; best = o; } }
+      else if (!best || o.depth > best.depth) best = o;
     }
     return best;
   }
