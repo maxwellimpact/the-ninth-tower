@@ -761,21 +761,29 @@ export class Game extends Phaser.Scene {
     this.heat = { level: heat, salve: st.salveT || 0 };
     if (!heat) return;
     if (st.salveT > 0) { st.salveT = Math.max(0, st.salveT - dt); if (st.salveT === 0) this.bark(L, "THE SALVE'S WORN OFF. THE HEAT'S BACK."); return; }
-    if (!this.flags.heatWarned) { this.flags.heatWarned = true; this.bark(L, "IT'S SWELTERING. WE WON'T LAST LONG OUT HERE WITHOUT SOMETHING FOR THE HEAT."); }
+    if (!this.flags.heatWarned) { this.flags.heatWarned = true; this.bark(L, "THIS HEAT IS COOKING US. AN EMBER SALVE WOULD KEEP IT OFF - QUARTERMASTER COAL AT EMBERWATCH SELLS THEM - OR HEATPROOF GEAR."); }
     this.heatT = (this.heatT ?? 1.5) - dt;
     if (this.heatT > 0) return;
     this.heatT = 3;
     for (const h of this.party) {
-      if (h.downed || !h.alive || h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.hasPerk?.('emberheart') || h.stats?.passives?.includes('heatproof')) continue;
+      if (h.downed || !h.alive || this.heatproof(h)) continue;
       const lvl = Math.max(heat, this.inHeat(h.x, h.y));
       const floor = h.maxHp * 0.15;
       if (h.hp <= floor) continue;
-      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.05 : 0.03)));
+      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.08 : 0.05))); // enough to feel: a full bar is down to the floor in about a minute
       h.hp -= amt;
       h.flash?.(80);
-      this.floatText(h.x, h.y - 30, lvl === 2 ? 'SCORCHED' : 'HEAT', 'fontPlain', 0xffa060);
+      this.floatText(h.x, h.y - 30, `${lvl === 2 ? 'SCORCHED' : 'HEAT'} -${amt}`, 'fontPlain', 0xffa060);
     }
     this.cameras.main.flash(120, 255, 120, 40, false, null);
+  }
+
+  heatproof(h) { return h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.hasPerk?.('emberheart') || h.stats?.passives?.includes('heatproof'); }
+  coldproof(h) { return h.hasTrait?.('coldproof') || h.hasPerk?.('frostward') || h.stats?.passives?.includes('coldproof'); }
+  // the badlands' heat or the snow's cold is wearing at this hero right now (no salve / tonic, no gear for it)
+  exposed(h) {
+    const st = this.state;
+    return (this.heat?.level > 0 && !(st.salveT > 0) && !this.heatproof(h)) || (this.cold?.level > 0 && !(st.tonicT > 0) && !this.coldproof(h));
   }
 
   // ============================================================ cold
@@ -798,19 +806,19 @@ export class Game extends Phaser.Scene {
     this.cold = { level: cold, tonic: st.tonicT || 0, region: this.areaRect() === AREAS.overworld && biomeAt(Math.floor(L.x / TILE), Math.floor(L.y / TILE)) === 'frost' };
     if (!cold) return;
     if (st.tonicT > 0) { st.tonicT = Math.max(0, st.tonicT - dt); if (st.tonicT === 0) this.bark(L, "THE TONIC'S WORN OFF. I CAN'T FEEL MY TOES."); return; }
-    if (!this.flags.coldWarned) { this.flags.coldWarned = true; this.bark(L, "IT'S BITTER UP HERE. WE WON'T LAST LONG IN THIS COLD WITHOUT SOMETHING WARMING."); }
+    if (!this.flags.coldWarned) { this.flags.coldWarned = true; this.bark(L, "THIS COLD IS EATING AT US. A FROST TONIC WOULD KEEP IT OFF - THEY SELL THEM AT RIMEWATCH - OR COLDPROOF GEAR."); }
     this.coldT = (this.coldT ?? 1.5) - dt;
     if (this.coldT > 0) return;
     this.coldT = 3;
     for (const h of this.party) {
-      if (h.downed || !h.alive || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward') || h.stats?.passives?.includes('coldproof')) continue;
+      if (h.downed || !h.alive || this.coldproof(h)) continue;
       const lvl = Math.max(cold, this.inCold(h.x, h.y));
       const floor = h.maxHp * 0.15;
       if (h.hp <= floor) continue;
-      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.05 : 0.03)));
+      const amt = Math.min(h.hp - floor, Math.round(h.maxHp * (lvl === 2 ? 0.08 : 0.05)));
       h.hp -= amt;
       h.flash?.(80);
-      this.floatText(h.x, h.y - 30, lvl === 2 ? 'FREEZING' : 'COLD', 'fontPlain', 0x9fd8ff);
+      this.floatText(h.x, h.y - 30, `${lvl === 2 ? 'FREEZING' : 'COLD'} -${amt}`, 'fontPlain', 0x9fd8ff);
     }
     this.cameras.main.flash(120, 150, 190, 255, false, null);
   }
@@ -999,7 +1007,9 @@ export class Game extends Phaser.Scene {
     }
     for (const c of W.chests) {
       const x = px(c.x), y = px(c.y);
-      const img = this.add.image(x, y + 4, this.flags[`chest_${c.id}`] ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y);
+      const done = this.flags[`chest_${c.id}`];
+      // a treasure under the floor shows as what you'd actually see: a cracked flagstone with water below
+      const img = c.look === 'cistern' ? this.add.image(x, y, done ? 'cisternDived' : 'cistern').setDepth(-30) : this.add.image(x, y + 4, done ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y);
       this.nav.block(c.x, c.y);
       this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, img, h) });
     }
@@ -3088,10 +3098,12 @@ export class Game extends Phaser.Scene {
 
   openChest(c, img, h) {
     const flag = `chest_${c.id}`;
-    if (c.needs && !this.flags[flag] && !this.state.relics.includes(c.needs)) { this.events.emit('dialogue', [{ who: 'CHEST', text: c.locked || 'IT WON\'T OPEN. NOT YET.' }]); return; } // a relic opens it (C8)
-    if (this.flags[flag]) { this.events.emit('dialogue', [{ who: 'CHEST', text: "IT'S EMPTY. YOU ALREADY LOOTED IT. SHAMELESS." }]); return; }
+    const crack = c.look === 'cistern', who = crack ? 'CRACKED FLOOR' : 'CHEST';
+    if (c.needs && !this.flags[flag] && !this.state.relics.includes(c.needs)) { this.events.emit('dialogue', [{ who, text: c.locked || 'IT WON\'T OPEN. NOT YET.' }]); return; } // a relic opens it (C8)
+    if (this.flags[flag]) { this.events.emit('dialogue', [{ who, text: crack ? 'JUST DARK WATER NOW. WE TOOK WHAT WAS DOWN THERE.' : "IT'S EMPTY. YOU ALREADY LOOTED IT. SHAMELESS." }]); return; }
     this.flags[flag] = true;
-    img.setTexture('chestOpen');
+    if (crack) { img.setTexture('cisternDived'); this.fx.burst('foam', img.x, img.y, 14); audio.sfx('squish'); this.bark(h, c.dive || 'DOWN WE GO... GOT IT!'); } // diving for it
+    else img.setTexture('chestOpen');
     audio.sfx('chest');
     this.fx.burst('gold', img.x, img.y - 10, 24);
     this.state.gold += Math.round((c.gold || 0) * (this.party.some((h) => h.hasPerk('signet')) ? 1.15 : 1) * (this.party.some((h) => h.hasPerk('brightkey')) ? 1.1 : 1));
@@ -4442,7 +4454,7 @@ export class Game extends Phaser.Scene {
     if (this.calmFor > 2) for (const h of this.party) {
       if (!h.alive) continue;
       if (h.downed) { if (this.calmFor > 4) { h.revive(0.2); } continue; }
-      if (h.hp < h.maxHp) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.03 * dt);
+      if (h.hp < h.maxHp && !this.exposed(h)) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.03 * dt); // no catching your breath while the heat or cold is on you (it used to cancel them out)
     }
     music.setCombat(this.combatHold > 0);
 

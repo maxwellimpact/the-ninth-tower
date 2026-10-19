@@ -31,6 +31,23 @@ function bolt(sc, x0, y0, x1, y1) {
 }
 
 const engagedNear = (sc, p, r) => sc.enemies.filter((e) => e.alive && e.engaged && dist(e, p) < r);
+// A spot to land near a target for a dash, leap or shadow step: the first of
+// the offsets (in the target's frame: +along = beyond it, away from the hero)
+// that is open ground the leader can actually walk to - never a pocket behind
+// a wall, across water or up on a ledge the party can't reach. null: nowhere.
+function landing(sc, h, target, offsets) {
+  const [nx, ny] = norm(target.x - h.x, target.y - h.y), L = sc.leader || h;
+  for (const [along, side] of offsets) {
+    const x = target.x + nx * along - ny * side, y = target.y + ny * along + nx * side;
+    if (sc.nav.solidAtPx(x, y)) continue;
+    const path = sc.nav.find(L.x, L.y, x, y, 2500);
+    const end = path?.[path.length - 1];
+    if (end && Math.hypot(end.x - x, end.y - y) < 12) return { x, y };
+  }
+  return null;
+}
+const AROUND = (d) => [[d, 0], [d * 0.7, d * 0.7], [d * 0.7, -d * 0.7], [0, d], [0, -d], [-d * 0.7, d * 0.7], [-d * 0.7, -d * 0.7], [-d, 0]];
+
 const attackers = (sc, h, r = 40) => sc.enemies.filter((e) => e.alive && e.target === h && dist(e, h) < r);
 const tough = (e) => e && (e.boss || e.elite || e.maxHp >= 200);
 const inDanger = (sc, x, y, pad = 0) => sc.dangers.some((z) => Math.hypot(x - z.x, y - z.y) < z.r + pad);
@@ -298,8 +315,9 @@ export const SKILL_FX = {
       const sc = h.scene;
       if (!target || dist(h, target) > 85) return false;
       const [nx, ny] = norm(target.x - h.x, target.y - h.y);
-      let bx = target.x + nx * 8, by = target.y + ny * 8;
-      if (sc.nav.solidAtPx(bx, by)) { bx = target.x - nx * 8; by = target.y - ny * 8; }
+      const spot = landing(sc, h, target, AROUND(8)); // behind it if she can, else round its side - only somewhere the party can reach
+      if (!spot) return false;
+      const bx = spot.x, by = spot.y;
       const ox = h.x, oy = h.y, lift = h.sprite.y - h.y;
       const VANISH = 0.12, ARRIVE = 0.26, SHOWN = 0.34, STAB = 0.34;
       h.clearPath();
@@ -555,7 +573,9 @@ export const SKILL_FX = {
     cast(h, { target, m }) {
       const sc = h.scene;
       if (!target || dist(h, target) > 125) return false;
-      const ox = h.x, oy = h.y, tx = target.x - (target.x - h.x) * 0.15, ty = target.y + 6;
+      const spot = landing(sc, h, target, [[-dist(h, target) * 0.15, 6], ...AROUND(10)]);
+      if (!spot) return false;
+      const ox = h.x, oy = h.y, tx = spot.x, ty = spot.y;
       h.invuln = Math.max(h.invuln, 0.5);
       h.zipping = true;
       h.act('leap', 0.55, 'dodge');
@@ -1201,8 +1221,9 @@ export const SKILL_FX = {
       if (!target || dist(h, target) > 120) return false;
       const [nx, ny] = norm(target.x - h.x, target.y - h.y);
       const sx = h.x, sy = h.y;
-      let ex = target.x + nx * 18, ey = target.y + ny * 18;
-      if (sc.nav.solidAtPx(ex, ey)) { ex = target.x - nx * 10; ey = target.y - ny * 10; }
+      const spot = landing(sc, h, target, [[18, 0], ...AROUND(10)]);
+      if (!spot) return false;
+      const ex = spot.x, ey = spot.y;
       // everything along the line gets cut
       const seg = Math.hypot(ex - sx, ey - sy) || 1;
       for (const e of sc.enemies) {

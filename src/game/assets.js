@@ -74,6 +74,7 @@ export const GROUPS = {
       s.textures.addCanvas('barrel', P.barrel());
       s.textures.addCanvas('chest', P.chest(false));
       s.textures.addCanvas('chestOpen', P.chest(true));
+      s.textures.addCanvas('cistern', P.cisternCrack(false)); s.textures.addCanvas('cisternDived', P.cisternCrack(true));
       s.textures.addCanvas('post', P.grapplePost());
       s.textures.addCanvas('clawmarks', P.clawMarks());
       s.textures.addCanvas('iceblock', P.iceBlock());

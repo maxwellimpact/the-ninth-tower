@@ -2099,11 +2099,13 @@
    "x": 169,
    "y": 135,
    "needs": "tide",
-   "locked": "A CISTERN VAULT UNDER THE CHAPEL FLOOR, FLOODED TO THE BRIM. SOMETHING GLINTS AT THE BOTTOM. WE'D HAVE TO SWIM DOWN.",
+   "locked": "A CRACK IN THE CHAPEL FLOOR. BELOW IT, A FLOODED CISTERN, FULL TO THE BRIM - AND SOMETHING GLINTS AT THE BOTTOM. WE'D HAVE TO SWIM DOWN FOR IT.",
    "items": [
     "aegis_of_dawn"
    ],
-   "gold": 90
+   "gold": 90,
+   "look": "cistern",
+   "dive": "DEEP BREATH... DOWN WE GO. GOT IT - SOMETHING WRAPPED IN OILCLOTH!"
   },
   {
    "id": "fenmill",
@@ -4623,7 +4625,7 @@
    "id": "toby",
    "name": "SER TOBY",
    "look": "piet",
-   "x": 136,
+   "x": 138,
    "y": 30,
    "quirk": "I CAN ONLY WALK IN SQUARES. LEFT, UP, RIGHT, DOWN. I'VE BEEN CIRCLING THIS ROCK FOR DAYS.",
    "home": "I WALKED HERE IN A STRAIGHT LINE. GLORIOUS."
@@ -4683,8 +4685,8 @@
    "id": "gruff",
    "name": "GRUFF THE COOPER",
    "look": "tam",
-   "x": 130,
-   "y": 120,
+   "x": 133,
+   "y": 124,
    "quirk": "I FLOAT A LITTLE WHEN I'M HAPPY. I HAVEN'T FLOATED IN WEEKS.",
    "home": "LOOK! I'M FLOATING! ...AN INCH. IT COUNTS."
   },
@@ -4935,8 +4937,8 @@
    "id": "corwin",
    "name": "CORWIN",
    "look": "tam",
-   "x": 140,
-   "y": 20,
+   "x": 141,
+   "y": 19,
    "quirk": "EVERY DOOR I OPEN LEADS BACK OUTSIDE. I HAVEN'T BEEN INDOORS IN A MONTH. I MISS CEILINGS.",
    "home": "I WALKED INTO A HOUSE TODAY AND I WAS IN A HOUSE. I SAT UNDER THE CEILING FOR AN HOUR."
   },

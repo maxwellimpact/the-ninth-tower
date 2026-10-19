@@ -216,6 +216,23 @@ export function barrel() {
   return c;
 }
 
+// A cracked flagstone with flooded dark water showing through (the monastery's
+// cistern): something glints down there until you've dived for it. Lies flat on
+// whatever floor it's set in, 20x14.
+export function cisternCrack(dived = false) {
+  const [c, ctx] = makeCanvas(20, 14);
+  // the broken slab's rim, a little lighter than the floor round it
+  for (const [x, y, w] of [[3, 1, 13], [1, 2, 18], [0, 3, 20], [0, 4, 20], [0, 5, 20], [0, 6, 20], [0, 7, 20], [0, 8, 20], [1, 9, 19], [1, 10, 18], [2, 11, 16], [4, 12, 11]]) px(ctx, x, y, 'stone', w, 1);
+  // the hole: a jagged gap down to black water
+  for (const [x, y, w] of [[7, 3, 5], [5, 4, 9], [4, 5, 12], [3, 6, 13], [4, 7, 12], [5, 8, 10], [6, 9, 7], [8, 10, 3]]) px(ctx, x, y, 'waterD', w, 1);
+  if (dived) { px(ctx, 5, 5, 'water', 3, 1); px(ctx, 10, 7, 'water', 4, 1); px(ctx, 7, 9, 'water', 2, 1); } // just ripples now
+  else { px(ctx, 9, 6, 'goldL', 2, 1); px(ctx, 10, 5, 'white'); px(ctx, 6, 7, 'water', 2, 1); px(ctx, 12, 4, 'water', 2, 1); } // a glint at the bottom
+  // cracks running off into the slab
+  for (const [x, y] of [[2, 4], [1, 5], [16, 5], [17, 4], [18, 3], [15, 8], [16, 9], [3, 9], [10, 11], [11, 12]]) px(ctx, x, y, 'slate');
+  outline(c, 'ink');
+  return c;
+}
+
 export function chest(open = false) {
   const [c, ctx] = makeCanvas(16, 16);
   if (!open) {
@@ -1223,7 +1240,11 @@ export function blightPatch(seed = 0, W = 64, H = 40) {
     const tx = Math.round(cx + (hash(seed, i, 330) - 0.5) * W * 0.6), ty = Math.round(cy + (hash(seed, i, 331) - 0.5) * H * 0.5);
     px(ctx, tx, ty - 2, 'slate', 1, 3); px(ctx, tx - 2, ty - 1, 'slate', 1, 2); px(ctx, tx + 2, ty - 1, 'stone', 1, 2);
   }
-  if (hash(seed, 9, 332) < 0.5) { const bx = Math.round(cx + (hash(seed, 8, 333) - 0.5) * W * 0.4), by = Math.round(cy + 3); px(ctx, bx, by, 'bone', 4, 1); px(ctx, bx - 1, by - 1, 'bone', 1, 3); px(ctx, bx + 4, by - 1, 'bone', 1, 3); }
+  if (hash(seed, 9, 332) < 0.35) { // a small skull half-sunk in it (a lone bone read as a letter "I")
+    const bx = Math.round(cx + (hash(seed, 8, 333) - 0.5) * W * 0.4), by = Math.round(cy + 2);
+    px(ctx, bx, by, 'bone', 5, 3); px(ctx, bx + 1, by - 1, 'bone', 3, 1); px(ctx, bx + 1, by + 3, 'mist', 3, 1);
+    px(ctx, bx + 1, by + 1, 'ink'); px(ctx, bx + 3, by + 1, 'ink'); px(ctx, bx + 4, by, 'mist', 1, 3);
+  }
   return c;
 }
 

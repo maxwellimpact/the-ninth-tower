@@ -307,6 +307,9 @@ export class DungeonKit {
     const tex = `dgDoor_${kind}_${vertical ? 'v' : 'h'}`;
     const s = vertical ? this.sc.add.image(cx, cy, tex).setDepth(cy + 16) : this.sc.add.image(cx, (Math.max(...ys) + 1) * TILE, tex).setOrigin(0.5, 1).setDepth((Math.max(...ys) + 1) * TILE);
     const d = { kind, tiles, vertical, cx, cy, s, tex, rooms: new Set(), unlocked: kind === 'shutter', closed: null };
+    // a side door, once open, is just its two jambs: the top one has to sit behind
+    // anyone walking through, the bottom one in front - so the bottom is its own piece
+    if (vertical) d.foot = this.sc.add.image(cx, cy, `${tex}_open`).setCrop(0, 47, 16, 5).setDepth(cy + 26).setVisible(false);
     // the spot you walk to: the middle floor tile on either side of the door
     // (update() keeps it on the leader's side)
     const sorted = [...tiles].sort((a, b) => (vertical ? a[1] - b[1] : a[0] - b[0]));
@@ -400,7 +403,7 @@ export class DungeonKit {
   doorShut(d) {
     for (const r of d.rooms) if (r.active) return true;
     if (d.kind !== 'shutter') return !d.unlocked;
-    for (const r of d.rooms) if (r.plates.length && !r.plates.every((p) => p.latched)) return true;
+    for (const r of d.rooms) if (r.plates.length && !r.plates.every((p) => p.latched || p.down)) return true; // held down (a stone, or someone standing on it) opens it
     for (const r of d.rooms) if (r.braziers?.length && !r.braziers.every((b) => b.lit)) return true;
     return false;
   }
@@ -453,6 +456,7 @@ export class DungeonKit {
       // a sealed key/boss door shows bars over its open frame
       const sealed = shut && d.unlocked && d.kind !== 'shutter';
       d.s.setTexture(sealed ? `dgDoor_shutter_${d.vertical ? 'v' : 'h'}` : shut ? d.tex : `${d.tex}_open`);
+      if (d.vertical) { d.s.setDepth(shut ? d.cy + 16 : d.cy - 26); d.foot.setVisible(!shut); } // open: the top jamb behind the party, the bottom (foot) in front
       for (const [x, y] of d.tiles) { if (shut) sc.nav.block(x, y); else sc.nav.unblock(x, y); }
       if (shut) { const into = [...d.rooms].find((r) => r.active); for (const u of [...sc.party, ...sc.enemies.filter((e) => e.alive)]) this.evict(u, d.tiles, into); }
       if (d.o) d.o.hidden = !shut || d.unlocked;
@@ -510,10 +514,40 @@ export class DungeonKit {
       return;
     }
     const dx = b.x * TILE + 8 - h.x, dy = b.y * TILE + 8 - h.y;
-    if (Math.abs(dx) > Math.abs(dy)) this.push(b, Math.sign(dx), 0, h); else this.push(b, 0, Math.sign(dy), h);
+    const [ax, ay] = Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)];
+    // a stone that won't go away from you comes toward you instead (so one shoved
+    // against a wall is never stuck there)
+    if (this.push(b, ax, ay, h, true) || this.drag(b, -ax, -ay, h)) return;
+    audio.sfx('block');
+    const sc = this.sc;
+    if (!this.hinted.has('stuck')) { this.hinted.add('stuck'); sc.bark(h || sc.leader, "IT WON'T BUDGE EITHER WAY. IF WE LEAVE THE ROOM, THE STONES GO BACK WHERE THEY STARTED."); }
   }
 
-  push(b, dx, dy, h) {
+  // drag a block one tile toward the hero, who steps back to make room
+  drag(b, dx, dy, h) {
+    const sc = this.sc;
+    if (!h || b.moving || b.sunk) return false;
+    const nx = b.x + dx, ny = b.y + dy, hx = nx + dx, hy = ny + dy;
+    const free = (x, y) => !sc.nav.isSolid(x, y) && this.roomOf.get(key(x, y)) === b.room.id && !this.blocks.some((k) => k !== b && k.x === x && k.y === y) && !sc.enemies.some((e) => e.alive && Math.floor(e.x / TILE) === x && Math.floor(e.y / TILE) === y);
+    if (!free(nx, ny) || !free(hx, hy)) return false;
+    b.moving = true;
+    sc.nav.unblock(b.x, b.y); sc.nav.block(nx, ny);
+    b.x = nx; b.y = ny;
+    audio.sfx('push', { pitch: 0.85 });
+    sc.fx.dust(b.s.x, b.s.y);
+    h.clearPath?.(); h.command = null; h.face(-dx, -dy); h.anim = ''; h.play('walk');
+    sc.tweens.add({ targets: h, x: px(hx), y: px(hy), duration: 170, ease: 'Sine.easeOut' });
+    sc.tweens.add({ targets: b.s, x: px(nx), y: px(ny) + 8, duration: 170, ease: 'Sine.easeOut', onUpdate: () => b.s.setDepth(b.s.y - 6), onComplete: () => {
+      b.moving = false;
+      b.o.x = px(nx); b.o.y = px(ny);
+      for (const u of sc.party) if (u !== h) this.evict(u, [[nx, ny]]);
+      this.checkPlates();
+    } });
+    if (!this.hinted.has('pull')) { this.hinted.add('pull'); sc.bark(h, 'PULLED IT BACK TOWARD US. HANDY.'); }
+    return true;
+  }
+
+  push(b, dx, dy, h, quiet = false) {
     const sc = this.sc;
     if (b.moving) { b.queued = { dx, dy, h }; return true; } // a quick second tap waits for the slide, never lost
     if (b.heavy && !sc.state.relics.includes('gauntlets')) return false;
@@ -521,6 +555,7 @@ export class DungeonKit {
     const occupied = sc.enemies.some((e) => e.alive && Math.floor(e.x / TILE) === nx && Math.floor(e.y / TILE) === ny);
     const intoLava = b.heavy && this.at(nx, ny) === '&' && !this.filled?.has(key(nx, ny)); // a boulder rolls into lava and fills it
     if (!intoLava && (sc.nav.isSolid(nx, ny) || occupied || this.roomOf.get(key(nx, ny)) !== b.room.id)) {
+      if (quiet) return false;
       audio.sfx('block');
       if (!this.hinted.has('stuck')) { this.hinted.add('stuck'); sc.bark(h || sc.leader, 'IT WON\'T BUDGE THAT WAY.'); }
       return false;
@@ -574,22 +609,40 @@ export class DungeonKit {
     }
   }
 
+  // A plate is down while something's on it - a stone, or the leader standing
+  // there - and pops back up when it's gone (its shutter closes again). A room
+  // is solved for good (its plates latch) only once stones sit on all of them.
   checkPlates() {
-    const L = this.sc.leader;
+    const sc = this.sc, L = sc.leader;
     const lt = [Math.floor(L.x / TILE), Math.floor(L.y / TILE)];
+    let changed = false;
     for (const p of this.plates) {
       if (p.latched) continue;
-      const onBlock = this.blocks.some((b) => b.x === p.x && b.y === p.y && !b.moving);
-      if (!onBlock && !(lt[0] === p.x && lt[1] === p.y)) continue;
-      p.latched = true;
-      p.s.setTexture('dgPlateDown');
-      audio.sfx('click'); audio.sfx('block', { pitch: 0.6 });
-      this.sc.fx.burst('gold', px(p.x), px(p.y), 8);
-      const left = p.room.plates.filter((q) => !q.latched).length;
-      if (left) this.sc.floatText(px(p.x), px(p.y) - 14, `${left} MORE`, 'fontPlain');
-      this.save(!left);
+      const stone = this.blocks.some((b) => b.x === p.x && b.y === p.y && !b.moving);
+      const newStone = stone && !p.stone;
+      p.stone = stone;
+      const down = stone || (lt[0] === p.x && lt[1] === p.y);
+      if (down !== !!p.down) {
+        p.down = down; changed = true;
+        p.s.setTexture(down ? 'dgPlateDown' : 'dgPlate');
+        if (down) { audio.sfx('click'); audio.sfx('block', { pitch: 0.6 }); sc.fx.burst('gold', px(p.x), px(p.y), 8); }
+        else {
+          audio.sfx('click', { pitch: 0.7 });
+          if (!this.hinted.has('plateUp')) { this.hinted.add('plateUp'); sc.bark(L, 'IT CLICKED BACK UP WHEN I STEPPED OFF. IT NEEDS SOMETHING HEAVY LEFT ON IT.'); }
+        }
+      }
+      if (newStone) {
+        const left = p.room.plates.filter((q) => !q.stone).length;
+        if (left) sc.floatText(px(p.x), px(p.y) - 14, `${left} MORE`, 'fontPlain');
+      }
     }
-    this.refreshDoors();
+    for (const r of this.rooms) {
+      if (!r.plates.length || r.plates.every((p) => p.latched) || !r.plates.every((p) => p.stone)) continue;
+      for (const p of r.plates) p.latched = true; // solved: stays solved
+      changed = true;
+      this.save(true);
+    }
+    if (changed) this.refreshDoors();
   }
 
   // ------------------------------------------------------------- pegs
