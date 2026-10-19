@@ -7,7 +7,7 @@ import W from '../data/world.json';
 import { CRAFT, sellPrice, itemName, statDelta, compareGear } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
-import { shopGear, gearValue, tierForLevel, registerItem } from '../game/itemgen.js';
+import { shopGear, gearValue, tierForLevel, registerItem, makeItem } from '../game/itemgen.js';
 import { statLine } from './Menu.js';
 import { fitString } from './textfit.js';
 
@@ -94,6 +94,25 @@ export class Shop extends Phaser.Scene {
       const lv = Math.round(this.g.party.reduce((a, h) => a + h.level, 0) / this.g.party.length);
       const tier = tierForLevel(lv);
       st.shopBought ??= {};
+      // now and then (about one rest in three) Marla has one better piece in, a
+      // Fine or now and then a Rare for someone in the party, at what it's worth;
+      // it stays until it's bought or she restocks at your next rest
+      const n = st.rests || 0;
+      if (st.marlaPick?.n !== n) {
+        st.marlaPick = { n, id: null };
+        if (n > 0 && Math.random() < 0.35) {
+          const party = this.g.party.map((h) => h.def.id), hero = party[Math.floor(Math.random() * party.length)];
+          const slot = ['weapon', 'offhand', 'head', 'body'][Math.floor(Math.random() * 4)];
+          st.marlaPick.id = makeItem(hero, slot, tier, Math.random() < 0.3 ? 'rare' : 'fine');
+        }
+      }
+      const pk = st.marlaPick.id && (items[st.marlaPick.id] || registerItem(st.marlaPick.id));
+      if (pk) {
+        const id = st.marlaPick.id;
+        out.push({ cat: 'gear', icon: itemTex(this, id), name: pk.name, tag: "MARLA'S PICK", cmp: { hero: pk.hero, id }, price: gearValue(id), col: RARITY[pk.rarity].col,
+          key: `pick:${id}`, done: `BOUGHT ${pk.name}  -  IT'S IN YOUR BAG`,
+          act: () => { st.inventory.push(id); st.marlaPick.id = null; } });
+      }
       for (const id of shopGear(st, tier)) {
         if (st.shopBought[id]) continue; // bought: gone from the shelf until Marla's next tier of stock
         const it = items[id];

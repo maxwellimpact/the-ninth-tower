@@ -372,7 +372,7 @@ export function salvage(state, itemId) {
 
 export function sellPrice(itemId) {
   const it = items[itemId];
-  const base = it.generated ? Math.round(gearValue(itemId) * 0.25) : world.shop.sell[it.rarity] || 10; // a quarter of what it's worth (gearValue)
+  const base = it.generated ? Math.round(gearValue(itemId) * world.shop.sell.mat) : world.shop.sell[it.rarity] || 10; // half what it's worth (gearValue), like materials
   return base + (MODS.refine[itemId] || 0) * 10 * tierOf(itemId);
 }
 
