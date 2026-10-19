@@ -1235,15 +1235,10 @@ export function blightPatch(seed = 0, W = 64, H = 40) {
     else { const n = vnoise(x / 6, y / 6, 320 + seed) + (bayer(x, y) - 0.5) * 0.2; col = d > 0.82 ? (n < 0.5 ? 'purpD' : 'hexD') : n < 0.35 ? 'hexD' : n < 0.7 ? 'night' : 'purpD'; }
     px(ctx, x, y, col);
   }
-  // a few dead, grey tufts and maybe a bone
+  // a few dead, grey tufts (no bones out here; those belong to the Basin)
   for (let i = 0; i < 3; i++) {
     const tx = Math.round(cx + (hash(seed, i, 330) - 0.5) * W * 0.6), ty = Math.round(cy + (hash(seed, i, 331) - 0.5) * H * 0.5);
     px(ctx, tx, ty - 2, 'slate', 1, 3); px(ctx, tx - 2, ty - 1, 'slate', 1, 2); px(ctx, tx + 2, ty - 1, 'stone', 1, 2);
-  }
-  if (hash(seed, 9, 332) < 0.35) { // a small skull half-sunk in it (a lone bone read as a letter "I")
-    const bx = Math.round(cx + (hash(seed, 8, 333) - 0.5) * W * 0.4), by = Math.round(cy + 2);
-    px(ctx, bx, by, 'bone', 5, 3); px(ctx, bx + 1, by - 1, 'bone', 3, 1); px(ctx, bx + 1, by + 3, 'mist', 3, 1);
-    px(ctx, bx + 1, by + 1, 'ink'); px(ctx, bx + 3, by + 1, 'ink'); px(ctx, bx + 4, by, 'mist', 1, 3);
   }
   return c;
 }
