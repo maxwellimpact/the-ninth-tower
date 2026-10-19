@@ -21,7 +21,11 @@ cp -R dist/tiiny/. site/
 touch site/.nojekyll # serve files as they are (no Jekyll processing)
 BUILD=$(git rev-parse --short HEAD)
 git -C site add -A
-if git -C site diff --cached --quiet; then echo "nothing changed since the last deploy"; exit 0; fi
+if git -C site diff --cached --quiet; then
+  # a build committed by an earlier run whose push failed still needs pushing
+  if [ -n "$(git -C site log origin/main..main --oneline)" ]; then git -C site push --quiet origin main; echo "pushed an earlier build that hadn't gone up"; exit 0; fi
+  echo "nothing changed since the last deploy"; exit 0
+fi
 git -C site commit --quiet -m "Build $BUILD" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git -C site push --quiet origin main
 echo "pushed build $BUILD -> https://maxwellimpact.github.io/ninth-tower/ (live in about a minute)"
