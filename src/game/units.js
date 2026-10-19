@@ -2532,7 +2532,9 @@ export class Enemy extends Unit {
     const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
     for (const h of sc.party) {
       if (!h.alive || h.downed) continue;
-      if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(dmg, this); if (this.s.chill) chillHero(h); }
+      if (Math.hypot(h.x - z.x, h.y - z.y) > z.r + h.r) continue;
+      if (!this.boss && sc.tryEvade(h, this)) continue; // a hero can dodge an ordinary foe's swing
+      h.damage(dmg, this); if (this.s.chill) chillHero(h);
     }
     for (const a of sc.allies || []) if (a.alive && Math.hypot(a.x - z.x, a.y - z.y) <= z.r + a.r) a.damage(dmg, this);
   }

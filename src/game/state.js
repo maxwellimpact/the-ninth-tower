@@ -240,6 +240,7 @@ export function computeStats(id, level, equip, hs = null) {
   s.traits = traits;
   if (traits.includes('cdr')) s.cdr += 0.1;
   if (traits.includes('fleet')) s.speed = Math.round(s.speed * 1.08);
+  s.evade = (tuning.evade.hero[id] ?? tuning.evade.enemy) + (traits.includes('fleet') ? tuning.evade.fleet : 0); // chance an enemy's basic attack misses
   if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'wanderer')) s.speed = Math.round(s.speed * 1.08); // Wanderer's Charm
   if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'windrunner')) s.speed = Math.round(s.speed * 1.1); // Windrunner Leathers
   if (ALL_SLOTS.some((k) => items[equip[k]]?.perk === 'cufflink')) s.maxHp = Math.round(s.maxHp * 0.75); // Malgrim's Cufflink: -25% max HP

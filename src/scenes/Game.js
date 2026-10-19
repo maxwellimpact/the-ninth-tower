@@ -884,6 +884,7 @@ export class Game extends Phaser.Scene {
         const [fx, fy] = hit.facingVec(), [sx, sy] = norm(-p.vx, -p.vy);
         if (fx * sx + fy * sy > 0.35) { audio.sfx('block'); this.fx.burst('spark', p.x, p.y, 6); this.floatText(hit.x, hit.y - 28, 'BLOCK', 'fontPlain'); p.dead = true; p.s.destroy(); continue; }
       }
+      if (hit && !p.from?.boss && (!p.kind || p.kind === 'arrow') && this.tryEvade(hit, p.from)) { p.dead = true; p.s.destroy(); continue; } // a hero dodges a plain arrow
       if (hit) {
         hit.damage(p.dmg, p.from);
         if (p.kind === 'ember') hit.addBurn?.(p.dmg * 0.12, 3);
@@ -1608,6 +1609,8 @@ export class Game extends Phaser.Scene {
   // opts: crit, knock, element (forced, e.g. a skill), spell, basic (weapon hit), noProc
   dealDamage(src, target, amount, { crit = false, knock = 40, element = null, spell = false, basic = false, noProc = false } = {}) {
     const hero = src?.team === 'party' && src.passive;
+    if (basic && hero && target.team === 'enemy' && this.tryEvade(target, src)) return; // a foe sidesteps a plain hit (skills always land)
+    if (basic && hero && src.counterT > this.time.now) { src.counterT = 0; amount *= 1 + tuning.evade.counter; this.floatText(src.x, src.y - 36, 'COUNTER!', 'fontPlain', 0x9fe8ff); } // the hit after a dodge
     const weaponEl = src?.stats?.element;
     const el = element || weaponEl;
     if (target.elementMul) amount *= target.elementMul(el);
@@ -2900,6 +2903,32 @@ export class Game extends Phaser.Scene {
     audio.sfx('equip');
     this.fx.burst('foam', w.x, w.y - 4, 14);
     this.floatText(w.x, w.y - 40, 'THE WHEEL TURNS!', 'fontGold');
+  }
+
+  // ============================================================ dodges
+  // Now and then a basic attack misses (tuning.evade): heroes by their DODGE
+  // stat (Sable and Wren most, Brann in plate least, Fleet gear adds a little),
+  // foes by kind (wolves, imps and raiders slippery; golems, trolls and knights
+  // hardly ever; bosses and anything stunned, frozen or flipped never). Skills,
+  // area attacks and boss moves always land. A hero who dodges counters: their
+  // next basic hit within a few seconds lands harder.
+  evadeChance(u) {
+    const E = tuning.evade;
+    if (u.team === 'party') return u.stats?.evade ?? 0;
+    if (u.boss || E.never.includes(u.kind) || u.stunT > 0 || u.flippedT > 0 || u.status?.freeze || u.frozenT > 0) return 0;
+    return E.slippery.includes(u.kind) ? E.slipperyRate : E.heavy.includes(u.kind) ? E.heavyRate : E.enemy;
+  }
+
+  tryEvade(target, src) {
+    if (!target?.alive || target.downed || Math.random() >= this.evadeChance(target)) return false;
+    // a quick sidestep across the line of the blow
+    const [nx, ny] = norm(target.x - (src?.x ?? target.x), target.y - (src?.y ?? target.y - 1)), side = Math.random() < 0.5 ? 1 : -1;
+    target.knock?.(-ny * side, nx * side, 70);
+    const party = target.team === 'party';
+    this.floatText(target.x, target.y - 30, party ? 'DODGE' : 'MISS', 'fontPlain', party ? 0x9fe8ff : 0xd8d3e0);
+    audio.sfx('dodge');
+    if (party) target.counterT = this.time.now + tuning.evade.counterWindow * 1000;
+    return true;
   }
 
   // ============================================================ the Ferryman

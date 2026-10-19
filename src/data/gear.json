@@ -682,7 +682,7 @@
   },
   "fleet": {
    "name": "FLEET",
-   "desc": "+8% MOVE SPEED"
+   "desc": "+8% MOVE SPEED, +4% DODGE"
   },
   "tonic": {
    "name": "TONIC",

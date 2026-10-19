@@ -439,7 +439,7 @@ export class Menu extends Phaser.Scene {
     const lines = [
       ['LV', `${hs.level}`], ['XP', compact ? `${Math.floor((hs.xp / xpToNext(hs.level)) * 100)}%` : `${hs.xp}/${xpToNext(hs.level)}`],
       ['HP', compact ? `${h.maxHp}` : `${Math.ceil(h.hp)}/${h.maxHp}`],
-      ['ATK', `${st.atk}`], ['DEF', `${st.def}`], ['CRIT', `${Math.round(st.crit * 100)}%`],
+      ['ATK', `${st.atk}`], ['DEF', `${st.def}`], ['CRIT', `${Math.round(st.crit * 100)}%`], ['DODGE', `${Math.round((st.evade || 0) * 100)}%`],
     ];
     const per = Math.ceil(lines.length / cols), cw = Math.floor(w / cols);
     lines.forEach(([k, v], i) => {

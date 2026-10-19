@@ -37,5 +37,48 @@
  "ultPerFoe": 6,
  "ultHitMin": 0.25,
  "ultHitMax": 2.5,
- "ultTakeFull": 25
+ "ultTakeFull": 25,
+ "evade": {
+  "_note": "chance a basic attack misses (skills and area attacks always land); a hero who dodges gets a counter on their next basic hit",
+  "hero": {
+   "brann": 0.03,
+   "pip": 0.05,
+   "sable": 0.1,
+   "wren": 0.1,
+   "kesh": 0.04,
+   "oake": 0.05,
+   "gizmo": 0.04,
+   "mirelle": 0.05
+  },
+  "enemy": 0.05,
+  "slippery": [
+   "frostwolf",
+   "hound",
+   "imp",
+   "raider",
+   "rats"
+  ],
+  "slipperyRate": 0.12,
+  "heavy": [
+   "golem",
+   "troll",
+   "brute",
+   "knight",
+   "gargoyle",
+   "beetle",
+   "rimehorn",
+   "chainwarden",
+   "boar"
+  ],
+  "heavyRate": 0.01,
+  "never": [
+   "eggsac",
+   "hollowpile",
+   "sentinel",
+   "mirror"
+  ],
+  "fleet": 0.04,
+  "counter": 0.3,
+  "counterWindow": 3
+ }
 }
