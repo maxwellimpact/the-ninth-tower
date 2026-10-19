@@ -9,7 +9,7 @@ import crafting from '../data/crafting.json';
 import world from '../data/world.json';
 import skills from '../data/skills.json';
 import gearData from '../data/gear.json';
-import { ensureItems, isGenerated, tierOf } from './itemgen.js';
+import { ensureItems, isGenerated, tierOf, gearValue } from './itemgen.js';
 import { cloudBackup, cloudClear, cloudCopy } from './cloudsave.js';
 
 export const SAVE_KEY = 'ninthTower.save.v1';
@@ -372,7 +372,7 @@ export function salvage(state, itemId) {
 
 export function sellPrice(itemId) {
   const it = items[itemId];
-  const base = it.generated ? Math.round(gearData.tiers[it.tier - 1].price * 0.25 * ({ common: 1, fine: 1.4, rare: 2 }[it.rarity] || 1)) : world.shop.sell[it.rarity] || 10;
+  const base = it.generated ? Math.round(gearValue(itemId) * 0.25) : world.shop.sell[it.rarity] || 10; // a quarter of what it's worth (gearValue)
   return base + (MODS.refine[itemId] || 0) * 10 * tierOf(itemId);
 }
 

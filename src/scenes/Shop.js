@@ -7,10 +7,11 @@ import W from '../data/world.json';
 import { CRAFT, sellPrice, itemName, statDelta, compareGear } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
-import { shopGear, gearPrice, tierForLevel, registerItem } from '../game/itemgen.js';
+import { shopGear, gearValue, tierForLevel, registerItem } from '../game/itemgen.js';
 import { statLine } from './Menu.js';
 import { fitString } from './textfit.js';
 
+const SUBS = { buy: ['gear', 'potions', 'materials'], sell: ['gear', 'materials'] };
 const C = { ink: 0x1a1423, night: 0x2b2140, slate: 0x45405e, gold: 0xf2c14e, deep: 0x16121f };
 
 export class Shop extends Phaser.Scene {
@@ -19,9 +20,10 @@ export class Shop extends Phaser.Scene {
   create({ game }) {
     this.g = game;
     this.tab = 'buy';
+    this.sub = { buy: 'gear', sell: 'gear' }; // each side has its own categories (SUBS)
     this.dyn = [];
     this.list = null; // the scrolling list (see Menu.region): its own camera over rows drawn off to the right
-    this.scrollPos = { buy: 0, sell: 0 };
+    this.scrollPos = {};
     // drag anywhere in the list to scroll it, like the other menus; a drag never counts as a tap
     this.input.on('pointerdown', (p) => {
       this.dragged = false;
@@ -43,7 +45,7 @@ export class Shop extends Phaser.Scene {
   setScroll(sy) {
     const r = this.list;
     r.cam.scrollY = Math.round(Math.max(r.min, Math.min(r.max, sy)));
-    this.scrollPos[this.tab] = r.cam.scrollY - r.min;
+    this.scrollPos[this.key()] = r.cam.scrollY - r.min;
     // scrollbar on the right edge, only when there's more than fits
     r.bar.clear();
     const span = r.max - r.min;
@@ -52,6 +54,8 @@ export class Shop extends Phaser.Scene {
     const ty = r.y + Math.round((r.h - th) * ((r.cam.scrollY - r.min) / span));
     r.bar.fillStyle(C.slate, 0.8).fillRect(r.x + r.w + 2, r.y, 2, r.h).fillStyle(C.gold).fillRect(r.x + r.w + 2, ty, 2, th);
   }
+
+  key() { return `${this.tab}:${this.sub[this.tab]}`; }
 
   close() { audio.sfx('click'); this.scene.stop(); this.g.closeOverlay(); }
 
@@ -84,7 +88,7 @@ export class Shop extends Phaser.Scene {
         const isPotion = !!CRAFT.consumables[s.id];
         const def = isPotion ? CRAFT.consumables[s.id] : CRAFT.materials[s.id];
         const have = (isPotion ? st.potions[s.id] : st.materials[s.id]) || 0;
-        return { key: `buy:${s.id}`, icon: `icon_${s.id}`, name: def.name, sub: `${isPotion ? def.desc : 'CRAFTING MATERIAL'}  -  YOU HAVE ${have}`, price: s.price, col: 0xd8d3e0, done: `+1 ${def.name}  (NOW ${have + 1})`, act: () => { if (isPotion) st.potions[s.id] = (st.potions[s.id] || 0) + 1; else st.materials[s.id] = (st.materials[s.id] || 0) + 1; } };
+        return { cat: isPotion ? 'potions' : 'materials', key: `buy:${s.id}`, icon: `icon_${s.id}`, name: def.name, sub: `${isPotion ? def.desc : 'CRAFTING MATERIAL'}  -  YOU HAVE ${have}`, price: s.price, col: 0xd8d3e0, done: `+1 ${def.name}  (NOW ${have + 1})`, act: () => { if (isPotion) st.potions[s.id] = (st.potions[s.id] || 0) + 1; else st.materials[s.id] = (st.materials[s.id] || 0) + 1; } };
       });
       // Marla stocks the current tier's Common gear for everyone in the party
       const lv = Math.round(this.g.party.reduce((a, h) => a + h.level, 0) / this.g.party.length);
@@ -93,7 +97,7 @@ export class Shop extends Phaser.Scene {
       for (const id of shopGear(st, tier)) {
         if (st.shopBought[id]) continue; // bought: gone from the shelf until Marla's next tier of stock
         const it = items[id];
-        out.push({ icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, tag: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()}`, cmp: { hero: it.hero, id }, price: gearPrice(tier), col: RARITY.common.col,
+        out.push({ cat: 'gear', icon: itemTex(this, id), name: it.name, sub: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()} - ${statLine(it)}`, tag: `${it.hero.toUpperCase()} ${it.slot.toUpperCase()}`, cmp: { hero: it.hero, id }, price: gearValue(id), col: RARITY.common.col,
           key: `gear:${id}`, done: `BOUGHT ${it.name}  -  IT'S IN YOUR BAG`,
           act: () => { const nid = id.replace('#shop', `#${Math.random().toString(36).slice(2, 7)}`); registerItem(nid); st.inventory.push(nid); st.shopBought[id] = true; } });
       }
@@ -103,12 +107,12 @@ export class Shop extends Phaser.Scene {
     for (const id of new Set(st.inventory)) {
       const it = items[id];
       const who = it.hero && it.hero !== 'any' ? it.hero : null;
-      out.push({ key: `sell:${id}`, done: `SOLD ${itemName(id)}`, icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, tag: `${who ? who.toUpperCase() : 'ANY'} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()}`, cmp: who && st.recruited.includes(who) ? { hero: who, id } : null, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
+      out.push({ cat: 'gear', key: `sell:${id}`, done: `SOLD ${itemName(id)}`, icon: itemTex(this, id), name: itemName(id), sub: `${RARITY[it.rarity].label} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()} - ${it.hero ? it.hero.toUpperCase() : 'ANY'}`, tag: `${who ? who.toUpperCase() : 'ANY'} ${it.slot === 'trinket' ? 'RING' : it.slot.toUpperCase()}`, cmp: who && st.recruited.includes(who) ? { hero: who, id } : null, price: sellPrice(id), col: RARITY[it.rarity].col, sell: true, act: () => { st.inventory.splice(st.inventory.indexOf(id), 1); delete st.refine[id]; if (st.sockets?.[id]) { for (const gm of st.sockets[id]) if (gm) st.gems[gm] = (st.gems[gm] || 0) + 1; delete st.sockets[id]; } } });
     }
     for (const [k, m] of Object.entries(CRAFT.materials)) {
       if (!st.materials[k]) continue;
       const shopPrice = W.shop.stock.find((s) => s.id === k)?.price || 10;
-      out.push({ key: `sellmat:${k}`, done: `SOLD 1 ${m.name}  (${st.materials[k] - 1} LEFT)`, icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
+      out.push({ cat: 'materials', key: `sellmat:${k}`, done: `SOLD 1 ${m.name}  (${st.materials[k] - 1} LEFT)`, icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
     }
     return out;
   }
@@ -163,9 +167,17 @@ export class Shop extends Phaser.Scene {
       this.t(x + 19 - tb.length * 2.5, 26, tb.toUpperCase(), sel ? 'fontGold' : 'fontPlain');
       this.btn(x, 20, 38, 18, () => { audio.sfx('click'); this.tab = tb; this.render(); });
     });
-    const list = this.entries();
+    let sx = 102;
+    for (const sb of SUBS[this.tab]) {
+      const sel = sb === this.sub[this.tab], sw = sb.length * 5 + 12;
+      panel(g, sx, 22, sw, 14, sel ? 0x2f5d3a : C.deep, sel ? 0x8cff8c : C.slate);
+      this.t(sx + 6, 26, sb.toUpperCase(), sel ? 'fontGold' : 'fontPlain');
+      this.btn(sx, 20, sw, 18, () => { audio.sfx('click'); this.sub[this.tab] = sb; this.render(); });
+      sx += sw + 4;
+    }
+    const list = this.entries().filter((e) => e.cat === this.sub[this.tab]);
     const rowH = 26, top = 44, x = 8, w = Wd - 20, h = H - top - 4;
-    if (!list.length) { this.t(x, top + 4, this.tab === 'sell' ? 'NOTHING TO SELL. SPARE GEAR AND MATERIALS SHOW UP HERE.' : 'SOLD OUT!', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+    if (!list.length) { this.t(x, top + 4, this.tab === 'sell' ? (this.sub.sell === 'gear' ? 'NO SPARE GEAR. WHAT YOUR HEROES ARE WEARING NEVER SHOWS UP HERE.' : 'NO MATERIALS TO SELL.') : 'SOLD OUT! NEW STOCK WHEN YOUR PARTY REACHES THE NEXT TIER.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
     // every row, drawn off to the right (OX) and seen through the list's camera
     const OX = 5000, lg = this.add.graphics();
     this.dyn.push(lg);
@@ -202,6 +214,6 @@ export class Shop extends Phaser.Scene {
     cam.scrollX = OX + x;
     this.list = { x, y: top, w, h, cam, min: top, max: Math.max(top, bottom + 4 - h), bar: this.add.graphics().setDepth(100) };
     this.dyn.push(this.list.bar);
-    this.setScroll(top + (this.scrollPos[this.tab] || 0));
+    this.setScroll(top + (this.scrollPos[this.key()] || 0));
   }
 }

@@ -140,3 +140,26 @@ export function shopGear(state, tier) {
   return out;
 }
 export const gearPrice = (tier, rarity = 'common') => Math.round(G.tiers[tier - 1].price * (rarity === 'rare' ? 2.2 : rarity === 'fine' ? 1.5 : 1));
+
+// What a piece of gear is worth, from what it actually does: its stats (by the
+// same stat values the gear budget uses), plus its trait, element, echo and
+// gem sockets. Scaled so the average of a hero's four Common pieces at a tier
+// costs that tier's price - so a sword costs more than a cap, and a Rare more
+// than a Common, instead of every piece in a tier costing the same.
+const statScore = (it) => Object.entries(it.stats || {}).reduce((a, [k, v]) => a + v * (G.statValue[k] ?? 0.5), 0);
+const refScores = {};
+function refScore(hero, tier) {
+  const k = `${hero}.${tier}`;
+  if (refScores[k] == null) {
+    const ss = ['weapon', 'offhand', 'head', 'body'].map((slot) => registerItem(`g.${hero}.${slot}.${tier}.common.0.-.-#ref`)).filter(Boolean).map(statScore);
+    refScores[k] = ss.length ? ss.reduce((a, b) => a + b, 0) / ss.length : 1;
+  }
+  return refScores[k];
+}
+export function gearValue(id) {
+  const it = items[id] || registerItem(id);
+  if (!it || !it.generated) return null;
+  const ref = refScore(it.hero && it.hero !== 'any' ? it.hero : 'brann', it.tier);
+  const extras = (it.trait ? 0.15 : 0) + (it.element ? 0.1 : 0) + (it.passive ? 0.25 : 0) + ({ rare: 1, unique: 1, legendary: 2 }[it.rarity] || 0) * 0.08;
+  return Math.max(1, Math.round(G.tiers[it.tier - 1].price * (statScore(it) / ref + extras)));
+}

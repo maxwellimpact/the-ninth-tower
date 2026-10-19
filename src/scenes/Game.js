@@ -11,7 +11,7 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { rollGearDrop, ensureItems, makeItem, tierForLevel, gearPrice } from '../game/itemgen.js';
+import { rollGearDrop, ensureItems, makeItem, tierForLevel, gearValue } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
 import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
@@ -2839,7 +2839,7 @@ export class Game extends Phaser.Scene {
     const mats = [['pearl', 3, 260], ['silver', 4, 220], ['scale', 3, 240], ['crystal', 3, 200], ...(this.flags.royalArmory ? [['starmetal', 1, 650], ['starmetal', 2, 1200]] : [])]; // starmetal only once it's any use (the Royal Armory)
     const mat = mats[Math.floor(Math.random() * mats.length)];
     st.curio = { n, offers: [
-      { gear, price: Math.round(gearPrice(tier, 'rare') * 1.3) },
+      { gear, price: Math.round(gearValue(gear) * 1.6) }, // a curio-monger's mark-up on what it's worth
       { gem, price: 300 },
       { mat: mat[0], count: mat[1], price: mat[2] },
     ], sold: [] };
