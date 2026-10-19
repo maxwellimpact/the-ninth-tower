@@ -1542,6 +1542,19 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
    - **The rule:** humanoid foes are puppets built from the heroes' parts (like the Drowned and Witchlings), recoloured if needed (`registerPuppet(..., recolor)`, e.g. the Banshee's ghost palette). Creatures use the same technique as the existing ones: chunky grids or shaded blobs with a lit top-left, a dark underside and the shared ink outline.
    - **Check:** render every new sprite side by side with existing ones at 3x (a sprite sheet snapshot) before moving on.
 
+7. **A tap lights up only what you tapped.**
+   - **The bug:** tapping an ore rock flashed the dead tree beside it. The tap flash picked whatever sprite was drawn topmost at that spot, and the tree's canopy hung over the rock.
+   - **The rule:** every interactable names its own sprite with `vis: () => sprite` when it's created (`addInteractable({ ..., vis })`), and the tap flash only ever uses that (or a unit's own `sprite`). Nothing is ever picked by position. A thing with no sprite of its own (a warp spot, a climb point, a false wall) gets the tap ring and no flash.
+   - **Check:** every new `addInteractable` call either passes `vis` or is a spot with no sprite on purpose. Tap it in the game and make sure the flash is on it and nothing else.
+8. **A dash or teleport only lands somewhere the party can walk to.**
+   - **The bug:** Sable's Shadow Step dropped her behind a foe into a pocket by the water that she couldn't walk out of.
+   - **The rule:** any skill or effect that moves a hero to a spot (step, dash, leap, blink) picks it with `landing()` in skills.js: open ground with a walking path from the leader. If there's nowhere reachable, the skill doesn't fire (and isn't spent).
+   - **Check:** try it on a target walled in, across water and against a wall.
+9. **People stand on dry, open ground.**
+   - **The bug:** a hexed townsperson stood in the fen lake, and two others at the water's edge.
+   - **The rule:** NPCs, townsfolk, keepers and errand givers have no water within a tile of them, no solid tile under them, and a walking path from the region's road. This also covers anything that moves them later (homes, the Ferryman).
+   - **Check:** after placing or moving anyone, run the water and reachability scan over every person in the region, then view the spot zoomed out.
+
 ---
 
 ## 16. Open Questions
