@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import QDATA from '../data/quests.json';
-import { CHIMNEYS, DOOR_H } from '../gfx/props.js';
+import { chimneyOf, doorOf } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
@@ -1070,7 +1070,7 @@ export class Game extends Phaser.Scene {
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
       if (b.opens) this.addHome(b, img, bx, by);
       if (b.kind === 'archery') for (const [dx, dy] of [[5, -2], [8, -2]]) { const tx = (b.x + dx) * TILE + 8, ty = (b.y + dy) * TILE + 8; this.add.image(tx, ty + 6, 'strawbutt').setOrigin(0.5, 1).setDepth(ty); this.nav.block(b.x + dx, b.y + dy); }
-      const ch = CHIMNEYS[b.kind];
+      const ch = chimneyOf(b.kind);
       if (ch) { // a thread of chimney smoke, drifting off with the breeze (not from a cold, boarded-up chimney)
         const sx = bx + ch[0], sy = by + ch[1];
         const puff = this.time.addEvent({ delay: 520, loop: true, callback: () => {
@@ -1091,7 +1091,8 @@ export class Game extends Phaser.Scene {
     for (const b of W.buildings) {
       if (b.landmark) continue; // the elder tree and the like: no door to dress
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
-      const ext = this.add.image(bx - 6, by - 3 - DOOR_H, 'door_open').setOrigin(0).setDepth(by + 1).setVisible(false);
+      const dr = doorOf(b.kind); // each cottage's own doorway (arched or square, its own width)
+      const ext = this.add.image(bx + dr.x, by + dr.y, `door_open_${b.kind}`).setOrigin(0).setDepth(by + 1).setVisible(false);
       const out = W.warps.find((w) => w.door && w.exit && w.building === b.id);
       const int = this.add.image(out.x * TILE + 8, (out.y + 1) * TILE, 'idoor').setOrigin(0.5, 1).setDepth((out.y + 1) * TILE);
       this.doors[b.id] = { ext, int };

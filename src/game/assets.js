@@ -121,7 +121,7 @@ export const GROUPS = {
       s.textures.addCanvas('glow', P.glow(16));
       s.textures.addCanvas('bubble', P.bubble());
       s.textures.addCanvas('orb', P.orb());
-      s.textures.addCanvas('door_open', P.doorOpen());
+      for (const k of ['shop', 'tavern', 'curio', 'archery', 'bath', 'mayor']) s.textures.addCanvas(`door_open_${k}`, P.houseDoorOpen(k));
       s.textures.addCanvas('idoor', P.interiorDoor(false));
       s.textures.addCanvas('idoor_open', P.interiorDoor(true));
     }],
