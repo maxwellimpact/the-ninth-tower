@@ -2530,7 +2530,9 @@ export class Game extends Phaser.Scene {
         if ((f.idleT -= dt) > 0) continue;
         const a = Math.random() * Math.PI * 2, r = 10 + Math.random() * 26;
         const gx = f.home.x + Math.cos(a) * r, gy = f.home.y + Math.sin(a) * r * 0.7;
-        if (this.nav.solidAtPx(gx, gy) || !this.nav.lineClear(f.x, f.y, gx, gy, 3)) { f.idleT = 1; continue; }
+        const busy = this.personSpots().some(([sx, sy]) => Math.hypot(sx * TILE + 8 - gx, sy * TILE + 8 - gy) < 30)
+          || this.townsfolk.some((o) => o !== f && o.s.visible && (Math.hypot(o.x - gx, o.y - gy) < 20 || (o.goal && Math.hypot(o.goal.x - gx, o.goal.y - gy) < 20)));
+        if (busy || this.nav.solidAtPx(gx, gy) || !this.nav.lineClear(f.x, f.y, gx, gy, 3)) { f.idleT = 1; continue; } // somewhere free, not onto anyone
         f.goal = { x: gx, y: gy };
       }
       const dx = f.goal.x - f.x, dy = f.goal.y - f.y, d = Math.hypot(dx, dy), sp = 18 * dt;
@@ -2545,17 +2547,23 @@ export class Game extends Phaser.Scene {
   }
 
   // Free spots around the Brightwater hamlet for rescued townsfolk to live.
+  // Everywhere a person or a fixed thing can ever stand in the world (every
+  // NPC whether they've shown up yet or not, town NPCs, signs, campfires,
+  // gathering nodes, the doors of houses), so townsfolk keep clear of them all.
+  personSpots() {
+    return this._spots ??= [...QDATA.npcs, ...W.npcs, ...W.signs, ...W.campfires, ...W.nodes, ...W.buildings.filter((b) => !b.landmark || b.opens || b.kind === 'mill').map((b) => ({ x: b.x, y: b.y + 1 }))].map((k) => [k.x, k.y]);
+  }
+
+  // Free spots around the Brightwater hamlet for rescued townsfolk to live:
+  // at least 2.5 tiles from anyone or anything above and from each other.
   townsfolkHomes() {
-    const used = new Set([...(this.quests?.npcs || []).map((n) => `${n.x},${n.y}`)]);
-    const taken = [];
-    const out = [];
+    const spots = this.personSpots(), taken = [], out = [];
+    const clear = (x, y) => !this.nav.isSolid(x, y) && !spots.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5) && !taken.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5);
     for (const t of W.townsfolk) {
       let found = null;
-      for (let r = 0; r < 12 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r && !found; dx++) {
-        const x = 19 + dx, y = 39 + dy;
-        if (this.nav.isSolid(x, y) || used.has(`${x},${y}`) || taken.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5)) continue;
+      for (let r = 0; r < 16 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r && !found; dx++) {
         if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-        found = [x, y];
+        if (clear(19 + dx, 39 + dy)) found = [19 + dx, 39 + dy];
       }
       found ??= [19, 39];
       taken.push(found); out.push(found);

@@ -3394,8 +3394,8 @@
   {
    "id": "workbench",
    "name": "GIZMO'S WORKBENCH",
-   "x": 29,
-   "y": 31,
+   "x": 14,
+   "y": 22,
    "look": "board",
    "needsHero": "gizmo",
    "voice": {
