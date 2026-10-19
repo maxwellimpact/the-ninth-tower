@@ -4131,10 +4131,12 @@ export class Game extends Phaser.Scene {
 
     // region banner: borders fray, so a new region has to hold for a moment
     // (walking along an edge would otherwise flip banners and music back and forth)
+    // (the void between interiors isn't a region: stepping out through a door
+    // walks the party a few pixels past the doorway into it, so hold the last one)
     const here = biomeAt(Math.floor(tx), Math.floor(ty));
     if (here !== this.region && here === this.regionCand) this.regionCandT += dt; else { this.regionCand = here; this.regionCandT = 0; }
-    const region = this.region === null || areaAt(Math.floor(tx), Math.floor(ty)) !== 'overworld' || this.regionCandT > 1 ? here : this.region;
-    if (region !== this.region) {
+    const region = here === 'void' ? this.region : this.region === null || areaAt(Math.floor(tx), Math.floor(ty)) !== 'overworld' || this.regionCandT > 1 ? here : this.region;
+    if (region !== this.region && W.regions.some((x) => x.id === region)) {
       if (this.region !== null) { const r = W.regions.find((x) => x.id === region); this.events.emit('banner', r.name, r.sub); }
       else { const r = W.regions.find((x) => x.id === region); this.time.delayedCall(600, () => this.events.emit('banner', r.name, r.sub)); }
       this.region = region;
