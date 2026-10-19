@@ -286,8 +286,9 @@ export class UI extends Phaser.Scene {
     this.coin.setPosition(W - 102, 8 + T0);
     this.goldTxt.setPosition(W - 92, 9 + T0);
     const tw = Math.max(this.MM.w + 30, Math.min(160, W - 100));
-    this.trackTitle.setPosition(W - 6, this.mmY + this.MM.h + 4);
-    this.trackTxt.setPosition(W - 6, this.mmY + this.MM.h + 13).setMaxWidth(tw);
+    const ty = this.mmHidden ? this.mmY : this.mmY + this.MM.h + 4; // (indoors the minimap is hidden and the tracker takes its place)
+    this.trackTitle.setPosition(W - 6, ty);
+    this.trackTxt.setPosition(W - 6, ty + 9).setMaxWidth(tw);
     this.hint.setPosition(162 + L0, H - 9).setMaxWidth(Math.max(40, W - 250));
     if (W < 360 || this.rowMode) this.hint.setVisible(false); // no room beside the combat controls
     // portrait: drop banners below the hero portraits
@@ -690,7 +691,17 @@ export class UI extends Phaser.Scene {
     this.drawBtn(g, this.dbgBtn, 0);
     this.drawBtn(g, this.pauseBtn, 0);
     this.goldTxt.setText(`${game.state.gold}`);
-    this.drawMinimap(time);
+    // no minimap inside a house (the shop, the tavern): there's nothing to map,
+    // and the errand tracker moves up into its place
+    const indoors = game.area === 'shop' || game.area === 'tavern';
+    if (indoors !== this.mmHidden) {
+      this.mmHidden = indoors;
+      for (const o of [this.mmFrame, this.mmImg, this.mmG, this.mmZone]) o.setVisible(!indoors);
+      if (indoors) this.mmZone.disableInteractive(); else this.mmZone.setInteractive();
+      const ty = indoors ? this.mmY : this.mmY + this.MM.h + 4;
+      this.trackTitle.y = ty; this.trackTxt.y = ty + 9;
+    }
+    if (!indoors) this.drawMinimap(time);
 
     // boss bar
     if (this.boss && this.boss.alive) {

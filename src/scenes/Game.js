@@ -242,7 +242,7 @@ export class Game extends Phaser.Scene {
       this.musicRegion = biomeAt(Math.floor(start.x / TILE), Math.floor(start.y / TILE));
       music.start(themeFor(this.musicRegion));
       music.setBard(!!this.flags.bard);
-      curtain.done();
+      if (curtain.sys.isActive()) curtain.done(); else curtain.events.once('create', () => curtain.done()); // (see teleportParty)
       if (!st.lab) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints
     });
 
@@ -3137,7 +3137,24 @@ export class Game extends Phaser.Scene {
     const tx = w.to.x * TILE + 8, ty = w.to.y * TILE + 8;
     const dest = areaAt(w.to.x, w.to.y);
     this.enterArea(dest);
-    this.party.forEach((h, i) => { h.x = tx + (i ? (i === 1 ? -12 : 12) : 0); h.y = ty + arriveOffsetY + (i ? 10 : 0); h.clearPath(); h.command = null; h.target = null; h.action = null; h.sync(0); });
+    // arrive with companions already behind the leader (they used to land beside
+    // and below, then walk a lap round the leader to reach a slot behind them).
+    // Through a door the party is about to walk on in a line, so they file
+    // through the doorway after the leader, the way they went in.
+    const L = this.leader, ahead = arriveOffsetY > 0 ? -1 : arriveOffsetY < 0 ? 1 : 0; // door arrivals walk on up (in) or down (out)
+    L.x = tx; L.y = ty + arriveOffsetY;
+    if (ahead) L.head = { x: 0, y: ahead };
+    const [fx, fy] = L.head ? [L.head.x, L.head.y] : L.facingVec();
+    this.party.forEach((h) => {
+      if (h !== L) {
+        const k = this.party.filter((p) => p !== L).indexOf(h) + 1;
+        if (ahead) { h.x = L.x; h.y = L.y - fy * 8 * k; } // single file through the doorway (the walk-on clears it)
+        else { const s = h.formationSlot(); h.x = s.x; h.y = s.y; }
+        h.slotOff = null; h.settled = false; h.face(fx, fy);
+      }
+      h.clearPath(); h.command = null; h.target = null; h.action = null; h.sync(0);
+      h.lastX = h.x; h.lastY = h.y; h.vel = { x: 0, y: 0 }; // the jump isn't a walk: don't let it swing the heading
+    });
     for (const e of this.enemies) if (e.alive && e.engaged) { e.state = 'return'; e.engaged = false; e.target = null; e.clearZone(); }
     this.cameras.main.centerOn(tx, ty);
     for (const o of this.interactables) if (o.kind === 'warp') o.armed = false;
@@ -3158,7 +3175,10 @@ export class Game extends Phaser.Scene {
     this.prepareAt(tx, ty, ui, 2).then(() => {
       this.settleParty();
       this.calmT = 1;
-      if (curtain) curtain.done(); // fades over the camera fade-in
+      // fades over the camera fade-in. A curtain launched this frame hasn't
+      // started yet (launch takes effect next frame), and starting would reset
+      // it - so close it once it's up, or it waits forever
+      if (curtain) { if (curtain.sys.isActive()) curtain.done(); else curtain.events.once('create', () => curtain.done()); }
       onReady();
     });
   }
