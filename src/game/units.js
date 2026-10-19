@@ -1272,6 +1272,7 @@ export class Enemy extends Unit {
   }
 
   stun(t) {
+    if (!this.alive || !this.sprite?.active) return; // the hit that stuns can be the one that killed it (a crab would try to flip a gone sprite)
     if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play(`${this.tex}_flipped`); this.anim = `${this.tex}_flipped`; this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
     this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain');
   }
