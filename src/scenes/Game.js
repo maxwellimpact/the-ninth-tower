@@ -2117,6 +2117,11 @@ export class Game extends Phaser.Scene {
 
   bark(h, text) {
     if (!h || !text) return;
+    // never over the big title (a region or errand banner): wait until it clears.
+    // Only the latest line waits - a newer one replaces it, as barks always have
+    const wait = this.ui?.bannerLeft?.() || 0;
+    if (wait > 0) { this.barkWait?.remove(); this.barkWait = this.ui.time.delayedCall(wait + 200, () => { this.barkWait = null; this.bark(h, text); }); return; } // (on the HUD's clock: the title's fade runs in real time, the game's clock at the game speed)
+    this.barkCur = [h, text];
     if (this.barkObj?.active) this.barkObj.destroy();
     this.barkEv?.remove(); // the replaced bark's typing timer must stop too
     text = fitString(text, Math.min(200, this.scale.width - 16), 3); // wraps on narrow screens
@@ -2131,6 +2136,14 @@ export class Game extends Phaser.Scene {
     this.barkEv = ev;
     t.follow = h;
     this.time.delayedCall(text.length * 32 + 2200, () => { if (this.barkObj === t) this.barkObj = null; ev.remove(); this.tweens.add({ targets: t, alpha: 0, duration: 250, onComplete: () => t.destroy() }); });
+  }
+
+  // A title just came up: a line being said steps aside and is said again once it clears.
+  holdBarks() {
+    if (!this.barkObj?.active || !this.barkCur) return;
+    const [h, text] = this.barkCur;
+    this.barkEv?.remove(); this.barkObj.destroy(); this.barkObj = null;
+    this.bark(h, text); // (waits for the title)
   }
 
   autosave(reason) {

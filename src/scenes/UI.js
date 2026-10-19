@@ -317,7 +317,12 @@ export class UI extends Phaser.Scene {
     this.tweens.add({ targets: this.bannerT, alpha: 1, y: by, duration: 400 });
     this.tweens.add({ targets: this.bannerS, alpha: 1, duration: 400, delay: 200 });
     this.tweens.add({ targets: [this.bannerT, this.bannerS], alpha: 0, duration: 600, delay: 3200 });
+    this.bannerEnd = this.time.now + 3800;
+    this.g.holdBarks?.(); // the heroes wait until the title has cleared before they speak
   }
+
+  // ms until the big title has faded (0 when none is up)
+  bannerLeft() { return Math.max(0, (this.bannerEnd || 0) - this.time.now); }
 
   // Pause (button by the volume, or P): the world and music stop under a card;
   // a tap anywhere carries on. Not while another card or menu already holds the game.
