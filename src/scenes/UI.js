@@ -544,7 +544,7 @@ export class UI extends Phaser.Scene {
 
   // A list of places to pick from (the Ferryman's fires): a panel of buttons,
   // two columns when there are many, NOT NOW at the foot. Too many for dialogue choices.
-  pickPlace(title, labels, onPick) {
+  pickPlace(title, labels, onPick, alt = null) { // alt: [label, fn], a second button beside NOT NOW
     const W = this.W, H = this.H, n = labels.length, cols = n > 6 ? 2 : 1, rows = Math.ceil(n / cols);
     const bw = Math.min(cols === 2 ? 118 : 150, Math.floor((W - 40) / cols)), bh = 15, gap = 3;
     const pw = cols * bw + (cols - 1) * 6 + 16, ph = 24 + rows * (bh + gap) + bh + 12;
@@ -564,7 +564,8 @@ export class UI extends Phaser.Scene {
       objs.push(bg, t, z);
     };
     labels.forEach((l, i) => btn(x0 + 8 + (i % cols) * (bw + 6), y0 + 22 + Math.floor(i / cols) * (bh + gap), bw, l, true, () => onPick(i)));
-    btn(Math.round(W / 2 - 40), y0 + ph - bh - 6, 80, 'NOT NOW', false, null);
+    if (alt) { btn(Math.round(W / 2 - 84), y0 + ph - bh - 6, 80, alt[0], true, alt[1]); btn(Math.round(W / 2 + 4), y0 + ph - bh - 6, 80, 'NOT NOW', false, null); }
+    else btn(Math.round(W / 2 - 40), y0 + ph - bh - 6, 80, 'NOT NOW', false, null);
   }
 
   advanceDialog() {

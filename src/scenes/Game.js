@@ -774,8 +774,16 @@ export class Game extends Phaser.Scene {
       h.hp -= amt;
       h.flash?.(80);
       this.floatText(h.x, h.y - 30, `${lvl === 2 ? 'SCORCHED' : 'HEAT'} -${amt}`, 'fontPlain', 0xffa060);
+      if (h.hp <= floor + 0.5) this.hazardLow(h, "WE'RE COOKING - WE NEED A SALVE, OR TO GET BACK TO A FIRE.");
     }
     this.cameras.main.flash(120, 255, 120, 40, false, null);
+  }
+
+  // the heat or cold has worn someone down to its floor: said once, until the party's out of it again
+  hazardLow(h, line) {
+    if (this.hazardWarned) return;
+    this.hazardWarned = true;
+    this.bark(h, line);
   }
 
   heatproof(h) { return h.hasTrait?.('heatproof') || h.hasPerk?.('flameproof') || h.hasPerk?.('emberheart') || h.stats?.passives?.includes('heatproof'); }
@@ -819,6 +827,7 @@ export class Game extends Phaser.Scene {
       h.hp -= amt;
       h.flash?.(80);
       this.floatText(h.x, h.y - 30, `${lvl === 2 ? 'FREEZING' : 'COLD'} -${amt}`, 'fontPlain', 0x9fd8ff);
+      if (h.hp <= floor + 0.5) this.hazardLow(h, "WE'RE FREEZING - WE NEED A TONIC, OR TO GET BACK TO A FIRE.");
     }
     this.cameras.main.flash(120, 150, 190, 255, false, null);
   }
@@ -1406,12 +1415,17 @@ export class Game extends Phaser.Scene {
     this.scene.launch('Menu', { game: this, ...opts });
   }
 
-  openMap() {
+  // travel: the Ferryman's map ({ here, pick(fire) }): the fires you've rested at
+  // become buttons, and tapping one sends the party there
+  openMap(travel = null) {
     if (this.busy || this.ui?.dialogOpen || this.scene.isActive('WorldMap') || this.scene.isActive('Menu')) return;
     audio.sfx('click');
     this.scene.pause();
-    this.scene.launch('WorldMap', { game: this });
+    this.scene.launch('WorldMap', { game: this, travel });
   }
+
+  // the campfires you've rested at (the Ferryman's network; Brightwater's always counts)
+  restedFires() { return W.campfires.filter((c) => this.flags[`camp_${c.x}_${c.y}`] || c.name === 'BRIGHTWATER'); }
 
   closeMap() { this.scene.resume(); }
 
@@ -2991,7 +3005,7 @@ export class Game extends Phaser.Scene {
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
     const here = npc.fire;
     if (here) this.flags[`camp_${here.x}_${here.y}`] = true; // he knows this fire now
-    const known = W.campfires.filter((c) => c !== here && (this.flags[`camp_${c.x}_${c.y}`] || c.name === 'BRIGHTWATER'));
+    const known = this.restedFires().filter((c) => c !== here);
     const intro = this.flags.metFerryman ? [] : [
       line('THE STONE IS BROKEN. I FELT IT CRACK, FROM THE FAR SIDE OF THE FIRES.'),
       line('I AM THE FERRYMAN. NOT OF RIVERS - OF FIRELIGHT. EVERY FIRE IN ALDERMERE IS ONE FIRE, IF YOU KNOW THE WAY THROUGH.'),
@@ -3000,7 +3014,8 @@ export class Game extends Phaser.Scene {
     this.flags.metFerryman = true;
     const ask = line(known.length ? this.quests.linesOf(npc)[0] : 'REST BY OTHER FIRES, AND I CAN TAKE YOU BACK TO THEM.');
     this.events.emit('dialogue', [...intro, ask], () => {
-      if (known.length) this.ui.pickPlace('WHERE TO?', known.map((c) => c.name), (i) => this.ferryTravel(npc, known[i]));
+      // a list of names, or the same fires on the map (MAP)
+      if (known.length) this.ui.pickPlace('WHERE TO?', known.map((c) => c.name), (i) => this.ferryTravel(npc, known[i]), ['MAP', () => this.openMap({ here, pick: (c) => this.ferryTravel(npc, c) })]);
     });
   }
 
@@ -3025,14 +3040,14 @@ export class Game extends Phaser.Scene {
     this.tweens.add({ targets: glow[0], scale: 1.5, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const glint = this.time.addEvent({ delay: 90, loop: true, callback: () => this.fx.burst('motes', tx + (Math.random() - 0.5) * 6, ty, 1) });
     const lower = () => { glint.remove(); this.tweens.add({ targets: glow, alpha: 0, duration: 250, onComplete: () => glow.forEach((o) => o.destroy()) }); npc.s.play(`${npc.look}_idle_down`); };
-    audio.sfx('warp');
     const open = (x, y) => {
+      audio.sfx('portalOpen');
       const p = this.add.sprite(x, y + 6, 'portal').setOrigin(0.5, 1).play('portal').setScale(0.1).setDepth(y + 3);
       this.tweens.add({ targets: p, scale: 1, duration: 380, ease: 'Back.easeOut' });
       this.fx.burst('motes', x, y - 10, 10); this.fx.puff(x, y - 12, 'spark');
       return p;
     };
-    const close = (p) => this.tweens.add({ targets: p, scale: 0, duration: 300, ease: 'Back.easeIn', onComplete: () => p.destroy() });
+    const close = (p) => { audio.sfx('portalClose'); this.tweens.add({ targets: p, scale: 0, duration: 300, ease: 'Back.easeIn', onComplete: () => p.destroy() }); };
     const portal = open(ppx, ppy);
     // everyone walks in, one after another
     this.time.delayedCall(450, () => {
@@ -3040,7 +3055,7 @@ export class Game extends Phaser.Scene {
       this.tweens.killTweensOf(this.party);
       // at a walk (a companion a way off takes longer), each a beat behind the one before
       const walk = this.party.map((h) => Phaser.Math.Clamp(Math.hypot(h.x - ppx, h.y - ppy) / 80 * 1000, 300, 1400));
-      this.party.forEach((h, i) => this.tweens.add({ targets: h, x: ppx, y: ppy, duration: walk[i], delay: i * 150, onComplete: () => { h.shadow?.setVisible(false); this.tweens.add({ targets: h.sprite, alpha: 0, duration: 140 }); } }));
+      this.party.forEach((h, i) => this.tweens.add({ targets: h, x: ppx, y: ppy, duration: walk[i], delay: i * 150, onComplete: () => { audio.sfx('portalStep'); h.shadow?.setVisible(false); this.tweens.add({ targets: h.sprite, alpha: 0, duration: 140 }); } }));
       this.time.delayedCall(Math.max(...walk.map((w, i) => w + i * 150)) + 150, () => this.events.emit('ferryIn'));
     });
     this.events.once('ferryIn', () => {
@@ -3054,6 +3069,7 @@ export class Game extends Phaser.Scene {
         at ||= [c.x, c.y + 2];
         const spot = this.ferrySpot(c, at);
         if (spot) { this.quests.moveNpc(npc, spot[0], spot[1]); npc.fire = c; npc.called = true; npc.waitT = 0; }
+        this.tweens.killTweensOf(this.party); // a walk-in still running would drag them back to this portal (see doorWarp)
         this.teleportParty({ to: { x: at[0], y: at[1] } }, () => {
           const ox = at[0] * TILE + 8, oy = at[1] * TILE + 8;
           const ends = this.party.map((h, i) => (i === 0 ? { x: ox, y: oy + 14 } : { x: ox + (i === 1 ? -14 : 14), y: oy + 8 }));
@@ -3061,7 +3077,7 @@ export class Game extends Phaser.Scene {
           const out = open(ox, oy);
           this.cameras.main.fadeIn(300);
           this.party.forEach((h, i) => {
-            this.tweens.add({ targets: h.sprite, alpha: 1, duration: 160, delay: 300 + i * 150, onStart: () => h.shadow?.setVisible(true) });
+            this.tweens.add({ targets: h.sprite, alpha: 1, duration: 160, delay: 300 + i * 150, onStart: () => { audio.sfx('portalStep'); h.shadow?.setVisible(true); } });
             this.tweens.add({ targets: h, x: ends[i].x, y: ends[i].y, duration: 360, delay: 300 + i * 150, onComplete: () => { h.anim = ''; } });
           });
           this.time.delayedCall(300 + this.party.length * 150 + 420, () => {
@@ -4403,6 +4419,7 @@ export class Game extends Phaser.Scene {
     this.quests.update(dt);
     this.updateHeat(dt);
     this.updateCold(dt);
+    if (this.hazardWarned && !this.party.some((h) => this.exposed(h))) this.hazardWarned = false; // out of it: the warning can come again next time
     this.updateTownsfolk(dt);
     this.updateFerryman(dt);
     this.updateChains(dt);

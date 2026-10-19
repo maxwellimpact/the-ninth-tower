@@ -283,6 +283,22 @@ export const SFX = {
     for (let i = 0; i < 3; i++) a.tone({ type: 'pulse', duty: 0.5, freq: 900 * rnd(0.5), freq2: 300 * rnd(0.4), dur: 0.06, vol: 0.08, time: a.ctx.currentTime + i * 0.035 });
     a.noiseHit({ dur: 0.14, vol: 0.12, type: 'highpass', f0: 3000, f1: 5000, q: 1 });
   },
+  // the Ferryman's portal: a shimmering rise as it opens (an airy sweep under a
+  // run of bright bells), a soft whoosh as each hero passes through, a falling
+  // chime as it closes
+  portalOpen(a) {
+    a.tone({ type: 'triangle', freq: 220, freq2: 660, dur: 0.7, vol: 0.12, send: 0.6, echo: 0.3 });
+    a.noiseHit({ dur: 0.8, vol: 0.08, type: 'bandpass', f0: 700, f1: 6000, q: 1.5, send: 0.5 });
+    [76, 81, 83, 88, 91, 95].forEach((m, i) => a.bell({ freq: midiHz(m), time: a.t + 0.07 * i, vol: 0.05, dur: 1.1, send: 0.6 }));
+  },
+  portalStep(a) {
+    a.noiseHit({ dur: 0.28, vol: 0.09, type: 'bandpass', f0: 2600, f1: 600, q: 1.2, send: 0.4 });
+    a.tone({ type: 'sine', freq: 980, freq2: 420, dur: 0.22, vol: 0.05, send: 0.5 });
+  },
+  portalClose(a) {
+    [91, 86, 83, 79].forEach((m, i) => a.bell({ freq: midiHz(m), time: a.t + 0.06 * i, vol: 0.04, dur: 0.8, send: 0.6 }));
+    a.tone({ type: 'triangle', freq: 520, freq2: 140, dur: 0.45, vol: 0.09, send: 0.5 });
+  },
   warp(a) {
     a.tone({ type: 'triangle', freq: 600, freq2: 120, dur: 0.4, vol: 0.2, send: 0.5 });
     a.noiseHit({ dur: 0.45, vol: 0.12, type: 'lowpass', f0: 3000, f1: 200 });
