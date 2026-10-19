@@ -7,7 +7,7 @@
 <title>The Ninth Tower</title>
 <style>
   html, body { margin:0; height:100%; background:#16121f; overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none; }
-  #app { width:100vw; height:100vh; }
+  #app { position:fixed; left:0; top:0; width:100%; height:100%; } /* pinned to the visible screen: 100vh on iOS is the tallest viewport, not the current one */
   canvas { display:block; image-rendering:pixelated; }
   #loader { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#fff0a0; font:bold 14px/1 ui-monospace, Menlo, monospace; letter-spacing:.2em; }
   #loader .bar { width:180px; height:8px; background:#2b2140; outline:2px solid #45405e; overflow:hidden; }

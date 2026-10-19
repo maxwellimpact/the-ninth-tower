@@ -18,8 +18,10 @@ import { FxLab } from './scenes/FxLab.js';
 // closest to ~216px tall, then let the width flex to the screen's aspect.
 const BASE_H = 216;
 function fit() {
+  // the visible area (Safari's visualViewport is right when innerHeight is stale);
   // guard against a 0x0 window (hidden webviews / tabs report this briefly)
-  const w = window.innerWidth || 800, h = window.innerHeight || 450;
+  const vv = window.visualViewport;
+  const w = Math.round(vv?.width || window.innerWidth) || 800, h = Math.round(vv?.height || window.innerHeight) || 450;
   let zoom = Math.max(1, Math.round(h / BASE_H));
   while (zoom > 1 && w / zoom < 190) zoom--; // portrait phones still get chunky pixels
   // the height is kept even: with an odd height (and roundPixels) WebGL draws
@@ -69,11 +71,25 @@ function showError(e) {
 window.addEventListener('error', (ev) => showError(ev.error || ev.message));
 window.__reportBug = showError; // non-fatal problems the game recovered from, but we want to hear about
 
-window.addEventListener('resize', () => {
+// Keep the game the size of the screen. iOS Safari is unreliable here: while its
+// toolbars slide in and out, or mid-rotation, it reports an in-between size and
+// sometimes never sends a final resize, which left a band of background showing
+// until the phone was turned again. So listen to everything it does send,
+// measure again once the animation has settled, and check once a second too.
+function refit() {
   const n = fit();
-  game.scale.setZoom(n.zoom);
-  game.scale.resize(n.width, n.height);
-});
+  if (game.scale.zoom !== n.zoom) game.scale.setZoom(n.zoom);
+  if (game.scale.width !== n.width || game.scale.height !== n.height) game.scale.resize(n.width, n.height);
+  if (window.scrollX || window.scrollY) window.scrollTo(0, 0); // iOS can leave the page nudged after its toolbar moves
+}
+const refitSoon = () => { refit(); setTimeout(refit, 120); setTimeout(refit, 500); setTimeout(refit, 1200); };
+window.addEventListener('resize', refitSoon);
+window.addEventListener('orientationchange', refitSoon);
+window.addEventListener('pageshow', refitSoon);
+window.visualViewport?.addEventListener('resize', refitSoon);
+window.visualViewport?.addEventListener('scroll', () => refit());
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refitSoon(); });
+setInterval(refit, 1000);
 // Safe-area insets (notch, rounded corners, home indicator) in CSS px; the HUD
 // keeps its controls inside them.
 export function safeInsets() {
