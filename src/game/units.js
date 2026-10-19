@@ -2601,7 +2601,7 @@ export class Golem extends Enemy {
     this.plates = [-1, 1].map((side) => {
       const img = sc.add.image(this.x + side * 15, this.y - 34, 'plate').setDepth(this.y + 2);
       const p = { side, img, on: true };
-      p.o = sc.addInteractable({ x: img.x, y: img.y + 24, reach: 110, standOff: 46, h: 30, kind: 'plate', interact: () => this.hookPlate(p) });
+      p.o = sc.addInteractable({ x: img.x, y: img.y + 24, reach: 110, standOff: 46, h: 30, kind: 'plate', vis: () => img, interact: () => this.hookPlate(p) });
       return p;
     });
     const pip = sc.party.find((h) => h.def.id === 'pip' && !h.downed) || sc.leader;
@@ -3407,7 +3407,7 @@ export class Vulk extends Enemy {
     const b = { x, y, s: sc.add.image(x, y - 80, 'dgBoulder').setOrigin(0.5, 1).setDepth(y) };
     sc.tweens.add({ targets: b.s, y: y + 8, duration: 500, ease: 'Quad.easeIn', onComplete: () => { sc.fx.dust(x, y); sc.shake(140, 0.006); audio.sfx('bash'); } });
     sc.nav.block(Math.floor(x / 16), Math.floor(y / 16));
-    b.o = sc.addInteractable({ x, y, reach: 26, standOff: 14, h: 18, kind: 'block', interact: (h) => this.shove(b, h || sc.leader) });
+    b.o = sc.addInteractable({ x, y, reach: 26, standOff: 14, h: 18, kind: 'block', vis: () => b.s, interact: (h) => this.shove(b, h || sc.leader) });
     this.slag.push(b);
   }
 
@@ -3629,7 +3629,7 @@ export class Isolde extends Enemy {
       const p = this.clampArena(c.x + dx, c.y + dy);
       if (sc.nav.solidAtPx(p.x, p.y)) continue;
       const v = { x: p.x, y: p.y, s: sc.add.sprite(p.x, p.y, 'windvent').setDepth(-24).play('windvent') };
-      v.o = sc.addInteractable({ x: p.x, y: p.y, reach: 26, standOff: 4, h: 12, kind: 'glide', interact: () => this.rideVent(v) });
+      v.o = sc.addInteractable({ x: p.x, y: p.y, reach: 26, standOff: 4, h: 12, kind: 'glide', vis: () => v.s, interact: () => this.rideVent(v) });
       this.vents.push(v);
     }
     const who = sc.party.find((h) => !h.downed) || sc.leader;

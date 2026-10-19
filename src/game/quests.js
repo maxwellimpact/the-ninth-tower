@@ -72,7 +72,7 @@ export class QuestManager {
     }
     npc.mark = sc.add.image(npc.px, npc.py - 30, 'markQ').setDepth(100000 - 40).setVisible(false);
     sc.tweens.add({ targets: npc.mark, y: npc.py - 33, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', interact: () => this.talk(npc) });
+    npc.o = sc.addInteractable({ x: npc.px, y: npc.py, reach: 34, standOff: 24, h: 24, kind: 'npc', vis: () => npc.s, interact: () => this.talk(npc) });
     if (n.wanderer) { // the Ferryman: a spinning portal sign over his head instead of the "!" bubble
       npc.portalMark = sc.add.sprite(npc.px, npc.py - 31, 'portalMark').play('portalMark').setDepth(100000 - 40);
       sc.tweens.add({ targets: npc.portalMark, y: npc.py - 34, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -308,7 +308,7 @@ export class QuestManager {
     if (s.type === 'find') {
       const prev = this.live[`${id}:prop`];
       const spr = prev || this.placeProp({ kind: s.kind, x: s.x, y: s.y }, live);
-      live.find = sc.addInteractable({ x: px(s.x), y: px(s.y), reach: 24, standOff: 12, h: 12, kind: 'find', interact: () => {
+      live.find = sc.addInteractable({ x: px(s.x), y: px(s.y), reach: 24, standOff: 12, h: 12, kind: 'find', vis: () => spr, interact: () => {
         sc.floatText(px(s.x), px(s.y) - 24, s.say, 'fontPlain');
         audio.sfx(s.kind === 'dog' ? 'blip' : 'coin');
         if (s.kind === 'dog' && spr) { live.objs = live.objs.filter((o) => o !== spr); this.dogHome(spr, this.npc(ERRANDS[id].giver)); }
@@ -324,7 +324,7 @@ export class QuestManager {
       live.bells = s.bells.map(([x, y, tone]) => {
         const img = sc.add.image(px(x), px(y) + 6, s.art === 'rune' ? `rune_${tone}` : 'bell').setOrigin(0.5, 1).setDepth(px(y));
         live.objs.push(img);
-        const o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'bell', interact: () => this.ring(id, tone, img) });
+        const o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'bell', vis: () => img, interact: () => this.ring(id, tone, img) });
         live.objs.push({ destroy: () => sc.removeInteractable(o) });
         return { x, y, tone, img };
       });

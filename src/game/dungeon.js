@@ -245,12 +245,12 @@ export class DungeonKit {
       if (DOOR[ch] && !seen.has(k)) this.addDoor(x, y, ch, seen);
       else if (ch === '@') this.start = { x, y };
       else if (ch === 'F') this.addCampfire(x, y);
-      else if (ch === 'B' || ch === 'O') { const b = { x, y, x0: x, y0: y, room, heavy: ch === 'O', s: sc.add.image(px(x), px(y) + 8, ch === 'O' ? 'dgBoulder' : 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', interact: (h) => this.pushFrom(b, h) }); }
+      else if (ch === 'B' || ch === 'O') { const b = { x, y, x0: x, y0: y, room, heavy: ch === 'O', s: sc.add.image(px(x), px(y) + 8, ch === 'O' ? 'dgBoulder' : 'dgBlock').setOrigin(0.5, 1).setDepth(px(y) + 2) }; sc.nav.block(x, y); this.blocks.push(b); room.blocks.push(b); b.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 16, kind: 'block', vis: () => b.s, interact: (h) => this.pushFrom(b, h) }); }
       else if (ch === 'P') { const p = { x, y, room, latched: false, s: sc.add.image(px(x), px(y), 'dgPlate').setDepth(-30) }; this.plates.push(p); room.plates.push(p); }
       else if (ch === 'b' || ch === 'r') { const z = this.zones[this.zoneOf.get(k)]; z.pegs.push({ x, y, color: ch === 'b' ? 'blue' : 'red', s: sc.add.image(px(x), px(y) + 6, 'dgPeg_blue_up').setOrigin(0.5, 1) }); }
       else if (this.def.posts?.[ch]) this.addPost(x, y, ch); // a dungeon's own post letters win over shared ones
       else if (BASIN[ch]) { const z = this.zones[this.zoneOf.get(k)]; z.basins.push({ x, y, side: BASIN[ch], s: sc.add.image(px(x), px(y), 'dgWater').setDepth(-29) }); }
-      else if (ch === 'L') { const z = this.zones[this.zoneOf.get(k)]; const l = { x, y, z, s: sc.add.image(px(x), px(y) + 6, 'dgLever_A').setOrigin(0.5, 1).setDepth(px(y)) }; sc.nav.block(x, y); z.levers.push(l); l.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'lever', interact: (h) => this.pull(l, h) }); }
+      else if (ch === 'L') { const z = this.zones[this.zoneOf.get(k)]; const l = { x, y, z, s: sc.add.image(px(x), px(y) + 6, 'dgLever_A').setOrigin(0.5, 1).setDepth(px(y)) }; sc.nav.block(x, y); z.levers.push(l); l.o = sc.addInteractable({ x: px(x), y: px(y), reach: 24, standOff: 12, h: 18, kind: 'lever', vis: () => l.s, interact: (h) => this.pull(l, h) }); }
       else if (ch === 'C') { const z = this.zones[this.zoneOf.get(k)]; const c = new Crystal(sc, this, x, y, z); z.crystals.push(c); this.crystals.push(c); sc.breakables.push(c); sc.nav.block(x, y); }
       else if (ch === 'X') {
         // reinforced wall: only the Stone Gauntlets break it
@@ -315,16 +315,16 @@ export class DungeonKit {
     const sorted = [...tiles].sort((a, b) => (vertical ? a[1] - b[1] : a[0] - b[0]));
     const m = sorted[Math.floor(sorted.length / 2)];
     d.sides = vertical ? [[m[0] - 1, m[1]], [m[0] + 1, m[1]]] : [[m[0], m[1] - 1], [m[0], m[1] + 1]];
-    if (kind !== 'shutter') d.o = this.sc.addInteractable({ x: px(d.sides[1][0]), y: px(d.sides[1][1]), reach: 22, standOff: 0, h: 20, kind: 'door', interact: () => this.tryUnlock(d) });
+    if (kind !== 'shutter') d.o = this.sc.addInteractable({ x: px(d.sides[1][0]), y: px(d.sides[1][1]), reach: 22, standOff: 0, h: 20, kind: 'door', vis: () => d.s, interact: () => this.tryUnlock(d) });
     this.doors.push(d);
   }
 
   addCampfire(x, y) {
     const sc = this.sc;
     this.camp = { x, y };
-    sc.add.sprite(px(x), px(y) + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(px(y));
+    const fire = sc.add.sprite(px(x), px(y) + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(px(y));
     sc.nav.block(x, y);
-    sc.addInteractable({ x: px(x), y: px(y), reach: 26, h: 20, kind: 'campfire', interact: () => { sc.flags[`camp_${x}_${y}`] = true; sc.rest(); } });
+    sc.addInteractable({ x: px(x), y: px(y), reach: 26, h: 20, kind: 'campfire', vis: () => fire, interact: () => { sc.flags[`camp_${x}_${y}`] = true; sc.rest(); } });
   }
 
   addChest(x, y, ch, room) {
@@ -339,7 +339,7 @@ export class DungeonKit {
     const sc = this.sc;
     c.img = sc.add.image(px(c.x), px(c.y) + 4, c.opened ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(px(c.y));
     sc.nav.block(c.x, c.y);
-    c.o = sc.addInteractable({ x: px(c.x), y: px(c.y), reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, h) });
+    c.o = sc.addInteractable({ x: px(c.x), y: px(c.y), reach: 22, h: 14, kind: 'chest', vis: () => c.img, interact: (h) => this.openChest(c, h) });
     c.placed = true;
   }
 
@@ -348,10 +348,10 @@ export class DungeonKit {
     // land next to the pair post, offset as authored
     const pair = [...this.cells].find(([, c]) => c === p.pair);
     const [pxT, pyT] = pair[0].split(',').map(Number);
-    sc.add.image(px(x), px(y) + 4, 'post').setOrigin(0.5, 1).setDepth(px(y));
+    const postImg = sc.add.image(px(x), px(y) + 4, 'post').setOrigin(0.5, 1).setDepth(px(y));
     sc.add.image(px(x) + 1, px(y) + 3, 'shadow').setAlpha(0.2).setDepth(-4);
     sc.nav.block(x, y);
-    sc.addInteractable({ x: px(x), y: px(y), reach: 34, standOff: 14, h: 20, kind: 'post', id: `${this.id}_${ch}`, pair: `${this.id}_${p.pair}`, land: [pxT + p.land[0], pyT + p.land[1]], interact: (h, o) => sc.grapple(o) });
+    sc.addInteractable({ x: px(x), y: px(y), reach: 34, standOff: 14, h: 20, kind: 'post', vis: () => postImg, id: `${this.id}_${ch}`, pair: `${this.id}_${p.pair}`, land: [pxT + p.land[0], pyT + p.land[1]], interact: (h, o) => sc.grapple(o) });
   }
 
   // A glide pad (Rimeglass Spire): a wind vent on the lip of a chasm. With the
@@ -380,7 +380,7 @@ export class DungeonKit {
     const s = sc.add.sprite(px(x), px(y), 'mirelle', 'idle_down_0').setOrigin(0.5, 0.75).setTint(0xc8f0ff).setDepth(px(y));
     const ice = sc.add.image(px(x), px(y) + 6, 'iceblock').setOrigin(0.5, 1).setScale(1.3, 1.5).setAlpha(0.42).setDepth(px(y) + 1);
     sc.nav.block(x, y);
-    const o = sc.addInteractable({ x: px(x), y: px(y), reach: 30, standOff: 20, h: 24, kind: 'npc', interact: () => sc.bark(sc.leader, (room.braziers || []).length ? "THERE'S SOMEONE IN THERE, FROZEN SOLID. THOSE BRAZIERS - IF WE LIT THEM, MAYBE THE ICE WOULD GIVE." : "THERE'S SOMEONE FROZEN IN THERE.") });
+    const o = sc.addInteractable({ x: px(x), y: px(y), reach: 30, standOff: 20, h: 24, kind: 'npc', vis: () => s, interact: () => sc.bark(sc.leader, (room.braziers || []).length ? "THERE'S SOMEONE IN THERE, FROZEN SOLID. THOSE BRAZIERS - IF WE LIT THEM, MAYBE THE ICE WOULD GIVE." : "THERE'S SOMEONE FROZEN IN THERE.") });
     this.frozen = { x, y, room, s, ice, o };
   }
 

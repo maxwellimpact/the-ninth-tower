@@ -986,11 +986,11 @@ export class Game extends Phaser.Scene {
     this.campfireObjs = W.campfires.map((c) => ({ x: px(c.x), y: px(c.y) })); // light sources in the gloom
     for (const c of W.campfires) {
       const x = px(c.x), y = px(c.y);
-      this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
+      const fire = this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
       const glow = this.add.circle(x, y, 26, 0xffb050, 0.12).setDepth(-60).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({ targets: glow, alpha: 0.06, scale: 0.9, duration: 220, yoyo: true, repeat: -1 });
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
+      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', vis: () => fire, interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
       // a lazy thread of woodsmoke over every fire
       const puff = this.time.addEvent({ delay: 600 + (c.x % 5) * 70, loop: true, callback: () => {
         if (!this.cameras.main.worldView.contains(x, y)) return;
@@ -1001,9 +1001,9 @@ export class Game extends Phaser.Scene {
     }
     for (const s of W.signs) {
       const x = px(s.x), y = px(s.y);
-      this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y);
+      const board = this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y);
       this.nav.block(s.x, s.y);
-      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
+      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => board, interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
     }
     for (const c of W.chests) {
       const x = px(c.x), y = px(c.y);
@@ -1011,7 +1011,7 @@ export class Game extends Phaser.Scene {
       // a treasure under the floor shows as what you'd actually see: a cracked flagstone with water below
       const img = c.look === 'cistern' ? this.add.image(x, y, done ? 'cisternDived' : 'cistern').setDepth(-30) : this.add.image(x, y + 4, done ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y);
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', interact: (h) => this.openChest(c, img, h) });
+      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', vis: () => img, interact: (h) => this.openChest(c, img, h) });
     }
     // overworld illusions (the hermit's door): solid wall until the party holds the relic
     this.falseWalls = (W.falseWalls || []).map((f) => {
@@ -1021,10 +1021,10 @@ export class Game extends Phaser.Scene {
     this.refreshFalseWalls();
     for (const p of W.posts) {
       const x = px(p.x), y = px(p.y);
-      this.add.image(x, y + 4, 'post').setOrigin(0.5, 1).setDepth(y);
+      const postImg = this.add.image(x, y + 4, 'post').setOrigin(0.5, 1).setDepth(y);
       this.add.image(x + 1, y + 3, 'shadow').setAlpha(0.2).setDepth(-4);
       this.nav.block(p.x, p.y);
-      this.addInteractable({ x, y, reach: 34, standOff: 14, h: 20, kind: 'post', id: p.id, pair: p.pair, land: p.land, interact: (h, o) => this.grapple(o) });
+      this.addInteractable({ x, y, reach: 34, standOff: 14, h: 20, kind: 'post', vis: () => postImg, id: p.id, pair: p.pair, land: p.land, interact: (h, o) => this.grapple(o) });
     }
     // Climbing Claws faces (Frosthelm's Highfold): tap the marks to climb up, or the lip above to climb down
     for (const c of W.climbs || []) {
@@ -1050,15 +1050,15 @@ export class Game extends Phaser.Scene {
       const img = this.add.image(x, y + 6, used ? 'shrineUsed' : 'shrine').setOrigin(0.5, 1).setDepth(y);
       if (!used) { img.glow = this.add.circle(x, y - 6, 12, 0x9fe6ff, 0.18).setDepth(-50).setBlendMode(Phaser.BlendModes.ADD); this.tweens.add({ targets: img.glow, alpha: 0.06, duration: 1400, yoyo: true, repeat: -1 }); }
       this.nav.block(k.x, k.y);
-      this.addInteractable({ x, y, reach: 24, standOff: 14, h: 22, kind: 'shrine', interact: () => this.useShrine(k, img) });
+      this.addInteractable({ x, y, reach: 24, standOff: 14, h: 22, kind: 'shrine', vis: () => img, interact: () => this.useShrine(k, img) });
     }
     // Lookout towers: climb to sketch the surrounding region onto the map
     for (const k of W.lookouts || []) {
       const x = px(k.x), y = px(k.y);
-      this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
+      const tower = this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
       this.add.image(x, y + 8, 'lookoutFront').setOrigin(0.5, 1).setDepth(y + 30); // railing in front of anyone up top
       for (const dx of [-1, 0, 1]) { this.nav.block(k.x + dx, k.y); this.nav.block(k.x + dx, k.y - 1); }
-      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', look: k, interact: () => this.climbLookout(k) });
+      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', vis: () => tower, look: k, interact: () => this.climbLookout(k) });
     }
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
@@ -1128,13 +1128,13 @@ export class Game extends Phaser.Scene {
     // Gathering nodes (sprites created once their biome art exists)
     this.nodes = W.nodes.map((n) => ({ ...n, px: n.x * TILE + 8, py: n.y * TILE + 8, ready: true, t: 0, s: null }));
     for (const n of this.nodes) {
-      n.o = this.addInteractable({ x: n.px, y: n.py, reach: 22, standOff: 12, h: 12, kind: 'node', node: n, interact: (h) => this.harvest(n, h), approach: (h) => this.harvestSpot(n, h) });
+      n.o = this.addInteractable({ x: n.px, y: n.py, reach: 22, standOff: 12, h: 12, kind: 'node', vis: () => n.s, node: n, interact: (h) => this.harvest(n, h), approach: (h) => this.harvestSpot(n, h) });
     }
     // Townsfolk NPCs (sprites appear when interior art is loaded)
     this.npcs = W.npcs.map((n) => {
       const x = n.x * TILE + 8, y = n.y * TILE + 8;
       const npc = { ...n, px: x, py: y, s: null };
-      npc.o = this.addInteractable({ x, y, reach: 40, standOff: 32, h: 24, kind: 'npc', interact: () => this.talkNpc(npc) });
+      npc.o = this.addInteractable({ x, y, reach: 40, standOff: 32, h: 24, kind: 'npc', vis: () => npc.s, interact: () => this.talkNpc(npc) });
       return npc;
     });
 
@@ -1146,7 +1146,7 @@ export class Game extends Phaser.Scene {
       : this.add.sprite(fx, fy + 6, 'frog').setOrigin(0.5, 1).play('frog_idle').setDepth(fy);
     this.add.image(fx + 1, fy + 5, 'shadow').setAlpha(0.2).setDepth(-4);
     this.nav.block(f.x, f.y);
-    this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
+    this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', vis: () => this.frog, interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
     // Ward Stone
     for (const w of this.wards) {
       const wd = w.def;
@@ -1174,7 +1174,7 @@ export class Game extends Phaser.Scene {
       const mark = this.add.bitmapText(x, y - 32, 'fontGold', r.guardedBy ? '!!' : '!').setOrigin(0.5).setDepth(TOP);
       this.tweens.add({ targets: mark, y: y - 35, duration: 400, yoyo: true, repeat: -1 });
       const npc = { id, r, sprite, sh, mark };
-      npc.o = this.addInteractable({ x, y, reach: 24, standOff: 18, h: 24, kind: 'recruit', interact: () => this.talkRecruit(npc) });
+      npc.o = this.addInteractable({ x, y, reach: 24, standOff: 18, h: 24, kind: 'recruit', vis: () => sprite, interact: () => this.talkRecruit(npc) });
       this.recruitNPCs.push(npc);
     }
   }
@@ -1555,31 +1555,16 @@ export class Game extends Phaser.Scene {
   tapFeedback(x, y, ring, target, size = 1.4) {
     this.fx.ring(x, y, ring, size);
     if (!TAP_FLASH) return;
-    const own = target?.sprite?.active ? target.sprite : target?.node?.s?.active ? target.node.s : null; // a harvest node flashes its own rock or plant
-    const spr = own || this.spriteAt(x, y - (target?.h || 12) / 2, x, y);
-    if (!spr) return;
+    // only ever the tapped thing's own sprite: a unit's, or the one an interactable
+    // names (vis). Things with no sprite of their own (doors' walk-through spots,
+    // warps, climb points) just get the ring - never a guess by position, which
+    // could light up a tree overhanging a rock instead of the rock
+    const spr = target?.sprite || target?.vis?.();
+    if (!spr?.active || !spr.visible || !spr.frame) return;
     // a white copy of its current frame laid over it, fading out: the real sprite (its tint, its animation) is untouched
     const f = this.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name).setOrigin(spr.originX, spr.originY)
       .setFlipX(spr.flipX).setScale(spr.scaleX, spr.scaleY).setDepth(spr.depth + 0.5).setTintFill(0xffffff).setAlpha(0.6);
     this.tweens.add({ targets: f, alpha: 0, duration: 220, ease: 'Quad.easeOut', onComplete: () => f.destroy() });
-  }
-
-  // The world sprite drawn at a spot (props, NPCs, levers): the topmost small one there, never a hero.
-  // With an anchor (the tapped thing's foot), the one standing closest to it wins,
-  // so a tree whose canopy hangs over a rock doesn't flash instead of the rock.
-  spriteAt(x, y, ax = null, ay = null) {
-    const heroes = new Set(this.party.map((h) => h.sprite));
-    let best = null, bd = Infinity;
-    for (const o of this.children.list) {
-      if ((o.type !== 'Sprite' && o.type !== 'Image') || !o.visible || o.alpha < 0.2 || o.depth < -20 || heroes.has(o) || !o.frame) continue;
-      const w = o.displayWidth, h = o.displayHeight;
-      if (w > 96 || h > 96) continue; // ground, terrain chunks, big overlays
-      const left = o.x - w * o.originX, top = o.y - h * o.originY;
-      if (x < left - 3 || x > left + w + 3 || y < top - 3 || y > top + h + 3) continue;
-      if (ax !== null) { const d = Math.hypot(o.x - ax, o.y - ay); if (d < bd) { bd = d; best = o; } }
-      else if (!best || o.depth > best.depth) best = o;
-    }
-    return best;
   }
 
   // ============================================================== combat api
@@ -2549,7 +2534,7 @@ export class Game extends Phaser.Scene {
         f.blight = this.add.image(x, y + 4, `blight${(i % 3) + 3}`).setDepth(-88).setAlpha(0.95); // the blight they caught, pooled at their feet
         this.tweens.add({ targets: s, y: y - 2, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
-      f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', interact: () => this.talkTownsfolk(f) });
+      f.o = this.addInteractable({ x, y, reach: 34, standOff: 22, h: 24, kind: 'npc', vis: () => s, interact: () => this.talkTownsfolk(f) });
       if (saved) f.home = { x, y }, f.idleT = 1 + Math.random() * 5; // home again: they potter about
       else this.nav.block(hx, hy);
       (this.townsfolk ??= []).push(f);
@@ -2682,7 +2667,7 @@ export class Game extends Phaser.Scene {
       this.tweens.add({ targets: s, y: y - 3, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.tweens.add({ targets: glow, alpha: 0.05, duration: 1100, yoyo: true, repeat: -1 });
       const page = { p, s, glow };
-      page.o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 14, kind: 'lore', interact: () => this.readLore(page) });
+      page.o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 14, kind: 'lore', vis: () => s, interact: () => this.readLore(page) });
       this.lorePages.push(page);
     }
   }
@@ -2825,7 +2810,7 @@ export class Game extends Phaser.Scene {
     const KEEPER = { curio: 'bess', archery: 'wynn', bath: 'hilde', mayor: 'mayor' };
     const home = { b, img, keeper: KEEPER[b.kind] };
     this.homes[b.id] = home;
-    home.o = this.addInteractable({ x: bx, y: by - 4, reach: 26, standOff: 14, h: 18, kind: 'sign', interact: () => {
+    home.o = this.addInteractable({ x: bx, y: by - 4, reach: 26, standOff: 14, h: 18, kind: 'sign', vis: () => img, interact: () => {
       const n = this.folkCount();
       if (n < b.opens) {
         this.events.emit('dialogue', [{ who: b.name, text: `BOARDED UP. A NOTE ON THE DOOR: 'WE CAUGHT THE HEX. WE'LL BE BACK WHEN BRIGHTWATER IS.' (OPENS WITH ${b.opens} TOWNSFOLK HOME - ${n} SO FAR.)` }]);
