@@ -433,6 +433,7 @@ export function lootBag(rarityColor = 'goldL') {
 // tiles wide. The tavern's chimney smokes (CHIMNEYS).
 export const CHIMNEYS = { tavern: [11, -64], bath: [11, -64], mill: [13, -77] }; // smoke spout, from the sprite's bottom-centre
 const HW = 56, HH = 64, HL = 3, HR = HW - 4, WALL_BOT = HH - 3;
+export const DOOR_H = 22; // cottage doors (the open-door overlay matches)
 
 // Each cottage's look: roof, door colour, the sign that says what's inside,
 // flower boxes, a chimney. The Brightwater homes that open as townsfolk come
@@ -471,12 +472,14 @@ function frontWall(ctx, top, cfg, boarded) {
     px(ctx, x, y, beam ? 'woodD' : (x * 7 + y * 3) % 23 === 0 ? 'mist' : boarded && (x * 3 + y * 5) % 17 === 0 ? 'stone' : 'bone');
   }
   for (let y = top; y < WALL_BOT; y++) px(ctx, HR - 3, y, 'mist');
-  const dx = Math.round(HW / 2) - 5;
-  px(ctx, dx - 1, WALL_BOT - 14, 'woodD', 12, 14);
-  px(ctx, dx, WALL_BOT - 13, cfg.door[0], 10, 13);
-  px(ctx, dx, WALL_BOT - 13, cfg.door[1], 10, 1);
-  px(ctx, dx + 4, WALL_BOT - 13, 'woodD', 1, 13);
-  px(ctx, dx + 7, WALL_BOT - 7, 'gold', 1, 2);
+  // the door, tall enough for a person (22px; the heroes stand about 24): planks, a frame, a latch
+  const dx = Math.round(HW / 2) - 5, DH = DOOR_H;
+  px(ctx, dx - 1, WALL_BOT - DH, 'woodD', 12, DH);
+  px(ctx, dx, WALL_BOT - DH + 1, cfg.door[0], 10, DH - 1);
+  px(ctx, dx, WALL_BOT - DH + 1, cfg.door[1], 10, 1);
+  px(ctx, dx + 4, WALL_BOT - DH + 1, 'woodD', 1, DH - 1);
+  px(ctx, dx, WALL_BOT - Math.round(DH * 0.65), 'woodD', 10, 1); // a cross rail
+  px(ctx, dx + 7, WALL_BOT - Math.round(DH * 0.45), 'gold', 1, 2);
   px(ctx, dx - 2, WALL_BOT + 1, 'stone', 14, 2); px(ctx, dx - 2, WALL_BOT + 1, 'mist', 14, 1);
   const wy = Math.max(top + 4, WALL_BOT - 17);
   for (const wx of [HL + 5, HR - 12]) {
@@ -486,8 +489,8 @@ function frontWall(ctx, top, cfg, boarded) {
     px(ctx, wx - 1, wy + 8, 'woodD', 11, 1);
     if (cfg.flowers) { px(ctx, wx, wy + 9, boarded ? 'dirtD' : 'grass', 9, 2); if (!boarded) { px(ctx, wx + 2, wy + 9, 'redL', 1, 1); px(ctx, wx + 6, wy + 9, 'goldL', 1, 1); } }
   }
-  if (boarded) { // two planks nailed across the door
-    for (let i = 0; i < 12; i++) { px(ctx, dx - 1 + i, WALL_BOT - 11 + Math.round(i * 0.35), 'woodL', 1, 2); px(ctx, dx - 1 + i, WALL_BOT - 4 - Math.round(i * 0.35), 'wood', 1, 2); }
+  if (boarded) { // planks nailed across the door
+    for (let i = 0; i < 12; i++) { px(ctx, dx - 1 + i, WALL_BOT - 18 + Math.round(i * 0.35), 'woodL', 1, 2); px(ctx, dx - 1 + i, WALL_BOT - 9 + Math.round(i * 0.35), 'wood', 1, 2); px(ctx, dx - 1 + i, WALL_BOT - 4 - Math.round(i * 0.35), 'woodL', 1, 2); }
   } else if (cfg.sign) hangSign(ctx, cfg.sign === 'mug' || cfg.sign === 'target' || cfg.sign === 'steam' ? dx + 13 : dx - 9, wy, cfg.sign);
 }
 
@@ -681,11 +684,12 @@ export function bubble() {
 
 // Open doorway overlay for a cottage door (sits exactly over the baked door).
 export function doorOpen() {
-  const [c, ctx] = makeCanvas(12, 14);
-  px(ctx, 0, 0, 'woodD', 12, 14);
-  px(ctx, 1, 1, 'ink', 10, 13);
-  px(ctx, 3, 9, 'fire', 7, 5); px(ctx, 4, 11, 'fireL', 5, 3); // warm light on the floor inside
-  px(ctx, 1, 1, 'wood', 2, 13); px(ctx, 1, 1, 'woodL', 1, 13); // door swung inward
+  const H = DOOR_H;
+  const [c, ctx] = makeCanvas(12, H);
+  px(ctx, 0, 0, 'woodD', 12, H);
+  px(ctx, 1, 1, 'ink', 10, H - 1);
+  px(ctx, 3, H - 7, 'fire', 7, 7); px(ctx, 4, H - 4, 'fireL', 5, 4); // warm light on the floor inside
+  px(ctx, 1, 1, 'wood', 2, H - 1); px(ctx, 1, 1, 'woodL', 1, H - 1); // door swung inward
   return c;
 }
 
@@ -693,9 +697,9 @@ export function doorOpen() {
 export function interiorDoor(open = false) {
   const [c, ctx] = makeCanvas(18, 20);
   px(ctx, 0, 0, 'woodD', 18, 20);
-  if (open) {
-    px(ctx, 2, 2, 'grassL', 14, 18); px(ctx, 2, 2, 'bone', 14, 3); px(ctx, 5, 8, 'grass', 8, 12);
-    px(ctx, 2, 2, 'wood', 3, 18); px(ctx, 2, 2, 'woodL', 1, 18);
+  if (open) { // bright daylight filling the doorway (no landscape: we're still looking at the inside wall)
+    for (let y = 2; y < 20; y++) for (let x = 2; x < 16; x++) px(ctx, x, y, y < 8 ? 'white' : bayer(x, y) < (y - 8) / 14 ? 'goldL' : 'white');
+    px(ctx, 2, 2, 'wood', 3, 18); px(ctx, 2, 2, 'woodL', 1, 18); // the door, swung inward
   } else {
     for (let x = 2; x < 16; x++) px(ctx, x, 2, x % 4 === 1 ? 'woodD' : x < 9 ? 'woodL' : 'wood', 1, 18);
     px(ctx, 12, 11, 'gold', 2, 2);
@@ -1205,11 +1209,11 @@ export function mill() {
   px(ctx, 26, eave + 6, 'sand', 5, 6); px(ctx, 27, eave + 6, 'bone', 3, 1); px(ctx, 26, eave + 11, 'dirtL', 5, 1); // the hanging sack
   // --- the door (arched, plank) and two small deep windows in the stone
   const dx = 23;
-  px(ctx, dx - 1, wallBot - 14, 'slate', 12, 14); px(ctx, dx, wallBot - 15, 'slate', 10, 1);
-  px(ctx, dx, wallBot - 13, 'wood', 10, 13); px(ctx, dx + 1, wallBot - 14, 'wood', 8, 1);
-  for (const x of [dx + 3, dx + 6]) px(ctx, x, wallBot - 13, 'woodD', 1, 13);
-  px(ctx, dx, wallBot - 9, 'steelD', 10, 1); px(ctx, dx, wallBot - 4, 'steelD', 10, 1); // iron straps
-  px(ctx, dx + 8, wallBot - 7, 'gold', 1, 2);
+  px(ctx, dx - 1, wallBot - 18, 'slate', 12, 18); px(ctx, dx, wallBot - 19, 'slate', 10, 1);
+  px(ctx, dx, wallBot - 17, 'wood', 10, 17); px(ctx, dx + 1, wallBot - 18, 'wood', 8, 1);
+  for (const x of [dx + 3, dx + 6]) px(ctx, x, wallBot - 17, 'woodD', 1, 17);
+  px(ctx, dx, wallBot - 12, 'steelD', 10, 1); px(ctx, dx, wallBot - 4, 'steelD', 10, 1); // iron straps
+  px(ctx, dx + 8, wallBot - 8, 'gold', 1, 2);
   px(ctx, dx - 2, wallBot + 1, 'stone', 14, 2); px(ctx, dx - 2, wallBot + 1, 'bone', 14, 1);
   for (const wx of [L + 6, R - 13]) {
     px(ctx, wx, loftBot + 5, 'slate', 8, 8); px(ctx, wx + 1, loftBot + 6, 'fire', 6, 6); px(ctx, wx + 1, loftBot + 6, 'fireL', 3, 3);

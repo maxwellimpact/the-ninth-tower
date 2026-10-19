@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import QDATA from '../data/quests.json';
-import { CHIMNEYS } from '../gfx/props.js';
+import { CHIMNEYS, DOOR_H } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
@@ -1091,7 +1091,7 @@ export class Game extends Phaser.Scene {
     for (const b of W.buildings) {
       if (b.landmark) continue; // the elder tree and the like: no door to dress
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
-      const ext = this.add.image(bx - 6, by - 17, 'door_open').setOrigin(0).setDepth(by + 1).setVisible(false);
+      const ext = this.add.image(bx - 6, by - 3 - DOOR_H, 'door_open').setOrigin(0).setDepth(by + 1).setVisible(false);
       const out = W.warps.find((w) => w.door && w.exit && w.building === b.id);
       const int = this.add.image(out.x * TILE + 8, (out.y + 1) * TILE, 'idoor').setOrigin(0.5, 1).setDepth((out.y + 1) * TILE);
       this.doors[b.id] = { ext, int };
@@ -1503,6 +1503,19 @@ export class Game extends Phaser.Scene {
     // tapped right on something that won't break yet: say so, then treat the tap as a move
     const shut = this.breakables.find((b) => b.alive && b.breakableNow && !b.breakableNow() && Math.hypot(b.x - wx, b.y - 8 - wy) < 12);
     if (shut && this.time.now > (this.shutHintT || 0)) { this.shutHintT = this.time.now + 2500; this.bark(L, "IT WON'T BUDGE. WE'D NEED SOMETHING FAR STRONGER THAN A BLADE."); }
+    // a tap anywhere on a house: walk to its door (not to the nearest open ground beside it)
+    for (const b of W.buildings) {
+      if (b.kind !== 'shop' && b.kind !== 'tavern' && !b.opens) continue;
+      const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
+      if (wx < bx - 28 || wx > bx + 28 || wy < by - 64 || wy > by) continue;
+      const door = this.interactables.find((o) => o.kind === 'warp' && o.warp.building === b.id && !o.warp.exit) || this.homes?.[b.id]?.o;
+      if (!door) break;
+      L.command = { type: 'interact', obj: door };
+      L.clearPath();
+      this.tapFeedback(door.x, door.y, 'ringGold', door);
+      audio.sfx('click');
+      return;
+    }
     for (const o of this.interactables) {
       if (o.hidden) continue;
       if (Math.hypot(o.x - wx, o.y - (o.h || 12) / 2 - wy) < 16 + (o.h || 12) / 2) {
@@ -2781,7 +2794,7 @@ export class Game extends Phaser.Scene {
     const KEEPER = { curio: 'bess', archery: 'wynn', bath: 'hilde', mayor: 'mayor' };
     const home = { b, img, keeper: KEEPER[b.kind] };
     this.homes[b.id] = home;
-    this.addInteractable({ x: bx, y: by - 4, reach: 26, standOff: 14, h: 18, kind: 'sign', interact: () => {
+    home.o = this.addInteractable({ x: bx, y: by - 4, reach: 26, standOff: 14, h: 18, kind: 'sign', interact: () => {
       const n = this.folkCount();
       if (n < b.opens) {
         this.events.emit('dialogue', [{ who: b.name, text: `BOARDED UP. A NOTE ON THE DOOR: 'WE CAUGHT THE HEX. WE'LL BE BACK WHEN BRIGHTWATER IS.' (OPENS WITH ${b.opens} TOWNSFOLK HOME - ${n} SO FAR.)` }]);
@@ -3164,7 +3177,10 @@ export class Game extends Phaser.Scene {
     const dir = entering ? -1 : 1;
     for (const h of this.party) { h.face(0, dir); h.anim = ''; h.play('walk'); }
     this.tweens.killTweensOf(this.party);
-    this.tweens.add({ targets: this.party, y: `+=${dir * 12}`, duration: 320 });
+    // everyone files into the doorway, one behind the other, rather than each
+    // walking straight ahead into the wall beside it
+    const doorX = w.x * TILE + 8, doorY = w.y * TILE + 8;
+    this.party.forEach((h, i) => this.tweens.add({ targets: h, x: doorX, y: doorY + dir * 12 - dir * i * 7, duration: 300, delay: i * 60 }));
     this.time.delayedCall(220, () => this.cameras.main.fadeOut(220, 5, 3, 10));
     this.time.delayedCall(470, () => {
       this.tweens.killTweensOf(this.party); // the step-in tween must not fight the teleport
