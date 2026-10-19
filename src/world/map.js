@@ -161,13 +161,14 @@ const PATHS = [
   { w: 1.1, pts: [[20, 37], [20, 50], [25, 62], [30, 72], [44, 82], [60, 88], [80, 92], [96, 94]] },
   { w: 0.9, pts: [[44, 82], [41, 92], [40, 102]] },
   { w: 0.9, pts: [[96, 94], [110, 99], [124, 104]] },
-  { w: 0.75, pts: [[14, 36], [14, 31]] },
-  { w: 0.75, pts: [[21, 36], [21, 31]] },
-  // Brightwater grows: paths to the homes that open as the townsfolk come back, and up to the mill
-  { w: 0.75, pts: [[7, 37], [7, 31]] },
-  { w: 0.75, pts: [[28, 35], [28, 31]] },
-  { w: 0.75, pts: [[15, 44], [25, 44]] },
-  { w: 0.7, pts: [[11, 37], [11, 31], [11, 25], [10, 21]] },
+  // Brightwater's front paths: each wanders off the road and runs right up to
+  // its doorstep (the last point tucks under the house, so there's no gap)
+  { w: 0.75, pts: [[14, 37], [15, 34], [14, 31], [14, 29.5]] }, // the shop
+  { w: 0.75, pts: [[21, 36.5], [20, 34], [21, 31.5], [21, 30.5]] }, // the tavern
+  { w: 0.75, pts: [[7, 37], [6, 34], [6, 31.5], [6, 30.5]] }, // Bess's curios
+  { w: 0.75, pts: [[29, 34.5], [30, 32], [29, 29.5], [29, 28.5]] }, // the mayor's
+  { w: 0.75, pts: [[15, 42.5], [17, 44], [20, 44.5], [23, 45.5], [26, 45], [26, 44.5]] }, // the lane between the steam house and the archery
+  { w: 0.7, pts: [[11, 37], [11, 31], [11, 25], [10, 20.5]] }, // up to the mill
   { w: 0.7, pts: [[24, 36], [24, 25]] }, // down to the Ferryman's jetty
   // Wave 2: Mistfen's west road runs on south into Gloamwood ...
   { w: 1.0, pts: [[40, 102], [38, 116], [36, 128], [32, 137], [33, 145], [40, 151], [56, 158], [68, 167], [74, 177], [76, 181]] },
@@ -289,11 +290,9 @@ export function buildWorld() {
   wall(36, 17, 41, 17); wall(45, 17, 52, 17); wall(35, 17, 35, 25);
   wall(53, 17, 53, 21); wall(53, 25, 53, 28); wall(36, 29, 40, 29); wall(48, 29, 52, 29);
   // Brightwater hamlet by the lake: shop + tavern (sprites over solid footprints; doors are warps)
-  rect(13, 27, 15, 29, T.HOUSE);
-  rect(20, 27, 22, 29, T.HOUSE);
   // the watermill on the lake's west shore, its wheel in a short mill race cut from the lake
   rect(9, 17, 11, 19, T.HOUSE);
-  for (const b of W.buildings || []) if (b.opens) rect(b.x - 1, b.y - 2, b.x + 1, b.y, T.HOUSE); // the homes that open as townsfolk come back
+  for (const b of W.buildings || []) if (!b.landmark || b.opens) rect(b.x - 1, b.y - 2, b.x + 1, b.y, T.HOUSE); // the cottages: shop, tavern, and the homes that open as townsfolk come back
   for (const [x, y] of [[12, 17], [12, 18], [13, 18], [14, 18], [12, 19], [13, 19], [14, 19], [15, 19], [16, 19]]) set(x, y, T.WATER);
   wall(38, 20, 39, 21); wall(48, 21, 50, 21); // collapsed house corners in the ruins
   set(47, 25, T.STAIRS); // steps down to the Undercroft

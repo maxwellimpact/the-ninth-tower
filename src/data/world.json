@@ -2263,7 +2263,7 @@
   {
    "id": "tavernIn",
    "x": 21,
-   "y": 30,
+   "y": 31,
    "to": {
     "x": 243,
     "y": 25
@@ -2277,7 +2277,7 @@
    "y": 27,
    "to": {
     "x": 21,
-    "y": 31
+    "y": 32
    },
    "exit": true,
    "door": true,
@@ -2908,7 +2908,7 @@
   {
    "id": "tavern",
    "x": 21,
-   "y": 29,
+   "y": 30,
    "kind": "tavern"
   },
   {
@@ -2948,8 +2948,8 @@
   },
   {
    "id": "curio",
-   "x": 7,
-   "y": 29,
+   "x": 6,
+   "y": 30,
    "kind": "curio",
    "landmark": true,
    "opens": 5,
@@ -2957,8 +2957,8 @@
   },
   {
    "id": "archery",
-   "x": 25,
-   "y": 43,
+   "x": 26,
+   "y": 44,
    "kind": "archery",
    "landmark": true,
    "opens": 15,
@@ -2967,7 +2967,7 @@
   {
    "id": "bath",
    "x": 15,
-   "y": 43,
+   "y": 42,
    "kind": "bath",
    "landmark": true,
    "opens": 25,
@@ -2975,8 +2975,8 @@
   },
   {
    "id": "mayor",
-   "x": 28,
-   "y": 29,
+   "x": 29,
+   "y": 28,
    "kind": "mayor",
    "landmark": true,
    "opens": 30,
