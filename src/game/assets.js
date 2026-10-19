@@ -5,6 +5,7 @@
 import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, WARDEN, MALGRIM, malgrimRecolor, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
+import * as PORTAL from '../gfx/portal.js';
 import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
@@ -296,6 +297,7 @@ GROUPS.core.push(
     s.textures.addCanvas('dgReinforcedFace', DG.reinforcedWall(true)); s.textures.addCanvas('dgReinforcedTop', DG.reinforcedWall(false));
     for (const k of ['shutter', 'key', 'boss', 'vault']) for (const v of [false, true]) { s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}`, DG.door(k, v)); s.textures.addCanvas(`dgDoor_${k}_${v ? 'v' : 'h'}_open`, DG.door(k, v, true)); }
     s.textures.addCanvas('markQ', Q.questMark('!')); s.textures.addCanvas('markA', Q.questMark('?'));
+    frames(s, 'portal', PORTAL.portal(), 10); frames(s, 'portalMark', PORTAL.portalMark(), 8); // the Ferryman's portal and the sign over his head
   }],
 );
 

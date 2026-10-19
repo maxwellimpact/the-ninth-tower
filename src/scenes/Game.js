@@ -2902,18 +2902,148 @@ export class Game extends Phaser.Scene {
     this.floatText(w.x, w.y - 40, 'THE WHEEL TURNS!', 'fontGold');
   }
 
-  // The Ferryman (30 townsfolk): any landing to any other, thirty gold.
+  // ============================================================ the Ferryman
+  // A hooded mystic, freed when the first Ward Stone falls: "not of rivers - of
+  // firelight". He's always waiting at the campfire you're heading for (he
+  // moves there while neither spot is on screen), with a portal sign over his
+  // head, and calls out if you hang about. He opens a portal to any campfire
+  // you've rested at (Brightwater's always); the party walks through it.
+  ferryman() { return this.quests?.npc('ferryman'); }
+
+  // a free spot beside a campfire, clear of everyone else's
+  ferrySpot(c, not = null) {
+    const F = this.ferryman();
+    const busy = this.personSpots().filter(([x, y]) => !(F && x === F.def?.x && y === F.def?.y));
+    for (const [dx, dy] of [[2, 0], [-2, 0], [2, 1], [-2, 1], [2, -1], [-2, -1], [1, -2], [-1, -2], [3, 0], [-3, 0], [0, -2]]) {
+      const x = c.x + dx, y = c.y + dy;
+      if (this.nav.isSolid(x, y) || (not && not[0] === x && not[1] === y)) continue;
+      if (busy.some(([bx, by]) => Math.hypot(bx - x, by - y) < 1.6 && !(bx === c.x && by === c.y))) continue;
+      return [x, y];
+    }
+    return null;
+  }
+
+  updateFerryman(dt) {
+    const F = this.ferryman();
+    if (!F || F.hiddenNow || this.area !== 'overworld') return;
+    F.def ||= QDATA.npcs.find((n) => n.id === 'ferryman');
+    const L = this.leader, v = this.cameras.main.worldView;
+    // a few motes of violet light drift up off him
+    if (v.contains(F.px, F.py) && Math.random() < dt * 3) this.fx.burst('motes', F.px + (Math.random() - 0.5) * 12, F.py - 10 - Math.random() * 10, 1);
+    if (this.busy) return;
+    F.moveT = (F.moveT || 0) - dt;
+    if (F.moveT <= 0) { F.moveT = 0.4; this.placeFerryman(false); }
+    // he calls out if you're nearby but don't come over
+    const d = Math.hypot(F.px - L.x, F.py - L.y);
+    if (d < 120 && d > 40 && !this.ui.dialogOpen) {
+      F.waitT = (F.waitT || 0) + dt;
+      if (F.waitT > 2.5 && !F.called) { F.called = true; this.bark(F.s, this.flags.metFerryman ? 'NEED A LIFT?' : 'YOU THERE. I HAVE BEEN WAITING FOR YOU.'); }
+    } else if (d > 220) { F.waitT = 0; F.called = false; }
+  }
+
+  // move him to the campfire the party is nearest (within 22 tiles). Unforced,
+  // only while neither his old spot nor the new one is on screen; forced (the
+  // first placing, or behind a warp's fade) anywhere.
+  placeFerryman(force) {
+    const F = this.ferryman();
+    if (!F || F.hiddenNow) return;
+    const L = this.leader, v = this.cameras.main.worldView, ltx = L.x / TILE, lty = L.y / TILE;
+    let best = null, bd = Infinity;
+    for (const c of W.campfires) { const d = Math.hypot(c.x - ltx, c.y - lty); if (d < bd) { bd = d; best = c; } }
+    if (!best || F.fire === best || (F.fire && bd > 22)) return;
+    const seen = (x, y) => x > v.x - 32 && x < v.right + 32 && y > v.y - 48 && y < v.bottom + 32;
+    const spot = this.ferrySpot(best);
+    if (!spot || (!force && F.fire && (seen(F.px, F.py) || seen(spot[0] * TILE + 8, spot[1] * TILE + 8)))) return;
+    this.quests.moveNpc(F, spot[0], spot[1]);
+    F.fire = best; F.called = false; F.waitT = 0;
+    F.s.play(`${F.look}_idle_down`, true);
+  }
+
   ferryTalk(npc) {
     const line = (t) => ({ who: npc.name, voice: npc.voice, text: t });
-    const FARE = 30;
-    const stops = this.quests.npcs.filter((n) => n.ferry && n.id !== npc.id && this.quests.unlocked(n));
-    const l = line(this.quests.linesOf(npc)[0]);
-    l.choices = [...stops.map((n) => [`${this.placeName(n.x * TILE + 8, n.y * TILE + 8)} (${FARE}G)`, () => {
-      if (this.state.gold < FARE) { this.events.emit('dialogue', [line("THIRTY GOLD, FRIEND. THE BOAT DOESN'T ROW ITSELF.")]); return; }
-      this.state.gold -= FARE; audio.sfx('coin'); this.events.emit('party');
-      this.warp({ to: { x: n.x, y: n.y + 1 } });
-    }]), ['NOT NOW', () => {}]];
-    this.events.emit('dialogue', [l]);
+    const here = npc.fire;
+    if (here) this.flags[`camp_${here.x}_${here.y}`] = true; // he knows this fire now
+    const known = W.campfires.filter((c) => c !== here && (this.flags[`camp_${c.x}_${c.y}`] || c.name === 'BRIGHTWATER'));
+    const intro = this.flags.metFerryman ? [] : [
+      line('THE STONE IS BROKEN. I FELT IT CRACK, FROM THE FAR SIDE OF THE FIRES.'),
+      line('I AM THE FERRYMAN. NOT OF RIVERS - OF FIRELIGHT. EVERY FIRE IN ALDERMERE IS ONE FIRE, IF YOU KNOW THE WAY THROUGH.'),
+      line('REST BY A FIRE AND I WILL REMEMBER IT. FIND ME AT THE NEXT ONE AND I WILL OPEN THE WAY. NO CHARGE. MALGRIM HAS TAKEN ENOUGH.'),
+    ];
+    this.flags.metFerryman = true;
+    const ask = line(known.length ? this.quests.linesOf(npc)[0] : 'REST BY OTHER FIRES, AND I CAN TAKE YOU BACK TO THEM.');
+    this.events.emit('dialogue', [...intro, ask], () => {
+      if (known.length) this.ui.pickPlace('WHERE TO?', known.map((c) => c.name), (i) => this.ferryTravel(npc, known[i]));
+    });
+  }
+
+  // He lifts his staff, a portal opens beside him, and the party walks in; at
+  // the far fire it opens again, they step out, and it closes. He's there too.
+  ferryTravel(npc, c) {
+    this.busy = true;
+    // the portal opens on his far side from the fire (or in front of him)
+    const fire = npc.fire || { x: npc.x - 2, y: npc.y }, away = Math.sign(npc.x - fire.x) || 1;
+    let pt = [npc.x + away, npc.y];
+    for (const [dx, dy] of [[away, 0], [0, 1], [away, 1], [-away, 1], [0, -1]]) {
+      const x = npc.x + dx, y = npc.y + dy;
+      if (!this.nav.isSolid(x, y) && Math.hypot(x - fire.x, y - fire.y) >= 1.5) { pt = [x, y]; break; }
+    }
+    const ppx = pt[0] * TILE + 8, ppy = pt[1] * TILE + 8;
+    // he raises his staff (it stays up, the crystal glowing, until everyone's through)
+    if (this.anims.exists(`${npc.look}_cast_down`)) npc.s.play(`${npc.look}_cast_down`);
+    const tx = npc.px - 6, ty = npc.py - 26; // the crystal, staff raised
+    const glow = [this.add.circle(tx, ty, 6, 0xb98cff), this.add.circle(tx, ty, 2.5, 0xffffff)].map((o) => o.setAlpha(0).setDepth(npc.py + 2));
+    this.tweens.add({ targets: glow[0], alpha: 0.5, duration: 250, delay: 150 });
+    this.tweens.add({ targets: glow[1], alpha: 0.95, duration: 250, delay: 150 });
+    this.tweens.add({ targets: glow[0], scale: 1.5, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const glint = this.time.addEvent({ delay: 90, loop: true, callback: () => this.fx.burst('motes', tx + (Math.random() - 0.5) * 6, ty, 1) });
+    const lower = () => { glint.remove(); this.tweens.add({ targets: glow, alpha: 0, duration: 250, onComplete: () => glow.forEach((o) => o.destroy()) }); npc.s.play(`${npc.look}_idle_down`); };
+    audio.sfx('warp');
+    const open = (x, y) => {
+      const p = this.add.sprite(x, y + 6, 'portal').setOrigin(0.5, 1).play('portal').setScale(0.1).setDepth(y + 3);
+      this.tweens.add({ targets: p, scale: 1, duration: 380, ease: 'Back.easeOut' });
+      this.fx.burst('motes', x, y - 10, 10); this.fx.puff(x, y - 12, 'spark');
+      return p;
+    };
+    const close = (p) => this.tweens.add({ targets: p, scale: 0, duration: 300, ease: 'Back.easeIn', onComplete: () => p.destroy() });
+    const portal = open(ppx, ppy);
+    // everyone walks in, one after another
+    this.time.delayedCall(450, () => {
+      for (const h of this.party) { h.clearPath(); h.command = null; h.target = null; h.anim = ''; h.face(ppx - h.x, ppy - h.y); h.play('walk'); }
+      this.tweens.killTweensOf(this.party);
+      // at a walk (a companion a way off takes longer), each a beat behind the one before
+      const walk = this.party.map((h) => Phaser.Math.Clamp(Math.hypot(h.x - ppx, h.y - ppy) / 80 * 1000, 300, 1400));
+      this.party.forEach((h, i) => this.tweens.add({ targets: h, x: ppx, y: ppy, duration: walk[i], delay: i * 150, onComplete: () => { h.shadow?.setVisible(false); this.tweens.add({ targets: h.sprite, alpha: 0, duration: 140 }); } }));
+      this.time.delayedCall(Math.max(...walk.map((w, i) => w + i * 150)) + 150, () => this.events.emit('ferryIn'));
+    });
+    this.events.once('ferryIn', () => {
+      lower();
+      this.cameras.main.fadeOut(260, 12, 6, 24);
+      this.time.delayedCall(280, () => {
+        close(portal);
+        // the far fire: where the party steps out, and the Ferryman beside it
+        let at = null;
+        for (const [dx, dy] of [[0, 2], [1, 2], [-1, 2], [2, 1], [-2, 1], [0, -2]]) if (!this.nav.isSolid(c.x + dx, c.y + dy)) { at = [c.x + dx, c.y + dy]; break; }
+        at ||= [c.x, c.y + 2];
+        const spot = this.ferrySpot(c, at);
+        if (spot) { this.quests.moveNpc(npc, spot[0], spot[1]); npc.fire = c; npc.called = true; npc.waitT = 0; }
+        this.teleportParty({ to: { x: at[0], y: at[1] } }, () => {
+          const ox = at[0] * TILE + 8, oy = at[1] * TILE + 8;
+          const ends = this.party.map((h, i) => (i === 0 ? { x: ox, y: oy + 14 } : { x: ox + (i === 1 ? -14 : 14), y: oy + 8 }));
+          for (const h of this.party) { h.x = ox; h.y = oy; h.sprite.setAlpha(0); h.shadow?.setVisible(false); h.sync(0); h.face(0, 1); h.anim = ''; h.play('walk'); }
+          const out = open(ox, oy);
+          this.cameras.main.fadeIn(300);
+          this.party.forEach((h, i) => {
+            this.tweens.add({ targets: h.sprite, alpha: 1, duration: 160, delay: 300 + i * 150, onStart: () => h.shadow?.setVisible(true) });
+            this.tweens.add({ targets: h, x: ends[i].x, y: ends[i].y, duration: 360, delay: 300 + i * 150, onComplete: () => { h.anim = ''; } });
+          });
+          this.time.delayedCall(300 + this.party.length * 150 + 420, () => {
+            close(out);
+            this.busy = false;
+            this.autosave('ferry');
+          });
+        });
+      });
+    });
   }
 
   rest() {
@@ -3185,6 +3315,7 @@ export class Game extends Phaser.Scene {
         curtain?.setProgress(p, label);
       },
     };
+    this.placeFerryman(true); // (behind the fade: arriving beside a fire, he's already there)
     this.prepareAt(tx, ty, ui, 2).then(() => {
       this.settleParty();
       this.calmT = 1;
@@ -4243,6 +4374,7 @@ export class Game extends Phaser.Scene {
     this.updateHeat(dt);
     this.updateCold(dt);
     this.updateTownsfolk(dt);
+    this.updateFerryman(dt);
     this.updateChains(dt);
     this.updatePerks(dt);
     this.dungeon?.update(dt);
@@ -4254,7 +4386,7 @@ export class Game extends Phaser.Scene {
       // keep speech inside the view even when the speaker is at the screen edge
       const v = this.cameras.main.worldView, half = this.barkObj.width / 2 + 4;
       const bx = Phaser.Math.Clamp(this.barkObj.follow.x, v.x + half, Math.max(v.x + half, v.right - half));
-      this.barkObj.setPosition(Math.round(bx), Math.round(Math.max(this.barkObj.follow.y - 30, v.y + this.barkObj.height + 4)));
+      this.barkObj.setPosition(Math.round(bx), Math.round(Math.max(this.barkObj.follow.y - 30 - (this.barkObj.follow.barkLift || 0), v.y + this.barkObj.height + 4)));
     }
 
     this.moteT -= dt;

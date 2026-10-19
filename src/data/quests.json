@@ -3663,87 +3663,20 @@
   {
    "id": "ferryman",
    "name": "THE FERRYMAN",
-   "x": 24,
-   "y": 24,
+   "x": 15,
+   "y": 36,
    "look": "ferryman",
    "ferry": true,
    "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
+    "pitch": 110,
+    "wave": "sine",
+    "speed": 0.8
    },
    "lines": [
-    "TEN OF YOU HOME, AND I'VE GOT THE OLD BOAT FLOATING AGAIN. WHERE TO? THIRTY GOLD, ANY LANDING."
+    "WHERE SHALL THE FIRES TAKE YOU?"
    ],
-   "folk": 10
-  },
-  {
-   "id": "ferryFen",
-   "name": "FERRY LANDING",
-   "x": 33,
-   "y": 64,
-   "look": "board",
-   "ferry": true,
-   "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
-   },
-   "lines": [
-    "THE FERRY LANDING BY THE FEN CAMP. A BELL HANGS FROM THE POST. RING IT AND THE FERRYMAN POLES UP THROUGH THE SHALLOWS."
-   ],
-   "folk": 10
-  },
-  {
-   "id": "ferryGloam",
-   "name": "FERRY LANDING",
-   "x": 24,
-   "y": 131,
-   "look": "board",
-   "ferry": true,
-   "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
-   },
-   "lines": [
-    "A FERRY LANDING ON THE GLOAMWOOD SHALLOWS, A SHORT WALK FROM THE HUNTERS' CAMP. RING THE BELL AND THE FERRYMAN COMES."
-   ],
-   "folk": 10
-  },
-  {
-   "id": "ferryCinder",
-   "name": "FERRY LANDING",
-   "x": 134,
-   "y": 161,
-   "look": "board",
-   "ferry": true,
-   "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
-   },
-   "lines": [
-    "A FERRY LANDING AT THE HOT SPRINGS BELOW EMBERWATCH. THE BELL IS WARM TO THE TOUCH. RING IT AND THE FERRYMAN COMES."
-   ],
-   "folk": 10
-  },
-  {
-   "id": "ferryFrost",
-   "name": "SLED POST",
-   "x": 48,
-   "y": 228,
-   "look": "board",
-   "ferry": true,
-   "voice": {
-    "pitch": 150,
-    "wave": "triangle",
-    "speed": 0.85
-   },
-   "lines": [
-    "THE FERRYMAN'S SLED POST OUTSIDE RIMEWATCH. NO WATER UP HERE THAT ISN'T ICE, SO HE COMES UP THE PASS BY SLED. RING THE BELL."
-   ],
-   "folk": 10
+   "wards": 1,
+   "wanderer": true
   },
   {
    "id": "bess",

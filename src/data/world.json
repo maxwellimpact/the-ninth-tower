@@ -2635,59 +2635,73 @@
  "campfires": [
   {
    "x": 13,
-   "y": 35
+   "y": 35,
+   "name": "BRIGHTWATER"
   },
   {
    "x": 86,
-   "y": 97
+   "y": 97,
+   "name": "THE FROG PONDS"
   },
   {
    "x": 124,
-   "y": 37
+   "y": 37,
+   "name": "THE WATCHTOWER ROAD"
   },
   {
    "x": 31,
-   "y": 62
+   "y": 62,
+   "name": "HOBB'S FARM"
   },
   {
    "x": 31,
-   "y": 141
+   "y": 141,
+   "name": "THE HUNTERS' CAMP"
   },
   {
    "x": 64,
-   "y": 164
+   "y": 164,
+   "name": "THE HERMIT'S PATH"
   },
   {
    "x": 139,
-   "y": 152
+   "y": 152,
+   "name": "EMBERWATCH"
   },
   {
    "x": 166,
-   "y": 194
+   "y": 194,
+   "name": "THE FORGE GATE"
   },
   {
    "x": 46,
-   "y": 219
+   "y": 219,
+   "name": "RIMEWATCH"
   },
   {
    "x": 80,
-   "y": 272
+   "y": 272,
+   "name": "THE HIGHFOLD"
   },
   {
    "x": 92,
-   "y": 311
+   "y": 311,
+   "name": "THE CAUSEWAY"
   },
   {
    "x": 11,
-   "y": 276
+   "y": 276,
+   "name": "GLASSWATER SHORE"
   },
   {
    "x": 133,
-   "y": 313
+   "y": 313,
+   "name": "MAREK'S CAMP"
   },
   {
    "x": 150,
-   "y": 272
+   "y": 272,
+   "name": "THE TOWER GATE"
   }
  ],
  "signs": [

@@ -542,6 +542,31 @@ export class UI extends Phaser.Scene {
 
   clearChoices() { for (const o of this.choiceObjs) o.destroy(); this.choiceObjs = []; this.choosing = false; }
 
+  // A list of places to pick from (the Ferryman's fires): a panel of buttons,
+  // two columns when there are many, NOT NOW at the foot. Too many for dialogue choices.
+  pickPlace(title, labels, onPick) {
+    const W = this.W, H = this.H, n = labels.length, cols = n > 6 ? 2 : 1, rows = Math.ceil(n / cols);
+    const bw = Math.min(cols === 2 ? 118 : 150, Math.floor((W - 40) / cols)), bh = 15, gap = 3;
+    const pw = cols * bw + (cols - 1) * 6 + 16, ph = 24 + rows * (bh + gap) + bh + 12;
+    const x0 = Math.round((W - pw) / 2), y0 = Math.max(4, Math.round((H - ph) / 2));
+    const objs = [];
+    const done = (fn) => { for (const o of objs) o.destroy(); fn?.(); };
+    objs.push(this.add.zone(0, 0, W, H).setOrigin(0).setDepth(69).setInteractive().on('pointerdown', () => { this.tapUI(); done(); }));
+    const g = this.add.graphics().setDepth(70);
+    g.fillStyle(0x0d0a14, 0.55).fillRect(0, 0, W, H);
+    panel(g, x0, y0, pw, ph, 0x1f1830, 0x9b7bd6);
+    objs.push(g, this.add.bitmapText(W / 2, y0 + 7, 'fontGold', title).setOrigin(0.5, 0).setDepth(71));
+    const btn = (x, y, w, label, hot, fn) => {
+      const bg = this.add.graphics().setDepth(71);
+      panel(bg, x, y, w, bh, hot ? 0x2b2140 : 0x2f5d3a, hot ? 0x9b7bd6 : 0x8cff8c);
+      const t = this.add.bitmapText(x + w / 2, y + 5, hot ? 'font' : 'fontGold', fitString(label, w - 8)).setOrigin(0.5, 0).setDepth(72);
+      const z = this.add.zone(x, y - 1, w, bh + 2).setOrigin(0).setDepth(73).setInteractive({ useHandCursor: true }).on('pointerdown', (p, lx, ly, ev) => { ev?.stopPropagation?.(); this.tapUI(); done(fn); });
+      objs.push(bg, t, z);
+    };
+    labels.forEach((l, i) => btn(x0 + 8 + (i % cols) * (bw + 6), y0 + 22 + Math.floor(i / cols) * (bh + gap), bw, l, true, () => onPick(i)));
+    btn(Math.round(W / 2 - 40), y0 + ph - bh - 6, 80, 'NOT NOW', false, null);
+  }
+
   advanceDialog() {
     if (!this.dialogOpen || this.choosing) return;
     if (this.typing) { this.finishLine(); return; }

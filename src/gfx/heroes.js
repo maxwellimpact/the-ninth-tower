@@ -135,7 +135,7 @@ export const FOLK = {
   wynn: folk('wynn', 'wren', { head: 'cap_ranger@4', body: 'leathers_ranger@2', weapon: 'bow_long@4' }), // the fletcher
   hilde: folk('hilde', 'pip', { head: 'kerchief@6', body: 'apron_blue@3' }), // keeps the steam house
   mayor: folk('mayor', 'brann', { head: 'helm_lion@3', body: 'robe_scholar@6' }), // Mayor Tobin
-  ferryman: folk('ferryman', 'oake', { head: 'hood_monk@3', body: 'jacket_leather@3', weapon: 'staff_oak@1' }), // the lake's boatman (30 townsfolk)
+  ferryman: folk('ferryman', 'pip', { head: 'hood_shadow@4', body: 'robe_scholar@4', weapon: 'staff_crystal@6' }), // the Ferryman: a hooded mystic who opens portals between campfires
   kaari: folk('kaari', 'wren', { head: 'hood_ranger@5', body: 'furs_hide@2', weapon: 'bow_hunting@3' }), // Rimewatch's warden
 };
 

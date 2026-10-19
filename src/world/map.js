@@ -169,7 +169,6 @@ const PATHS = [
   { w: 0.75, pts: [[29, 34.5], [30, 32], [29, 29.5], [29, 28.5]] }, // the mayor's
   { w: 0.75, pts: [[15, 42.5], [17, 44], [20, 44.5], [23, 45.5], [26, 45], [26, 44.5]] }, // the lane between the steam house and the archery
   { w: 0.7, pts: [[11, 37], [11, 31], [11, 25], [10, 20.5]] }, // up to the mill
-  { w: 0.7, pts: [[24, 36], [24, 25]] }, // down to the Ferryman's jetty
   // Wave 2: Mistfen's west road runs on south into Gloamwood ...
   { w: 1.0, pts: [[40, 102], [38, 116], [36, 128], [32, 137], [33, 145], [40, 151], [56, 158], [68, 167], [74, 177], [76, 181]] },
   { w: 0.85, pts: [[56, 158], [52, 168], [50, 178], [50, 185]] }, // to the elder tree
@@ -198,10 +197,6 @@ const PATHS = [
   { w: 0.75, pts: [[14, 259], [10, 268], [9, 282], [13, 296], [24, 305], [40, 308], [52, 308]] }, // the west trail past the lake
   // the causeway: from Frosthelm's south road, through a cut in the ridge, round to the Ninth Tower's door
   { w: 1.1, pts: [[96, 301], [106, 306], [116, 309], [128, 310], [142, 309], [155, 306], [155, 270]] },
-  // short paths to the ferry landings, from each region's camp road
-  { w: 0.7, pts: [[29, 68], [33, 65]] },
-  { w: 0.7, pts: [[31, 137], [25, 132]] },
-
 ];
 
 function distToSeg(px, py, [ax, ay], [bx, by]) {
