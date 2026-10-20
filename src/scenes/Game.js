@@ -32,6 +32,7 @@ import skillData from '../data/skills.json';
 import tuning from '../data/tuning.json';
 
 const TOP = 100000;
+const WET = new Set([T.WATER, T.BOG, T.SHALLOW, T.LAVA]); // no one stands on or beside these
 const w_locked = (sc, o) => (o.warp.lockedBy && !sc.flags[`broke_${o.warp.lockedBy}`]) || (o.warp.requires && !sc.flags[o.warp.requires]);
 // the lead hero's thoughts at each beat of a Ward Stone's story
 const THOUGHTS = {
@@ -2953,12 +2954,19 @@ export class Game extends Phaser.Scene {
   ferryman() { return this.quests?.npc('ferryman'); }
 
   // a free spot beside a campfire, clear of everyone else's
+  // water, bog, shallows or lava on or next to a tile
+  wetNear(x, y) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (WET.has(this.world.at(x + dx, y + dy))) return true;
+    return false;
+  }
+
   ferrySpot(c, not = null) {
     const F = this.ferryman();
     const busy = this.personSpots().filter(([x, y]) => !(F && x === F.def?.x && y === F.def?.y));
     for (const [dx, dy] of [[2, 0], [-2, 0], [2, 1], [-2, 1], [2, -1], [-2, -1], [1, -2], [-1, -2], [3, 0], [-3, 0], [0, -2]]) {
       const x = c.x + dx, y = c.y + dy;
       if (this.nav.isSolid(x, y) || (not && not[0] === x && not[1] === y)) continue;
+      if (this.wetNear(x, y)) continue; // dry ground, never at the water's edge
       if (busy.some(([bx, by]) => Math.hypot(bx - x, by - y) < 1.6 && !(bx === c.x && by === c.y))) continue;
       return [x, y];
     }

@@ -2800,7 +2800,7 @@
   {
    "id": "grub",
    "name": "GRUB THE PITBOSS",
-   "x": 60,
+   "x": 59,
    "y": 112,
    "look": "goblin",
    "lines": [
@@ -2908,8 +2908,8 @@
   {
    "id": "rosie",
    "name": "RIBBIT ROSIE",
-   "x": 89,
-   "y": 96,
+   "x": 94,
+   "y": 94,
    "look": "ada",
    "minigame": "FrogRace",
    "voice": {
@@ -3156,7 +3156,7 @@
   {
    "id": "rook",
    "name": "ROOK THE PROSPECTOR",
-   "x": 131,
+   "x": 132,
    "y": 167,
    "look": "rook",
    "voice": {

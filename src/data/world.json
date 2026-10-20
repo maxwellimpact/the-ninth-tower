@@ -4664,8 +4664,8 @@
    "id": "hetty",
    "name": "HETTY",
    "look": "ada",
-   "x": 86,
-   "y": 71,
+   "x": 88,
+   "y": 69,
    "quirk": "MY SHADOW LEFT ME. IT'S OVER THERE BEHIND THE REEDS, SULKING.",
    "home": "MY SHADOW CAME BACK. WE'RE TALKING AGAIN.",
    "guard": [
@@ -4686,7 +4686,7 @@
    "name": "GRUFF THE COOPER",
    "look": "tam",
    "x": 133,
-   "y": 124,
+   "y": 125,
    "quirk": "I FLOAT A LITTLE WHEN I'M HAPPY. I HAVEN'T FLOATED IN WEEKS.",
    "home": "LOOK! I'M FLOATING! ...AN INCH. IT COUNTS."
   },
@@ -4695,7 +4695,7 @@
    "name": "LIDDY",
    "look": "piet",
    "x": 172,
-   "y": 72,
+   "y": 75,
    "quirk": "~THE HEX TURNED ALL MY WORDS TO SONG~ ~AND I CAN'T EVEN SING~",
    "home": "I CAN TALK AGAIN! ...I KIND OF MISS THE SINGING.",
    "guard": [
@@ -4715,8 +4715,8 @@
    "id": "barty",
    "name": "BARTHOLOMEW",
    "look": "hobb",
-   "x": 139,
-   "y": 67,
+   "x": 140,
+   "y": 66,
    "quirk": "I SNEEZE SPARKS. I'VE SET FIRE TO THREE HATS AND A GOAT. THE GOAT WAS FINE.",
    "home": "NOT ONE SPARK ALL WEEK. THE GOAT SENDS ITS REGARDS."
   },
@@ -4803,7 +4803,7 @@
    "name": "MOTHER ASHBY",
    "look": "ada",
    "x": 160,
-   "y": 172,
+   "y": 171,
    "quirk": "MY HAIR IS ON FIRE. HAS BEEN FOR A WEEK. IT DOESN'T HURT. IT'S JUST VERY HARD TO SLEEP.",
    "home": "MY HAIR IS JUST HAIR NOW. A BIT SINGED. VERY FASHIONABLE IN BRIGHTWATER, APPARENTLY."
   },
@@ -4920,7 +4920,7 @@
    "name": "SER ANSELM",
    "look": "oswin",
    "x": 145,
-   "y": 313,
+   "y": 315,
    "quirk": "I CAN ONLY MARCH FORWARD. I'VE BEEN WALKING INTO THIS ROCK FOR A WEEK. HONOURABLY.",
    "home": "I TURNED AROUND TODAY! ALL THE WAY AROUND! I FELL OVER, BUT STILL."
   },
