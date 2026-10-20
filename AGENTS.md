@@ -26,8 +26,9 @@ the rule, the check) as well as fixing it.
   (warps, climb points), which get the ring alone. Never pick a sprite by position.
 - **Moving a hero to a spot** (dash, step, leap, blink) goes through `landing()`
   in `src/game/skills.js`: reachable open ground, or the skill doesn't fire.
-- **People stand on dry, open ground** you can walk to. Scan for water and
-  reachability after placing or moving anyone.
+- **People stand on dry, open ground** you can walk to: no water, bog,
+  shallows or lava on or beside them. Run `tools/people-check.js` after placing
+  or moving anyone.
 - **Placement fits the layout.** New buildings and NPCs go near related ones and
   on paths, never at random. Check every place a character can ever be, not just
   where they are now. View the result zoomed out before shipping.
@@ -47,8 +48,10 @@ the rule, the check) as well as fixing it.
 - **Test tools** (each file's header says how to run it):
   - `tools/goto.js`: jump anywhere.
   - `tools/errand-walk.js`: plays every errand.
-  - `tools/dungeon-walk.js`: full Undercroft, Abbey and Forge runs.
+  - `tools/dungeon-walk.js`: full dungeon runs. Set `window.__reachLog = []`
+    first to log whether each leg it teleports past could be walked.
   - `tools/region-check.js`: reachability of everything in a region.
+  - `tools/people-check.js`: everyone on dry land and reachable.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
   - `tools/door-orbit.js`: how far companions swing round the leader after a door.
   - `tools/house-mix.js`: cottage art sheets.
