@@ -9,7 +9,10 @@ const resume = async (sc) => { for (let i = 0; i < 8; i++) { if (sc.scene.isPaus
 function ctx(id) {
   const sc = window.__scene, k = Object.values(sc.dungeons).find((d) => d.id === id);
   const T = (lx, ly) => ({ x: (k.ox + lx) * 16 + 8, y: (k.oy + ly) * 16 + 8 });
-  const tp = (lx, ly) => { const p = T(lx, ly); sc.party.forEach((h, i) => { h.x = p.x + (i ? (i === 1 ? -8 : 8) : 0); h.y = p.y + (i ? 6 : 0); h.clearPath(); h.command = null; h.target = null; }); };
+  // set window.__reachLog = [] first to log, before every teleport, whether the
+  // leader could have walked there (a walking player can't teleport)
+  const reach = (lx, ly) => { if (!window.__reachLog) return; const p = T(lx, ly), L = sc.leader; const path = sc.nav.find(L.x, L.y, p.x, p.y, 40000); const e = path?.[path.length - 1]; window.__reachLog.push({ from: at(), to: [lx, ly], ok: !!e && Math.hypot(e.x - p.x, e.y - p.y) < 20 }); };
+  const tp = (lx, ly) => { reach(lx, ly); const p = T(lx, ly); sc.party.forEach((h, i) => { h.x = p.x + (i ? (i === 1 ? -8 : 8) : 0); h.y = p.y + (i ? 6 : 0); h.clearPath(); h.command = null; h.target = null; }); };
   const at = () => [Math.floor(sc.leader.x / 16) - k.ox, Math.floor(sc.leader.y / 16) - k.oy];
   const tapTile = async (lx, ly, frames = 90) => { const p = T(lx, ly); sc.tapWorld(p.x, p.y - 4); await step(frames); };
   const solid = (lx, ly) => sc.nav.isSolid(k.ox + lx, k.oy + ly);
@@ -22,7 +25,7 @@ function ctx(id) {
   const unlock = async (lx, ly) => { const d = door(lx, ly); k.tryUnlock(d); await step(20); return d.unlocked && !d.closed; };
   const room = (lx, ly) => k.rooms[k.roomOf.get(`${k.ox + lx},${k.oy + ly}`)];
   const enterFight = async (lx, ly) => { tp(lx, ly); for (let i = 0; i < 30 && !room(lx, ly).active; i++) await step(10); const was = room(lx, ly).active; await step(60); await killAll(); await step(60); return { sealed: was, cleared: room(lx, ly).cleared }; };
-  const push = async (b, sx, sy) => { sc.leader.x = (k.ox + sx) * 16 + 8; sc.leader.y = (k.oy + sy) * 16 + 8; sc.leader.command = null; k.pushFrom(b, sc.leader); for (let i = 0; i < 80 && (b.moving || b.queued); i++) await step(2); await step(4); };
+  const push = async (b, sx, sy) => { reach(sx, sy); sc.leader.x = (k.ox + sx) * 16 + 8; sc.leader.y = (k.oy + sy) * 16 + 8; sc.leader.command = null; k.pushFrom(b, sc.leader); for (let i = 0; i < 80 && (b.moving || b.queued); i++) await step(2); await step(4); };
   const crystal = async (lx, ly) => { const c = k.crystals.find((q) => q.tx === k.ox + lx && q.ty === k.oy + ly); c.damage(1, sc.leader); await step(50); return c.zone.raised; };
   return { sc, k, T, tp, at, tapTile, solid, killAll, chest, openChest, pull, door, unlock, room, enterFight, push, crystal };
 }

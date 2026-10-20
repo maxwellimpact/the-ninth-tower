@@ -896,6 +896,29 @@
    },
    {
     "at": [
+     31,
+     40
+    ],
+    "need": "gauntlets",
+    "wall": [
+     [
+      14,
+      26
+     ],
+     [
+      15,
+      26
+     ],
+     [
+      16,
+      26
+     ]
+    ],
+    "delay": 1200,
+    "text": "THAT IRON-STRAPPED WALL IN THE CORNER, ABOVE THE LAVA... WITH THESE GAUNTLETS ON, I COULD BREAK IT."
+   },
+   {
+    "at": [
      15,
      23
     ],

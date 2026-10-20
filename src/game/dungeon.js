@@ -833,7 +833,9 @@ export class DungeonKit {
 
   enter(room) {
     const sc = this.sc;
-    for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text)) { this.hinted.add(h.text); this.save(false); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
+    // a hint can wait for a relic (`need`) and lapse once a wall it points at is broken (`wall`)
+    const due = (h) => (!h.need || sc.state.relics.includes(h.need)) && !(h.wall || []).some(([x, y]) => sc.flags[`broke_${this.id}_${x}_${y}`]);
+    for (const h of this.hints) if (h.room === room.id && !this.hinted.has(h.text) && due(h)) { this.hinted.add(h.text); this.save(false); sc.time.delayedCall(h.delay ?? 500, () => sc.bark(sc.leader, h.text)); }
     if (room.entered || !room.foes.length) { room.entered = true; return; }
     if (room.seal) return; // update() seals it once the leader is clear of the door
     this.seal(room);
