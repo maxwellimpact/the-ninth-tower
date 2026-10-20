@@ -2929,6 +2929,7 @@ export class Game extends Phaser.Scene {
   evadeChance(u) {
     const E = tuning.evade;
     if (u.team === 'party') return u.stats?.evade ?? 0;
+    if (!this.enemies.includes(u)) return 0; // only creatures sidestep: walls, crystals, braziers and plates never do
     if (u.boss || E.never.includes(u.kind) || u.stunT > 0 || u.flippedT > 0 || u.status?.freeze || u.frozenT > 0) return 0;
     return E.slippery.includes(u.kind) ? E.slipperyRate : E.heavy.includes(u.kind) ? E.heavyRate : E.enemy;
   }
