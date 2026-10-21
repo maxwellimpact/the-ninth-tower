@@ -61,8 +61,10 @@ The **core story is fixed**:
 **Writing dialogue:**
 
 - All in-game text is **uppercase**: the pixel font has no lowercase.
-- The font draws `A–Z 0–9 . , ! ? ' - + : / ( ) \ > < * %` and `#`. Nothing
-  else shows up, so don't use quotation marks, dashes other than `-`, or emoji.
+- The font draws `A–Z 0–9 . , ! ? ' " - + : ; / ( ) \ > < * % # & ~`.
+  Nothing else shows up, so no dashes other than `-`, no curly quotes and no
+  emoji. A character the game needs can be added: each one is a 3×5 pattern in
+  `src/gfx/font.js`.
 - Keep lines short; they have to read on a phone.
 - Each speaker has a voice (pitch and wave) in the data. Give new characters
   their own.

@@ -369,7 +369,7 @@
   "name": "EAGLE EYE",
   "short": "EAGLE",
   "icon": "icon_eagleeye",
-  "desc": "+20% RANGE, +15% CRIT ON DISTANT FOES."
+  "desc": "+20% RANGE; +15% CRIT ON DISTANT FOES."
  },
  "hawksight": {
   "hero": "wren",

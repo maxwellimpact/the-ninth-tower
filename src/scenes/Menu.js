@@ -777,6 +777,6 @@ export class Menu extends Phaser.Scene {
     const keys = Object.entries(KEY_ITEMS).filter(([k]) => st.relics.includes(k));
     keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 3));
     y += Math.ceil((keys.length + 3) / cols) * 22 + 6;
-    if (y < H - 20) this.t(x, y, 'FLASKS ON THE HUD (H / J / K): POTION, ELIXIR, ANTIDOTE. GATHER HERBS, ORE, CRYSTALS AND BOGMOSS. FOES DROP GEL AND SCRAP.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
+    if (y < H - 20) this.t(x, y, 'FLASKS ON THE HUD (H / J / K): POTION, ELIXIR, ANTIDOTE. GATHER HERBS, ORE, CRYSTALS AND BOGMOSS; FOES DROP GEL AND SCRAP.', 'fontPlain', 0x9d93b3).setMaxWidth(w);
   }
 }
