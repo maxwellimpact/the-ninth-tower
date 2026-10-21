@@ -12,6 +12,7 @@ const TOOLS = [
   ['region-check.js', 'everything in a region stands somewhere you can walk to'],
   ['people-check.js', 'everyone stands on dry, open ground'],
   ['fight-bench.js', 'seven fixed fights, measured before and after any combat change'],
+  ['map-test.js', 'integration tests on small test maps, away from the main world'],
   ['goto.js', 'jump anywhere in the world'],
 ];
 

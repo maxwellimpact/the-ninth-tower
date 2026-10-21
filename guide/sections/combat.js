@@ -15,7 +15,7 @@ const WIND = 0.75, STRIKE = 0.18, RECOVER = 0.55; // seconds (the game's windups
 export function mount(el) {
   el.innerHTML = `
     <div class="cb-live">
-      <div class="cb-head"><b>The real thing</b><span class="caption">The game itself, in the Training Grounds: a sandbox hall that only this link reaches. Waves keep coming; nothing is saved.</span></div>
+      <div class="cb-head"><b>The real thing</b><span class="caption">The game itself, on a test map of its own (a small meadow only this link reaches). Waves keep coming; nothing is saved.</span></div>
       <div class="cb-frame"><button class="chip primary cb-go">▶ Play the combat sandbox</button><p class="caption">Loads the full game (about 2 MB). Tap a foe to attack, swipe to dodge, tap a portrait to switch hero.</p></div>
       <p class="caption cb-more">Also: <a href="${GAME}?demo=boss" target="_blank" rel="noopener">a boss fight</a> (the Gatewarden's Shadow) · <a href="${GAME}?demo=explore" target="_blank" rel="noopener">free roam from Brightwater</a> · <a href="${GAME}?demo=combat" target="_blank" rel="noopener">the sandbox full screen</a></p>
     </div>
