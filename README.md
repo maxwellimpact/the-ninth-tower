@@ -110,8 +110,11 @@ header says how to use it. Among them:
 - `tools/region-check.js` and `tools/people-check.js`: check that everything
   and everyone stands somewhere you can walk to.
 - `tools/fight-bench.js`: fight benchmark for comparing combat changes before and after.
+- `tools/map-test.js`: integration tests on small test maps, away from the main map.
 
-Deep links start the game in a sandbox that never reads or writes your save: `?demo=combat` (waves of foes in the Training Grounds, a hall of its own), `?demo=boss` (the Gatewarden's Shadow) and `?demo=explore` (free roam from Brightwater). The guide embeds the combat one.
+**Test maps** (`src/data/maps/`) are small maps for trying one thing in isolation, without the main world's packs, errands or load time: open one with `?map=<id>` (for example `?map=arena`). They never save. DESIGN.md (§13, "Test maps") has the format.
+
+Deep links start the game in a sandbox that never reads or writes your save: `?demo=combat` (waves of foes on the `arena` test map), `?demo=boss` (the Gatewarden's Shadow) and `?demo=explore` (free roam from Brightwater). The guide embeds the combat one.
 
 In a dev build, `window.__scene` is the live Game scene. The dev server also has
 a `/__snap` endpoint that saves a POSTed PNG data URL into `snapshots/`.

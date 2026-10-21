@@ -32,6 +32,11 @@ the rule, the check) as well as fixing it.
 - **Placement fits the layout.** New buildings and NPCs go near related ones and
   on paths, never at random. Check every place a character can ever be, not just
   where they are now. View the result zoomed out before shipping.
+- **World data comes from `src/world/content.js`.** Read `W` (world.json) and
+  `Q` (quests.json) from there, never from the JSON files, and read them where
+  they're used, not into a constant at load: a test map swaps them. Anything
+  Aldermere has that's placed in code (not listed in those files) checks `MAP`
+  and stays off test maps.
 - **New art matches the cast.** Render new sprites beside existing ones at 3x.
 - **Only change what was asked.** Mention other problems you notice instead of
   quietly changing them.
@@ -52,6 +57,9 @@ the rule, the check) as well as fixing it.
     first to log whether each leg it teleports past could be walked.
   - `tools/region-check.js`: reachability of everything in a region.
   - `tools/people-check.js`: everyone on dry land and reachable.
+  - `tools/map-test.js`: integration tests on small test maps
+    (`src/data/maps`), away from the main map. Use a test map to try a new enemy
+    or system in isolation: open one with `?map=<id>`.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
   - `tools/door-orbit.js`: how far companions swing round the leader after a door.
   - `tools/house-mix.js`: cottage art sheets.

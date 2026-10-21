@@ -113,6 +113,9 @@ sprite atlases for a future native build.
      or anyone;
    - `tools/fight-bench.js` before and after any combat or AI change. Run the
      old code twice to see how much the numbers vary on their own;
+   - `tools/map-test.js` for the integration tests. To try a new enemy, boss
+     or system on its own, make a small test map in `src/data/maps/` and open
+     it with `?map=<id>` (DESIGN.md §13 has the format);
    - after every run, check the browser console for `[loop]` errors. A crash
      inside the game loop shows up nowhere else.
 5. **Log the decision:** add a dated row to the decision log at the end of
