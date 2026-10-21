@@ -1,0 +1,28 @@
+name: Bug
+description: Something in the game is broken or behaves oddly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where and how
+      description: The region or dungeon, what you were doing, and steps to make it happen again if you know them.
+    validations:
+      required: true
+  - type: textarea
+    id: shots
+    attributes:
+      label: Screenshots
+      description: A screenshot helps a lot, especially with the minimap and HUD in view.
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 15, Safari, landscape

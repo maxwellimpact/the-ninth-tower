@@ -1,0 +1,41 @@
+name: Idea or new content
+description: A new errand, townsperson, lore, region, hero, relic, system or a story change. Open one before you start building.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for wanting to add to the game. Please read [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) first, especially "The spirit of the game" and "The story".
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Errand or townsperson
+        - Lore or dialogue
+        - Balance or tuning
+        - New region, dungeon or boss
+        - New hero, relic or system
+        - Story change
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What it is and what the player experiences.
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: How it fits
+      description: Which design pillars it serves, and how it fits the Ward Stone story and the tone (warm, adventurous, gently funny).
+    validations:
+      required: true
+  - type: textarea
+    id: art
+    attributes:
+      label: Art and sound
+      description: Anything new to draw or synthesise? Everything is generated in code; there are no image or audio files.
