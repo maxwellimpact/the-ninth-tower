@@ -2,9 +2,10 @@
 # Publish the built game to GitHub Pages: https://maxwellimpact.github.io/ninth-tower/
 #   sh tools/deploy-pages.sh
 # The repo maxwellimpact/ninth-tower holds only the built files (the same set
-# as the tiiny.host zip); the source has its own repo. Its local copy lives in
-# site/ (its own git repo, ignored by this one). Pages
-# serves the main branch; the site updates about a minute after the push.
+# as the tiiny.host zip); the source is maxwellimpact/the-ninth-tower. The
+# built repo's local copy lives in site/ (its own git repo, ignored by this
+# one). Pages serves the main branch; the site updates about a minute after
+# the push.
 set -e
 cd "$(dirname "$0")/.."
 REPO=maxwellimpact/ninth-tower
