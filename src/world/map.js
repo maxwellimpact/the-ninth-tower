@@ -55,6 +55,8 @@ export const AREAS = {
   clawhold: { x0: 250, y0: 0, x1: 312, y1: 50, interior: true },
   // the Rimeglass Spire, the astronomers' tower on the Highfold
   spire: { x0: 322, y0: 212, x1: 415, y1: 318, interior: true },
+  // the Training Grounds: a sandbox only the deep links (?demo=combat) reach
+  sandbox: { x0: 240, y0: 140, x1: 311, y1: 177, interior: true }, // (clear of the pre-rebuild dungeons' old rects, which old saves are moved out of)
   // the Ninth Tower's nine floors, each its own space (a floor whose outer
   // Ward Stone has fallen is sealed: the stairs pass it by)
   tower1: { x0: 418, y0: 212, x1: 448, y1: 246, interior: true },
@@ -221,7 +223,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' || b.startsWith('tower') ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' || b === 'sandbox' || b.startsWith('tower') ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'basin') {
       set(x, y, T.BLIGHT);
       // rifts into nothing, where the curse ate through the ground

@@ -183,6 +183,15 @@
    "name": "THE NINTH TOWER",
    "sub": "MALGRIM'S CHAMBER",
    "basin": true
+  },
+  {
+   "id": "sandbox",
+   "name": "THE TRAINING GROUNDS",
+   "sub": "A SANDBOX: NOTHING HERE IS SAVED",
+   "band": [
+    6,
+    12
+   ]
   }
  ],
  "groups": [

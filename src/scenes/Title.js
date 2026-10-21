@@ -9,13 +9,17 @@ import { audio } from '../audio/synth.js';
 import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
 import { cloudStatus } from '../game/cloudsave.js';
 import { dungeonStart } from '../game/dungeon.js';
-import { makeItem } from '../game/itemgen.js';
+import { makeItem, tierForLevel } from '../game/itemgen.js';
 
 // Title + "choose your starting hero" (the other two join as first recruits).
 export class Title extends Phaser.Scene {
   constructor() { super('Title'); }
 
   create() {
+    // a deep link (?demo=combat | boss | explore), e.g. for the developer
+    // guide's embeds: straight into a ready-made sandbox that never saves
+    const demo = new URLSearchParams(location.search).get('demo');
+    if (demo && !Title.demoStarted) { Title.demoStarted = true; this.time.delayedCall(30, () => this.startDemo(demo)); }
     const W = this.scale.width, H = this.scale.height;
     const g = this.add.graphics();
     // night sky gradient bands (dithered look via stepped bands)
@@ -90,6 +94,28 @@ export class Title extends Phaser.Scene {
     st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };
     this.cameras.main.fadeOut(400, 10, 6, 20);
     this.time.delayedCall(420, () => this.enterWorld(st));
+  }
+
+  // The deep-link sandboxes. They never read or write the real save.
+  startDemo(kind) {
+    if (kind === 'boss') { this.enterLab('undercroft'); return; }
+    if (this.leaving) return;
+    this.leaving = true;
+    const st = newState('brann');
+    st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
+    const level = kind === 'combat' ? 8 : 6;
+    for (const h of st.recruited) {
+      const hs = st.heroes[h];
+      hs.level = level; hs.sp = (hs.sp || 0) + level - 1;
+      for (const slot of ['weapon', 'body', 'head', 'offhand']) { const id = makeItem(h, slot, tierForLevel(level), 'fine'); if (id) hs.equip[slot] = id; }
+    }
+    st.potions.potion = 8; st.potions.elixir = 3;
+    st.demo = kind === 'combat' ? 'combat' : 'explore';
+    // combat: the Training Grounds, a sandbox hall of its own; explore: Brightwater
+    const at = st.demo === 'combat' ? dungeonStart('sandbox') : { x: 15, y: 37 };
+    st.demoAt = at;
+    st.pos = { x: at.x * 16 + 8, y: at.y * 16 + 8 };
+    this.enterWorld(st);
   }
 
   saveMenu(save) {

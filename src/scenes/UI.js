@@ -646,7 +646,8 @@ export class UI extends Phaser.Scene {
     if (dk) {
       // dungeon lab: what you're carrying in place of the errand tracker
       this.trackTitle.setText(dk.def.name);
-      this.trackTxt.setText([`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
+      const locks = dk.doors.some((d) => d.kind === 'key' || d.kind === 'boss'); // a hall with no locks (the sandbox) has no keys to count
+      this.trackTxt.setText(!locks ? (game.state.demo ? 'NOTHING HERE IS SAVED' : '') : [`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
     } else {
       this.trackTitle.setText(tstep ? tq.title(tid) : ''); // no step fraction: next to a kill count ("3/6") a "1/2" read as the count
       const steam = (game.state.steamT || 0) > 0 ? `STEAMED: +15% XP ${Math.ceil(game.state.steamT / 60)}M` : ''; // the steam house's soak

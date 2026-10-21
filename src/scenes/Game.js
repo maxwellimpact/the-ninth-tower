@@ -244,7 +244,8 @@ export class Game extends Phaser.Scene {
       music.start(themeFor(this.musicRegion));
       music.setBard(!!this.flags.bard);
       if (curtain.sys.isActive()) curtain.done(); else curtain.events.once('create', () => curtain.done()); // (see teleportParty)
-      if (!st.lab) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints
+      if (!st.lab && !st.demo) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints
+      if (st.demo) this.startDemo(st.demo);
     });
 
     window.__game = this.game;
@@ -2164,7 +2165,7 @@ export class Game extends Phaser.Scene {
   }
 
   autosave(reason) {
-    if (this.state.lab) return; // the dungeon lab never touches the real save
+    if (this.state.lab || this.state.demo) return; // the dungeon lab and the deep-link demos never touch the real save
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
     this.state.exploredW = MAP_W; // so a later, wider map still reads it right
@@ -2712,11 +2713,41 @@ export class Game extends Phaser.Scene {
     }
   }
 
+  // A deep-link demo (?demo=combat | explore). Audio wakes on the first tap
+  // (the title screen normally does that). Combat runs in the Training
+  // Grounds, a sandbox hall of its own: waves of foes from the far side, a new
+  // one a moment after each is beaten.
+  startDemo(kind) {
+    this.input.once('pointerdown', () => audio.init());
+    this.input.keyboard?.once('keydown', () => audio.init());
+    if (kind !== 'combat') return;
+    const C = this.state.demoAt, A = { x: C.x + 20, y: C.y };
+    const WAVES = [
+      [['goblin', 0, 0], ['goblin', 1, -2], ['goblin', 1, 2]],
+      [['goblin', 0, -1], ['goblin', 0, 1], ['archer', 3, 0]],
+      [['hexling', 0, -2], ['hexling', 1, 0], ['hexling', 0, 2], ['hexling', 2, 1]],
+      [['knight', 0, 0], ['goblin', 1, -2], ['archer', 3, 2]],
+    ];
+    let n = 0, waiting = false, foes = [];
+    const wave = () => {
+      const w = WAVES[n++ % WAVES.length];
+      foes = w.map(([k, dx, dy]) => { const o = this.nav.nearestOpen(A.x + dx, A.y + dy, 4) || [A.x, A.y]; return this.spawnEnemy(k, o[0] * TILE + 8, o[1] * TILE + 8, true); });
+      this.events.emit('banner', `WAVE ${n}`, n === 1 ? 'TAP A FOE TO ATTACK - SWIPE TO DODGE' : `${w.length} FOES`);
+    };
+    this.time.delayedCall(1400, wave);
+    this.time.addEvent({ delay: 400, loop: true, callback: () => {
+      if (waiting || !foes.length || foes.some((e) => e.alive)) return;
+      waiting = true;
+      this.time.delayedCall(2200, () => { waiting = false; wave(); });
+    } });
+  }
+
   // Where the party regroups after a wipe: the found campfire nearest to where they fell.
   // Inside an interior, distance is measured from its entrance in the overworld.
   respawnCamp() {
     const dk = this.dungeon;
     if (dk?.respawn) return dk.respawn; // lab boss test
+    if (this.state.demoAt) return this.state.demoAt; // a deep-link demo: back to its own field
     if (dk?.camp && (dk.lab || this.flags[`camp_${dk.camp.x}_${dk.camp.y}`])) return { x: dk.camp.x + 2, y: dk.camp.y }; // this dungeon's own fire, once found
     const L = this.leader;
     let fx = L.x / TILE, fy = L.y / TILE;
