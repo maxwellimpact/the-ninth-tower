@@ -4,7 +4,7 @@
 import { makeScene, drawSorted, walker } from '../lib/scene.js';
 import { navGrid } from '../lib/world.js';
 import { pixelCanvas, heroFrames } from '../lib/pixels.js';
-import { animate } from '../lib/loop.js';
+import { animate, TEST } from '../lib/loop.js';
 
 const AREA = { x0: 0, y0: 16 * 16, w: 44 * 16, h: 34 * 16 }; // tiles 0-43 x 16-49
 const LOOP = [[13, 37], [21, 33], [29, 31], [31, 38], [24, 41], [17, 46], [8, 40], [6, 35]]; // round the village (tiles)
@@ -46,6 +46,7 @@ export async function mountHero(stage) {
   const start = route[route.length - 1];
   const party = ['brann', 'pip', 'sable'].map((id) => walker(id, start.x, start.y));
   const trail = [{ x: start.x, y: start.y }];
+  if (TEST) window.__heroParty = party; // for checking the walk in tests
   let wp = 0;
 
   let canvas, ctx, vw, vh, cam = { x: start.x, y: start.y };
@@ -71,12 +72,17 @@ export async function mountHero(stage) {
     // the others walk the leader's footsteps, a body length apart
     const last = trail[trail.length - 1];
     if (Math.hypot(L.x - last.x, L.y - last.y) > 1) { trail.push({ x: L.x, y: L.y }); if (trail.length > 200) trail.shift(); }
+    // (they walk toward their spot on the trail at a steady pace, and face the
+    // way the trail goes a few steps ahead, so they stay in their walk cycle
+    // instead of hopping from footprint to footprint)
     party.slice(1).forEach((h, i) => {
-      const p = trail[Math.max(0, trail.length - 1 - (i + 1) * 15)];
-      const mx = p.x - h.x, my = p.y - h.y;
-      h.moving = Math.hypot(mx, my) > 0.3;
-      if (h.moving) h.face(mx, my);
-      h.x = p.x; h.y = p.y;
+      const k = Math.max(0, trail.length - 1 - (i + 1) * 15);
+      const p = trail[k], ahead = trail[Math.min(trail.length - 1, k + 6)];
+      const mx = p.x - h.x, my = p.y - h.y, dd = Math.hypot(mx, my);
+      if (dd > 0.01) { const v = Math.min(dd, SPEED * 1.2 * dt); h.x += (mx / dd) * v; h.y += (my / dd) * v; }
+      h.moving = L.moving || dd > 0.5;
+      const fx = ahead.x - h.x, fy = ahead.y - h.y;
+      if (Math.hypot(fx, fy) > 2) h.face(fx, fy);
     });
     for (const h of party) h.t += dt;
     // camera eases after the leader, kept inside the painted area
