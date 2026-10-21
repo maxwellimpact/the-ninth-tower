@@ -111,6 +111,8 @@ header says how to use it. Among them:
   and everyone stands somewhere you can walk to.
 - `tools/fight-bench.js`: fight benchmark for comparing combat changes before and after.
 
+Deep links start the game in a sandbox that never reads or writes your save: `?demo=combat` (waves of foes in the Training Grounds, a hall of its own), `?demo=boss` (the Gatewarden's Shadow) and `?demo=explore` (free roam from Brightwater). The guide embeds the combat one.
+
 In a dev build, `window.__scene` is the live Game scene. The dev server also has
 a `/__snap` endpoint that saves a POSTed PNG data URL into `snapshots/`.
 
