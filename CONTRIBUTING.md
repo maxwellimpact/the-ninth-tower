@@ -64,7 +64,7 @@ The **core story is fixed**:
 - The font draws `A–Z 0–9 . , ! ? ' " - + : ; / ( ) \ > < * % # & ~`.
   Nothing else shows up, so no dashes other than `-`, no curly quotes and no
   emoji. A character the game needs can be added: each one is a 3×5 pattern in
-  `src/gfx/font.js`.
+  `src/gfx/font.js` (`&` is the one exception, drawn wider across two cells).
 - Keep lines short; they have to read on a phone.
 - Each speaker has a voice (pitch and wave) in the data. Give new characters
   their own.

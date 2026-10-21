@@ -1,6 +1,8 @@
 // Fit text into a box with the monospaced 5px pixel font: wrap by words onto
 // up to `maxLines` lines and shorten the last one with ".." if it still
 // doesn't fit. Scaling pixel text down would drop pixels, so we never do that.
+import { cellCount } from '../gfx/font.js';
+
 export const CHAR_W = 5;
 
 export function fitString(str, maxW, maxLines = 1, scale = 1) {
@@ -11,15 +13,15 @@ export function fitString(str, maxW, maxLines = 1, scale = 1) {
   for (let i = 0; i < words.length; i++) {
     const w = words[i];
     const next = cur ? `${cur} ${w}` : w;
-    if (next.length <= maxChars) { cur = next; continue; }
+    if (cellCount(next) <= maxChars) { cur = next; continue; }
     if (lines.length === maxLines - 1) {
       // last line: take what fits and mark the cut
       const rest = [next, ...words.slice(i + 1)].join(' ');
-      lines.push(rest.length <= maxChars ? rest : `${rest.slice(0, maxChars - 2).trimEnd()}..`);
+      lines.push(cellCount(rest) <= maxChars ? rest : `${rest.slice(0, maxChars - 2).trimEnd()}..`);
       return lines.join('\n');
     }
     if (cur) lines.push(cur);
-    cur = w.length > maxChars ? `${w.slice(0, maxChars - 2)}..` : w;
+    cur = cellCount(w) > maxChars ? `${w.slice(0, maxChars - 2)}..` : w;
   }
   if (cur) lines.push(cur);
   return lines.join('\n');
