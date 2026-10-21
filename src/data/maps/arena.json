@@ -1,0 +1,48 @@
+{
+ "name": "THE TRAINING GROUNDS",
+ "sub": "A TEST MAP: NOTHING HERE IS SAVED",
+ "note": "A small open meadow for trying things in isolation: the combat demo (?demo=combat) and tests. Stamped at `at` (Highmeadow, so it gets that region's grass, music and level band); everything outside it is solid rock. Coordinates below are the map's own (0,0 = top-left).",
+ "at": [
+  98,
+  20
+ ],
+ "start": [
+  8,
+  12
+ ],
+ "rows": [
+  "TbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTb",
+  "bTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbT",
+  "Tb........................................Tb",
+  "bT........................................bT",
+  "Tb..............................~~~.......Tb",
+  "bT......f............f.........~~~~~......bT",
+  "Tb............o................~~~~~......Tb",
+  "bT..............................~~~.......bT",
+  "Tb..........t.............................Tb",
+  "bT..........................f..........t..bT",
+  "Tb........................................Tb",
+  "bT...F....................................bT",
+  "Tb======@=================================Tb",
+  "bT........................................bT",
+  "Tb........................................Tb",
+  "bT........................t...............bT",
+  "Tb....t..............................o....Tb",
+  "bT......................o.................bT",
+  "Tb........o...............................Tb",
+  "bT................f...............f.......bT",
+  "Tb........................................Tb",
+  "bT........................................bT",
+  "TbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTb",
+  "bTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbT"
+ ],
+ "content": {
+  "campfires": [
+   {
+    "x": 5,
+    "y": 11,
+    "name": "THE TRAINING GROUNDS"
+   }
+  ]
+ }
+}
