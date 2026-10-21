@@ -4,6 +4,8 @@ An open-world action RPG in pixel art, played on a phone in landscape.
 
 **Play it:** https://maxwellimpact.github.io/ninth-tower/
 
+**How it works:** [Inside The Ninth Tower](https://maxwellimpact.github.io/the-ninth-tower/) walks through the game's systems (sprites, streaming, loading, pathfinding, combat, dungeons, music, data, performance and testing) with live demos built from the game's own code.
+
 A wizard has cursed the realm of Aldermere from the Ninth Tower. Lead a party of
 three heroes through eight regions, break the Ward Stones that hold the curse,
 find the relics that open up the world, and climb the tower's nine floors.
@@ -45,6 +47,8 @@ npm run dev
   sound board for the music layers, sound effects and character voices.
 
 `npm run build` writes a static build to `dist/` that any web host can serve.
+
+The guide is its own small site in `guide/`: `npm run guide` runs it, and `npm run build:guide` builds it into `dist-guide/` (GitHub Actions publishes it on every push to `main`).
 
 ## Controls
 
