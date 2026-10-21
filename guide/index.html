@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inside The Ninth Tower</title>
+<meta name="description" content="How The Ninth Tower draws, streams, fights and sings: a walkthrough of the game's systems, built from its own code.">
+<meta name="theme-color" content="#16121f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<nav class="toc" aria-label="Sections">
+  <a class="toc-home" href="#top" aria-label="Back to top"></a>
+  <ol id="toc"></ol>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-stage" id="hero-stage" aria-label="The party walking through Brightwater, drawn live by the game's own code"></div>
+  <div class="hero-copy">
+    <p class="kicker" data-px="FOR DEVELOPERS & DESIGNERS"></p>
+    <h1>Inside The Ninth Tower</h1>
+    <p class="lede">An open-world action RPG for phones, where every sprite, tile, sound and note is made by code while the game runs. This page is built from that same code: everything that moves on it is the real thing.</p>
+    <ul class="facts" id="facts">
+      <li><b>0</b> image files</li>
+      <li><b>0</b> audio files</li>
+      <li><b id="fact-tiles">163,840</b> tiles in the world</li>
+      <li><b>8</b> heroes, <b>15</b> dungeon floors</li>
+    </ul>
+    <p class="cta">
+      <a class="btn gold" href="https://maxwellimpact.github.io/ninth-tower/">Play the game</a>
+      <a class="btn" href="https://github.com/maxwellimpact/the-ninth-tower">Source on GitHub</a>
+    </p>
+  </div>
+</header>
+
+<main>
+
+<section id="code" data-title="Made of code">
+  <div class="text">
+    <p class="num" data-px="01"></p>
+    <h2>Every pixel is a function</h2>
+    <p>There's no art folder. A tree is a function that takes a seed and paints a canvas: a trunk, a canopy of shaded blobs, a lit top-left, a dark underside, and the ink outline every sprite shares. Change the seed and you get another tree from the same family.</p>
+    <p>Everything draws from one locked palette of 113 named colours. That keeps a goblin, a cottage and a lava field looking like they belong to the same world, and it lets the curse work as a single colour transform (more on that later).</p>
+    <p class="aside">Lives in <code>src/gfx/</code>: <code>pixel.js</code> has the shared tools (grids, outline, value noise, Bayer dither), <code>props.js</code> and <code>creatures.js</code> the scenery and monsters.</p>
+  </div>
+  <figure class="demo" id="demo-code"></figure>
+</section>
+
+<section id="puppets" data-title="Puppets">
+  <div class="text">
+    <p class="num" data-px="02"></p>
+    <h2>Heroes are puppets, dressed in gear</h2>
+    <p>People aren't drawn frame by frame. A puppet renderer builds them from parts (head, torso, arms, legs) and poses them: a walk cycle, a sword swing, a cast, a dodge roll, a pickaxe swing. Gear is just more parts. Equip a different helm and the hero really wears it, in every frame.</p>
+    <p>Posing is too slow to do every frame, so the game <em>bakes</em>: when gear changes it renders every animation once into a single sprite sheet, and gameplay only ever draws one sprite per hero, however much they're wearing.</p>
+    <p class="aside">Try a different hero, a piece of gear, or an animation. The sheet below is the real bake: <span id="bake-stats">…</span></p>
+  </div>
+  <figure class="demo" id="demo-puppets"></figure>
+</section>
+
+<section id="world" data-title="Streaming">
+  <div class="text">
+    <p class="num" data-px="03"></p>
+    <h2>The world paints itself as you walk</h2>
+    <p>Aldermere is one continuous map of 512 × 320 tiles. Painting all of it as pixels would take seconds and far too much memory on a phone, so it's cut into chunks of 256 pixels (16 × 16 tiles) and only the ones near the camera exist.</p>
+    <p>Each chunk is painted in a Web Worker, so walking never stutters. The worker builds its own copy of the world (it's deterministic) and only chunk coordinates cross the thread boundary; finished pixels come back as transferable buffers. Chunks beyond the unload radius are freed, and a hard cap of 40 throws out the farthest first.</p>
+    <p class="aside">Drag the camera across the map. The chunks you see are being painted for real, in a worker, on this page.</p>
+  </div>
+  <figure class="demo wide" id="demo-world"></figure>
+</section>
+
+<section id="loading" data-title="Loading">
+  <div class="text">
+    <p class="num" data-px="04"></p>
+    <h2>Loading means running generators</h2>
+    <p>Since the art is code, "loading" is running a list of generator tasks. The core set (heroes, the common foes, trees, the font, the HUD) runs behind the first progress bar. Each region's art is its own group that loads only as you approach it.</p>
+    <p>Tasks run in 12 ms slices so the frame keeps rendering, and the game yields between slices with a <code>MessageChannel</code>, which browsers don't throttle the way they throttle timers in background tabs.</p>
+    <p class="aside">This runs the game's real asset list. Every tile below is a canvas one of the tasks just made.</p>
+  </div>
+  <figure class="demo" id="demo-loading"></figure>
+</section>
+
+<section id="walking" data-title="Pathfinding">
+  <div class="text">
+    <p class="num" data-px="05"></p>
+    <h2>Tap to walk</h2>
+    <p>You steer the leader by tapping where to go. The game finds a route with A* on the tile grid (eight directions, no cutting corners past walls), then pulls the string tight: it drops every waypoint it can see past, so the hero walks in straight lines instead of zig-zagging tile to tile.</p>
+    <p>The other two heroes follow on their own. They take spots behind the leader, re-route around anything in the way, and file through doorways one at a time.</p>
+    <p class="aside">Tap anywhere in the village. Toggle the grid to see what's solid: water, walls, trees and the like.</p>
+  </div>
+  <figure class="demo" id="demo-walking"></figure>
+</section>
+
+<section id="combat" data-title="Combat">
+  <div class="text">
+    <p class="num" data-px="06"></p>
+    <h2>Combat you can read</h2>
+    <p>Fights are real time but deliberately legible. Every enemy swing has a windup you can see coming, and at most two foes wind up on one hero at the same time; the rest wait just outside reach. That one number, <code>attackTokens</code>, is the main dial for how hard a crowd feels.</p>
+    <p>Damage is simple to follow. A hit is your attack, times 1.75 if it crits, times any element or skill bonus, then cut by the target's defence. Plain attacks can miss (5% for most foes); skills always land. A hero who dodges gets a counter: their next hit within 3 seconds does 30% more.</p>
+    <p class="aside">Every enemy rule was added one at a time and measured with a fight benchmark before and after.</p>
+  </div>
+  <figure class="demo" id="demo-combat"></figure>
+</section>
+
+<section id="dungeons" data-title="Dungeons">
+  <div class="text">
+    <p class="num" data-px="07"></p>
+    <h2>Dungeons are drawn in text</h2>
+    <p>Every dungeon is a block of characters in <code>dungeons.json</code>. <code>#</code> is wall, <code>B</code> a push block, <code>P</code> a pressure plate, <code>=</code> a shutter, <code>k</code> a locked door, <code>&amp;</code> lava. One shared kit turns the characters into rooms, doors, puzzles and fights, so a new dungeon is mostly writing a map.</p>
+    <p>Rooms are found by flood fill between walls and doors. A plate holds its shutter open only while something heavy sits on it, and a room counts as solved once stones cover all its plates.</p>
+    <p class="aside">This is the Forge of Ash's first room, straight from the data. Tap the block to push it.</p>
+  </div>
+  <figure class="demo wide" id="demo-dungeons"></figure>
+</section>
+
+<section id="curse" data-title="The curse">
+  <div class="text">
+    <p class="num" data-px="08"></p>
+    <h2>When a Ward Stone falls</h2>
+    <p>Each region starts under the curse: its colours drained toward a purple-grey, its music in a minor key. Breaking the region's Ward Stone sends a bloom of colour out across the land and the theme resolves to major.</p>
+    <p>Both halves are generated. The cursed land is the same painted terrain run through one palette transform. The cursed music is the same song: the sequencer maps every note to the parallel minor, so a composer only ever writes the hopeful version.</p>
+    <p class="aside">Break the stone. Sound on, if you like.</p>
+  </div>
+  <figure class="demo" id="demo-curse"></figure>
+</section>
+
+<section id="music" data-title="Music">
+  <div class="text">
+    <p class="num" data-px="09"></p>
+    <h2>Music is data</h2>
+    <p>Songs are written as data: tracks of <code>[step, note, length, velocity]</code> on a 16-step-per-bar grid, played by a small WebAudio synth with pulse waves, a triangle bass, noise drums, a pad, a bell and a generated reverb.</p>
+    <p>Tracks belong to layers. The base layer always plays; the combat layer (drums, a driving bass, a counter-melody) fades in when a fight starts. The sequencer schedules notes 150 ms ahead on a 25 ms timer, and skips voices whose layer is silent.</p>
+    <p class="aside">Pick a region's theme and play it. Turn the combat layer on and off while it runs.</p>
+  </div>
+  <figure class="demo wide" id="demo-music"></figure>
+</section>
+
+<section id="data" data-title="Content">
+  <div class="text">
+    <p class="num" data-px="10"></p>
+    <h2>Content is data too</h2>
+    <p>Heroes, skills, gear, enemies, the world's people and every errand live in JSON. An errand is a giver, some dialogue and a list of steps (talk, gather, fight, escort, find), so adding a quest is writing data, not code. This matters beyond convenience: the same files are meant to carry over unchanged to a future native build.</p>
+    <p>Every character has a voice: a pitch, a wave shape and a speed. Dialogue plays a short blip per letter in that voice, and all text uses the game's own 3 × 5 pixel font.</p>
+    <p class="aside">A real errand from <code>quests.json</code>, played through the real font and voice.</p>
+  </div>
+  <figure class="demo wide" id="demo-data"></figure>
+</section>
+
+<section id="performance" data-title="Performance">
+  <div class="text">
+    <p class="num" data-px="11"></p>
+    <h2>Fitting in a phone</h2>
+    <p>The budget is a mid-range phone in landscape. Most of the tricks are about doing work once, off the main thread, or not at all.</p>
+  </div>
+  <figure class="demo wide" id="demo-perf"></figure>
+</section>
+
+<section id="testing" data-title="Testing">
+  <div class="text">
+    <p class="num" data-px="12"></p>
+    <h2>How changes are proven</h2>
+    <p>Playtests find the bugs; scripts make sure they stay found. The test tools run inside the live game from the browser console: one plays every errand start to finish, one walks every dungeon to its boss, one checks that everything and everyone in a region can be reached on foot.</p>
+    <p>Combat changes are measured, not eyeballed. The old code runs twice first, to see how much the numbers wobble on their own, and only then the new code. Every bug that shipped once becomes a "never-again" rule in the design doc, with a check that catches it next time.</p>
+  </div>
+  <figure class="demo wide" id="demo-testing"></figure>
+</section>
+
+<section id="join" class="join" data-title="Join in">
+  <div class="text">
+    <p class="num" data-px="13"></p>
+    <h2>Come build something</h2>
+    <p>New errands, townsfolk with odd curses, lore, balance, bigger ideas for the story or the world: all welcome, as long as they fit a warm, adventurous game that's generous to the player. Art and sound stay in code.</p>
+    <ul class="links">
+      <li><a href="https://github.com/maxwellimpact/the-ninth-tower/blob/main/CONTRIBUTING.md"><b>CONTRIBUTING.md</b><span>the spirit of the game, the story, how to propose and test a change</span></a></li>
+      <li><a href="https://github.com/maxwellimpact/the-ninth-tower/blob/main/DESIGN.md"><b>DESIGN.md</b><span>the full design: every system, region and decision</span></a></li>
+      <li><a href="https://github.com/maxwellimpact/the-ninth-tower/blob/main/AGENTS.md"><b>AGENTS.md</b><span>the working rules in short form, for you or your AI agent</span></a></li>
+      <li><a href="https://github.com/maxwellimpact/the-ninth-tower/issues/new/choose"><b>Open an issue</b><span>a bug, or an idea before you build it</span></a></li>
+    </ul>
+  </div>
+  <figure class="demo" id="demo-join"></figure>
+</section>
+
+</main>
+
+<footer>
+  <p>The Ninth Tower · MIT License · built from commit <code id="build"></code></p>
+</footer>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
