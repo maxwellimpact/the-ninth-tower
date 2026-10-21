@@ -110,6 +110,18 @@ header says how to use it. Among them:
 In a dev build, `window.__scene` is the live Game scene. The dev server also has
 a `/__snap` endpoint that saves a POSTed PNG data URL into `snapshots/`.
 
+## Contributing
+
+Contributions are welcome: bug fixes, balance, new errands and townsfolk, lore,
+and bigger ideas that grow the story or the world. Everything should fit the
+game's spirit: warm and adventurous, with gentle humour, generous to the player,
+and built around the Ward Stones and the Tower. Art and sound stay generated in
+code, so no image or audio files. For anything beyond a small fix, open an issue
+first.
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the story, how to write dialogue, how
+the art and sound are made, and the testing and pull request process.
+
 ## Built with
 
 [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/).
