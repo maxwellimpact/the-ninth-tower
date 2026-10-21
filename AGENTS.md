@@ -16,7 +16,7 @@ is the short version of how this project is built, tested and shipped.
 - **The section for what you're touching:** heroes and skills (C3), gear (C4/C5),
   relics and gates (C8), the region template (C12), and so on.
 
-When the user reports a new kind of bug, add a never-again rule for it (the bug,
+When a playtest turns up a new kind of bug, add a never-again rule for it (the bug,
 the rule, the check) as well as fixing it.
 
 ## 2. Rules that are easy to forget
@@ -69,12 +69,7 @@ After every change that ships:
 1. **Log it:** add a dated row to the DESIGN.md decision log (what changed and
    why, plus test results).
 2. **Commit** in small stages, each with a clear message.
-3. **Deploy to GitHub Pages:** run `sh tools/deploy-pages.sh`. The user plays
-   at maxwellimpact.github.io/ninth-tower.
-4. **Publish the artifact:** republish
-   https://claude.ai/artifact/SKkL8Uz5CgQFJDxuNWfCx5 from `dist/full.html`.
-   - Map each new hashed script in `dist/assets` (main, music, terrainWorker),
-     and set the old ones to `null`.
-   - Don't pass `capabilities`; the stored ones (db, user) carry over.
-5. **Report honestly:** say what you tested, what you didn't, and anything that
+3. **Deploy to GitHub Pages:** run `sh tools/deploy-pages.sh`. The game is
+   live at https://maxwellimpact.github.io/ninth-tower/.
+4. **Report honestly:** say what you tested, what you didn't, and anything that
    failed.

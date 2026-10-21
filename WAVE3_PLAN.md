@@ -6,7 +6,7 @@ Drafted 2026-10-17 from DESIGN.md (sections 12, C1, C3, C4, C7, C8, C9, C10, C11
 1. Test it: phone size 844x390, dungeon-walk for dungeons, fight-bench for any AI or combat change, a reachability check.
 2. Add a decision-log entry to DESIGN.md.
 3. Commit.
-4. Publish the artifact and deploy GitHub Pages (`sh tools/deploy-pages.sh`, which the user wants after every change).
+4. Deploy GitHub Pages (`sh tools/deploy-pages.sh`) after every change.
 
 ## Stage 0: Groundwork
 - **Survey** what exists:
@@ -130,4 +130,4 @@ Still to do for Stage 7:
 - Hunter's Tooth: on completing the 10th BOUNTY errand, give the item
 - talkFrog: blessing text for the 60-fly Royal Blessing (frog-curse immunity); `ring_luck` look falls back to the default gem colour
 - region-check every new position (frost, basin, meadow, marsh, gloam, cinder, vale); fix any on solid tiles
-- test, DESIGN log, commit, deploy, artifact publish
+- test, DESIGN log, commit, deploy
