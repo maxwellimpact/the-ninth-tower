@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import QDATA from '../data/quests.json';
+import { W, Q as QDATA, MAP, useMap, mapRect } from '../world/content.js'; // world.json / quests.json, or a test map's own content
 import { chimneyOf, doorOf } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
-import { buildWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
+import { buildWorld, buildMapWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
 import { NavGrid } from '../game/path.js';
 import { Hero, Enemy, Golem, Murk, Huntsman, Vulk, Isolde, Gadget, WardStone, Breakable, AFFIXES, dist, norm, chillHero, freezeHero } from '../game/units.js';
@@ -26,7 +26,6 @@ import DISCIPLINES from '../data/disciplines.json';
 import LORE from '../data/lore.json';
 import { CURSE_TINT } from '../gfx/palette.js';
 import { bayer, hash, makeCanvas } from '../gfx/pixel.js';
-import W from '../data/world.json';
 import items from '../data/items.json';
 import skillData from '../data/skills.json';
 import tuning from '../data/tuning.json';
@@ -130,6 +129,7 @@ export class Game extends Phaser.Scene {
 
   create(data) {
     const st = (this.state = data.state);
+    useMap(st.map || null); // Aldermere, or a test map (src/data/maps): W and QDATA below then mean its content
     st.stats ??= { kills: 0, levelUps: [] };
     this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
     this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
@@ -153,7 +153,7 @@ export class Game extends Phaser.Scene {
     this.frameMs = [];
 
     // ------------------------------------------------------------ world
-    this.world = buildWorld();
+    this.world = MAP ? buildMapWorld(MAP) : buildWorld();
     this.painter = makeTerrainPainter(this.world);
     const WPX = MAP_W * TILE, HPX = MAP_H * TILE;
     this.area = null;
@@ -184,17 +184,17 @@ export class Game extends Phaser.Scene {
 
     this.allies = []; // non-hero friendlies enemies can attack (escort carts, NPCs being defended)
     this.buildLandmarks();
-    this.buildBarrier();
+    if (!MAP) this.buildBarrier(); // the Tower's barrier belongs to Aldermere
     // hand-built dungeons (C8): one kit each; this.dungeon is the one you're in
     this.dungeons = {};
-    for (const id of Object.keys(DUNGEONS)) { const k = new DungeonKit(this, id); this.dungeons[k.def.area] = k; }
+    if (!MAP) for (const id of Object.keys(DUNGEONS)) { const k = new DungeonKit(this, id); this.dungeons[k.def.area] = k; }
     this.quests = new QuestManager(this);
 
     // ------------------------------------------------------------ party
     // a save from inside the old (pre-rebuild) Undercroft or Abbey: those tiles
     // are gone, so start at the new dungeon's entrance instead
     const OLD = { undercroft: [256, 2, 318, 60], abbey: [256, 63, 318, 126] };
-    if (st.pos && !st.lab) for (const [id, [x0, y0, x1, y1]] of Object.entries(OLD)) {
+    if (st.pos && !st.lab && !MAP) for (const [id, [x0, y0, x1, y1]] of Object.entries(OLD)) {
       const tx = Math.floor(st.pos.x / TILE), ty = Math.floor(st.pos.y / TILE);
       if (tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1) { const p = dungeonStart(id); st.pos = { x: p.x * TILE + 8, y: p.y * TILE + 8 }; }
     }
@@ -457,7 +457,7 @@ export class Game extends Phaser.Scene {
   // Phaser pins short bounds to their top-left corner, which put small caves
   // under the HUD portraits where nothing could be tapped.
   fitCameraBounds() {
-    const a = this.areaRect(), cam = this.cameras.main;
+    const a = (MAP && this.area === 'overworld' && mapRect()) || this.areaRect(), cam = this.cameras.main; // a test map: just its own rectangle
     let x = a.x0 * TILE, y = a.y0 * TILE, w = (a.x1 - a.x0 + 1) * TILE, h = (a.y1 - a.y0 + 1) * TILE;
     const dw = cam.width / cam.zoom, dh = cam.height / cam.zoom;
     if (w < dw) { x -= Math.floor((dw - w) / 2); w = Math.ceil(dw); }
@@ -1149,15 +1149,17 @@ export class Game extends Phaser.Scene {
       return npc;
     });
 
-    // Frog King
-    const f = LANDMARKS.frog;
-    const fx = px(f.x), fy = px(f.y);
-    this.frog = this.flags.kingRestored
-      ? this.add.sprite(fx, fy, 'king', 'idle_down_0').setOrigin(0.5, 0.75).play('king_idle_down').setDepth(fy)
-      : this.add.sprite(fx, fy + 6, 'frog').setOrigin(0.5, 1).play('frog_idle').setDepth(fy);
-    this.add.image(fx + 1, fy + 5, 'shadow').setAlpha(0.2).setDepth(-4);
-    this.nav.block(f.x, f.y);
-    this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', vis: () => this.frog, interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
+    // Frog King (Aldermere's: a test map has none)
+    if (!MAP) {
+      const f = LANDMARKS.frog;
+      const fx = px(f.x), fy = px(f.y);
+      this.frog = this.flags.kingRestored
+        ? this.add.sprite(fx, fy, 'king', 'idle_down_0').setOrigin(0.5, 0.75).play('king_idle_down').setDepth(fy)
+        : this.add.sprite(fx, fy + 6, 'frog').setOrigin(0.5, 1).play('frog_idle').setDepth(fy);
+      this.add.image(fx + 1, fy + 5, 'shadow').setAlpha(0.2).setDepth(-4);
+      this.nav.block(f.x, f.y);
+      this.addInteractable({ x: fx, y: fy, reach: 30, standOff: 26, h: 14, kind: 'frog', vis: () => this.frog, interact: () => { this.leader.face(fx - this.leader.x, fy - this.leader.y); this.talkFrog(); } });
+    }
     // Ward Stone
     for (const w of this.wards) {
       const wd = w.def;
@@ -1170,7 +1172,7 @@ export class Game extends Phaser.Scene {
       } else this.add.image(px(wd.x), px(wd.y) + 6, 'wardRubble').setOrigin(0.5, 1).setDepth(px(wd.y));
       for (const dx of [-1, 0, 1]) this.nav.block(wd.x + dx, wd.y);
     }
-    this.ward = this.wards[0].unit; // the Vale stone (kept for older code paths)
+    this.ward = this.wards[0]?.unit ?? null; // the Vale stone (kept for older code paths; a test map has none)
     this.buildVines();
   }
 
@@ -2165,7 +2167,7 @@ export class Game extends Phaser.Scene {
   }
 
   autosave(reason) {
-    if (this.state.lab || this.state.demo) return; // the dungeon lab and the deep-link demos never touch the real save
+    if (this.state.lab || this.state.demo || MAP) return; // the dungeon lab, the deep-link demos and test maps never touch the real save
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
     this.state.exploredW = MAP_W; // so a later, wider map still reads it right
@@ -2675,7 +2677,7 @@ export class Game extends Phaser.Scene {
   // ------------------------------------------------------------ lore pages
   buildLore() {
     this.lorePages = [];
-    for (const p of LORE) {
+    for (const p of MAP ? [] : LORE) { // (lore pages are Aldermere's)
       if (this.state.lore?.includes(p.id)) continue;
       const x = p.x * TILE + 8, y = p.y * TILE + 8;
       const s = this.add.image(x, y, 'lorePage').setOrigin(0.5, 1).setDepth(y);

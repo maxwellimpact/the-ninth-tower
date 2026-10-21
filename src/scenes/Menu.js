@@ -13,9 +13,8 @@ import { ERRANDS } from '../game/quests.js';
 import KEY_ITEMS from '../data/relics.json';
 import DISCIPLINES from '../data/disciplines.json';
 import LORE from '../data/lore.json';
-import WORLD from '../data/world.json';
+import { W } from '../world/content.js'; // world.json, or a test map's own content
 import { TOTAL_FLIES } from './Game.js';
-const W_TOWNSFOLK = WORLD.townsfolk;
 import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
 
@@ -772,7 +771,7 @@ export class Menu extends Phaser.Scene {
     y += Math.ceil(Object.keys(CRAFT.consumables).length / cols) * 22 + 6;
     this.t(x, y, 'COLLECTION', 'fontGold'); y += 10;
     row('icon_fly', 'GOLDEN FLIES', `${st.flies.length}/${TOTAL_FLIES}`, 0);
-    row('icon_bag', 'TOWNSFOLK', `${W_TOWNSFOLK.filter((t) => this.g.flags[`folk_${t.id}`]).length}/30`, 1);
+    row('icon_bag', 'TOWNSFOLK', `${W.townsfolk.filter((t) => this.g.flags[`folk_${t.id}`]).length}/${W.townsfolk.length}`, 1);
     row('icon_lore', 'LORE PAGES', `${(st.lore || []).length}/40`, 2);
     const keys = Object.entries(KEY_ITEMS).filter(([k]) => st.relics.includes(k));
     keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 3));

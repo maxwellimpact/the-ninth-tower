@@ -55,8 +55,6 @@ export const AREAS = {
   clawhold: { x0: 250, y0: 0, x1: 312, y1: 50, interior: true },
   // the Rimeglass Spire, the astronomers' tower on the Highfold
   spire: { x0: 322, y0: 212, x1: 415, y1: 318, interior: true },
-  // the Training Grounds: a sandbox only the deep links (?demo=combat) reach
-  sandbox: { x0: 240, y0: 140, x1: 311, y1: 177, interior: true }, // (clear of the pre-rebuild dungeons' old rects, which old saves are moved out of)
   // the Ninth Tower's nine floors, each its own space (a floor whose outer
   // Ward Stone has fallen is sealed: the stairs pass it by)
   tower1: { x0: 418, y0: 212, x1: 448, y1: 246, interior: true },
@@ -223,7 +221,7 @@ export function buildWorld() {
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
-    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' || b === 'sandbox' || b.startsWith('tower') ? T.DWALL : T.CAVEWALL); continue; }
+    if (x >= OW_W) { set(x, y, b === 'shop' || b === 'tavern' ? T.IWALL : b === 'undercroft' || b === 'abbey' || b === 'witchroot' || b === 'forge' || b === 'clawhold' || b === 'spire' || b.startsWith('tower') ? T.DWALL : T.CAVEWALL); continue; }
     if (b === 'basin') {
       set(x, y, T.BLIGHT);
       // rifts into nothing, where the curse ate through the ground
@@ -699,4 +697,28 @@ export function buildWorld() {
     props,
     at: (x, y) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.CAVEWALL : tiles[y * MAP_W + x]),
   };
+}
+
+// A test map (src/data/maps/*.json, loaded through world/content.js): its
+// rows stamped at `at` into an otherwise solid grid of the usual size, so
+// everything that's sized to the world (navigation, the minimap, saves'
+// explored bits, chunk streaming) works unchanged and costs nothing to build.
+// Where it's stamped decides its region (grass colours, music, heat or cold).
+const MAP_LEGEND = {
+  '.': 'GRASS', ',': 'GRASS', '=': 'PATH', ':': 'SAND', '~': 'WATER', s: 'SHALLOW', m: 'MARSH', '#': 'CLIFF', w: 'WALL', p: 'PAVED',
+  a: 'ASH', l: 'LAVA', n: 'SNOW', i: 'ICE', g: 'LOAM', '@': 'GRASS', F: 'GRASS',
+  T: ['GRASS', 'tree'], b: ['GRASS', 'bush'], o: ['GRASS', 'rock'], O: ['GRASS', 'rock', { big: true }], f: ['GRASS', 'flowers'], t: ['GRASS', 'tuft'], r: ['GRASS', 'reeds'],
+};
+export function buildMapWorld(def) {
+  const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.CAVEWALL);
+  const props = [];
+  const legend = { ...MAP_LEGEND, ...(def.legend || {}) };
+  const [ox, oy] = def.at;
+  def.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const e = legend[ch] ?? 'GRASS';
+    const [tile, prop, extra] = Array.isArray(e) ? e : [e];
+    tiles[(oy + y) * MAP_W + ox + x] = T[tile];
+    if (prop) props.push({ type: prop, x: ox + x, y: oy + y, seed: Math.floor(hash(ox + x, oy + y, 77) * 8), ...extra });
+  }));
+  return { tiles, props, at: (x, y) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.CAVEWALL : tiles[y * MAP_W + x]) };
 }

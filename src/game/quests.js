@@ -4,8 +4,7 @@
 // Step types: talk, kill, gather, spawn (fight at a spot), find (interact with
 // something placed in the world), escort (protect a cart), bells (ring in
 // order), defend (keep an NPC alive until the attackers are gone).
-import Q from '../data/quests.json';
-import W from '../data/world.json';
+import { W, Q } from '../world/content.js'; // world.json / quests.json, or a test map's own
 import items from '../data/items.json';
 import { RACE_BET } from '../scenes/FrogRace.js';
 import { audio } from '../audio/synth.js';
@@ -22,7 +21,8 @@ const CART_OY = { side: 0.85, down: 0.62, up: 0.85 };
 
 const TILE = 16;
 const px = (t) => t * TILE + 8;
-export const ERRANDS = Q.errands;
+// a live view of the loaded map's errands (Aldermere's, or a test map's own)
+export const ERRANDS = new Proxy({}, { get: (_, k) => Q.errands[k], has: (_, k) => k in Q.errands, ownKeys: () => Reflect.ownKeys(Q.errands), getOwnPropertyDescriptor: (_, k) => Object.getOwnPropertyDescriptor(Q.errands, k) });
 
 export class QuestManager {
   constructor(scene) {

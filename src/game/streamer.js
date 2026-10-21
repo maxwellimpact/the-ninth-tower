@@ -3,6 +3,7 @@
 // Budget: chunks beyond the unload radius are evicted (texture freed), and a
 // hard cap evicts the farthest chunks first.
 import { CHUNK } from '../gfx/terrain.js';
+import { MAP } from '../world/content.js';
 
 export class Streamer {
   constructor(scene, { painter, worldW, worldH, onChunkIn, onChunkOut, maxResident = 40 }) {
@@ -21,6 +22,7 @@ export class Streamer {
     this.callbacks = new Map();
     try {
       this.worker = new Worker(new URL('../workers/terrainWorker.js', import.meta.url), { type: 'module' });
+      this.worker.postMessage({ type: 'init', map: MAP?.id || null }); // which world to build: Aldermere, or the test map in play
       this.worker.onmessage = (e) => this.onMessage(e.data);
       this.worker.onerror = (e) => { console.warn('[stream] worker failed, painting on main thread', e.message); this.worker = null; this.stats.worker = false; this.pending.clear(); };
       this.stats.worker = true;

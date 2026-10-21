@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import W from '../data/world.json';
+import { W } from '../world/content.js';
 import { CRAFT, sellPrice, itemName, statDelta, compareGear } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
