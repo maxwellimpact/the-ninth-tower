@@ -8,16 +8,25 @@ import { heroFrames, goblinFrames, mirrored, pixelCanvas, drawText, textWidth } 
 import { animate } from '../lib/loop.js';
 
 const AW = 260, AH = 150;
+// the hosted game (the same site serves the guide's sibling repo); its ?demo= links open sandboxes that never save
+const GAME = 'https://maxwellimpact.github.io/ninth-tower/';
 const WIND = 0.75, STRIKE = 0.18, RECOVER = 0.55; // seconds (the game's windups run about this long)
 
 export function mount(el) {
   el.innerHTML = `
+    <div class="cb-live">
+      <div class="cb-head"><b>The real thing</b><span class="caption">The game itself, in the Training Grounds: a sandbox hall that only this link reaches. Waves keep coming; nothing is saved.</span></div>
+      <div class="cb-frame"><button class="chip primary cb-go">▶ Play the combat sandbox</button><p class="caption">Loads the full game (about 2 MB). Tap a foe to attack, swipe to dodge, tap a portrait to switch hero.</p></div>
+      <p class="caption cb-more">Also: <a href="${GAME}?demo=boss" target="_blank" rel="noopener">a boss fight</a> (the Gatewarden's Shadow) · <a href="${GAME}?demo=explore" target="_blank" rel="noopener">free roam from Brightwater</a> · <a href="${GAME}?demo=combat" target="_blank" rel="noopener">the sandbox full screen</a></p>
+    </div>
+    <div class="cb-two"><div>
     <div class="cb-head"><b>Attack tokens</b><span class="caption">Foes take turns: at most this many wind up on a hero at once.</span></div>
     <div class="stage cb-stage"></div>
     <div class="controls">
       <label>Tokens</label><div class="seg cb-tok"></div>
       <label>Foes</label><div class="seg cb-foes"></div>
       <span class="caption cb-now"></span>
+    </div>
     </div>
     <div class="cb-calc">
       <div class="cb-head"><b>One hit, step by step</b><span class="caption">The game's own stat and defence code, live.</span></div>
@@ -31,13 +40,19 @@ export function mount(el) {
         <div class="seg cb-el"></div>
       </div>
       <div class="cb-steps"></div>
-    </div>`;
+    </div></div>`;
   const css = document.createElement('style');
   css.textContent = `
     .cb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 10px; color: var(--white); }
     .cb-head .caption { margin: 0; }
     .cb-stage canvas { width: 100% !important; height: auto !important; }
-    .cb-calc { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--night); }
+    .cb-calc { min-width: 0; }
+    .cb-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--night); }
+    .cb-two > div { min-width: 0; }
+    .cb-frame { position: relative; aspect-ratio: 844 / 390; max-width: 100%; background: radial-gradient(ellipse at 50% 60%, #2b2140, #0f0c14 75%); border-radius: 8px; overflow: hidden; display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; padding: 16px; }
+    .cb-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .cb-more { margin-top: 8px; }
+    @media (max-width: 860px) { .cb-two { grid-template-columns: 1fr; } }
     .cb-steps { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin-top: 14px; font-variant-numeric: tabular-nums; }
     .cb-steps div { background: var(--panel); border-radius: 7px; padding: 8px 10px; min-width: 0; }
     .cb-steps .k { color: var(--mist); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
@@ -46,6 +61,12 @@ export function mount(el) {
     .cb-steps .final { background: rgba(242,193,78,0.12); outline: 1px solid rgba(242,193,78,0.5); }
     .cb-steps .final .v { color: var(--goldL); font-size: 20px; }`;
   el.appendChild(css);
+
+  // ---------------------------------------------------------- the live game
+  el.querySelector('.cb-go').onclick = () => {
+    const box = el.querySelector('.cb-frame');
+    box.innerHTML = `<iframe src="${GAME}?demo=combat" title="The Ninth Tower: combat sandbox" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+  };
 
   // ---------------------------------------------------------- the arena
   const stage = el.querySelector('.cb-stage');
