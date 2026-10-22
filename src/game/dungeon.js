@@ -796,6 +796,7 @@ export class DungeonKit {
       if (prev) this.resetBlocks(prev);
       this.roomNow = rid;
       this.enter(this.rooms[rid]);
+      this.passedPlates(this.rooms[rid]);
     }
     // a sealed fight waits until the leader is a step clear of every doorway
     const pend = this.rooms[rid];
@@ -804,6 +805,7 @@ export class DungeonKit {
     if (room?.active) {
       const inRoom = (e) => this.roomOf.get(key(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) === room.id;
       if (!sc.enemies.some((e) => e.alive && !e.boss && inRoom(e))) this.clearRoom(room);
+      else this.callStragglers(room, inRoom, dt);
     }
     // the leader thinks out loud following the vine, and at its source
     if (this.vine && !this.vine.dead && !sc.golem && !(this.thinkT = Math.max(0, (this.thinkT || 0) - dt))) {
@@ -839,6 +841,46 @@ export class DungeonKit {
     if (room.entered || !room.foes.length) { room.entered = true; return; }
     if (room.seal) return; // update() seals it once the leader is clear of the door
     this.seal(room);
+  }
+
+  // Never shut in behind a plate: standing in the room beyond a plate-held
+  // shutter means the party got past it (a stone, a reload, an older save), and
+  // with its plates on the far side there'd be nothing to press from here. So
+  // those plates latch for good and the way back stays open.
+  passedPlates(room) {
+    if (room.plates.length) return;
+    let changed = false;
+    for (const d of room.doors) {
+      if (d.kind !== 'shutter') continue;
+      for (const r of d.rooms) {
+        if (r === room || !r.plates.length || r.plates.every((p) => p.latched)) continue;
+        for (const p of r.plates) { p.latched = true; p.down = true; p.s.setTexture('dgPlateDown'); }
+        changed = true;
+      }
+    }
+    if (changed) { this.refreshDoors(); this.save(); }
+  }
+
+  // A sealed fight always ends: a foe still alive somewhere the party can't
+  // reach (wedged out of sight, stuck behind a pillar) is called out to the
+  // party after a few seconds, so the doors can't stay barred over it.
+  callStragglers(room, inRoom, dt) {
+    if ((this.stragglerT = (this.stragglerT || 0) + dt) < 2) return;
+    this.stragglerT = 0;
+    const sc = this.sc, L = sc.leader;
+    for (const e of sc.enemies) {
+      if (!e.alive || e.boss || !inRoom(e)) continue;
+      const path = sc.nav.find(L.x, L.y, e.x, e.y, 6000);
+      const end = path?.[path.length - 1];
+      const reach = end && Math.hypot(end.x - e.x, end.y - e.y) < 24;
+      e.unreachT = reach ? 0 : (e.unreachT || 0) + 2;
+      if (e.unreachT < 6) continue;
+      const o = sc.nav.nearestOpen(Math.floor(L.x / TILE) + 3, Math.floor(L.y / TILE), 4);
+      if (!o) continue;
+      e.x = px(o[0]); e.y = px(o[1]); e.clearPath?.(); e.unreachT = 0;
+      e.engaged = true; e.target = L;
+      sc.fx.puff(e.x, e.y - 8, 'spark');
+    }
   }
 
   nearDoor(u, room) {
