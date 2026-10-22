@@ -1288,7 +1288,10 @@ export class Game extends Phaser.Scene {
     }
     this.textures.addCanvas('lightMask', c);
     this.darkRT = this.add.renderTexture(0, 0, this.scale.width + 2, this.scale.height + 2).setOrigin(0).setScrollFactor(0).setDepth(TOP + 40).setVisible(false);
-    this.scale.on('resize', () => { this.darkRT.resize(this.scale.width + 2, this.scale.height + 2); if (this.area) this.fitCameraBounds(); });
+    this.scale.on('resize', () => {
+      if (this.scale.width >= 2 && this.scale.height >= 2) { try { this.darkRT.resize(this.scale.width + 2, this.scale.height + 2); } catch (e) { console.warn('[dark] resize failed', e.message); } } // (never to a zero-sized screen)
+      if (this.area) this.fitCameraBounds();
+    });
   }
 
   updateDarkness() {

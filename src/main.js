@@ -78,6 +78,7 @@ window.__reportBug = showError; // non-fatal problems the game recovered from, b
 // measure again once the animation has settled, and check once a second too.
 function refit() {
   const n = fit();
+  if (n.width < 32 || n.height < 32) return; // mid-animation, iOS can report a sliver (even 0): a zero-sized screen can't be drawn to, so wait for a real size
   if (game.scale.zoom !== n.zoom) game.scale.setZoom(n.zoom);
   if (game.scale.width !== n.width || game.scale.height !== n.height) game.scale.resize(n.width, n.height);
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0); // iOS can leave the page nudged after its toolbar moves

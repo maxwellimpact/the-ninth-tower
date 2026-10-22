@@ -759,15 +759,26 @@ export class UI extends Phaser.Scene {
   // Graphics command on every frame (~700 here: more than the whole world
   // costs to draw). So each HUD Graphics is kept off the camera and painted
   // into a texture instead, repainted only when what it drew has changed.
+  // If the texture can't be made (a zero-sized screen mid-rotation, or the GPU
+  // out of room), the Graphics is simply drawn live for a moment and baking is
+  // tried again shortly: a missing texture must never stop the game.
   bake(g) {
     const cam = this.cameras.main, W = Math.ceil(this.scale.width), H = Math.ceil(this.scale.height);
+    const live = () => { g.cameraFilter &= ~cam.id; g.bakeRT?.setVisible(false); };
+    if (W < 2 || H < 2 || this.time.now < (g.bakeRetry || 0)) { live(); return; }
     if (!g.bakeRT || g.bakeW !== W || g.bakeH !== H) { // compare what we asked for: Phaser rounds the texture's own size
+      g.bakeRT?.destroy(); g.bakeRT = null;
+      try {
+        g.bakeRT = this.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(g.depth - 0.5); // under whatever shared the Graphics' depth, as the Graphics (drawn early) was
+      } catch (e) {
+        console.warn('[hud] texture unavailable, drawing live for now', e.message);
+        g.bakeW = g.bakeH = 0; g.bakeRetry = this.time.now + 2000; live(); return;
+      }
       g.bakeW = W; g.bakeH = H;
-      g.bakeRT?.destroy();
-      g.bakeRT = this.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(g.depth - 0.5); // under whatever shared the Graphics' depth, as the Graphics (drawn early) was
       g.cameraFilter |= cam.id;
       g.bakeSig = null;
     }
+    g.bakeRT.setVisible(true);
     const cb = g.commandBuffer;
     let h = cb.length;
     for (let i = 0; i < cb.length; i++) { const v = cb[i]; h = (Math.imul(h, 31) + (typeof v === 'number' ? Math.round(v * 8) : 7)) | 0; }
