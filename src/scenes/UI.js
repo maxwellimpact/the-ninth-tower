@@ -797,12 +797,18 @@ export class UI extends Phaser.Scene {
     const L = this.g.leader;
     const tw = w / s, th = h / s;
     const ltx = L.x / 16, lty = L.y / 16;
-    const a = this.g.areaRect();
-    const cx = Phaser.Math.Clamp(ltx - tw / 2, a.x0, Math.max(a.x0, a.x1 + 1 - tw)), cy = Phaser.Math.Clamp(lty - th / 2, a.y0, Math.max(a.y0, a.y1 + 1 - th));
+    const a = this.g.areaRect(), aw = a.x1 - a.x0 + 1, ah = a.y1 - a.y0 + 1;
+    // an area smaller than the window (the Drowned Hollow is 29 tiles wide) sits
+    // centred in it, and only its own tiles are drawn: the grid beside it holds
+    // other interiors (the shop, the grotto), which must never show through
+    const cx = aw < tw ? a.x0 - (tw - aw) / 2 : Phaser.Math.Clamp(ltx - tw / 2, a.x0, a.x1 + 1 - tw);
+    const cy = ah < th ? a.y0 - (th - ah) / 2 : Phaser.Math.Clamp(lty - th / 2, a.y0, a.y1 + 1 - th);
     const ox = Math.floor(cx), oy = Math.floor(cy);
-    this.mmImg.setCrop(ox, oy, tw, th).setPosition(this.mmX - ox * s, this.mmY - oy * s);
+    const kx = Math.max(ox, a.x0), ky = Math.max(oy, a.y0);
+    this.mmImg.setCrop(kx, ky, Math.min(ox + tw, a.x1 + 1) - kx, Math.min(oy + th, a.y1 + 1) - ky).setPosition(this.mmX - ox * s, this.mmY - oy * s);
     const g = this.mmG.clear();
     for (const m of this.g.mapMarkers()) {
+      if (m.kind !== 'quest' && (m.x < a.x0 || m.x > a.x1 || m.y < a.y0 || m.y > a.y1)) continue;
       let x = (m.x - ox) * s, y = (m.y - oy) * s;
       if (m.kind === 'quest') {
         // errand pin: clamps to the minimap edge so it points the way
