@@ -184,7 +184,9 @@ export class Menu extends Phaser.Scene {
   t(x, y, str, font = 'font', tint, maxW = 0, maxLines = 1) {
     const full = String(str).toUpperCase();
     const text = maxW > 0 ? fitString(str, maxW, maxLines) : full;
-    const short = maxW > 0 && maxLines === 1 && text !== full;
+    // (fitString squeezes runs of spaces to one, so compare against that: a line
+    // that fits but had a double space isn't cut, and mustn't become a marquee)
+    const short = maxW > 0 && maxLines === 1 && text !== full.replace(/\s+/g, ' ').trim();
     const o = short ? this.add.dynamicBitmapText(Math.round(x), Math.round(y), font, text) : this.add.bitmapText(Math.round(x), Math.round(y), font, text);
     if (short) {
       Object.assign(o, { full, fitted: text, maxW });
@@ -746,7 +748,7 @@ export class Menu extends Phaser.Scene {
       this.t(x + 15, yy, Qm.stepText(id), 'font', undefined, w - 20);
       yy += 10;
       if (where) { this.t(x + 15, yy, where, 'fontPlain', 0x9fd8ff, w - 20); yy += 9; }
-      this.t(x + 15, yy + 1, `STEP ${q.s + 1} OF ${e.steps.length}${left ? `  -  ${left === 1 ? 'ONE MORE STEP' : `${left} MORE STEPS`} AFTER THIS` : '  -  THE LAST STEP'}`, 'fontPlain', 0x9d93b3, w - 20);
+      this.t(x + 15, yy + 1, `STEP ${q.s + 1} OF ${e.steps.length}${left ? ` - ${left === 1 ? 'ONE MORE STEP' : `${left} MORE STEPS`} AFTER THIS` : ' - THE LAST STEP'}`, 'fontPlain', 0x9d93b3, w - 20);
       this.btn(x, y, w, ch, () => { st.tracked = id; audio.sfx('click'); this.render(); });
       y += ch + 3;
     }
