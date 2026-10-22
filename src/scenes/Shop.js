@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/synth.js';
 import items from '../data/items.json';
-import { W } from '../world/content.js';
+import { W as WORLD } from '../world/content.js'; // (not `W`: that's the screen width in places here)
 import { CRAFT, sellPrice, itemName, statDelta, compareGear } from '../game/state.js';
 import { panel, RARITY } from './UI.js';
 import { itemTex } from '../game/itemtex.js';
@@ -84,7 +84,7 @@ export class Shop extends Phaser.Scene {
   entries() {
     const st = this.g.state;
     if (this.tab === 'buy') {
-      const out = W.shop.stock.map((s) => {
+      const out = WORLD.shop.stock.map((s) => {
         const isPotion = !!CRAFT.consumables[s.id];
         const def = isPotion ? CRAFT.consumables[s.id] : CRAFT.materials[s.id];
         const have = (isPotion ? st.potions[s.id] : st.materials[s.id]) || 0;
@@ -130,8 +130,8 @@ export class Shop extends Phaser.Scene {
     }
     for (const [k, m] of Object.entries(CRAFT.materials)) {
       if (!st.materials[k]) continue;
-      const shopPrice = W.shop.stock.find((s) => s.id === k)?.price || 10;
-      out.push({ cat: 'materials', key: `sellmat:${k}`, done: `SOLD 1 ${m.name}  (${st.materials[k] - 1} LEFT)`, icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * W.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
+      const shopPrice = WORLD.shop.stock.find((s) => s.id === k)?.price || 10;
+      out.push({ cat: 'materials', key: `sellmat:${k}`, done: `SOLD 1 ${m.name}  (${st.materials[k] - 1} LEFT)`, icon: `icon_${k}`, name: `${m.name} (x${st.materials[k]})`, sub: 'CRAFTING MATERIAL', price: Math.max(1, Math.floor(shopPrice * WORLD.shop.sell.mat)), col: 0xd8d3e0, sell: true, act: () => { st.materials[k]--; } });
     }
     return out;
   }

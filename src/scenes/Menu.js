@@ -13,7 +13,7 @@ import { ERRANDS } from '../game/quests.js';
 import KEY_ITEMS from '../data/relics.json';
 import DISCIPLINES from '../data/disciplines.json';
 import LORE from '../data/lore.json';
-import { W } from '../world/content.js'; // world.json, or a test map's own content
+import { W as WORLD } from '../world/content.js'; // world.json, or a test map's own content (not `W`: that's the screen width in here)
 import { TOTAL_FLIES } from './Game.js';
 import HERO_DATA from '../data/heroes.json';
 import { GearFX } from '../game/gearfx.js';
@@ -642,15 +642,39 @@ export class Menu extends Phaser.Scene {
     } else {
       if (!st.flags.enchanter) { this.t(x, y, 'THE ENCHANTER RETURNS TO BRIGHTWATER ONCE TWO WARD STONES FALL. RARE AND UNIQUE GEAR HAS A GEM SOCKET.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
       const gems = Object.entries(st.gems).filter(([, n]) => n > 0);
-      const target = ALL_SLOTS.map((s) => h.hs.equip[s]).find((id) => id === this.gemItem) || ALL_SLOTS.map((s) => h.hs.equip[s]).find((id) => id && socketCount(id));
-      if (!target) { this.t(x, y, 'NO SOCKETED GEAR EQUIPPED. RARE AND UNIQUE ITEMS HAVE A SOCKET.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      // every socketed piece the hero wears gets a row: tap one to choose it, and the gems below go into that one
+      const socketed = ALL_SLOTS.map((sl) => [sl, h.hs.equip[sl]]).filter(([, id]) => id && socketCount(id));
+      if (!socketed.length) { this.t(x, y, 'NO SOCKETED GEAR EQUIPPED. RARE AND UNIQUE ITEMS HAVE A SOCKET.', 'fontPlain', 0x9d93b3).setMaxWidth(w); return; }
+      const [slot, target] = socketed.find(([, id]) => id === this.gemItem) || socketed[0];
       this.gemItem = target;
-      const sk = st.sockets[target] || [];
-      row(itemTex(this, target), itemName(target), RARITY[items[target].rarity].col, `SOCKET: ${sk[0] ? gemName(sk[0]) : 'EMPTY'}${socketCount(target) > 1 ? `, ${sk[1] ? gemName(sk[1]) : 'EMPTY'}` : ''}`, 0xbfe6f2, sk[0] ? 'REMOVE' : null, true, () => { unsocket(st, target, 0); h.refreshStats(); audio.sfx('click'); this.render(); });
+      const armour = slot !== 'weapon' && slot !== 'offhand';
+      for (const [sl, id] of socketed) {
+        if (!fits()) break;
+        const sk = st.sockets[id] || [], picked = id === target;
+        const socks = Array.from({ length: socketCount(id) }, (_, i) => (sk[i] ? gemName(sk[i]) : 'EMPTY')).join(', ');
+        row(itemTex(this, id), `${picked ? '> ' : ''}${itemName(id)}`, RARITY[items[id].rarity].col, `${socks}${picked ? '' : ' - TAP TO CHOOSE'}`, picked ? 0xbfe6f2 : 0x9d93b3,
+          picked ? (sk.some(Boolean) ? 'REMOVE' : null) : 'CHOOSE', true, () => {
+            if (!picked) { this.gemItem = id; audio.sfx('click'); this.render(); return; }
+            const i = sk.length - 1 - [...sk].reverse().findIndex(Boolean);
+            if (i < sk.length && unsocket(st, id, i)) { h.refreshStats(); audio.sfx('click'); }
+            this.render();
+          });
+      }
+      // what a gem does in the chosen piece (element gems only work in a weapon or off-hand)
+      const G = CRAFT.gems, pct = (v) => `${Math.round(v * 1000) / 10}%`;
+      const effect = (gem) => {
+        const kind = G.kinds[gem.replace(/\d/g, '')], gi = +gem.replace(/\D/g, '') - 1;
+        if (kind.element) return armour ? null : `+${pct(G.elementDmg[gi])} ${kind.element.toUpperCase()} DAMAGE`;
+        return { hpPct: `+${pct(G.hpPct[gi])} MAX HP`, defPct: `+${pct(G.defPct[gi])} DEF`, crit: `+${pct(G.crit[gi])} CRIT`, regen: `REGEN ${pct(G.regen[gi])} HP/S` }[kind.stat];
+      };
       for (const [gem, n] of gems) {
         if (!fits()) break;
-        const can3 = n >= CRAFT.gems.combine;
-        row(`icon_crystal`, `${gemName(gem)} X${n}`, 0xffffff, can3 ? 'TAP COMBINE: 3 -> 1 OF THE NEXT GRADE' : 'SET INTO THE SOCKET', 0x9d93b3, 'SET', st.gold >= CRAFT.gems.socketGold[+gem.replace(/\D/g, '') - 1], () => {
+        const can3 = n >= G.combine, cost = G.socketGold[+gem.replace(/\D/g, '') - 1], eff = effect(gem), rich = st.gold >= cost;
+        const sub = !eff ? 'NO EFFECT IN ARMOUR: WEAPON OR OFF-HAND ONLY'
+          : !rich ? `${eff} - NEEDS ${cost}G (YOU HAVE ${st.gold}G)`
+          : can3 ? `${eff} - ${cost}G - TAP LEFT TO COMBINE 3` : `${eff} - ${cost}G`;
+        row(`icon_crystal`, `${gemName(gem)} X${n}`, 0xffffff, sub, !eff || !rich ? 0xff7a7a : 0x9d93b3, 'SET', !!eff && rich, () => {
+          if (!eff || !rich) { audio.sfx('click'); return; }
           const arr = st.sockets[target] || [];
           let idx = 0;
           for (let i = 0; i < socketCount(target); i++) if (!arr[i]) { idx = i; break; }
@@ -771,7 +795,7 @@ export class Menu extends Phaser.Scene {
     y += Math.ceil(Object.keys(CRAFT.consumables).length / cols) * 22 + 6;
     this.t(x, y, 'COLLECTION', 'fontGold'); y += 10;
     row('icon_fly', 'GOLDEN FLIES', `${st.flies.length}/${TOTAL_FLIES}`, 0);
-    row('icon_bag', 'TOWNSFOLK', `${W.townsfolk.filter((t) => this.g.flags[`folk_${t.id}`]).length}/${W.townsfolk.length}`, 1);
+    row('icon_bag', 'TOWNSFOLK', `${WORLD.townsfolk.filter((t) => this.g.flags[`folk_${t.id}`]).length}/${WORLD.townsfolk.length}`, 1);
     row('icon_lore', 'LORE PAGES', `${(st.lore || []).length}/40`, 2);
     const keys = Object.entries(KEY_ITEMS).filter(([k]) => st.relics.includes(k));
     keys.forEach(([, d], i) => row(d.icon, d.name, 'OWNED', i + 3));
