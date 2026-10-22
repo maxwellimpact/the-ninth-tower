@@ -542,6 +542,13 @@ export class MusicPlayer {
   schedule() {
     if (!this.playing) return;
     const ctx = audio.ctx;
+    // back from the background: timers were frozen while the clock ran on, so
+    // skip the missed steps rather than play them all at once
+    if (this.nextTime < ctx.currentTime - 0.05) {
+      const missed = Math.ceil((ctx.currentTime - this.nextTime) / this.stepDur);
+      this.nextTime += missed * this.stepDur;
+      this.step = (this.step + missed) % this.song.steps;
+    }
     while (this.nextTime < ctx.currentTime + 0.15) {
       for (const { tr, e, v } of this.byStep[this.step]) {
         const g = this.nodes[tr.layer + ':' + v];

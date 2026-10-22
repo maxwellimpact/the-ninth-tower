@@ -25,6 +25,9 @@ class AudioEngine {
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
     this.master.connect(comp).connect(ctx.destination);
+    // the phone took the sound (another app, a call): note it, and take it back
+    // as soon as we're on screen again
+    ctx.onstatechange = () => { if (ctx.state !== 'running') { this.wasAway = true; setTimeout(() => this.wake(), 300); } };
 
     // Reverb: generated stereo impulse (decaying noise), low-passed.
     this.reverb = ctx.createConvolver();
@@ -55,6 +58,22 @@ class AudioEngine {
     this.noise = this.noiseBuffer(1.0);
     this.noiseShort = this.noiseBuffer(0.02); // periodic "metallic" NES noise
     return this;
+  }
+
+  // Bring the sound back after the phone took it away. iOS suspends (or
+  // "interrupts") the context when you switch apps, takes a call, or locks the
+  // screen, and leaves it that way when you come back. Called when the page is
+  // shown again and on every tap; from a tap, a silent blip also clears the
+  // WebKit case where the context says "running" but stays mute. \`held\` is
+  // set while the game is deliberately paused (phone held upright).
+  wake(gesture = false) {
+    const ctx = this.ctx;
+    if (!ctx || this.held || document.hidden) return;
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
+    if (gesture && this.wasAway) {
+      this.wasAway = false;
+      const b = ctx.createBufferSource(); b.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); b.connect(ctx.destination); b.start();
+    }
   }
 
   get t() { return this.ctx.currentTime; }

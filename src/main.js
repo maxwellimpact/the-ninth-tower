@@ -90,6 +90,11 @@ window.addEventListener('pageshow', refitSoon);
 window.visualViewport?.addEventListener('resize', refitSoon);
 window.visualViewport?.addEventListener('scroll', () => refit());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refitSoon(); });
+// back from another app: resume the sound (and again on the first tap, which
+// iOS sometimes insists on before it lets the sound play)
+document.addEventListener('visibilitychange', () => audio.wake());
+for (const ev of ['pageshow', 'focus']) window.addEventListener(ev, () => audio.wake());
+for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, () => audio.wake(true), { capture: true, passive: true });
 setInterval(refit, 1000);
 // Safe-area insets (notch, rounded corners, home indicator) in CSS px; the HUD
 // keeps its controls inside them.
@@ -132,6 +137,7 @@ function checkUpright() {
   document.body.classList.toggle('upright', now);
   // sleep stops the frame loop outright (game.pause only shifts the clock and
   // relies on the browser to stop frames, which it doesn't for a rotation)
+  audio.held = now;
   if (now) { if (game.loop.running) game.loop.sleep(); audio.ctx?.suspend(); } else { if (game.loop.started) game.loop.wake(); audio.ctx?.resume(); }
 }
 UPRIGHT.addEventListener?.('change', checkUpright);
