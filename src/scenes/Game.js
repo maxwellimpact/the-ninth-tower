@@ -11,7 +11,7 @@ import { Streamer } from '../game/streamer.js';
 import { MiniMap } from '../game/minimap.js';
 import { GearFX } from '../game/gearfx.js';
 import { loadGroup, loadGroupNow, loaded, assetStats } from '../game/assets.js';
-import { rollGearDrop, ensureItems, makeItem, tierForLevel, gearValue } from '../game/itemgen.js';
+import { rollGearDrop, rollChestGear, ensureItems, makeItem, tierForLevel, gearValue } from '../game/itemgen.js';
 import { itemTex } from '../game/itemtex.js';
 import { QuestManager } from '../game/quests.js';
 import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
@@ -3157,7 +3157,9 @@ export class Game extends Phaser.Scene {
     audio.sfx('chest');
     this.fx.burst('gold', img.x, img.y - 10, 24);
     this.state.gold += Math.round((c.gold || 0) * (this.party.some((h) => h.hasPerk('signet')) ? 1.15 : 1) * (this.party.some((h) => h.hasPerk('brightkey')) ? 1.1 : 1));
-    const loot = c.items || [];
+    // a treasure chest with nothing placed in it holds a piece of gear for
+    // someone in the party, a little better than what they wear (C4)
+    const loot = c.items?.length || c.relic || !c.gold ? c.items || [] : [rollChestGear(this.state, { dungeon: !!this.dungeon })].filter(Boolean);
     gainItems(this.state, loot);
     addMats(this.state, c.mats || {});
     addPotions(this.state, c.potions || {});

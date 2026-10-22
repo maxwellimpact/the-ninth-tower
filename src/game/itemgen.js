@@ -129,6 +129,38 @@ export function rollGearDrop(state, level, elite, rand = Math.random) {
   return makeItem(hero, slot, tierForLevel(level), rarity, rand);
 }
 
+// Chest gear (C4: Fine from chests, Rare from dungeon chests): one piece a
+// little better than what someone in the party wears now. Every active hero's
+// four slots are weighed by how far (as a share) they lag this level's Fine piece; one of
+// the three that lag most is picked, then the smallest step up that beats what
+// is worn there by at least 3% (Fine, then Rare, then the same a tier higher).
+// A dungeon chest starts from Rare. Luck on top: 15% one step better, 4% a Rare
+// from the tier above. If nobody can be upgraded (all uniques), a Fine piece.
+const CHEST_LUCK = { step: 0.15, jackpot: 0.04 };
+export function rollChestGear(state, { dungeon = false } = {}, rand = Math.random) {
+  const probe = (hero, slot, tier, rarity) => { const it = registerItem(`g.${hero}.${slot}.${tier}.${rarity}.1.-.-#probe`); return it ? statScore(it) : 0; };
+  const worn = (hero, slot) => { const id = state.heroes[hero]?.equip?.[slot]; const it = id && (items[id] || registerItem(id)); return it ? statScore(it) : 0; };
+  const options = [];
+  for (const hero of state.active || state.recruited) {
+    const t = tierForLevel(state.heroes[hero]?.level || 1);
+    for (const slot of ['weapon', 'offhand', 'head', 'body']) {
+      if (!family(hero, slot)) continue;
+      const now = worn(hero, slot);
+      const ladder = [[t, 'fine'], [t, 'rare'], [t + 1, 'fine'], [t + 1, 'rare']].filter(([tt]) => tt <= 6).slice(dungeon ? 1 : 0);
+      const rung = ladder.findIndex(([tt, r]) => probe(hero, slot, tt, r) >= now * 1.03 + 0.5);
+      if (rung >= 0) options.push({ hero, slot, ladder, rung, lag: 1 - now / Math.max(1, probe(hero, slot, t, 'fine')) }); // relative, so a cap and a sword weigh the same
+    }
+  }
+  if (!options.length) { const hero = pick(state.active || state.recruited, rand); return makeItem(hero, pick(['weapon', 'offhand', 'head', 'body'], rand), tierForLevel(state.heroes[hero]?.level || 1), 'fine', rand); }
+  options.sort((a, b) => b.lag - a.lag);
+  const o = pick(options.slice(0, 3), rand);
+  let [tier, rarity] = o.ladder[o.rung];
+  const r = rand();
+  if (r < CHEST_LUCK.jackpot) [tier, rarity] = o.ladder[o.ladder.length - 1];
+  else if (r < CHEST_LUCK.jackpot + CHEST_LUCK.step) [tier, rarity] = o.ladder[Math.min(o.ladder.length - 1, o.rung + 1)];
+  return makeItem(o.hero, o.slot, tier, rarity, rand);
+}
+
 // Shop stock: the current tier's Common pieces for each recruited hero.
 export function shopGear(state, tier) {
   const out = [];
