@@ -53,7 +53,7 @@ export class Title extends Phaser.Scene {
     const cs = this.add.bitmapText(W / 2, save ? H - 20 : H - 10, 'fontPlain', '').setOrigin(0.5).setAlpha(0.6);
     const showCloud = () => cs.setText(`CLOUD SAVE: ${cloudStatus().toUpperCase().replace(/[^A-Z0-9 .,!?:/()-]/g, " ")}`);
     showCloud(); this.time.addEvent({ delay: 1000, loop: true, callback: showCloud });
-    // The Vast: a generated world ten times Aldermere's size, for profiling
+    // The Vast: a generated world forty times Aldermere's size, for profiling
     // load times and frame rates, with a ready-made party. Never saves. (The
     // Dungeon Lab that used to sit here still opens via #dungeon or ?demo=boss.)
     // a framed button in the corner (the save menu adds a full-size one too),
@@ -102,7 +102,7 @@ export class Title extends Phaser.Scene {
   // The deep-link sandboxes. They never read or write the real save.
   startDemo(kind, mapId = null) {
     if (kind === 'boss') { this.enterLab('undercroft'); return; }
-    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast'; } // ?map=vast40 for a bigger one
+    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40'; } // the title's button: forty times Aldermere (?map=vast is ten)
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
@@ -159,7 +159,7 @@ export class Title extends Phaser.Scene {
       this.showLabLink(true);
       this.heroSelect();
     });
-    opt(144, 'THE VAST', 'A 10X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
+    opt(144, 'THE VAST', 'A 40X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
   }
 
   heroSelect() {
