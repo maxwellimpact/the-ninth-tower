@@ -46,6 +46,14 @@ export class MiniMap {
     if (scene.textures.exists('minimap')) scene.textures.remove('minimap');
     this.tex = scene.textures.addCanvas('minimap', cv);
     this.dirty = false;
+    // Uploading the whole map to the GPU each time a corner of it is explored
+    // cost ~10 ms on the 40x Vast (a 1216 x 2024 canvas), about once a second
+    // while walking. So the canvas only redraws the patch that changed, the
+    // HUD's minimap gets a small texture of just the window it shows
+    // (viewTexture), and the full one is uploaded when the world map opens (syncBig).
+    this.box = null; // the explored patch not yet drawn into the canvas
+    this.bigStale = false;
+    this.viewKey = null;
   }
 
   paint(i) {
@@ -63,14 +71,42 @@ export class MiniMap {
       this.explored[i] = 1;
       this.paint(i);
       this.dirty = true;
+      const b = (this.box ??= { x0: x, y0: y, x1: x, y1: y });
+      b.x0 = Math.min(b.x0, x); b.y0 = Math.min(b.y0, y); b.x1 = Math.max(b.x1, x); b.y1 = Math.max(b.y1, y);
     }
   }
 
   flush() {
     if (!this.dirty) return;
     this.dirty = false;
-    this.ctx.putImageData(this.img, 0, 0);
-    this.tex.refresh();
+    const b = this.box; this.box = null;
+    this.ctx.putImageData(this.img, 0, 0, b.x0, b.y0, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1); // just the patch
+    this.bigStale = true; this.viewStale = true;
+  }
+
+  // the full map's texture, brought up to date (the world map shows all of it)
+  syncBig() { if (this.bigStale) { this.bigStale = false; this.tex.refresh(); } }
+
+  // A small texture of the window (ox, oy, w, h tiles) the HUD's minimap
+  // shows, drawn from the canvas only when the window moves or the map
+  // changes. Only the area's own tiles are drawn (rect a): the rest stays clear.
+  viewTexture(ox, oy, w, h, a) {
+    const sc = this.scene;
+    if (!this.viewKey || this.vw !== w || this.vh !== h) {
+      if (sc.textures.exists('minimapView')) sc.textures.remove('minimapView');
+      [this.vcv, this.vctx] = makeCanvas(w, h);
+      this.vtex = sc.textures.addCanvas('minimapView', this.vcv);
+      this.viewKey = 'minimapView'; this.vw = w; this.vh = h; this.vat = null;
+    }
+    const at = `${ox},${oy},${a.x0},${a.y0},${a.x1},${a.y1}`;
+    if (at !== this.vat || this.viewStale) {
+      this.vat = at; this.viewStale = false;
+      const x0 = Math.max(ox, a.x0), y0 = Math.max(oy, a.y0), x1 = Math.min(ox + w, a.x1 + 1), y1 = Math.min(oy + h, a.y1 + 1);
+      this.vctx.clearRect(0, 0, w, h);
+      if (x1 > x0 && y1 > y0) this.vctx.drawImage(this.canvas, x0, y0, x1 - x0, y1 - y0, x0 - ox, y0 - oy, x1 - x0, y1 - y0);
+      this.vtex.refresh();
+    }
+    return this.viewKey;
   }
 
   isExplored(tx, ty) { return !!this.explored[ty * MAP_W + tx]; }

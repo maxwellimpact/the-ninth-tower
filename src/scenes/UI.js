@@ -804,8 +804,9 @@ export class UI extends Phaser.Scene {
     const cx = aw < tw ? a.x0 - (tw - aw) / 2 : Phaser.Math.Clamp(ltx - tw / 2, a.x0, a.x1 + 1 - tw);
     const cy = ah < th ? a.y0 - (th - ah) / 2 : Phaser.Math.Clamp(lty - th / 2, a.y0, a.y1 + 1 - th);
     const ox = Math.floor(cx), oy = Math.floor(cy);
-    const kx = Math.max(ox, a.x0), ky = Math.max(oy, a.y0);
-    this.mmImg.setCrop(kx, ky, Math.min(ox + tw, a.x1 + 1) - kx, Math.min(oy + th, a.y1 + 1) - ky).setPosition(this.mmX - ox * s, this.mmY - oy * s);
+    const key = this.g.minimap.viewTexture(ox, oy, tw, th, a); // just this window (only the area's own tiles), not the whole map
+    if (this.mmImg.texture.key !== key) this.mmImg.setTexture(key).setCrop();
+    this.mmImg.setPosition(this.mmX, this.mmY);
     const g = this.mmG.clear();
     for (const m of this.g.mapMarkers()) {
       if (m.kind !== 'quest' && (m.x < a.x0 || m.x > a.x1 || m.y < a.y0 || m.y > a.y1)) continue;
