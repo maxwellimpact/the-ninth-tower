@@ -80,6 +80,7 @@ export function setMapShape(def) {
   MAP_W = sz.w; MAP_H = sz.h; OW_W = sz.overworldW; OW_H = MAP_H;
   AREAS.overworld.x1 = OW_W - 1; AREAS.overworld.y1 = MAP_H - 1;
   shapeBiome = def?.biome || null;
+  biomeMemo = null; // (sized to the grid it was made for)
 }
 
 export function areaAt(tx, ty) {
@@ -117,11 +118,41 @@ export const frostEdge = (x) => rawFrostEdge(Math.abs(x - 46) <= 2 ? 46 : x);
 export const basinEdge = (y) => BASIN_X + (vnoise(0.5, y / 14, 823) - 0.5) * 10;
 const straightBiome = (tx, ty) => (ty > frostEdge(tx) ? (tx < BASIN_X ? 'frost' : 'basin') : ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
 
+// Aldermere's rule is pure but costly (the pins, the frayed borders), and the
+// builder, the painter and the game ask it about the same tiles over and
+// over: each whole tile is worked out once and remembered, and only the pins
+// whose circles reach a tile's 8x8 cell are checked.
+const BIOME_IDS = ['vale', 'meadow', 'marsh', 'gloam', 'cinder', 'frost', 'basin'];
+let biomeMemo = null, pinCells = null;
+const PIN_CELL = 8;
+function pinsNear(tx, ty) {
+  if (!pinCells) {
+    const cols = Math.ceil(W.size.overworldW / PIN_CELL), rows = Math.ceil(W.size.h / PIN_CELL);
+    pinCells = Array.from({ length: cols * rows }, () => []);
+    for (const pin of PINS) {
+      const [px, py, r] = pin;
+      for (let cy = Math.max(0, Math.floor((py - r) / PIN_CELL)); cy <= Math.min(rows - 1, Math.floor((py + r) / PIN_CELL)); cy++)
+        for (let cx = Math.max(0, Math.floor((px - r) / PIN_CELL)); cx <= Math.min(cols - 1, Math.floor((px + r) / PIN_CELL)); cx++) pinCells[cy * cols + cx].push(pin);
+    }
+    pinCells.cols = cols; pinCells.rows = rows;
+  }
+  const cx = Math.floor(tx / PIN_CELL), cy = Math.floor(ty / PIN_CELL);
+  return cx < 0 || cy < 0 || cx >= pinCells.cols || cy >= pinCells.rows ? PINS : pinCells[cy * pinCells.cols + cx];
+}
 export function biomeAt(tx, ty) {
   if (shapeBiome) return shapeBiome(tx, ty);
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
-  for (const [px, py, r] of PINS) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
+  if (Number.isInteger(tx) && Number.isInteger(ty) && tx >= 0 && ty >= 0 && tx < OW_W && ty < MAP_H) {
+    biomeMemo ??= new Int8Array(OW_W * MAP_H).fill(-1);
+    const i = ty * OW_W + tx;
+    if (biomeMemo[i] < 0) biomeMemo[i] = BIOME_IDS.indexOf(aldermereBiome(tx, ty));
+    return BIOME_IDS[biomeMemo[i]];
+  }
+  return aldermereBiome(tx, ty);
+}
+function aldermereBiome(tx, ty) {
+  for (const [px, py, r] of pinsNear(tx, ty)) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
   // the highlands start above the escarpment (it meanders, but never into older ground)
   if (ty > frostEdge(tx)) return tx < basinEdge(ty) + fray(tx, ty, 810) * 0.5 ? 'frost' : 'basin';
   if (ty >= southEdge(tx) + fray(tx, ty, 805)) return tx < ridgeAt(ty) + 2 + (ty < SOUTH_Y + 4 ? fray(tx, ty, 806) : 0) ? 'gloam' : 'cinder';
@@ -227,11 +258,15 @@ const riverX = (y) => 134 + Math.sin(y / 9) * 3;
 const southRiverY = (x) => 53.5 + Math.sin(x / 13) * 1.6 + Math.sin(x / 5.3) * 0.5;
 
 export function buildWorld() {
+  const ms = {}, t0 = performance.now(), lap = (k) => { const t = performance.now(); ms[k] = Math.round(t - (lap.t ?? t0)); lap.t = t; }; // stage timings (the debug panel's LOAD line)
   const tiles = new Uint8Array(MAP_W * MAP_H);
   const at = (x, y) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.CAVEWALL : tiles[y * MAP_W + x]);
   const set = (x, y, t) => { if (x >= 0 && y >= 0 && x < MAP_W && y < MAP_H) tiles[y * MAP_W + x] = t; };
   const rect = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, t); };
-  const onPath = (x, y) => x < OW_W && PATHS.some((p) => distToLine(x, y, p.pts) < p.w + vnoise(x / 6, y / 6, 5) * 0.5);
+  // (a road can only reach tiles within w + 0.5 of its line, so each is only
+  // measured inside its own bounding box)
+  const boxes = PATHS.map((p) => { const xs = p.pts.map((q) => q[0]), ys = p.pts.map((q) => q[1]), m = p.w + 0.5; return [Math.min(...xs) - m, Math.min(...ys) - m, Math.max(...xs) + m, Math.max(...ys) + m]; });
+  const onPath = (x, y) => x < OW_W && PATHS.some((p, i) => { const b = boxes[i]; return x >= b[0] && y >= b[1] && x <= b[2] && y <= b[3] && distToLine(x, y, p.pts) < p.w + vnoise(x / 6, y / 6, 5) * 0.5; });
 
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const b = biomeAt(x, y);
@@ -293,6 +328,7 @@ export function buildWorld() {
     }
   }
 
+  lap('ground');
   // Brightwater ruins
   rect(36, 18, 52, 29, T.PAVED);
   const wall = (x0, y0, x1, y1) => rect(x0, y0, x1, y1, T.WALL);
@@ -527,6 +563,7 @@ export function buildWorld() {
     const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;
     if (d < 1) set(x, y, T.WATER); else if (d < 1.35) set(x, y, T.SHALLOW);
   }
+  lap('features');
   // Lab dungeons: authored as text grids (src/data/dungeons.json)
   for (const d of Object.values(DUNGEONS)) {
     if (!d.rows) continue; // overlay dungeons (caves) keep their own terrain
@@ -548,9 +585,10 @@ export function buildWorld() {
   set(242, 11, T.FLOOR); // shop doorway
   set(243, 27, T.FLOOR); // tavern doorway
 
+  lap('interiors');
   // ------------------------------------------------------------------ props
   const props = [];
-  const occupied = new Set(); // tile keys taken by props
+  const occupied = new Uint8Array(MAP_W * MAP_H); // tiles taken by props
   const add = (type, x, y, extra = {}) => { props.push({ type, x, y, ...extra }); };
   const reserved = [];
   const reserve = (x, y, r) => reserved.push([x, y, r]);
@@ -588,16 +626,19 @@ export function buildWorld() {
   reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
-  const isReserved = (x, y) => reserved.some(([rx, ry, r]) => Math.hypot(rx - x, ry - y) < r);
+  // every reserved circle painted into a grid once, instead of checking each one at every tile
+  const reservedMask = new Uint8Array(MAP_W * MAP_H);
+  for (const [rx, ry, r] of reserved) for (let y = Math.max(0, Math.floor(ry - r)); y <= Math.min(MAP_H - 1, Math.ceil(ry + r)); y++) for (let x = Math.max(0, Math.floor(rx - r)); x <= Math.min(MAP_W - 1, Math.ceil(rx + r)); x++) if (Math.hypot(rx - x, ry - y) < r) reservedMask[y * MAP_W + x] = 1;
+  const isReserved = (x, y) => reservedMask[y * MAP_W + x] === 1;
   const groundOk = (t) => t === T.GRASS || t === T.PLATEAU || t === T.MARSH || t === T.LOAM || t === T.ASH || t === T.SNOW || t === T.BLIGHT;
   const free = (x, y, pad = 1) => {
     for (let dy = -pad; dy <= pad; dy++) for (let dx = -pad; dx <= pad; dx++) {
       const tx = x + dx, ty = y + dy;
-      if (!groundOk(at(tx, ty)) || occupied.has(tx + ',' + ty)) return false;
+      if (!groundOk(at(tx, ty)) || occupied[ty * MAP_W + tx]) return false;
     }
     return true;
   };
-  const claim = (x, y) => occupied.add(x + ',' + y);
+  const claim = (x, y) => { occupied[y * MAP_W + x] = 1; };
 
   // trees: world-edge forest frame, groves, and a belt between vale and fen
   for (let y = 0; y < MAP_H; y += 2) for (let x = 0; x < MAP_W; x += 2) {
@@ -622,6 +663,7 @@ export function buildWorld() {
     claim(jx, jy);
   }
 
+  lap('trees');
   // scatter
   for (let y = 1; y < MAP_H - 1; y++) for (let x = 1; x < MAP_W - 1; x++) {
     const b = biomeAt(x, y);
@@ -705,10 +747,13 @@ export function buildWorld() {
 
   // furniture
   for (const f of W.furniture || []) add(f.type, f.x, f.y, { ...f });
+  lap('scatter');
+  ms.total = Math.round(performance.now() - t0);
 
   return {
     tiles,
     props,
+    ms,
     at: (x, y) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.CAVEWALL : tiles[y * MAP_W + x]),
   };
 }
