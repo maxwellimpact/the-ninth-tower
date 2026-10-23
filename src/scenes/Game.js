@@ -170,6 +170,8 @@ export class Game extends Phaser.Scene {
 
     this.propsByChunk = new Map();
     this.lazyByChunk = new Map(); // world furniture shown only while its chunk is in (see lazy)
+    this.parked = new Map(); // far-off objects out of the display list (see cullOffscreen)
+    this.events.once('shutdown', () => { for (const o of this.parkedObjects()) o.destroy(); this.parked.clear(); }); // (not in the display list, so the scene wouldn't)
     for (const p of this.world.props) {
       const k = `${Math.floor((p.x * TILE) / CHUNK)},${Math.floor((p.y * TILE) / CHUNK)}`;
       if (!this.propsByChunk.has(k)) this.propsByChunk.set(k, []);
@@ -653,8 +655,9 @@ export class Game extends Phaser.Scene {
       this.add.image(n.px + 1, n.py + 1, 'shadow').setAlpha(0.2).setDepth(-4);
     }
     // golden flies: walk close to grab
+    const LL = this.leader;
     for (const f of this.flies) {
-      if (f.got) continue;
+      if (f.got || Math.abs(f.x - LL.x) > 160 || Math.abs(f.y - LL.y) > 160) continue; // (the party is never far from its leader)
       if (!this.party.some((h) => !h.downed && Math.hypot(h.x - f.x, h.y - f.y) < 16)) continue;
       f.got = true;
       this.state.flies.push(f.i);
@@ -1002,7 +1005,7 @@ export class Game extends Phaser.Scene {
 
   // ============================================================ landmarks
   addInteractable(o) { this.interactables.push(o); return o; }
-  removeInteractable(o) { this.interactables = this.interactables.filter((k) => k !== o); }
+  removeInteractable(o) { o.removed = true; this.interactables = this.interactables.filter((k) => k !== o); }
 
   get dungeon() { return this.dungeons?.[this.area] || null; }
 
@@ -1012,7 +1015,12 @@ export class Game extends Phaser.Scene {
   // They wash away in a wave from the stone when it breaks.
   buildBlight() {
     const FLAG = { vale: 'wardBroken', meadow: 'wardBroken', marsh: 'ward_marsh', gloam: 'ward_gloam', cinder: 'ward_cinder', frost: 'ward_frost' };
-    const keepClear = [...W.campfires, ...QDATA.npcs, ...W.npcs, ...W.signs, ...W.chests, ...W.townsfolk].map((k) => [k.x, k.y]);
+    // camps, people, signs and chests keep a clear ring of 9 tiles: painted into
+    // a grid once (checking every one at every sample was quadratic in map size)
+    const keepClear = new Uint8Array(MAP_W * MAP_H);
+    for (const k of [...W.campfires, ...QDATA.npcs, ...W.npcs, ...W.signs, ...W.chests, ...W.townsfolk]) {
+      for (let y = Math.max(0, Math.floor(k.y - 9)); y <= Math.min(MAP_H - 1, k.y + 9); y++) for (let x = Math.max(0, Math.floor(k.x - 9)); x <= Math.min(MAP_W - 1, k.x + 9); x++) if (Math.hypot(k.x - x, k.y - y) < 9) keepClear[y * MAP_W + x] = 1;
+    }
     this.blight = [];
     for (let ty = 4; ty < MAP_H - 4; ty += 6) for (let tx = 4; tx < OW_W - 4; tx += 6) {
       const x = tx + Math.floor(vnoise(tx, ty, 341) * 5), y = ty + Math.floor(vnoise(ty, tx, 342) * 5);
@@ -1020,7 +1028,7 @@ export class Game extends Phaser.Scene {
       if (!flag || this.flags[flag]) continue;
       if (vnoise(x / 13, y / 13, 343 + reg.length) < 0.77) continue; // patches, not a carpet
       if (this.nav.isSolid(x, y) || this.nav.isWater(x + 1, y) || this.nav.isWater(x - 1, y)) continue;
-      if (keepClear.some(([kx, ky]) => Math.hypot(kx - x, ky - y) < 9)) continue;
+      if (keepClear[y * MAP_W + x]) continue;
       if (this.wards.some((w) => Math.hypot((x + 0.5) * TILE - w.C.x, (y + 0.5) * TILE - w.C.y) < w.C.R + 2 * TILE)) continue; // the stone's curse already covers it
       const img = this.add.image(x * TILE + 8, y * TILE + 8, `blight${Math.floor(vnoise(x, y, 344) * 6) % 6}`).setDepth(-88).setAlpha(0.85).setFlipX(vnoise(y, x, 345) < 0.5);
       this.blight.push({ img, flag });
@@ -1132,6 +1140,7 @@ export class Game extends Phaser.Scene {
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
       const o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 16, kind: 'warp', warp: w, armed: false, interact: () => this.tryWarp(w) });
+      (this.warpObjs ??= []).push(o);
       if (w.stairs) {
         // a visible stairwell; you go down by tapping it, never by stumbling in
         this.add.image(x, y + 8, 'stairsDown').setOrigin(0.5, 1).setDepth(-40);
@@ -1525,20 +1534,25 @@ export class Game extends Phaser.Scene {
   closeMap() { this.scene.resume(); }
 
   // Points of interest for the minimap / world map (tile coords).
-  mapMarkers() {
+  // near (tiles): only what lies in it, for the HUD's small window (the world
+  // map asks for everything); the quest pin always comes, to point the way
+  mapMarkers(near = null) {
     const now = this.time.now; // the minimap asks every frame; a quarter-second-old list is plenty
-    if (this.markCache && now - this.markCache.t < 250 && this.markCache.area === this.area) return this.markCache.m;
-    const m = this.computeMapMarkers();
-    this.markCache = { t: now, area: this.area, m };
+    const key = near ? `${near.x0},${near.y0},${near.x1},${near.y1}` : 'all';
+    if (this.markCache && now - this.markCache.t < 250 && this.markCache.area === this.area && this.markCache.key === key) return this.markCache.m;
+    const m = this.computeMapMarkers(near);
+    this.markCache = { t: now, area: this.area, key, m };
     return m;
   }
 
-  computeMapMarkers() {
+  computeMapMarkers(near = null) {
     const m = [];
     const tile = (o) => ({ x: Math.floor(o.x / TILE), y: Math.floor(o.y / TILE) });
+    const out = near ? (x, y) => x < near.x0 || x > near.x1 || y < near.y0 || y > near.y1 : () => false;
     for (const o of this.interactables) {
       if (o.hidden) continue;
       const t = tile(o);
+      if (out(t.x, t.y)) continue;
       if (o.kind === 'chest') { const c = o.chest || W.chests.find((k) => k.x === t.x && k.y === t.y); if (c && !this.flags[`chest_${c.id}`]) m.push({ ...t, kind: 'chest' }); } // (dungeon chests are looked up)
       else if (o.kind === 'campfire') m.push({ ...t, kind: 'camp' });
       else if (o.kind === 'recruit') m.push({ ...t, kind: 'recruit' });
@@ -1550,10 +1564,10 @@ export class Game extends Phaser.Scene {
     }
     for (const u of this.wardUnits()) m.push({ ...tile(u), kind: 'boss' });
     for (const n of this.npcs) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'npc' });
-    for (const n of this.quests.npcs) if (!n.hiddenNow) m.push({ x: n.x, y: n.y, kind: 'npc' });
+    for (const n of this.quests.npcs) if (!n.hiddenNow && !out(n.x, n.y)) m.push({ x: n.x, y: n.y, kind: 'npc' });
     const pin = this.quests.pin();
     if (pin) m.push({ ...pin, kind: 'quest', always: true });
-    for (const n of this.nodes) if (n.ready) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
+    for (const n of this.nodes) if (n.ready && !out(n.x, n.y)) m.push({ ...tile({ x: n.px, y: n.py }), kind: 'node' });
     if (this.dungeon) m.push(...this.dungeon.markers());
     if (this.party.some((h) => h.hasPerk('compass'))) { // Traveler's Compass: every unopened chest here
       const shut = this.dungeon ? this.dungeon.chests.filter((c) => !c.opened && !c.reveal) : W.chests.filter((c) => !this.flags[`chest_${c.id}`]);
@@ -2629,7 +2643,7 @@ export class Game extends Phaser.Scene {
 
   buildTownsfolk() {
     const px = (t) => t * TILE + TILE / 2;
-    const homes = this.townsfolkHomes();
+    const homes = W.townsfolk.some((t) => this.flags[`folk_${t.id}`]) ? this.townsfolkHomes() : []; // only the rescued go home
     W.townsfolk.forEach((t, i) => {
       const saved = !!this.flags[`folk_${t.id}`];
       const [hx, hy] = saved ? homes[i] : [t.x, t.y];
@@ -2700,16 +2714,22 @@ export class Game extends Phaser.Scene {
   // Free spots around the Brightwater hamlet for rescued townsfolk to live:
   // at least 2.5 tiles from anyone or anything above and from each other.
   townsfolkHomes() {
-    const spots = this.personSpots(), taken = [], out = [];
-    const clear = (x, y) => !this.nav.isSolid(x, y) && !spots.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5) && !taken.some(([a, b]) => Math.hypot(a - x, b - y) < 2.5);
+    // every tile within 2.5 of someone's spot, or of a home already given out,
+    // is marked in a set as it's taken (checking every spot and home for every
+    // tile tried was cubic: 160 s with the dense Vast's 900 townsfolk)
+    const out = [], near = new Set();
+    const mark = (a, b) => { for (let y = Math.floor(b - 2.5); y <= b + 2.5; y++) for (let x = Math.floor(a - 2.5); x <= a + 2.5; x++) if (Math.hypot(a - x, b - y) < 2.5) near.add(y * MAP_W + x); };
+    for (const [a, b] of this.personSpots()) mark(a, b);
+    const clear = (x, y) => !this.nav.isSolid(x, y) && !near.has(y * MAP_W + x);
+    const [hx, hy] = MAP?.generated ? [W.start.x, W.start.y] : [19, 39]; // Brightwater's square (a generated map: where you start)
     for (const t of W.townsfolk) {
       let found = null;
       for (let r = 0; r < 16 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r && !found; dx++) {
         if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-        if (clear(19 + dx, 39 + dy)) found = [19 + dx, 39 + dy];
+        if (clear(hx + dx, hy + dy)) found = [hx + dx, hy + dy];
       }
-      found ??= [19, 39];
-      taken.push(found); out.push(found);
+      found ??= [hx, hy];
+      mark(found[0], found[1]); out.push(found);
     }
     return out;
   }
@@ -2803,8 +2823,10 @@ export class Game extends Phaser.Scene {
   updateCampfires() {
     const L = this.leader;
     for (const c of W.campfires) {
+      const dx = L.x - (c.x * TILE + 8), dy = L.y - (c.y * TILE + 8);
+      if (dx > 7 * TILE || dx < -7 * TILE || dy > 7 * TILE || dy < -7 * TILE) continue; // (cheap test first: a big map has hundreds)
       const k = `camp_${c.x}_${c.y}`;
-      if (!this.flags[k] && Math.hypot(L.x - (c.x * TILE + 8), L.y - (c.y * TILE + 8)) < 7 * TILE) {
+      if (!this.flags[k] && Math.hypot(dx, dy) < 7 * TILE) {
         this.flags[k] = true;
         this.floatText(c.x * TILE + 8, c.y * TILE - 18, 'CAMPFIRE FOUND', 'fontGold');
       }
@@ -3795,8 +3817,8 @@ export class Game extends Phaser.Scene {
   // Walk-on doorways (plus visible markers once the cave art is loaded).
   updateWarps() {
     const L = this.leader;
-    for (const o of this.interactables) {
-      if (o.kind !== 'warp') continue;
+    for (const o of this.warpObjs || []) { // (their own list: walking every tappable thing for them cost 0.17 ms a frame on the dense Vast)
+      if (o.removed) continue;
       if (w_locked(this, o)) continue;
       if (!o.marker && o.needsLight && loaded.has('cave')) {
         o.marker = this.add.image(o.x, o.y + 10, 'lightShaft').setOrigin(0.5, 1).setDepth(o.y - 20).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8);
@@ -4424,12 +4446,22 @@ export class Game extends Phaser.Scene {
   // camera is excluded from it (cameraFilter, so code that shows/hides things
   // with setVisible is untouched). Fixed-to-screen objects and Graphics are
   // left alone.
+  //
+  // Anything more than two chunks past the view is parked as well: taken out
+  // of the display list (so it isn't drawn, sorted, culled or animated) into a
+  // bucket for its chunk, and put back once the view comes within a chunk of
+  // it. It stays alive, so whatever holds it (an errand, a townsperson, a fly)
+  // keeps working with it. Once a second the parked are re-filed if they
+  // moved, and dropped if they were destroyed. A big map can hold any number
+  // of people and pickups this way at no cost per frame (rule 14).
   cullOffscreen() {
     // every third frame, with a margin wide enough that nothing moving can reach the edge in between
     if ((this.cullN = (this.cullN || 0) + 1) % 3 && !this.cullNow) return;
     this.cullNow = false;
     const cam = this.cameras.main, v = cam.worldView, m = 96, id = cam.id;
     const vx0 = v.x - m, vy0 = v.y - m, vx1 = v.right + m, vy1 = v.bottom + m;
+    const pm = CHUNK * 2, toPark = [];
+    this.unparkNear(v);
     for (const o of this.sys.displayList.list) {
       if (o.scrollFactorX !== 1 || o.type === 'Graphics' || o.noCull) continue;
       const box = o.type === 'Container'; // containers here are small (node bubbles)
@@ -4437,6 +4469,8 @@ export class Game extends Phaser.Scene {
       let x0, y0, x1, y1;
       if (o.rotation) { const r = Math.max(w, h); x0 = o.x - r; y0 = o.y - r; x1 = o.x + r; y1 = o.y + r; } // turned: a generous square
       else { x0 = o.x - w * (o.originX ?? 0.5); y0 = o.y - h * (o.originY ?? 0.5); x1 = x0 + w; y1 = y0 + h; }
+      // (only things smaller than a chunk park: a big one, like the barrier, could reach the view from a far-off anchor)
+      if (!o.unit && !o.noPark && w <= CHUNK && h <= CHUNK && (x1 < v.x - pm || x0 > v.right + pm || y1 < v.y - pm || y0 > v.bottom + pm)) { toPark.push(o); continue; }
       if (x1 < vx0 || x0 > vx1 || y1 < vy0 || y0 > vy1) {
         o.cameraFilter |= id;
         // a looping animation off screen is paused (not a hero's or foe's)
@@ -4446,6 +4480,8 @@ export class Game extends Phaser.Scene {
         if (o.cullPaused) { o.cullPaused = false; o.anims.resume(); }
       }
     }
+    for (const o of toPark) this.park(o, id);
+    if ((this.parkSweep = (this.parkSweep || 0) + 1) % 20 === 0) this.sweepParked();
     // twice a second: endless tweens (bobbing, pulsing glows) whose targets are
     // all off screen are paused, and resumed as soon as one comes back
     if ((this.cullT = (this.cullT || 0) + 1) % 10) return;
@@ -4458,6 +4494,45 @@ export class Game extends Phaser.Scene {
       else if (!off && t.cullPaused) { t.cullPaused = false; t.resume(); }
     }
   }
+
+  park(o, id) {
+    o.cameraFilter |= id; // (counts as off screen: its endless tweens pause)
+    if (o.anims?.isPlaying && o.anims.repeat === -1 && !o.cullPaused) { o.anims.pause(); o.cullPaused = true; }
+    this.sys.displayList.remove(o);
+    const k = `${Math.floor(o.x / CHUNK)},${Math.floor(o.y / CHUNK)}`;
+    if (!this.parked.has(k)) this.parked.set(k, new Set());
+    this.parked.get(k).add(o);
+    o.parkedAt = k; o.parkX = o.x; o.parkY = o.y;
+  }
+
+  // put back everything parked within a chunk of the view
+  unparkNear(v) {
+    if (!this.parked.size) return;
+    const c0 = Math.floor((v.x - CHUNK) / CHUNK), c1 = Math.floor((v.right + CHUNK) / CHUNK), r0 = Math.floor((v.y - CHUNK) / CHUNK), r1 = Math.floor((v.bottom + CHUNK) / CHUNK);
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+      const k = `${cx},${cy}`, b = this.parked.get(k);
+      if (!b) continue;
+      this.parked.delete(k);
+      for (const o of b) { o.parkedAt = null; if (o.scene) this.sys.displayList.add(o); } // (the cull sorts out what's on screen)
+    }
+  }
+
+  // once a second: drop the destroyed, re-file the moved
+  sweepParked() {
+    for (const [k, b] of this.parked) for (const o of b) {
+      if (!o.scene) { b.delete(o); continue; }
+      if (o.x === o.parkX && o.y === o.parkY) continue; // (almost everything parked stands still)
+      o.parkX = o.x; o.parkY = o.y;
+      const nk = `${Math.floor(o.x / CHUNK)},${Math.floor(o.y / CHUNK)}`;
+      if (nk === k) continue;
+      b.delete(o);
+      if (!this.parked.has(nk)) this.parked.set(nk, new Set());
+      this.parked.get(nk).add(o); o.parkedAt = nk;
+    }
+    for (const [k, b] of this.parked) if (!b.size) this.parked.delete(k);
+  }
+
+  *parkedObjects() { for (const b of this.parked.values()) yield* b; }
 
   update(time, deltaMs) {
     this.frameMs.push(deltaMs);

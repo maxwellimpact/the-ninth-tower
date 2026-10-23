@@ -808,7 +808,8 @@ export class UI extends Phaser.Scene {
     if (this.mmImg.texture.key !== key) this.mmImg.setTexture(key).setCrop();
     this.mmImg.setPosition(this.mmX, this.mmY);
     const g = this.mmG.clear();
-    for (const m of this.g.mapMarkers()) {
+    const sn = (v) => Math.floor(v / 32) * 32; // the window's surroundings, snapped so the cached list holds while you walk
+    for (const m of this.g.mapMarkers({ x0: sn(ox) - 32, y0: sn(oy) - 32, x1: sn(ox + tw) + 64, y1: sn(oy + th) + 64 })) {
       if (m.kind !== 'quest' && (m.x < a.x0 || m.x > a.x1 || m.y < a.y0 || m.y > a.y1)) continue;
       let x = (m.x - ox) * s, y = (m.y - oy) * s;
       if (m.kind === 'quest') {

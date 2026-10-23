@@ -42,7 +42,7 @@ export function registerPuppet(scene, key, def, recolor = null) {
 function textureInUse(game, key) {
   for (const sc of game.scene.scenes) {
     if (!sc.sys.displayList) continue;
-    for (const o of sc.sys.displayList.list) if (o.texture && (o.texture.key === key || o.texture.key === `${key}_portrait`)) return true;
+    for (const o of [...sc.sys.displayList.list, ...(sc.parkedObjects?.() || [])]) if (o.texture && (o.texture.key === key || o.texture.key === `${key}_portrait`)) return true; // (parked ones too: see Game.cullOffscreen)
   }
   return false;
 }
