@@ -216,7 +216,7 @@ export class Game extends Phaser.Scene {
     this.buildRecruits();
     // groups cleared before the last save keep their respawn clocks (and still never reappear in sight)
     const rs = st.respawn || {};
-    this.groups = W.groups.map((g) => ({ ...g, units: [], active: false, deadT: rs[g.id] ?? 0, cleared: g.id in rs, spawnedOnce: g.id in rs, chunk: `${Math.floor((g.units[0][1] * TILE) / CHUNK)},${Math.floor((g.units[0][2] * TILE) / CHUNK)}` }));
+    this.groups = W.groups.map((g) => ({ ...g, def: g, units: [], active: false, deadT: rs[g.id] ?? 0, cleared: g.id in rs, spawnedOnce: g.id in rs, chunk: `${Math.floor((g.units[0][1] * TILE) / CHUNK)},${Math.floor((g.units[0][2] * TILE) / CHUNK)}` }));
 
     const cam = this.cameras.main;
     cam.startFollow(this.leader.sprite, true, 0.12, 0.12);
@@ -378,13 +378,13 @@ export class Game extends Phaser.Scene {
   updateGroups(dt) {
     const L = this.leader;
     const quiet = this.quests?.quietZones() || [];
-    const inQuiet = (g) => quiet.some((z) => (g.def ??= W.groups.find((x) => x.id === g.id)).units.some(([, x, y]) => Math.hypot(x * TILE - z.x, y * TILE - z.y) < z.r));
+    const inQuiet = (g) => quiet.some((z) => g.def.units.some(([, x, y]) => Math.hypot(x * TILE - z.x, y * TILE - z.y) < z.r));
     for (const g of this.groups) {
       const blocked = (g.until && this.flags[g.until]) || (g.once && this.state.cleared[g.id]) || (!g.active && quiet.length && inQuiet(g)); // kept off an errand set piece's stage
       const res = this.streamer.resident.has(g.chunk);
       if (!g.active) {
         if (blocked) continue;
-        const def = W.groups.find((x) => x.id === g.id).units;
+        const def = g.def.units; // (kept on the pack: looking it up by id for every pack was quadratic, a 44 ms hitch on the 40x Vast)
         const far = Math.hypot(def[0][1] * TILE - L.x, def[0][2] * TILE - L.y);
         // a cleared group's clock only runs while the party is well away (it
         // counts even once its chunk unloads), so lingering nearby never brings it back
@@ -596,7 +596,15 @@ export class Game extends Phaser.Scene {
   }
 
   updateNodesAndNpcs(dt) {
+    // a node's sprite and bubble exist only while it's near the screen (built
+    // as it comes into view, dropped once well away), so a big map doesn't
+    // carry five objects for every node it has; regrowing runs everywhere
+    const v = this.cameras.main.worldView;
     for (const n of this.nodes) {
+      if (!n.ready) { n.t -= dt; if (n.t <= 0) { n.ready = true; this.nodeTexture(n); audio.sfx('click'); } }
+      const dx = Math.max(v.x - n.px, 0, n.px - v.right), dy = Math.max(v.y - n.py, 0, n.py - v.bottom);
+      if (dx > 640 || dy > 640) { if (n.s) this.dropNode(n); continue; }
+      if (dx > 160 || dy > 160) continue;
       if (!n.s) {
         const grp = n.kind === 'crystal' ? 'cave' : 'core';
         if (grp === 'core' || loaded.has(grp)) {
@@ -607,7 +615,6 @@ export class Game extends Phaser.Scene {
           this.nodeTexture(n);
         }
       }
-      if (!n.ready) { n.t -= dt; if (n.t <= 0) { n.ready = true; this.nodeTexture(n); audio.sfx('click'); } }
       this.updateNodeMarker(n);
     }
     for (const n of this.npcs) {
@@ -636,6 +643,11 @@ export class Game extends Phaser.Scene {
   // Harvestables always wear the same marker: a bobbing bubble with the
   // material icon when ready, a filling ring while regrowing, and a label
   // when you're close. Nothing without a bubble can be harvested.
+  dropNode(n) {
+    n.s.destroy(); n.mk?.destroy(); n.label?.destroy();
+    n.s = n.mk = n.mkBub = n.mkIcon = n.mkRing = n.label = null;
+  }
+
   updateNodeMarker(n) {
     if (!n.s) return;
     const v = this.cameras.main.worldView;
@@ -1035,7 +1047,7 @@ export class Game extends Phaser.Scene {
       // a treasure under the floor shows as what you'd actually see: a cracked flagstone with water below
       const img = c.look === 'cistern' ? this.add.image(x, y, done ? 'cisternDived' : 'cistern').setDepth(-30) : this.add.image(x, y + 4, done ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y);
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', vis: () => img, interact: (h) => this.openChest(c, img, h) });
+      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', chest: c, vis: () => img, interact: (h) => this.openChest(c, img, h) });
     }
     // overworld illusions (the hermit's door): solid wall until the party holds the relic
     this.falseWalls = (W.falseWalls || []).map((f) => {
@@ -1281,14 +1293,25 @@ export class Game extends Phaser.Scene {
     this.barrierG?.destroy();
     const down = OUTER_REGIONS.filter((r) => this.flags[`ward_${r}`]).length;
     if (down >= BARRIER_R.length) { this.barrierG = null; return; }
-    const g = this.barrierG = this.add.graphics().setDepth(-20);
+    // Drawn once into a texture: as a live Graphics it was ~64,000 commands that
+    // WebGL rebuilt every frame (Graphics are never culled), wherever you were
+    // in Aldermere: half of every frame. The texture is culled off screen.
+    const g = this.make.graphics({ add: false });
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (let i = down; i < BARRIER_R.length; i++) for (const [x, y] of this.barrierTiles(i)) {
       this.nav.block(x, y); this.barrierBlocked.push([x, y]);
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
       // a curtain of hex light: thin violet strands rising off the tile
       for (let k = 0; k < 8; k++) { const h = 10 + ((x * 7 + y * 3 + k * 5) % 9); g.fillStyle(k % 3 ? 0xb24ce6 : 0xe7a6ff, k % 3 ? 0.35 : 0.6).fillRect(x * TILE + k * 2, y * TILE + 14 - h, 1, h); }
       g.fillStyle(0x6b3fa0, 0.35).fillRect(x * TILE, y * TILE + 10, TILE, 6);
     }
-    this.tweens.add({ targets: g, alpha: 0.55, duration: 1100, yoyo: true, repeat: -1 });
+    if (x0 === Infinity) { g.destroy(); this.barrierG = null; return; }
+    const ox = x0 * TILE, oy = (y0 - 1) * TILE, w = (x1 - x0 + 1) * TILE, h = (y1 - y0 + 2) * TILE; // (strands rise up to a tile above their row)
+    let b;
+    try { b = this.add.renderTexture(ox, oy, w, h).setOrigin(0).setDepth(-20); b.draw(g, -ox, -oy); g.destroy(); }
+    catch (e) { console.warn('[barrier] texture unavailable, drawing live', e.message); b?.destroy(); b = this.add.existing(g).setDepth(-20); } // too big for the GPU: the old way
+    this.barrierG = b;
+    this.tweens.add({ targets: b, alpha: 0.55, duration: 1100, yoyo: true, repeat: -1 });
   }
 
   // ============================================================ darkness (caves)
@@ -1313,7 +1336,10 @@ export class Game extends Phaser.Scene {
     // Gloamwood's canopy dims the overworld: fades in over ~10 tiles as you
     // walk in from the fen, never as dark as a cave
     const ltx = L.x / TILE, lty = L.y / TILE;
-    const gloom = !inCave && this.areaRect() === AREAS.overworld && ltx < ridgeAt(lty) + 2 ? Math.max(0, Math.min(1, (lty - (southEdge(ltx) - 4)) / 10, (frostEdge(Math.floor(ltx)) + 1 - lty) / 5)) : 0; // follows the meandering border, and lifts on the stairs up to Frosthelm
+    // (a generated map has its own Gloamwood: the canopy follows its region rule, easing in and out)
+    if (MAP?.generated) this.gloomK = (this.gloomK ?? 0) + ((!inCave && biomeAt(Math.floor(ltx), Math.floor(lty)) === 'gloam' ? 1 : 0) - (this.gloomK ?? 0)) * 0.04;
+    const gloom = MAP?.generated ? (this.gloomK > 0.01 ? this.gloomK : 0)
+      : !inCave && this.areaRect() === AREAS.overworld && ltx < ridgeAt(lty) + 2 ? Math.max(0, Math.min(1, (lty - (southEdge(ltx) - 4)) / 10, (frostEdge(Math.floor(ltx)) + 1 - lty) / 5)) : 0; // follows the meandering border, and lifts on the stairs up to Frosthelm
     this.darkRT.setVisible(inCave || gloom > 0);
     if (!inCave && gloom <= 0) return;
     const cam = this.cameras.main;
@@ -1464,7 +1490,7 @@ export class Game extends Phaser.Scene {
     for (const o of this.interactables) {
       if (o.hidden) continue;
       const t = tile(o);
-      if (o.kind === 'chest') { const c = W.chests.find((k) => k.x === t.x && k.y === t.y); if (c && !this.flags[`chest_${c.id}`]) m.push({ ...t, kind: 'chest' }); }
+      if (o.kind === 'chest') { const c = o.chest || W.chests.find((k) => k.x === t.x && k.y === t.y); if (c && !this.flags[`chest_${c.id}`]) m.push({ ...t, kind: 'chest' }); } // (dungeon chests are looked up)
       else if (o.kind === 'campfire') m.push({ ...t, kind: 'camp' });
       else if (o.kind === 'recruit') m.push({ ...t, kind: 'recruit' });
       else if (o.kind === 'warp') m.push({ ...t, kind: 'door' });
@@ -2207,6 +2233,11 @@ export class Game extends Phaser.Scene {
   // Biome art groups wanted around a tile (shared by streaming and preloading).
   groupsNear(tx, ty, area) {
     const out = [];
+    if (MAP?.generated) { // its own regions, sampled round the spot (Aldermere's rows and columns mean nothing there)
+      const ART = { marsh: 'marsh', gloam: 'gloam', cinder: 'cinder', frost: 'frost', basin: 'basin' };
+      for (const [dx, dy] of [[0, 0], [22, 0], [-22, 0], [0, 22], [0, -22]]) { const a = ART[biomeAt(Math.round(tx + dx), Math.round(ty + dy))]; if (a && !out.includes(a)) out.push(a); }
+      return out;
+    }
     if ((ty > MARSH_Y - 22 && ty < SOUTH_Y + 10 && area === 'overworld') || area === 'abbey') out.push('marsh');
     if ((ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx < RIDGE_X + 22 && area === 'overworld') || area === 'witchroot') out.push('gloam');
     if (ty > SOUTH_Y - 22 && ty < FROST_Y + 14 && tx > RIDGE_X - 22 && area === 'overworld') out.push('cinder');
