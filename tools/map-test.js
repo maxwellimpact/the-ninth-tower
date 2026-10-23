@@ -21,6 +21,7 @@ async function start(map, { level = 6 } = {}) {
   st.map = map;
   st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
   const before = localStorage.getItem('ninthTower.save.v1');
+  window.__loadT0 = performance.now(); // load timings count from here (the title screen sets it in the game)
   const sc = await boot({ state: st });
   return { sc, d, savedBefore: before };
 }
@@ -79,6 +80,25 @@ export const TESTS = {
       'the party beat it': g.units.length > 0 && g.units.every((e) => !e.alive),
       'nobody fell': sc.party.every((h) => !h.downed),
       [`took ${(t / 60).toFixed(1)} s of game time`]: true,
+    };
+  },
+  // the Vast (world/vast.js): ten times Aldermere, generated; it loads, every
+  // pack stands on open ground, every region is there, and nothing saves
+  'vast-loads': async () => {
+    const { sc, savedBefore } = await start('vast', { level: 12 });
+    await step(120);
+    sc.autosave('test');
+    const lt = window.__loadTimes || {};
+    const regions = new Set(sc.world.towns.map((t) => t.biome));
+    const packsOk = sc.world.content.groups.every((g) => g.units.every(([, x, y]) => !sc.nav.isSolid(x, y)));
+    return {
+      'on the Vast': sc.state.map === 'vast' && lt.size === '608x1008',
+      'ten times the packs (800+)': sc.groups.length >= 800,
+      'every pack on open ground': packsOk,
+      'villages in all seven regions': ['vale', 'meadow', 'marsh', 'gloam', 'cinder', 'frost', 'basin'].every((r) => regions.has(r)),
+      'starts in Brightwater Vale': sc.region === 'vale',
+      'the save untouched': localStorage.getItem('ninthTower.save.v1') === savedBefore,
+      [`ready in ${((lt.ready || 0) / 1000).toFixed(1)} s (world ${lt.world} ms, already built if this page made it before; worker ${lt.worker} ms)`]: true,
     };
   },
 };
