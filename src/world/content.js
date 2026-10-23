@@ -8,12 +8,17 @@
 // bosses' tuning) and replaces every list of things in the world with its
 // own, empty unless it lists some. Its coordinates are its own (0,0 is its
 // top-left) and are moved to where the map is stamped (`at`).
+//
+// A generated map (world/vast.js: `vast`, `vast40`...) also brings its own
+// size and region rule (setMapShape), and its own regions and level bands.
 import WORLD from '../data/world.json';
 import QUESTS from '../data/quests.json';
+import { setMapShape } from './map.js';
+import { vastDef } from './vast.js';
 
 const MAPS = Object.fromEntries(Object.entries(import.meta.glob('../data/maps/*.json', { eager: true, import: 'default' })).map(([p, d]) => [p.match(/([^/]+)\.json$/)[1], d]));
-export const mapIds = () => Object.keys(MAPS);
-export const mapDef = (id) => MAPS[id] || null;
+export const mapIds = () => Object.keys(MAPS); // the authored test maps (generated ones are made on request)
+export const mapDef = (id) => MAPS[id] || vastDef(id) || null;
 
 export let W = WORLD;
 export let Q = QUESTS;
@@ -32,18 +37,20 @@ function place(list, [ox, oy]) {
 }
 
 export function useMap(id) {
-  const def = id ? MAPS[id] : null;
+  const def = id ? mapDef(id) : null;
+  setMapShape(def?.generated ? def : null);
   MAP = def ? { ...def, id } : null;
   if (!def) { W = WORLD; Q = QUESTS; return null; }
   const at = def.at;
   const c = def.content || {};
   W = Object.fromEntries(Object.entries(WORLD).map(([k, v]) => [k, Array.isArray(v) && k !== 'regions' && k !== 'flyRewards' ? place(c[k] || [], at) : v]));
-  // whatever region the stamp sits in, the banner names the test map
-  W.regions = WORLD.regions.map((r) => ({ ...r, name: def.name, sub: def.sub || 'A TEST MAP' }));
+  // whatever region the stamp sits in, the banner names the test map (a
+  // generated map has real regions of its own)
+  W.regions = def.regions || WORLD.regions.map((r) => ({ ...r, name: def.name, sub: def.sub || 'A TEST MAP' }));
   W.start = { x: def.start[0] + at[0], y: def.start[1] + at[1] };
   Q = { ...QUESTS, npcs: place(c.questNpcs || [], at), errands: c.errands || {} };
   return MAP;
 }
 
 // the map's rectangle, in world tiles
-export const mapRect = () => MAP && { x0: MAP.at[0], y0: MAP.at[1], x1: MAP.at[0] + MAP.rows[0].length - 1, y1: MAP.at[1] + MAP.rows.length - 1 };
+export const mapRect = () => MAP && { x0: MAP.at[0], y0: MAP.at[1], x1: MAP.at[0] + (MAP.w ?? MAP.rows[0].length) - 1, y1: MAP.at[1] + (MAP.h ?? MAP.rows.length) - 1 };

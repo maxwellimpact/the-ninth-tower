@@ -9,8 +9,11 @@ import QD from '../data/quests.json';
 import DUNGEONS from '../data/dungeons.json';
 
 export const TILE = 16;
-export const MAP_W = W.size.w;
-export const MAP_H = W.size.h;
+// The grid's size is Aldermere's unless a generated map (world/vast.js) sets
+// its own through setMapShape (world/content.js's useMap calls it). These are
+// live bindings: read them when building, never copy them at import time.
+export let MAP_W = W.size.w;
+export let MAP_H = W.size.h;
 
 export const T = {
   GRASS: 0, PATH: 1, SAND: 2, WATER: 3, PLATEAU: 4, CLIFF: 5, STAIRS: 6, PAVED: 7, WALL: 8, RIM: 9,
@@ -31,9 +34,9 @@ export const MARSH_Y = 64;
 export const SOUTH_Y = 128; // Wave 2: the southern band (Gloamwood west, Cinderreach east)
 export const RIDGE_X = 100; // the ridge between Gloamwood and Cinderreach
 export const FROST_Y = 208; // Wave 3: the southern highlands (Frosthelm west, the Blight Basin east)
-export const OW_H = MAP_H; // the overworld's walkable depth
+export let OW_H = MAP_H; // the overworld's walkable depth
 export const BASIN_X = 118; // the rough line (a ridge) between Frosthelm and the Basin
-export const OW_W = W.size.overworldW; // overworld width; interiors live to the right of it
+export let OW_W = W.size.overworldW; // overworld width; interiors live to the right of it
 
 // Separate areas share one tile grid but never share a camera view: the
 // overworld, and interior maps parked off to the right of it.
@@ -68,6 +71,16 @@ export const AREAS = {
   tower9: { x0: 480, y0: 282, x1: 510, y1: 316, interior: true },
 };
 export const CAVE_RECT = AREAS.cave;
+
+// A generated map brings its own size and its own region rule (its whole grid
+// is overworld: no interiors parked beside it); null puts Aldermere's back.
+let shapeBiome = null;
+export function setMapShape(def) {
+  const sz = def?.size || W.size;
+  MAP_W = sz.w; MAP_H = sz.h; OW_W = sz.overworldW; OW_H = MAP_H;
+  AREAS.overworld.x1 = OW_W - 1; AREAS.overworld.y1 = MAP_H - 1;
+  shapeBiome = def?.biome || null;
+}
 
 export function areaAt(tx, ty) {
   if (tx < OW_W) return 'overworld';
@@ -105,6 +118,7 @@ export const basinEdge = (y) => BASIN_X + (vnoise(0.5, y / 14, 823) - 0.5) * 10;
 const straightBiome = (tx, ty) => (ty > frostEdge(tx) ? (tx < BASIN_X ? 'frost' : 'basin') : ty >= SOUTH_Y ? (tx < RIDGE_X ? 'gloam' : 'cinder') : ty >= MARSH_Y ? 'marsh' : tx >= 96 ? 'meadow' : 'vale');
 
 export function biomeAt(tx, ty) {
+  if (shapeBiome) return shapeBiome(tx, ty);
   const a = areaAt(tx, ty);
   if (a !== 'overworld') return a;
   for (const [px, py, r] of PINS) if (Math.abs(px - tx) < r && Math.abs(py - ty) < r && Math.hypot(px - tx, py - ty) < r) return straightBiome(tx, ty);
@@ -710,6 +724,7 @@ const MAP_LEGEND = {
   T: ['GRASS', 'tree'], b: ['GRASS', 'bush'], o: ['GRASS', 'rock'], O: ['GRASS', 'rock', { big: true }], f: ['GRASS', 'flowers'], t: ['GRASS', 'tuft'], r: ['GRASS', 'reeds'],
 };
 export function buildMapWorld(def) {
+  if (def.build) return def.build(); // a generated map builds itself (world/vast.js)
   const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.CAVEWALL);
   const props = [];
   const legend = { ...MAP_LEGEND, ...(def.legend || {}) };

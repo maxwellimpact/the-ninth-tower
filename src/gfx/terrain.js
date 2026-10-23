@@ -4,7 +4,7 @@
 // chunks can be painted lazily as the camera streams through a large world.
 import { rgb, curseRGB } from './palette.js';
 import { hash, vnoise, bayer, makeCanvas } from './pixel.js';
-import { T, TILE, SOFT, MAP_W, MAP_H, AREAS, biomeAt } from '../world/map.js';
+import { T, TILE, SOFT, MAP_W, MAP_H, OW_W, AREAS, biomeAt } from '../world/map.js';
 
 export const CHUNK = 256;
 
@@ -56,20 +56,23 @@ export function makeTerrainPainter(world) {
     return n < 0.3 ? C.gloomD : n < 0.66 ? C.gloom : C.gloomL;
   }
 
+  // Aldermere's interiors sit to the right of its overworld; a generated map
+  // is all overworld, so none of these rectangles mean anything there
+  const interiors = MAP_W > OW_W;
   const FG = AREAS.forge;
-  const inForge = (tx, ty) => tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
-  const inTower = (tx, ty) => tx >= 418 && tx <= 511 && ty >= 212 && ty <= 318; // the Ninth Tower's floors
+  const inForge = (tx, ty) => interiors && tx >= FG.x0 && tx <= FG.x1 && ty >= FG.y0 && ty <= FG.y1;
+  const inTower = (tx, ty) => interiors && tx >= 418 && tx <= 511 && ty >= 212 && ty <= 318; // the Ninth Tower's floors
   const SP = AREAS.spire;
-  const inSpire = (tx, ty) => tx >= SP.x0 && tx <= SP.x1 && ty >= SP.y0 && ty <= SP.y1;
+  const inSpire = (tx, ty) => interiors && tx >= SP.x0 && tx <= SP.x1 && ty >= SP.y0 && ty <= SP.y1;
   const CH = AREAS.clawhold;
-  const inClawhold = (tx, ty) => tx >= CH.x0 && tx <= CH.x1 && ty >= CH.y0 && ty <= CH.y1;
+  const inClawhold = (tx, ty) => interiors && tx >= CH.x0 && tx <= CH.x1 && ty >= CH.y0 && ty <= CH.y1;
   const WR = AREAS.witchroot;
-  const inWitchroot = (tx, ty) => tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
+  const inWitchroot = (tx, ty) => interiors && tx >= WR.x0 && tx <= WR.x1 && ty >= WR.y0 && ty <= WR.y1;
 
-  const BIOMES = ['gloam', 'cinder', 'frost', 'basin', 'other'], biomeCache = new Int8Array(192 * MAP_H).fill(-1);
+  const BIOMES = ['gloam', 'cinder', 'frost', 'basin', 'other'], biomeCache = new Int8Array(OW_W * MAP_H).fill(-1);
   const biomeOf = (tx, ty) => { // per tile, once: the meandering borders cost a few noise lookups
-    if (tx < 0 || tx >= 192 || ty < 0 || ty >= MAP_H) return null;
-    const i = ty * 192 + tx;
+    if (tx < 0 || tx >= OW_W || ty < 0 || ty >= MAP_H) return null;
+    const i = ty * OW_W + tx;
     if (biomeCache[i] < 0) { const b = biomeAt(tx, ty); const k = BIOMES.indexOf(b); biomeCache[i] = k < 0 ? 4 : k; }
     return BIOMES[biomeCache[i]];
   };

@@ -4,7 +4,7 @@
 // message says which map (Aldermere, or a test map by id) to build.
 import { buildWorld, buildMapWorld } from '../world/map.js';
 import { makeTerrainPainter } from '../gfx/terrain.js';
-import { mapDef } from '../world/content.js';
+import { useMap, MAP } from '../world/content.js';
 
 let painter = null;
 const queue = [];
@@ -24,9 +24,10 @@ onmessage = (e) => {
   const m = e.data;
   if (m.type === 'init') {
     const t0 = performance.now();
-    const def = m.map && mapDef(m.map);
-    painter = makeTerrainPainter(def ? buildMapWorld(def) : buildWorld());
-    postMessage({ type: 'ready', ms: performance.now() - t0 });
+    useMap(m.map || null); // the map's size and regions too (a generated map has its own)
+    const world = MAP ? buildMapWorld(MAP) : buildWorld();
+    painter = makeTerrainPainter(world);
+    postMessage({ type: 'ready', ms: performance.now() - t0, build: world.ms || null });
     for (const q of queue.splice(0)) handle(q);
   } else if (painter) handle(m);
   else queue.push(m);
