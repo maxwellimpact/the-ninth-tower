@@ -81,6 +81,7 @@ export class Streamer {
   }
 
   onMessage(m) {
+    if (m.type === 'ready') { this.stats.workerReady = Math.round(m.ms); this.stats.workerBuild = m.build; return; }
     if (m.type === 'chunk') this.install(m.cx, m.cy, m.data, m.ms);
     else if (m.type === 'curse') { const cb = this.callbacks.get(m.id); this.callbacks.delete(m.id); cb?.(m.data, m.ms); }
   }

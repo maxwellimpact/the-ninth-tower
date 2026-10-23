@@ -53,18 +53,19 @@ export class Title extends Phaser.Scene {
     const cs = this.add.bitmapText(W / 2, save ? H - 20 : H - 10, 'fontPlain', '').setOrigin(0.5).setAlpha(0.6);
     const showCloud = () => cs.setText(`CLOUD SAVE: ${cloudStatus().toUpperCase().replace(/[^A-Z0-9 .,!?:/()-]/g, " ")}`);
     showCloud(); this.time.addEvent({ delay: 1000, loop: true, callback: showCloud });
-    // Dungeon lab: try a test dungeon with a ready-made party. Never saves,
-    // so it can't touch the real game. (Also opens straight away via #dungeon.)
+    // The Vast: a generated world ten times Aldermere's size, for profiling
+    // load times and frame rates, with a ready-made party. Never saves. (The
+    // Dungeon Lab that used to sit here still opens via #dungeon or ?demo=boss.)
     // a framed button in the corner (the save menu adds a full-size one too),
     // kept clear of a landscape notch / rounded corner
-    const lab = this.add.bitmapText(W - 34, 38, 'fontGold', 'DUNGEON LAB').setOrigin(1, 0).setDepth(1);
+    const lab = this.add.bitmapText(W - 34, 38, 'fontGold', 'THE VAST').setOrigin(1, 0).setDepth(1);
     const bx = lab.x - lab.width - 8, bw = lab.width + 16;
     const lg = this.add.graphics();
     const drawLab = (hot) => lg.clear().fillStyle(0x1a1423).fillRect(bx - 1, 31, bw + 2, 22).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(bx, 32, bw, 20).fillStyle(0x2b2140).fillRect(bx + 1, 33, bw - 2, 18);
     drawLab(false);
     const lz = this.add.zone(bx, 31, bw, 22).setOrigin(0).setInteractive({ useHandCursor: true });
     lz.on('pointerover', () => drawLab(true)); lz.on('pointerout', () => drawLab(false));
-    lz.on('pointerdown', () => this.enterLab());
+    lz.on('pointerdown', () => this.startDemo('vast'));
     this.labLink = [lab, lg, lz];
     this.showLabLink(!save); // the save menu has its own full-size button
     if (location.hash === '#dungeon') this.time.delayedCall(300, () => this.enterLab());
@@ -101,17 +102,23 @@ export class Title extends Phaser.Scene {
   // The deep-link sandboxes. They never read or write the real save.
   startDemo(kind, mapId = null) {
     if (kind === 'boss') { this.enterLab('undercroft'); return; }
+    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast'; } // ?map=vast40 for a bigger one
     if (this.leaving) return;
     this.leaving = true;
+    audio.init(); audio.sfx('levelUp');
     const st = newState('brann');
     st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
-    const level = kind === 'combat' ? 8 : 6;
+    const vast = kind === 'map' && /^vast/.test(mapId || '');
+    const level = kind === 'combat' ? 8 : vast ? 12 : 6; // the Vast's bands run 1-30: level 12 suits its middle
     for (const h of st.recruited) {
       const hs = st.heroes[h];
       hs.level = level; hs.sp = (hs.sp || 0) + level - 1;
       for (const slot of ['weapon', 'body', 'head', 'offhand']) { const id = makeItem(h, slot, tierForLevel(level), 'fine'); if (id) hs.equip[slot] = id; }
     }
     st.potions.potion = 8; st.potions.elixir = 3;
+    // the Vast has no Ward Stones to break: its land starts freed (no blight,
+    // the freed music), and the party carries salves and tonics for the heat and cold
+    if (vast) { Object.assign(st.flags, { wardBroken: true, ward_marsh: true, ward_gloam: true, ward_cinder: true, ward_frost: true }); st.potions.salve = 4; st.potions.tonic = 4; }
     st.demo = kind === 'combat' ? 'combat' : kind === 'map' ? 'map' : 'explore';
     // combat (and ?map=): a test map of its own (src/data/maps); explore: Brightwater
     st.map = kind === 'combat' ? 'arena' : kind === 'map' ? mapId : null;
@@ -152,7 +159,7 @@ export class Title extends Phaser.Scene {
       this.showLabLink(true);
       this.heroSelect();
     });
-    opt(144, 'DUNGEON LAB', 'TRY THE NEW UNDERCROFT - NOT SAVED', () => this.enterLab());
+    opt(144, 'THE VAST', 'A 10X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
   }
 
   heroSelect() {
@@ -198,6 +205,7 @@ export class Title extends Phaser.Scene {
   // Put the loading curtain up first and give it a frame to draw, because
   // building the Game scene blocks the main thread for a moment.
   enterWorld(state) {
+    window.__loadT0 = performance.now(); // the load timings count from here
     this.scene.launch('Loading');
     this.time.delayedCall(80, () => this.scene.start('Game', { state }));
   }

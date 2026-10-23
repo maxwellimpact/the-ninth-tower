@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { MARK, panel } from './UI.js';
 import { OW_H } from '../world/map.js';
+import { MAP } from '../world/content.js';
 
 const LEGEND = [['chest', 'CHEST'], ['camp', 'CAMPFIRE'], ['recruit', 'ALLY'], ['door', 'DOOR'], ['post', 'GRAPPLE'], ['boss', 'WARD STONE'], ['npc', 'FOLK'], ['node', 'GATHER']];
 
@@ -29,7 +30,7 @@ export class WorldMap extends Phaser.Scene {
     g.fillStyle(0x16121f, 0.95).fillRect(-2, -2, W + 4, H + 4);
     panel(g, mx - 2, my - 2, mw + 4, mh + 4, 0x2b2140, 0x6e6a87);
     this.add.image(mx - a.x0 * s, my - a.y0 * s, 'minimap').setOrigin(0).setScale(s).setCrop(a.x0, a.y0, aw, ah);
-    const title = travel ? 'WHERE TO? TAP A FIRE' : a.interior ? (game.region || '').toUpperCase() : 'MAP OF ALDERMERE';
+    const title = travel ? 'WHERE TO? TAP A FIRE' : a.interior ? (game.region || '').toUpperCase() : `MAP OF ${MAP?.name || 'ALDERMERE'}`;
     this.add.bitmapText(W / 2, 8, 'fontGold', title === 'CAVE' ? 'DROWNED HOLLOW' : title).setOrigin(0.5, 0);
     this.mk = this.add.graphics();
     this.m = { mx: mx - a.x0 * s, my: my - a.y0 * s, s };

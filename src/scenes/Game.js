@@ -129,6 +129,8 @@ export class Game extends Phaser.Scene {
 
   create(data) {
     const st = (this.state = data.state);
+    // load timings, for profiling big maps (shown in the debug panel, logged as [load])
+    const lt = (this.loadMs = {}), t0 = performance.now(), lap = (k) => { const t = performance.now(); lt[k] = Math.round(t - (lap.t ?? t0)); lap.t = t; };
     useMap(st.map || null); // Aldermere, or a test map (src/data/maps): W and QDATA below then mean its content
     st.stats ??= { kills: 0, levelUps: [] };
     this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
@@ -154,12 +156,14 @@ export class Game extends Phaser.Scene {
 
     // ------------------------------------------------------------ world
     this.world = MAP ? buildMapWorld(MAP) : buildWorld();
+    lap('world');
     this.painter = makeTerrainPainter(this.world);
     const WPX = MAP_W * TILE, HPX = MAP_H * TILE;
     this.area = null;
     this.nav = new NavGrid(MAP_W, MAP_H);
     for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) { const t = this.world.at(x, y); if (SOLID.has(t)) this.nav.block(x, y, t === T.WATER ? 2 : 1); }
     for (const p of this.world.props) if (BLOCKING.has(p.type)) this.nav.block(p.x, p.y);
+    lap('nav');
 
     this.propsByChunk = new Map();
     for (const p of this.world.props) {
@@ -168,7 +172,9 @@ export class Game extends Phaser.Scene {
       this.propsByChunk.get(k).push(p);
     }
     this.chunkObjs = new Map();
+    lap('propIndex');
     this.minimap = new MiniMap(this, this.world, st);
+    lap('minimap');
     this.fx = new FX(this);
     this.gearFx = new GearFX(this);
     this.streamer = new Streamer(this, {
@@ -189,6 +195,7 @@ export class Game extends Phaser.Scene {
     this.dungeons = {};
     if (!MAP) for (const id of Object.keys(DUNGEONS)) { const k = new DungeonKit(this, id); this.dungeons[k.def.area] = k; }
     this.quests = new QuestManager(this);
+    lap('landmarks');
 
     // ------------------------------------------------------------ party
     // a save from inside the old (pre-rebuild) Undercroft or Abbey: those tiles
@@ -229,7 +236,13 @@ export class Game extends Phaser.Scene {
     if (!this.scene.isActive('Loading')) this.scene.launch('Loading', { title: place });
     const curtain = this.scene.get('Loading');
     if (this.scene.isActive('Loading')) curtain.setTitle(place);
+    lap('scene');
     this.prepareAt(start.x, start.y, curtain, 8).then(() => {
+      lap('firstChunks');
+      lt.ready = Math.round(performance.now() - (window.__loadT0 ?? t0)); // from the tap that started it
+      lt.worker = this.streamer.stats.workerReady ?? null;
+      window.__loadTimes = { map: MAP?.id || 'aldermere', size: `${MAP_W}x${MAP_H}`, ...lt, build: this.world.ms || null, workerBuild: this.streamer.stats.workerBuild || null, props: this.world.props.length, groups: W.groups.length };
+      console.info('[load]', JSON.stringify(window.__loadTimes));
       // a save made somewhere the party can't stand (older saves from up a lookout): step off to open ground
       const ltx = Math.floor(this.leader.x / TILE), lty = Math.floor(this.leader.y / TILE);
       if (this.nav.isSolid(ltx, lty)) {
@@ -4537,6 +4550,8 @@ export class Game extends Phaser.Scene {
       `ASSETS ${[...loaded].join(',').toUpperCase()}`,
       `${assetStats.log.slice(-2).join('  ').toUpperCase()}`,
       `TILE ${Math.floor(this.leader.x / TILE)},${Math.floor(this.leader.y / TILE)}  ${this.region?.toUpperCase()}`,
+      `MAP ${MAP_W}X${MAP_H}  PROPS ${this.world.props.length}  PACKS ${this.groups.length} (${this.groups.filter((g) => g.active).length} UP)`,
+      `LOAD ${['world', 'nav', 'minimap', 'landmarks', 'firstChunks'].map((k) => `${k.toUpperCase()} ${this.loadMs[k] ?? '-'}`).join(' ')}MS  WORKER ${this.loadMs.worker ?? '-'}MS  READY ${((this.loadMs.ready || 0) / 1000).toFixed(1)}S`,
       this.pacingLine(),
     ];
   }
