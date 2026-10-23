@@ -18,6 +18,8 @@
 // and the terrain worker build the identical world. Nothing is saved.
 import { hash, vnoise } from '../gfx/pixel.js';
 import { T, SOLID, marshEdge, southEdge, meadowEdge, ridgeAt, frostEdge, basinEdge } from './map.js';
+import WORLD from '../data/world.json';
+import QUESTS from '../data/quests.json';
 
 const REG = ['vale', 'meadow', 'marsh', 'gloam', 'cinder', 'frost', 'basin'];
 const REGIONS = [
@@ -67,12 +69,16 @@ const pickW = (w, r) => { const e = Object.entries(w), tot = e.reduce((a, [, n])
 const fray = (x, y, seed) => (vnoise(x / 5, y / 5, seed) - 0.5) * 9 + (vnoise(x / 2.5, y / 2.5, seed + 50) - 0.5) * 4;
 
 const DEFS = {};
-// mapDef('vast') is ten times Aldermere's overworld; 'vast40' forty times
+// mapDef('vast') is ten times Aldermere's overworld; 'vast40' forty times.
+// A 'd' on the end ('vast40d') adds Aldermere's people and collectibles at
+// Aldermere's density (golden flies, shrines, cursed townsfolk, errand-style
+// people) and leaves the blight down, to see how the main game's kind of
+// content scales on a big map.
 export function vastDef(id) {
-  const m = /^vast(\d+)?$/.exec(id || '');
+  const m = /^vast(\d+)?(d)?$/.exec(id || '');
   if (!m) return null;
   if (DEFS[id]) return DEFS[id];
-  const mult = Math.max(1, Math.min(100, +(m[1] || 10)));
+  const mult = Math.max(1, Math.min(100, +(m[1] || 10))), dense = !!m[2];
   const k = Math.sqrt(mult);
   const W = Math.round((192 * k) / 8) * 8, H = Math.round((320 * k) / 8) * 8;
   const home = [Math.round(15 * k), Math.round(37 * k)]; // where Brightwater would be: the first village, and the start
@@ -290,6 +296,25 @@ export function vastDef(id) {
       reserve(x, y, 3);
       return true;
     });
+    // the dense variant: Aldermere's people and collectibles, at its densities per tile
+    const flies = [], shrines = [], townsfolk = [], questNpcs = [];
+    if (dense) {
+      const per = (n) => Math.sqrt((192 * 320) / n); // the spacing that gives Aldermere's count per area
+      const folkLooks = [...new Set(WORLD.townsfolk.map((t) => t.look))];
+      const npcLooks = [...new Set(QUESTS.npcs.map((n) => n.look).filter((l) => !['board', 'wisplight', 'hawk'].includes(l)))];
+      grid(per(58), 1001, (x, y, n) => { if (!open(x, y)) return false; flies.push([x, y]); reserve(x, y, 1.5); return true; });
+      grid(per(12), 1005, (x, y, n) => { if (!open(x, y) || nearTown(x, y, 10)) return false; shrines.push({ id: `vs${n}`, x, y }); reserve(x, y, 3); return true; });
+      grid(per(30), 1010, (x, y, n, r) => {
+        if (!open(x, y)) return false;
+        townsfolk.push({ id: `vf${n}`, name: `VILLAGER ${n + 1}`, look: folkLooks[Math.floor(r * folkLooks.length)], x, y, quirk: 'THE HEX HAS ME. IT ITCHES.', home: 'HOME AGAIN.' });
+        reserve(x, y, 3); return true;
+      });
+      grid(per(57), 1015, (x, y, n, r) => {
+        if (!open(x, y)) return false;
+        questNpcs.push({ id: `vn${n}`, name: `TRAVELLER ${n + 1}`, x, y, look: npcLooks[Math.floor(r * npcLooks.length)], lines: ['A BIG WORLD, THIS. BIGGER EVERY DAY.'] });
+        reserve(x, y, 2.5); return true;
+      });
+    }
     ms.content = performance.now() - t0 - ms.ground - ms.roads - ms.villages;
 
     // scenery: Aldermere's props by region, at its thresholds
@@ -360,14 +385,14 @@ export function vastDef(id) {
     built = {
       bio, tiles, props, ms,
       at: (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? T.CAVEWALL : tiles[y * W + x]),
-      content: { groups, chests, nodes, lookouts, campfires, signs, buildings },
+      content: { groups, chests, nodes, lookouts, campfires, signs, buildings, flies, shrines, townsfolk, questNpcs },
       towns,
     };
     return built;
   }
 
   const def = {
-    id, name: 'THE VAST', sub: `${mult}X ALDERMERE - A TEST WORLD`, generated: true, mult,
+    id, name: 'THE VAST', sub: `${mult}X ALDERMERE${dense ? ', DENSE' : ''} - A TEST WORLD`, generated: true, mult, dense,
     at: [0, 0], w: W, h: H, start: [home[0], home[1] + 4],
     size: { w: W, h: H, overworldW: W },
     regions: REGIONS.map((r) => ({ ...r, sub: `THE VAST - ${mult}X ALDERMERE` })),

@@ -27,6 +27,7 @@ export let MAP = null; // the test map in play, or null for Aldermere
 // shift every x/y (and a pack's units) by the stamp origin
 function place(list, [ox, oy]) {
   return list.map((e) => {
+    if (Array.isArray(e)) return [e[0] + ox, e[1] + oy, ...e.slice(2)]; // a bare [x, y] (golden flies)
     const o = { ...e };
     if (typeof o.x === 'number') o.x += ox;
     if (typeof o.y === 'number') o.y += oy;

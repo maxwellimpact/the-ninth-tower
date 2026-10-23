@@ -118,7 +118,7 @@ export class Title extends Phaser.Scene {
     st.potions.potion = 8; st.potions.elixir = 3;
     // the Vast has no Ward Stones to break: its land starts freed (no blight,
     // the freed music), and the party carries salves and tonics for the heat and cold
-    if (vast) { Object.assign(st.flags, { wardBroken: true, ward_marsh: true, ward_gloam: true, ward_cinder: true, ward_frost: true }); st.potions.salve = 4; st.potions.tonic = 4; }
+    if (vast) { if (!/d$/.test(mapId)) Object.assign(st.flags, { wardBroken: true, ward_marsh: true, ward_gloam: true, ward_cinder: true, ward_frost: true }); st.potions.salve = 4; st.potions.tonic = 4; } // (the dense one keeps its blight, as Aldermere does before the stones fall)
     st.demo = kind === 'combat' ? 'combat' : kind === 'map' ? 'map' : 'explore';
     // combat (and ?map=): a test map of its own (src/data/maps); explore: Brightwater
     st.map = kind === 'combat' ? 'arena' : kind === 'map' ? mapId : null;
