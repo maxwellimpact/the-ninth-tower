@@ -102,7 +102,7 @@ export class Title extends Phaser.Scene {
   // The deep-link sandboxes. They never read or write the real save.
   startDemo(kind, mapId = null) {
     if (kind === 'boss') { this.enterLab('undercroft'); return; }
-    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40'; } // the title's button: forty times Aldermere (?map=vast is ten)
+    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40d'; } // the title's button: forty times Aldermere, dense with its people and pickups (?map=vast40 plain, ?map=vast ten times)
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
@@ -159,7 +159,7 @@ export class Title extends Phaser.Scene {
       this.showLabLink(true);
       this.heroSelect();
     });
-    opt(144, 'THE VAST', 'A 40X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
+    opt(144, 'THE VAST', 'A DENSE 40X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
   }
 
   heroSelect() {
