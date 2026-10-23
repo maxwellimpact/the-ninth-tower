@@ -29,6 +29,7 @@ export class Unit {
     this.view = 'down'; this.flip = false;
     this.shadow = scene.add.image(x, y, shadow).setAlpha(0.2).setDepth(-4);
     this.sprite = scene.add.sprite(x, y, key, frame).setOrigin(0.5, 0.75);
+    this.sprite.unit = true; // (the off-screen cull never pauses a hero's or foe's animation: their logic reads it)
     this.flashT = 0;
     this.hurtTint = 0;
   }

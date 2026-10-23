@@ -124,6 +124,9 @@ Object.assign(BARKS.ward, { kesh: 'BROKEN. GOOD. ONE LESS CAGE.', wren: 'CLEAN S
 Object.assign(BARKS.chest, { kesh: 'SHINY. MINE. OURS.', wren: 'KESTREL SPOTTED IT FIRST, FOR THE RECORD.' });
 Object.assign(BARKS.gap, { kesh: 'NEED A TOOL FOR THIS. NOT A FIST.', wren: "WE DON'T HAVE WHAT THIS NEEDS. NOT YET." });
 
+// cottage art with nothing tied to it: as a landmark with no home to reopen, shown only while its chunk is in
+const PLAIN_COTTAGES = new Set(['shop', 'tavern', 'curio', 'bath', 'mayor']);
+
 export class Game extends Phaser.Scene {
   constructor() { super('Game'); }
 
@@ -166,6 +169,7 @@ export class Game extends Phaser.Scene {
     lap('nav');
 
     this.propsByChunk = new Map();
+    this.lazyByChunk = new Map(); // world furniture shown only while its chunk is in (see lazy)
     for (const p of this.world.props) {
       const k = `${Math.floor((p.x * TILE) / CHUNK)},${Math.floor((p.y * TILE) / CHUNK)}`;
       if (!this.propsByChunk.has(k)) this.propsByChunk.set(k, []);
@@ -275,6 +279,7 @@ export class Game extends Phaser.Scene {
     const objs = [];
     for (const p of list) objs.push(...this.createProp(p));
     // water sparkles (deterministic per chunk)
+    for (const e of this.lazyByChunk.get(k) || []) this.ensureLazy(e);
     for (let i = 0; i < 10; i++) {
       const x = cx * CHUNK + Math.floor(hash(cx, cy * 31 + i, 5) * CHUNK), y = cy * CHUNK + Math.floor(hash(cx * 17 + i, cy, 6) * CHUNK);
       const t = this.painter.typeAt(x, y);
@@ -296,6 +301,28 @@ export class Game extends Phaser.Scene {
     const k = `${cx},${cy}`;
     for (const o of this.chunkObjs.get(k) || []) { this.tweens.killTweensOf(o); o.destroy(); }
     this.chunkObjs.delete(k);
+    for (const e of this.lazyByChunk.get(k) || []) this.dropLazy(e);
+  }
+
+  // World furniture (chests, signs, campfires, lookouts, cottages) that only
+  // exists on screen while its chunk is streamed in: build(e) makes its
+  // display objects (and any timers, pushed to e.timers) when the chunk comes
+  // in, and they're destroyed when it goes. What it is stays loaded the whole
+  // time: its interactable, its nav block, its marker. A big map would
+  // otherwise carry every chest and campfire it has, on screen or not.
+  lazy(x, y, build) {
+    const k = `${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)}`, e = { build, objs: null, timers: [] };
+    if (!this.lazyByChunk.has(k)) this.lazyByChunk.set(k, []);
+    this.lazyByChunk.get(k).push(e);
+    if (this.streamer.resident.has(k)) this.ensureLazy(e);
+    return e;
+  }
+  ensureLazy(e) { return (e.objs ??= e.build(e) || []); } // (also when something needs it before its chunk is in)
+  dropLazy(e) {
+    if (!e.objs) return;
+    for (const o of e.objs) { this.tweens.killTweensOf(o); o.destroy(); }
+    for (const t of e.timers) t.remove();
+    e.objs = null; e.timers = [];
   }
 
   createProp(p) {
@@ -1022,32 +1049,36 @@ export class Game extends Phaser.Scene {
     this.campfireObjs = W.campfires.map((c) => ({ x: px(c.x), y: px(c.y) })); // light sources in the gloom
     for (const c of W.campfires) {
       const x = px(c.x), y = px(c.y);
-      const fire = this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
-      const glow = this.add.circle(x, y, 26, 0xffb050, 0.12).setDepth(-60).setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({ targets: glow, alpha: 0.06, scale: 0.9, duration: 220, yoyo: true, repeat: -1 });
+      const e = this.lazy(x, y, (e) => {
+        const fire = this.add.sprite(x, y + 6, 'campfire').setOrigin(0.5, 1).play('campfire').setDepth(y);
+        const glow = this.add.circle(x, y, 26, 0xffb050, 0.12).setDepth(-60).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: glow, alpha: 0.06, scale: 0.9, duration: 220, yoyo: true, repeat: -1 });
+        // a lazy thread of woodsmoke over every fire
+        e.timers.push(this.time.addEvent({ delay: 600 + (c.x % 5) * 70, loop: true, callback: () => {
+          if (!this.cameras.main.worldView.contains(x, y)) return;
+          const p = this.add.circle(x + (Math.random() - 0.5) * 3, y - 8, 2, 0xb8b0c4, 0.5).setDepth(y + 40);
+          this.tweens.add({ targets: p, x: x + 4 + Math.random() * 6, y: y - 30 - Math.random() * 8, scale: 2.4, alpha: 0, duration: 2000, ease: 'Sine.easeOut', onComplete: () => p.destroy() });
+        } }));
+        return [fire, glow];
+      });
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', vis: () => fire, interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
-      // a lazy thread of woodsmoke over every fire
-      const puff = this.time.addEvent({ delay: 600 + (c.x % 5) * 70, loop: true, callback: () => {
-        if (!this.cameras.main.worldView.contains(x, y)) return;
-        const p = this.add.circle(x + (Math.random() - 0.5) * 3, y - 8, 2, 0xb8b0c4, 0.5).setDepth(y + 40);
-        this.tweens.add({ targets: p, x: x + 4 + Math.random() * 6, y: y - 30 - Math.random() * 8, scale: 2.4, alpha: 0, duration: 2000, ease: 'Sine.easeOut', onComplete: () => p.destroy() });
-      } });
-      this.events.once('shutdown', () => puff.remove());
+      this.addInteractable({ x, y, reach: 26, h: 20, kind: 'campfire', vis: () => e.objs?.[0], interact: () => { this.flags[`camp_${c.x}_${c.y}`] = true; this.rest(); } });
     }
     for (const s of W.signs) {
       const x = px(s.x), y = px(s.y);
-      const board = this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y);
+      const e = this.lazy(x, y, () => [this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y)]);
       this.nav.block(s.x, s.y);
-      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => board, interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
+      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => e.objs?.[0], interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
     }
     for (const c of W.chests) {
       const x = px(c.x), y = px(c.y);
-      const done = this.flags[`chest_${c.id}`];
-      // a treasure under the floor shows as what you'd actually see: a cracked flagstone with water below
-      const img = c.look === 'cistern' ? this.add.image(x, y, done ? 'cisternDived' : 'cistern').setDepth(-30) : this.add.image(x, y + 4, done ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y);
+      const e = this.lazy(x, y, () => {
+        const done = this.flags[`chest_${c.id}`]; // (read when it's shown, so an opened one comes back open)
+        // a treasure under the floor shows as what you'd actually see: a cracked flagstone with water below
+        return [c.look === 'cistern' ? this.add.image(x, y, done ? 'cisternDived' : 'cistern').setDepth(-30) : this.add.image(x, y + 4, done ? 'chestOpen' : 'chest').setOrigin(0.5, 1).setDepth(y)];
+      });
       this.nav.block(c.x, c.y);
-      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', chest: c, vis: () => img, interact: (h) => this.openChest(c, img, h) });
+      this.addInteractable({ x, y, reach: 22, h: 14, kind: 'chest', chest: c, vis: () => e.objs?.[0], interact: (h) => this.openChest(c, this.ensureLazy(e)[0], h) });
     }
     // overworld illusions (the hermit's door): solid wall until the party holds the relic
     this.falseWalls = (W.falseWalls || []).map((f) => {
@@ -1091,10 +1122,12 @@ export class Game extends Phaser.Scene {
     // Lookout towers: climb to sketch the surrounding region onto the map
     for (const k of W.lookouts || []) {
       const x = px(k.x), y = px(k.y);
-      const tower = this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y);
-      this.add.image(x, y + 8, 'lookoutFront').setOrigin(0.5, 1).setDepth(y + 30); // railing in front of anyone up top
+      const e = this.lazy(x, y, () => [
+        this.add.image(x, y + 8, 'lookout').setOrigin(0.5, 1).setDepth(y),
+        this.add.image(x, y + 8, 'lookoutFront').setOrigin(0.5, 1).setDepth(y + 30), // railing in front of anyone up top
+      ]);
       for (const dx of [-1, 0, 1]) { this.nav.block(k.x + dx, k.y); this.nav.block(k.x + dx, k.y - 1); }
-      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', vis: () => tower, look: k, interact: () => this.climbLookout(k) });
+      this.addInteractable({ x, y: y + 12, reach: 26, standOff: 10, h: 60, kind: 'lookout', vis: () => e.objs?.[0], look: k, interact: () => this.climbLookout(k) });
     }
     for (const w of W.warps) {
       const x = px(w.x), y = px(w.y);
@@ -1112,6 +1145,19 @@ export class Game extends Phaser.Scene {
     this.homes = {};
     for (const b of W.buildings) {
       const bx = b.x * TILE + 8, by = (b.y + 1) * TILE;
+      if (b.landmark && !b.opens && PLAIN_COTTAGES.has(b.kind)) { // a plain cottage (the Vast's villages): shown with its chunk
+        this.lazy(bx, by, (e) => {
+          const objs = [this.add.image(bx, by, `house_${b.kind}`).setOrigin(0.5, 1).setDepth(by), this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6)];
+          const ch = chimneyOf(b.kind);
+          if (ch) { const sx = bx + ch[0], sy = by + ch[1]; e.timers.push(this.time.addEvent({ delay: 520, loop: true, callback: () => {
+            if (!this.cameras.main.worldView.contains(sx, sy + 40)) return;
+            const sm = this.add.circle(sx + (Math.random() - 0.5) * 2, sy, 2, 0xd8d3e0, 0.55).setDepth(by + 50);
+            this.tweens.add({ targets: sm, x: sx + 6 + Math.random() * 6, y: sy - 22 - Math.random() * 8, scale: 2.6, alpha: 0, duration: 2200, ease: 'Sine.easeOut', onComplete: () => sm.destroy() });
+          } })); }
+          return objs;
+        });
+        continue;
+      }
       const shut = b.opens && this.folkCount() < b.opens; // a Brightwater home still boarded up
       const img = this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}${shut ? '_shut' : ''}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
@@ -1346,24 +1392,27 @@ export class Game extends Phaser.Scene {
     const rt = this.darkRT;
     rt.clear();
     const lantern = this.state.relics.includes('lantern');
+    // Every light is a stamp from a pool, placed where it shines, and they're
+    // all erased out of the dark in one pass: erasing them one at a time
+    // opened and closed the texture per light (~0.9 ms a frame in Gloamwood).
+    const pool = (this.lightPool ??= []);
+    let n = 0;
+    const stamp = (wx, wy, s) => { const im = (pool[n] ??= this.make.image({ key: 'lightMask', add: false }).setOrigin(0.5)); n++; im.setScale(s).setPosition(Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
     if (!inCave) {
       rt.fill(0x060a14, gloom * (lantern ? 0.42 : 0.52));
-      const stampG = (wx, wy, sc) => { this.lightStamp ??= this.make.image({ key: 'lightMask', add: false }); this.lightStamp.setScale(sc).setOrigin(0.5); rt.erase(this.lightStamp, Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
-      stampG(L.x, L.y - 10, (lantern ? 2.8 : 2.1) + Math.sin(this.time.now / 180) * 0.03);
-      for (const h of this.party) if (h !== L) stampG(h.x, h.y - 10, 0.8);
-      for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stampG(o.x, o.y - 6, 0.45);
-      for (const c of this.campfireObjs || []) if (cam.worldView.contains(c.x, c.y)) stampG(c.x, c.y - 6, 1.6);
-      return;
+      stamp(L.x, L.y - 10, (lantern ? 2.8 : 2.1) + Math.sin(this.time.now / 180) * 0.03);
+      for (const h of this.party) if (h !== L) stamp(h.x, h.y - 10, 0.8);
+      for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stamp(o.x, o.y - 6, 0.45);
+      for (const c of this.campfireObjs || []) if (cam.worldView.contains(c.x, c.y)) stamp(c.x, c.y - 6, 1.6);
+    } else {
+      rt.fill(0x05030a, lantern ? 0.86 : 0.94);
+      stamp(L.x, L.y - 10, (lantern ? 2.1 : 1.25) + Math.sin(this.time.now / 180) * 0.03); // the Lantern of Embers lights far more
+      for (const h of this.party) if (h !== L) stamp(h.x, h.y - 10, 0.55);
+      for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stamp(o.x, o.y - 6, 0.35);
+      for (const i of this.interactables) if (i.needsLight) stamp(i.x, i.y - 10, 0.9);
+      for (const b of this.dungeon?.lights?.() || []) if (cam.worldView.contains(b.x, b.y)) stamp(b.x, b.y - 12, 1.3 + Math.sin(this.time.now / 90 + b.x) * 0.05); // lit braziers
     }
-    rt.fill(0x05030a, lantern ? 0.86 : 0.94);
-    const light = (wx, wy, s) => rt.erase('lightMask', Math.round(wx - cam.worldView.x - 64 * s), Math.round(wy - cam.worldView.y - 64 * s)).setScale?.(1);
-    const stamp = (wx, wy, s) => { this.lightStamp ??= this.make.image({ key: 'lightMask', add: false }); this.lightStamp.setScale(s).setOrigin(0.5); rt.erase(this.lightStamp, Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
-    void light;
-    stamp(L.x, L.y - 10, (lantern ? 2.1 : 1.25) + Math.sin(this.time.now / 180) * 0.03); // the Lantern of Embers lights far more
-    for (const h of this.party) if (h !== L) stamp(h.x, h.y - 10, 0.55);
-    for (const objs of this.chunkObjs.values()) for (const o of objs) if (o.isLight && cam.worldView.contains(o.x, o.y)) stamp(o.x, o.y - 6, 0.35);
-    for (const i of this.interactables) if (i.needsLight) stamp(i.x, i.y - 10, 0.9);
-    for (const b of this.dungeon?.lights?.() || []) if (cam.worldView.contains(b.x, b.y)) stamp(b.x, b.y - 12, 1.3 + Math.sin(this.time.now / 90 + b.x) * 0.05); // lit braziers
+    rt.erase(pool.slice(0, n));
   }
 
   // ============================================================== party
@@ -4388,8 +4437,25 @@ export class Game extends Phaser.Scene {
       let x0, y0, x1, y1;
       if (o.rotation) { const r = Math.max(w, h); x0 = o.x - r; y0 = o.y - r; x1 = o.x + r; y1 = o.y + r; } // turned: a generous square
       else { x0 = o.x - w * (o.originX ?? 0.5); y0 = o.y - h * (o.originY ?? 0.5); x1 = x0 + w; y1 = y0 + h; }
-      if (x1 < vx0 || x0 > vx1 || y1 < vy0 || y0 > vy1) o.cameraFilter |= id;
-      else if (o.cameraFilter & id) o.cameraFilter &= ~id;
+      if (x1 < vx0 || x0 > vx1 || y1 < vy0 || y0 > vy1) {
+        o.cameraFilter |= id;
+        // a looping animation off screen is paused (not a hero's or foe's)
+        if (o.anims?.isPlaying && o.anims.repeat === -1 && !o.unit) { o.anims.pause(); o.cullPaused = true; }
+      } else if (o.cameraFilter & id) {
+        o.cameraFilter &= ~id;
+        if (o.cullPaused) { o.cullPaused = false; o.anims.resume(); }
+      }
+    }
+    // twice a second: endless tweens (bobbing, pulsing glows) whose targets are
+    // all off screen are paused, and resumed as soon as one comes back
+    if ((this.cullT = (this.cullT || 0) + 1) % 10) return;
+    for (const t of this.tweens.getTweens()) {
+      if (!(t.loop === -1 || t.data?.some((d) => d.repeat === -1))) continue;
+      const tg = t.targets;
+      if (!tg?.length || !tg.every((o) => o && o.cameraFilter !== undefined && o.scrollFactorX === 1)) continue;
+      const off = tg.every((o) => o.cameraFilter & id);
+      if (off && !t.paused) { t.pause(); t.cullPaused = true; }
+      else if (!off && t.cullPaused) { t.cullPaused = false; t.resume(); }
     }
   }
 
