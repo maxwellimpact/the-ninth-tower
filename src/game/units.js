@@ -16,6 +16,9 @@ const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l];
 let UID = 0;
 
 // ------------------------------------------------------------------- Unit
+// how far past their reach an idle melee leader steps in at a foe in the fight (px; about two and a half tiles)
+const LEADER_STEP_IN = 40;
+
 export class Unit {
   constructor(scene, x, y, { key, frame, maxHp = 50, team = 'party', r = 5, shadow = 'shadow' }) {
     this.id = ++UID;
@@ -761,6 +764,7 @@ export class Hero extends Unit {
       if (!t.alive || (t.breakableNow && !t.breakableNow())) { this.command = null; this.clearPath(); return; } // gone, or an iron door that won't give
       const d = dist(this, t);
       const range = this.stats.range + t.r;
+      if (c.auto && d > range + LEADER_STEP_IN + 12) { this.command = null; this.clearPath(); return; } // stepped in on his own: a foe that backs off is let go
       const slack = this.ranged ? 0 : 6; // melee: close enough counts
       if (d <= range + slack && (!this.ranged || sc.shotClear(this.x, this.y, t.x, t.y))) { // shots cross water
         this.clearPath();
@@ -794,21 +798,25 @@ export class Hero extends Unit {
       if (!this.followPath(dt)) this.command = null;
       return;
     }
-    // idle: keep up the basic attack on whatever's already in the fight and
-    // within his own reach (a ranged leader shoots, if the shot is clear),
-    // nearest first, without walking anywhere: moving and skills stay the
-    // player's. (He used to stand still unless a foe was hitting him.) Never a
-    // foe that's still asleep, an errand's set piece, the Ward Stone or a wall.
-    if (this.atkT <= 0 && !(sc.calmT > 0)) {
+    // idle: keep up the basic attack on whatever's already in the fight,
+    // nearest first. A ranged leader only shoots what's in range (with a clear
+    // shot) and never moves for it; a melee leader also steps in at a foe a
+    // couple of tiles past their reach (a clear line, no pathing round walls)
+    // and lets it go if it backs off further. Skills stay the player's. (He
+    // used to stand still unless a foe was hitting him.) Never a foe that's
+    // still asleep, an errand's set piece, the Ward Stone or a wall.
+    if (!(sc.calmT > 0)) {
       let best = null, bd = Infinity;
+      const far = this.stats.range + (this.ranged ? 0 : 6 + LEADER_STEP_IN);
       for (const e of sc.enemies) {
         if (!e.alive || !e.engaged || e.submerged || e.staged || e.kind === 'ward' || e.kind === 'breakable') continue;
         const d = dist(this, e);
-        if (d >= bd || d > this.stats.range + e.r + (this.ranged ? 0 : 6)) continue;
-        if (this.ranged && !sc.shotClear(this.x, this.y, e.x, e.y)) continue;
+        if (d >= bd || d > far + e.r) continue;
+        if (this.ranged ? !sc.shotClear(this.x, this.y, e.x, e.y) : d > this.stats.range + e.r + 6 && !sc.nav.lineClear(this.x, this.y, e.x, e.y, 3)) continue;
         best = e; bd = d;
       }
-      if (best) { this.startAttack(best); return; }
+      if (best && bd <= this.stats.range + best.r + (this.ranged ? 0 : 6)) { if (this.atkT <= 0) this.startAttack(best); return; }
+      if (best) { this.command = { type: 'attack', target: best, auto: true }; return; } // melee: step in
     }
     // a melee leader still steps in at a foe that's hitting him from just out of reach
     const threat = sc.enemies.find((e) => e.alive && e.target === this && dist(e, this) < this.stats.range + 22);
