@@ -57,9 +57,16 @@ export class NavGrid {
     const goalAdjusted = gOpen[0] !== g[0] || gOpen[1] !== g[1];
     g = gOpen;
     const start = s[1] * W + s[0], goal = g[1] * W + g[0];
-    const gScore = new Float32Array(this.w * this.h).fill(Infinity);
-    const came = new Int32Array(this.w * this.h).fill(-1);
-    const closed = new Uint8Array(this.w * this.h);
+    // Scratch buffers kept between searches: a tile's score and parent count
+    // only if its stamp is this search's, so nothing grid-sized is allocated
+    // or cleared per search (that was ~1.5 MB a search on Aldermere's grid,
+    // ~22 MB on the 40x Vast's, and fights search constantly).
+    const N = this.w * this.h;
+    if (!this.gs || this.gs.length !== N) { this.gs = new Float32Array(N); this.parent = new Int32Array(N); this.seen = new Uint32Array(N); this.shut = new Uint32Array(N); this.sid = 0; }
+    if (++this.sid > 0xfffffff0) { this.seen.fill(0); this.shut.fill(0); this.sid = 1; }
+    const id = this.sid, gs = this.gs, parent = this.parent, seen = this.seen, shut = this.shut;
+    const gScore = (i) => (seen[i] === id ? gs[i] : Infinity);
+    const came = (i) => (seen[i] === id ? parent[i] : -1);
     const heap = [];
     const h = (i) => {
       const dx = Math.abs((i % W) - g[0]), dy = Math.abs(Math.floor(i / W) - g[1]);
@@ -87,14 +94,14 @@ export class NavGrid {
       }
       return top;
     };
-    gScore[start] = 0;
+    gs[start] = 0; parent[start] = -1; seen[start] = id;
     push(start, h(start));
     let expanded = 0;
     while (heap.length) {
       const [, cur] = pop();
       if (cur === goal) break;
-      if (closed[cur]) continue;
-      closed[cur] = 1;
+      if (shut[cur] === id) continue;
+      shut[cur] = id;
       if (++expanded > maxNodes) return null;
       const cx = cur % W, cy = Math.floor(cur / W);
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
@@ -103,14 +110,14 @@ export class NavGrid {
         if (this.isSolid(nx, ny)) continue;
         if (dx && dy && (this.isSolid(cx + dx, cy) || this.isSolid(cx, cy + dy))) continue;
         const ni = ny * W + nx;
-        const ng = gScore[cur] + (dx && dy ? 1.414 : 1);
-        if (ng < gScore[ni]) { gScore[ni] = ng; came[ni] = cur; push(ni, ng + h(ni)); }
+        const ng = gs[cur] + (dx && dy ? 1.414 : 1);
+        if (ng < gScore(ni)) { gs[ni] = ng; parent[ni] = cur; seen[ni] = id; push(ni, ng + h(ni)); }
       }
     }
-    if (came[goal] === -1 && goal !== start) return null;
+    if (came(goal) === -1 && goal !== start) return null;
     // reconstruct tile centres
     const pts = [];
-    for (let i = goal; i !== -1 && i !== start; i = came[i]) pts.push({ x: (i % W) * TILE + TILE / 2, y: Math.floor(i / W) * TILE + TILE / 2 });
+    for (let i = goal; i !== -1 && i !== start; i = came(i)) pts.push({ x: (i % W) * TILE + TILE / 2, y: Math.floor(i / W) * TILE + TILE / 2 });
     pts.reverse();
     if (!goalAdjusted) pts.push({ x: gx, y: gy });
     // string-pull
