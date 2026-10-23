@@ -794,7 +794,23 @@ export class Hero extends Unit {
       if (!this.followPath(dt)) this.command = null;
       return;
     }
-    // idle: auto-retaliate against adjacent enemies attacking us
+    // idle: keep up the basic attack on whatever's already in the fight and
+    // within his own reach (a ranged leader shoots, if the shot is clear),
+    // nearest first, without walking anywhere: moving and skills stay the
+    // player's. (He used to stand still unless a foe was hitting him.) Never a
+    // foe that's still asleep, an errand's set piece, the Ward Stone or a wall.
+    if (this.atkT <= 0 && !(sc.calmT > 0)) {
+      let best = null, bd = Infinity;
+      for (const e of sc.enemies) {
+        if (!e.alive || !e.engaged || e.submerged || e.staged || e.kind === 'ward' || e.kind === 'breakable') continue;
+        const d = dist(this, e);
+        if (d >= bd || d > this.stats.range + e.r + (this.ranged ? 0 : 6)) continue;
+        if (this.ranged && !sc.shotClear(this.x, this.y, e.x, e.y)) continue;
+        best = e; bd = d;
+      }
+      if (best) { this.startAttack(best); return; }
+    }
+    // a melee leader still steps in at a foe that's hitting him from just out of reach
     const threat = sc.enemies.find((e) => e.alive && e.target === this && dist(e, this) < this.stats.range + 22);
     if (threat && !this.ranged) this.command = { type: 'attack', target: threat };
   }
