@@ -1,9 +1,11 @@
 # Dungeons, lieutenants and relics
 
+See also: [regions.md](regions.md), [enemies.md](enemies.md), [progression.md](progression.md).
+
 ## C8. Dungeons, Lieutenants & Relics
 
 ### Relics (final placement)
-**[REVISED from §10]** Seven relics. Each region dungeon holds one, and two are found outside dungeons.
+**[REVISED from the first draft, §10]** Seven relics. Each region dungeon holds one, and two are found outside dungeons.
 
 | Relic | Found | Opens (mandatory use) | Optional uses |
 |---|---|---|---|
@@ -18,6 +20,15 @@
 **The order rule** (checked by the reachability validator):
 - **Every outer region and its dungeon can be finished with only the Grapple Hook, the Lantern and the region's own relics.** That keeps the four outer regions in any order.
 - **Each dungeon also has a Sealed Vault** that needs a different region's relic. The vaults hold Uniques, which gives a reason to return. Overworld secrets use the same cross-relic idea.
+
+### Kinds of gates
+Relics are **party-wide story and exploration items**, separate from gear. They're one of several kinds of gate:
+- **Hard gates:** a relic is required.
+- **Soft gates:** enemy level, and hazard zones like cold or heat that drain HP without resistance gear.
+- **Knowledge gates:** puzzles whose solution is learned elsewhere.
+- **Curse gates:** some areas stay sealed by Malgrim's curse until that region's Ward Stone falls.
+- **Elevation:** 3 height levels, with ledges you can only drop down, plus stairs.
+- **Lookout towers** (one per region) sketch the land around onto your map: see [regions.md](regions.md), C12 §3.
 
 ### Dungeon kit and structure **[BUILT: Undercroft and Sunken Abbey rebuilt, Drowned Hollow upgraded]**
 Playtest: the Undercroft was "a couple of monsters, a chest and a boss". Dungeons need Zelda-style mechanics, progression and puzzles. The redesign was dialled in off to the side in the **Dungeon Lab**, then moved into the real game (2026-10-16).
@@ -139,28 +150,3 @@ Every lieutenant tests its region's relic. Phases trigger at HP thresholds.
   - The Tower falls and the curse lifts across Aldermere.
   - The king turns back from a frog (he misses it).
   - The post-game opens (C10).
-
----
-
-## 10. Progressive Discovery — Relics & Gates — **[DRAFT → see C8]** *(final relic placement and the order rule)*
-
-Relics are **party-wide story/exploration items**, separate from gear.
-
-| Relic | In combat | In the world, it opens… |
-|---|---|---|
-| **Grapple Hook** | Pulls enemies, strips shields | Crosses gaps, pulls levers and items from afar |
-| **Lantern of Embers** | Burns undead | Dark caves, lights braziers |
-| **Tide Charm** | Water dash | Swimming and diving in deep water |
-| **Gale Cloak** | Air-dodge | Gliding from cliffs, riding wind currents |
-| **Stone Gauntlets** | Ground slam | Lifts boulders, smashes cracked walls |
-| **Seer's Lens** | Reveals invisible enemies | Hidden paths and illusory walls |
-| **Climbing Claws** | — | Scaling marked cliff faces |
-
-- **Hard gates:** relic required.
-- **Soft gates:** enemy level, hazard zones like cold or heat that drain HP without resistance gear.
-- **Knowledge gates:** puzzles whose solution is learned elsewhere.
-- **Lookout towers:** climbable watchtowers, one per region (C12). The first climb sketches the surrounding land onto your map.
-- **Elevation:** 3 height levels with ledges you can only drop down, plus stairs.
-- **Curse gates:** some areas stay sealed by Malgrim's curse until that region's Ward Stone falls.
-
----

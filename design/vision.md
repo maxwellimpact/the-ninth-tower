@@ -1,5 +1,7 @@
 # Vision, pillars and story
 
+See also: [progression.md](progression.md), [regions.md](regions.md).
+
 ## 1. Vision
 
 An **open-world, real-time action RPG** in tile/pixel art. It takes:

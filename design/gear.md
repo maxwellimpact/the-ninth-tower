@@ -1,9 +1,12 @@
 # Gear, upgrades and gems
 
+See also: [crafting.md](crafting.md), [heroes-skills.md](heroes-skills.md), [plans/armour-gems.md](plans/armour-gems.md).
+
 ## C4. Equipment
 
-### Slots **[REVISED from §7]**
+### Slots **[REVISED from the first draft, §7]**
 - **4 visible slots:** Weapon, Off-hand, Head, Body. These are the demo's slots, all baked into the sprite.
+  - **How it's drawn:** gear is drawn as layers by the puppet renderer and **baked into the hero's sprite sheet when equipment changes**. This keeps runtime cost at one sprite per hero, and the same approach works natively on iOS. Unique items have unique looks.
 - **2 Trinket slots:** rings and charms, not drawn on the sprite.
 - **Feet is dropped.** Boots are 2–3 pixels at 16×24 and wouldn't read on screen; speed bonuses move onto trinkets and Rare traits.
 
@@ -226,24 +229,3 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 
 ### Wardrobe (cosmetic)
 - **Any look you've ever owned** can be shown over your current gear, slot by slot. This is cheap to do with the paper-doll baker, and it lets players keep a favourite look.
-
----
-
-## 7. Equipment System — **[DRAFT → see C4/C5]** *(Part II proposes 4 visible slots + 2 trinkets, no Feet, fixed stats, generated tier gear + authored uniques)*
-
-- **Slots:** Weapon, Off-hand, Head, Body, Feet, 2× Trinket.
-- **Rarity:** Common → Fine → Rare → Epic → Legendary. Higher tiers roll more bonus properties.
-- **Ways to get gear:**
-  - **Shops:** stock grows as the hub town is rebuilt and more Ward Stones fall.
-  - **Drops:** enemies, elites and bosses.
-  - **Chests and secrets:** hand-placed **unique named items** in hard-to-reach places (the reward for exploring).
-  - **Crafting:** blacksmith recipes from gathered materials.
-- **Upgrading:**
-  - **Blacksmith refinement:** +1 to +10 using gold + materials, so a favorite item stays useful.
-  - **Enchanting:** socket **gems** for elemental damage or resistances.
-  - **Salvage** unwanted gear into materials.
-- **Weapon families per class:** for example, Brann uses sword/mace + shield, Wren uses bows, Pip uses staves and wands. This limits how many weapon sprites we need.
-- **[REVISED 2026-10-14] Equipped gear shows on the character (paper-doll).** Weapons, armor and headgear each change the hero's look. Unique items have unique looks.
-  - Implementation: gear is drawn as layers by the puppet renderer and **baked into the hero's sprite sheet when equipment changes**. This keeps runtime cost at one sprite per hero, and the same approach works natively on iOS.
-
----

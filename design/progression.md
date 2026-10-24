@@ -1,5 +1,7 @@
 # Progression and Brightwater
 
+See also: [regions.md](regions.md), [dungeons-relics.md](dungeons-relics.md), [heroes-skills.md](heroes-skills.md).
+
 ## C10. Progression: The Whole Game in Order
 
 ### Main path

@@ -1,5 +1,7 @@
 # Milestones and what the full build needs
 
+See also: [progression.md](progression.md), [tech.md](tech.md).
+
 ## 14. Milestones
 
 0. **Art proof of concept: decides the art pipeline.**

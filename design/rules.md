@@ -1,5 +1,7 @@
 # Never-again rules
 
+See also: [regions.md](regions.md), [tech.md](tech.md).
+
 ### 8. Never-again rules (from playtest bugs) [LOCKED]
 Each of these shipped once and broke a playtest. Every new region, dungeon, room and system is checked against them.
 

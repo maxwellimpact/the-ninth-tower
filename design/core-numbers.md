@@ -1,5 +1,7 @@
 # Core numbers
 
+See also: [heroes-skills.md](heroes-skills.md), [gear.md](gear.md), [enemies.md](enemies.md).
+
 ## C1. Core Numbers
 
 ### Levels
@@ -40,7 +42,7 @@
 - **These are model numbers:** the Wave 1 playtest adds a debug readout of minutes per level and kills per minute, and the curve and encounter density get adjusted against real play.
 
 ### Hero stat growth
-**[REVISED]** This replaces the old Might/Guard/Focus/Agility point allocation in §6. Each hero grows automatically along their own curve. Your choices come from skills, gear and loadout instead.
+**[REVISED]** This replaces the old Might/Guard/Focus/Agility point allocation in the first draft (§6). Each hero grows automatically along their own curve. Your choices come from skills, gear and loadout instead.
 **Why:** with 8 heroes and an AI party, stat-point builds are easy to get wrong and hard to balance, and a phone game benefits from fewer menus.
 
 | Stat | Growth per level | Notes |

@@ -1,8 +1,10 @@
 # Heroes, skills and ultimates
 
+See also: [combat.md](combat.md), [gear.md](gear.md), [progression.md](progression.md).
+
 ## C3. Heroes, Skills & Ultimates
 
-### Loadout **[REVISED from §6]**
+### Loadout **[REVISED from the first draft, §6]**
 - **3 active skills** (the demo has 2), **2 passives** and **1 ultimate** per hero.
 - **Skill ranks 1–5.** Each rank costs skill points (1 / 1 / 2 / 2 / 3) and adds **20%** to the skill's effect, so rank 5 is +80%. **[REVISED in playtest: was 15%]**
 - **Skill power budget [LOCKED in playtest]:** skills start modest and grow, so the player grows into them rather than being overpowered from the start.
@@ -16,7 +18,7 @@
   - **Per hit:** at least 0.25 (so long boss fights still charge), at most 2.5.
   - **Taking damage:** losing a whole health bar is worth 25.
   - **Over time:** the meter also fills by itself, about 45 s from empty.
-- **Cooldowns only, no mana bar.** **[REVISED from §9]** Focus is dropped: a phone HUD already shows cooldown arcs, and a second resource is one more thing to read mid-fight.
+- **Cooldowns only, no mana bar.** **[REVISED from the first draft, §9]** Focus is dropped: a phone HUD already shows cooldown arcs, and a second resource is one more thing to read mid-fight.
 - **New skills unlock** at levels 1 (2 skills), 4, 8, 12 and 16. The ultimate upgrades at level 20 with an **Ultimate Tome** from the Trainers' Hall.
 - **Combat grid with 3 skills:** the top row stays ULT, ALLY 1, ALLY 2. The bottom row becomes DODGE, S1, S2, S3. That's 4 columns, about 158 px, which still fits portrait. *(See question 2.)*
 
@@ -154,7 +156,9 @@ Each discipline has **2 actives and 1 passive**. They're ranked with skill point
 
 ---
 
-## 4. Heroes & Party — **[DRAFT]**
+## 4. Heroes & Party
+
+Who the heroes are and how the party works. Each hero's skills, passives and ultimate are in C3 above.
 
 ### Preset heroes (no character creator)
 All heroes are **hand-designed presets**. That keeps the art budget manageable: one sprite set per hero, drawn well.
@@ -166,7 +170,7 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
   - **The story is shared.** Each starter gets a short personal intro scene and some dialogue variants. Other heroes react to who your leader is, so their banter changes with your choice.
   - The remaining 5 heroes are recruited through regions and side quests.
 
-**Draft roster (8):**
+**The roster (8):**
 
 | Hero | Class | Role | Personality |
 |---|---|---|---|
@@ -183,20 +187,7 @@ All heroes are **hand-designed presets**. That keeps the art budget manageable: 
 - **Up to 3 active members:** a leader plus up to 2 companions. Swap who's in the party at campfires and the inn.
 - **Only active heroes earn XP.** Benched heroes don't level. This makes your party choice meaningful.
   - **Catch-up valve [LOCKED]:** a newly recruited hero joins at about the party's average level. Trainers in the hub town sell "Veteran's Tomes" (expensive) to raise a benched hero's level, so experimenting is never a dead end.
-- **You control only the leader** using tap-to-command (see section 8). **Companions are fully AI-driven.**
+- **You control only the leader** using tap-to-command (see [combat.md](combat.md), §8). **Companions are fully AI-driven.**
 - **[LOCKED] Swap leader at any time, including mid-fight,** with one button (there's a short cooldown so it can't be spammed). You take over that hero, and the previous leader becomes AI-controlled.
 - **Ultimates:** each companion has an ultimate that charges in combat. Tap their portrait to fire it. This is the only direct command you give a companion.
 - **Downed, not dead:** fallen members can be revived mid-fight, and companions revive each other. A full party wipe sends you to the last campfire with a small gold penalty.
-
----
-
-## 6. Class & Skill System — **[DRAFT → see C3]** *(Part II proposes 3 active skills, automatic stat growth instead of stat points, and full skill lists)*
-
-- **Each hero has a home class** with its own skill tree, which defines their identity.
-- **Trainers around the world** teach additional disciplines (Blade, Guardian, Arcane, Shadow, Ranger, Cleric). Some trainers are behind relic gates.
-- Learning and ranking up skills costs gold plus skill points.
-- **Loadout:** 4 active skill slots + 2 passive slots per hero.
-- **Level-ups:** stat points go into **Might / Guard / Focus / Agility**.
-- **[LOCKED] Home class + one secondary discipline:** each hero keeps their home tree and can learn **one** secondary discipline from a trainer. Respec costs gold at the trainers' hall. A Brann tank with Cleric secondary self-heals; a Pip caster with Shadow secondary blinks and poisons.
-
----

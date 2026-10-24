@@ -1,8 +1,10 @@
 # Combat, elements and companion AI
 
+See also: [heroes-skills.md](heroes-skills.md), [enemies.md](enemies.md), [core-numbers.md](core-numbers.md).
+
 ## C2. Elements & Status Effects
 
-**[REVISED]** §9 listed Fire, Frost, Storm, Earth, Light and Shadow. **Earth is replaced by Venom**, which the demo already uses. The Stone Gauntlets relic covers the "break stone" job Earth was meant to do.
+**[REVISED]** The first draft (§9, Magic System) listed Fire, Frost, Storm, Earth, Light and Shadow. **Earth is replaced by Venom**, which the demo already uses. The Stone Gauntlets relic covers the "break stone" job Earth was meant to do.
 
 | Element | Status | Effect | World use (optional shortcuts) |
 |---|---|---|---|
@@ -33,7 +35,7 @@
   - They never pick a foe that's still asleep, an errand's set piece, the Ward Stone or a wall.
   - (Added 2026-10-23, after "he just sits like a bump on a log". The melee step-in was added the same day: "melee has to walk, archer doesn't".)
 - **Swipe (touch) or Space/right-click (web):** dodge roll with brief invincibility, in the swipe direction or away from the cursor.
-- **Skill buttons (4):** cast at the current target or direction. Some skills support drag-to-aim.
+- **Skill buttons (3, as C3 settled):** cast at the current target or direction. Some skills support drag-to-aim.
 - **Portrait taps:** fire a companion's ultimate. **Swap leader** button.
 - **Web extras:** optional WASD movement and number keys for skills.
 
@@ -151,15 +153,3 @@ Hit-stop (2–4 frames), white hit-flash, knockback, light screen shake, damage 
 
 ### Testing
 - An **AI behavior test arena** in dev builds with scripted scenarios: corridor, boss telegraph, healer triage, ledge-follow. Run headlessly where possible, as with Lumen's validators.
-
----
-
-## 9. Magic System — **[DRAFT → see C2/C3]** *(Part II replaces Earth with Venom and drops the Focus/mana bar)*
-
-- **Elements:** Fire, Frost, Storm, Earth, Light, Shadow, with elemental strengths and weaknesses on enemies.
-- **Spells** are learned from trainers and tomes, and they **level up with use** and with skill points.
-- **Rune modifiers** socket into spells: *Split*, *Pierce*, *Chain*, *Linger*, *Echo*.
-- **World interactions** (Fire burns brambles, Frost freezes water, Storm powers machines, Earth cracks stone) are **optional shortcuts and secrets**. Mandatory gates always use relics.
-- **Focus** (mana) bar per hero that regenerates in combat. Melee hits restore a little Focus.
-
----

@@ -1,5 +1,7 @@
 # Open questions
 
+See also: [vision.md](vision.md).
+
 ## 16. Open Questions
 
 ### Answered in Demo 2–3 (kept for history)
@@ -63,6 +65,9 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
   - a frozen copy lives in `untitled-rpg-demo/` and keeps serving on LAN port 5180 and at the original private Artifact link;
   - this repo is under git with the snapshot tagged `demo-3`.
 - **The full build** gets its own private link and LAN port 5182.
+
+### Ideas from the first draft not taken up
+- **Rune modifiers** socketed into spells: *Split*, *Pierce*, *Chain*, *Linger*, *Echo*. (From the first draft's Magic System, §9. Part II's elements (C2) and skills (C3) replaced the rest of that section; this idea was never adopted or dropped.)
 
 ### Known prototype shortcuts
 - The world is built in code (`map.js`) rather than in Tiled.

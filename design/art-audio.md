@@ -1,5 +1,7 @@
 # Art, animation and audio
 
+See also: [regions.md](regions.md), [tech.md](tech.md).
+
 ## 11. Art & Animation — **[DRAFT]**
 
 - **Tiles:** 16×16. **Characters:** about 16×24.

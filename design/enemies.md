@@ -1,5 +1,7 @@
 # Enemies
 
+See also: [combat.md](combat.md), [dungeons-relics.md](dungeons-relics.md), [regions.md](regions.md).
+
 ## C7. Enemies
 
 ### Enemy AI rules **[BUILT, measured]**

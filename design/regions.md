@@ -1,5 +1,37 @@
 # Regions and the world
 
+See also: [dungeons-relics.md](dungeons-relics.md), [progression.md](progression.md), [rules.md](rules.md).
+
+## 12. World — **[DRAFT: structure locked, layout next]**
+
+- **Kingdom:** **Aldermere**.
+- **Hub town:** **Brightwater**, a ruined lakeside town near the start that gets rebuilt as townsfolk are rescued.
+- **More towns long-term:** each region gets a small **outpost or village** (inn, merchant, bounty board, campfire) that reopens when the region is freed. Expansions can add full towns.
+- **Center:** the Ninth Tower, in a blighted central basin.
+- **5 regions**, each with a **hand-built interior dungeon** containing the region's relic, puzzles, keys and the lieutenant boss guarding the Ward Stone:
+
+| Region (working names) | Biome | Notes |
+|---|---|---|
+| Brightwater Vale | Green vale, lake, farmland | Start + hub; tutorial dungeon |
+| Mistfen | Misty marsh / sunken coast | Water-heavy, Tide Charm territory |
+| Cinderreach | Volcanic badlands | Heat soft-gate, lava and brimstone |
+| Frosthelm | Frozen highlands | Cold soft-gate, cliffs (Climbing Claws / Gale Cloak) |
+| Gloamwood | Haunted forest | Darkness (Lantern), illusions (Seer's Lens) |
+| The Blight Basin | Cursed basin around the Tower | Final area; shrinks as wards fall |
+
+- **Scale:** about **4 minutes to walk edge to edge**. Fast-travel between campfires. **No mounts in v1.**
+- **Visual style:** 2D top-down pixel art throughout (16×16 tiles, flat top-down projection, no 3D). Dungeons are the same 2D tile style with their own tilesets.
+- **Target length: about 10 hours** for the main path plus a reasonable share of side content.
+  - Rough budget: opening + hub ≈ 45 min, 5 regions × ≈ 1.5 h (overworld + dungeon), Tower ≈ 1 h, side content making up the rest.
+  - Completionists: about 14–16 h.
+- Progression graph + **staged reachability validator** (carried over from Lumen) to prove there are no softlocks. **[TODO: next phase]**
+
+### Dialogue & saves **[LOCKED]**
+- **Dialogue:** text boxes with character portraits, plus a code-generated **voice blip** per character (each has its own pitch and timbre, Animal Crossing/Undertale style).
+- **Saves:** 3 manual slots + autosave (campfires, region transitions, after bosses).
+
+---
+
 ## C12. Region Template & Recurring Features **[LOCKED from Wave 1 playtests]**
 Every region is built from the same kit. When a new region is added (Wave 2+), it gets each of these. Items marked [BUILT] exist in code and only need data for new regions.
 
@@ -83,33 +115,3 @@ Each region adds a theme variation (§11a). Its dungeon uses the Depths variatio
 - **Cooldowns read at a glance:** a charging button dims its icon, darkens a sweep over it and fills a green arc back in. Cooldowns of a second or more show the seconds left, and a ready button has a bright rim. The moment a button comes back it flashes a ring and pops, which also marks the half-second dodge.
 - **Smart dodge:** the dodge goes where you steer. Without steering, it picks the short hop (about 3 tiles) that best clears telegraphed attacks and the reach of whoever is fighting you, into open floor. A boss always counts as a threat. It never goes further than it needs to.
 - **Saves never put the party somewhere it can't stand.** Positions up a lookout or inside a blocked tile snap to the nearest open ground, both when saving and when loading.
-
-## 12. World — **[DRAFT: structure locked, layout next]**
-
-- **Kingdom:** **Aldermere**.
-- **Hub town:** **Brightwater**, a ruined lakeside town near the start that gets rebuilt as townsfolk are rescued.
-- **More towns long-term:** each region gets a small **outpost or village** (inn, merchant, bounty board, campfire) that reopens when the region is freed. Expansions can add full towns.
-- **Center:** the Ninth Tower, in a blighted central basin.
-- **5 regions**, each with a **hand-built interior dungeon** containing the region's relic, puzzles, keys and the lieutenant boss guarding the Ward Stone:
-
-| Region (working names) | Biome | Notes |
-|---|---|---|
-| Brightwater Vale | Green vale, lake, farmland | Start + hub; tutorial dungeon |
-| Mistfen | Misty marsh / sunken coast | Water-heavy, Tide Charm territory |
-| Cinderreach | Volcanic badlands | Heat soft-gate, lava and brimstone |
-| Frosthelm | Frozen highlands | Cold soft-gate, cliffs (Climbing Claws / Gale Cloak) |
-| Gloamwood | Haunted forest | Darkness (Lantern), illusions (Seer's Lens) |
-| The Blight Basin | Cursed basin around the Tower | Final area; shrinks as wards fall |
-
-- **Scale:** about **4 minutes to walk edge to edge**. Fast-travel between campfires. **No mounts in v1.**
-- **Visual style:** 2D top-down pixel art throughout (16×16 tiles, flat top-down projection, no 3D). Dungeons are the same 2D tile style with their own tilesets.
-- **Target length: about 10 hours** for the main path plus a reasonable share of side content.
-  - Rough budget: opening + hub ≈ 45 min, 5 regions × ≈ 1.5 h (overworld + dungeon), Tower ≈ 1 h, side content making up the rest.
-  - Completionists: about 14–16 h.
-- Progression graph + **staged reachability validator** (carried over from Lumen) to prove there are no softlocks. **[TODO: next phase]**
-
-### Dialogue & saves **[LOCKED]**
-- **Dialogue:** text boxes with character portraits, plus a code-generated **voice blip** per character (each has its own pitch and timbre, Animal Crossing/Undertale style).
-- **Saves:** 3 manual slots + autosave (campfires, region transitions, after bosses).
-
----

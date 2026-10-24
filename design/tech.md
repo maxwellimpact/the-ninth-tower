@@ -1,5 +1,7 @@
 # Tech plan, test maps and the Vast
 
+See also: [rules.md](rules.md), [plans/saves.md](plans/saves.md).
+
 ## 13. Tech Plan — **[DRAFT]**
 
 ### Two phases, two codebases

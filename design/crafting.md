@@ -1,5 +1,7 @@
 # Materials, crafting and consumables
 
+See also: [gear.md](gear.md), [progression.md](progression.md).
+
 ## C6. Materials, Crafting & Consumables
 
 ### Materials

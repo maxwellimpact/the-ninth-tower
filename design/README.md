@@ -62,7 +62,14 @@ a new one named for the first date in it, and list it here.
 
 ## Where this came from
 
-Until 2026-10-24 this was one file, `DESIGN.md`. Its opening notes:
+Until 2026-10-24 this was one file, `DESIGN.md`. When it was split, the first
+draft's sections that Part II had replaced were retired: §6 (Class & Skill
+System, replaced by C3), §7 (Equipment System, by C4/C5), §9 (Magic System, by
+C2/C3) and §10 (Relics & Gates, by C8). What they said that wasn't said
+anywhere else moved into the topic files, and one untaken idea (rune modifiers)
+went to [open-questions.md](open-questions.md). The full text of the old file
+is in git history (it's whole in commit `96a5b4c`'s parent, and split word for
+word in `96a5b4c`). Its opening notes:
 
 # The Ninth Tower — Design Doc
 
