@@ -2,8 +2,10 @@
 // running dev game (any page, even the title):
 //   const T = await import('/tools/map-test.js'); await T.runAll()   // or T.run('pack-fight')
 // Each test boots a small map from src/data/maps with a ready-made party,
-// plays it out by stepping the game, and checks the result. Nothing touches
-// a save: test maps never save. Returns { name, pass, checks, errors } each.
+// plays it out by stepping the game, and checks the result. Most test maps
+// never save; the save tests (own-save, shared-world, old-save, colosseum)
+// put the page's saves back as they found them. Returns { name, pass, checks,
+// errors } each.
 import { step } from './goto.js';
 import { boot } from './dungeon-walk.js';
 
@@ -25,6 +27,27 @@ async function start(map, { level = 6 } = {}) {
   const sc = await boot({ state: st });
   return { sc, d, savedBefore: before };
 }
+// Run fn with the page's saves set aside, and put them back after, whatever happens.
+async function withSaves(fn) {
+  const keep = Object.keys(localStorage).filter((k) => k.startsWith('ninthTower.save')).map((k) => [k, localStorage.getItem(k)]);
+  for (const [k] of keep) localStorage.removeItem(k);
+  try { return await fn(); } finally {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('ninthTower.save')) localStorage.removeItem(k);
+    for (const [k, v] of keep) localStorage.setItem(k, v);
+  }
+}
+// a main-game save to test with: Aldermere progress, the Frog King's blessing, some gold
+async function mainSave() {
+  const S = await import('/src/game/state.js');
+  const st = S.newState('brann');
+  st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
+  for (const h of st.recruited) st.heroes[h].level = 8;
+  Object.assign(st.flags, { chest_plateau: true, ward_marsh: true, blessing: true });
+  st.gold = 100; st.flies = [3, 7]; st.pos = { x: 15 * 16 + 8, y: 37 * 16 + 8 };
+  S.saveState(st);
+  return S;
+}
+const waitFor = async (ok, frames = 600) => { for (let i = 0; i < frames && !ok(); i += 10) await step(10); return ok(); };
 const rectOf = (d) => ({ x0: d.at[0], y0: d.at[1], x1: d.at[0] + d.rows[0].length - 1, y1: d.at[1] + d.rows.length - 1 });
 const inside = (r, x, y) => x / 16 >= r.x0 - 1 && x / 16 <= r.x1 + 1 && y / 16 >= r.y0 - 1 && y / 16 <= r.y1 + 1;
 
@@ -101,6 +124,118 @@ export const TESTS = {
       [`ready in ${((lt.ready || 0) / 1000).toFixed(1)} s (world ${lt.world} ms, already built if this page made it before; worker ${lt.worker} ms)`]: true,
     };
   },
+  // a map with a save of its own (trial): a fresh party of its own, saved
+  // under its own key only, and CLEAR wipes only that
+  'own-save': async () => withSaves(async () => {
+    const S = await mainSave();
+    const main = localStorage.getItem(S.SAVE_KEY), key = S.ownSaveKey('trial');
+    const { mapDef } = await import('/src/world/content.js');
+    const d = mapDef('trial');
+    // what the title's enterOwn builds on a first visit
+    const st = S.newState(d.party.leader);
+    st.recruited = [d.party.leader, ...d.party.recruited]; st.active = [...st.recruited];
+    st.map = 'trial'; st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    const sc = await boot({ state: st });
+    await step(60);
+    sc.state.gold = 77;
+    sc.autosave('test');
+    const own = S.loadState(key);
+    const out = {
+      'a fresh party (level 1, its own)': sc.party.every((h) => h.level === 1) && sc.state.recruited.length === 3,
+      'saved under its own key': own?.gold === 77 && own.map === 'trial',
+      'the main save untouched': localStorage.getItem(S.SAVE_KEY) === main,
+      'listed as a map with its own save': (await import('/src/world/content.js')).ownMapIds().includes('trial'),
+    };
+    S.clearSave(key);
+    out['CLEAR removes it'] = !localStorage.getItem(key);
+    out['CLEAR leaves the main save'] = localStorage.getItem(S.SAVE_KEY) === main;
+    return out;
+  }),
+  // a shared map (the Colosseum) carries the party both ways, keeps its own
+  // world's progress apart, and can read Aldermere's
+  'shared-world': async () => withSaves(async () => {
+    const S = await mainSave();
+    const save = S.loadState();
+    S.switchWorld(save, 'colosseum');
+    const { mapDef } = await import('/src/world/content.js');
+    const d = mapDef('colosseum');
+    save.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    let sc = await boot({ state: save });
+    const there = {
+      'in the Colosseum': sc.state.map === 'colosseum' && !!sc.colosseum,
+      'none of Aldermere\'s flags there': !sc.flags.chest_plateau && !sc.flags.ward_marsh,
+      'the blessing came along (the party\'s)': !!sc.flags.blessing,
+      'can read Aldermere\'s flies': S.worldOf(sc.state, 'aldermere')?.flies?.length === 2,
+    };
+    sc.state.gold += 50;
+    sc.flags.arenaBest = 3;
+    sc.goToWorld(null);
+    const was = sc.state;
+    await waitFor(() => sc.state !== was && !sc.travelling && !sc.busy, 1200); // (the same scene, restarted in Aldermere)
+    sc = window.__scene;
+    const disk = JSON.parse(localStorage.getItem(S.SAVE_KEY));
+    return {
+      ...there,
+      'back in Aldermere': sc.state.map == null && !sc.state.world,
+      'gold earned there came home': sc.state.gold === 150,
+      'Aldermere\'s flags are back': sc.flags.chest_plateau && sc.flags.ward_marsh,
+      'the Colosseum\'s best stays in its world': !sc.flags.arenaBest && S.worldOf(sc.state, 'colosseum')?.flags.arenaBest === 3,
+      'back where the party left Aldermere': Math.abs(sc.leader.x - (15 * 16 + 8)) < 40,
+      'on disk: Aldermere at the top, the Colosseum under worlds': disk.flags.chest_plateau && disk.worlds?.colosseum?.flags?.arenaBest === 3 && !disk.world,
+    };
+  }),
+  // a save from before worlds loads as it was, and the first save keeps a backup of it
+  'old-save': async () => withSaves(async () => {
+    const S = await import('/src/game/state.js');
+    const st = S.newState('pip');
+    st.flags.chest_plateau = true; st.gold = 321; st.pos = { x: 500, y: 600 }; st.lore = ['a'];
+    delete st.worlds;
+    const old = JSON.stringify(st);
+    localStorage.setItem(S.SAVE_KEY, old);
+    const loaded = S.loadState();
+    S.saveState(loaded);
+    const after = JSON.parse(localStorage.getItem(S.SAVE_KEY)), o = JSON.parse(old);
+    return {
+      'it loads': !!loaded && loaded.leader === 'pip',
+      'nothing moved: flags, gold, place, lore, heroes': JSON.stringify([after.flags, after.gold, after.pos, after.lore, after.heroes]) === JSON.stringify([o.flags, o.gold, o.pos, o.lore, o.heroes]),
+      'still version 1 (older builds still read it)': after.version === 1 && !after.worlds && !after.world,
+      'a backup of the old save': localStorage.getItem(`${S.SAVE_KEY}.bak`) === old,
+    };
+  }),
+  // the Colosseum: waves climb their own ladder, clearing one saves the
+  // party's gains, and falling ends the run without costing gold
+  colosseum: async () => withSaves(async () => {
+    const S = await mainSave();
+    const save = S.loadState();
+    S.switchWorld(save, 'colosseum');
+    const { mapDef } = await import('/src/world/content.js');
+    const d = mapDef('colosseum');
+    save.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    const sc = await boot({ state: save });
+    for (const h of sc.party) { h.maxHp *= 20; h.hp = h.maxHp; }
+    const C = sc.colosseum;
+    await waitFor(() => C.wave === 1 && C.foes.length);
+    const w1 = C.foes.map((e) => e.level);
+    // the party fights it out on its own; the leader is pointed at whoever is left
+    const fight = async (until) => { for (let t = 0; t < 4800 && !until(); t += 20) { await step(20); if (!sc.leader.target && !sc.leader.path?.length) { const e = C.foes.find((x) => x.alive); if (e) sc.tapWorld(e.x, e.y - 6); } } return until(); };
+    const cleared = await fight(() => C.wave === 2 && C.foes.length);
+    const w2 = C.foes.map((e) => e.level);
+    const disk = JSON.parse(localStorage.getItem(S.SAVE_KEY));
+    const gold = sc.state.gold;
+    for (const h of sc.party) { h.hp = 0; h.downed = true; }
+    sc.wipe();
+    const restarted = await waitFor(() => C.wave === 1 && C.foes.length && !sc.busy, 900);
+    return {
+      'wave 1 at level 1': w1.length >= 2 && w1.every((l) => l === 1),
+      'the party cleared it': cleared,
+      'wave 2 at level 2': w2.every((l) => l === 2) && w2.length >= w1.length,
+      'the best run is kept in the Colosseum\'s world': disk.worlds?.colosseum?.flags?.arenaBest >= 1 && !disk.flags.arenaBest,
+      'the party\'s XP saved to the main game': disk.heroes.brann.xp > 0 || disk.heroes.brann.level > 8,
+      'falling costs no gold': sc.state.gold === gold,
+      'a new run starts at wave 1': restarted,
+      'Aldermere untouched on disk': disk.flags.chest_plateau && disk.flags.ward_marsh,
+    };
+  }),
 };
 
 export async function run(name) {
