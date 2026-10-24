@@ -48,7 +48,8 @@ tested), newest file last:
 - [decisions/2026-10-13.md](decisions/2026-10-13.md): 2026-10-13 to 2026-10-16
 - [decisions/2026-10-17.md](decisions/2026-10-17.md): 2026-10-17
 - [decisions/2026-10-18.md](decisions/2026-10-18.md): 2026-10-18 to 2026-10-19
-- [decisions/2026-10-21.md](decisions/2026-10-21.md): 2026-10-21 onward (current)
+- [decisions/2026-10-21.md](decisions/2026-10-21.md): 2026-10-21 to 2026-10-23
+- [decisions/2026-10-24.md](decisions/2026-10-24.md): 2026-10-24 onward (current)
 
 Add new rows to the end of the current file. When it passes about 25 KB, start
 a new one named for the first date in it, and list it here.
