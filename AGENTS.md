@@ -37,6 +37,13 @@ the rule, the check) as well as fixing it.
   they're used, not into a constant at load: a test map swaps them. Anything
   Aldermere has that's placed in code (not listed in those files) checks `MAP`
   and stays off test maps.
+- **Nothing costs more because the map is bigger** (never-again rule 14).
+  - Per-frame and per-check work only touches what's near the camera or the party.
+  - Anything shown in the world is built with its chunk (`lazy()`, `spawnChunk`) or near the screen.
+  - Far-off objects are parked automatically by the cull. Don't hold a list of everything and walk it every frame.
+  - Lookups keep a reference instead of searching a list by id, and scratch buffers are reused.
+  - Big static drawings are baked into a texture (Graphics are never culled).
+  - Prove it with `tools/perf.js` on the dense 40x Vast (`?map=vast40d`).
 - **New art matches the cast.** Render new sprites beside existing ones at 3x.
 - **Only change what was asked.** Mention other problems you notice instead of
   quietly changing them.
@@ -61,6 +68,14 @@ the rule, the check) as well as fixing it.
     (`src/data/maps`), away from the main map. Use a test map to try a new enemy
     or system in isolation: open one with `?map=<id>`.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
+    Launch with `evade-bench.js`'s `start()` from the title screen (it seeds
+    the party's gear and freezes levels).
+  - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
+    ranged stays put) and never uses a skill or chases far.
+  - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.
+  - `tools/perf.js`: CPU time per frame (`profile()`, `engine()`, `tour()`).
+    Use it on Aldermere and on the Vast (`?map=vast`, `vast40`, `vast40d`).
+    The debug panel's LOAD line and `window.__loadTimes` give load timings.
   - `tools/door-orbit.js`: how far companions swing round the leader after a door.
   - `tools/house-mix.js`: cottage art sheets.
 - **Combat or AI changes:** benchmark old against new. Run the old code twice
@@ -69,6 +84,8 @@ the rule, the check) as well as fixing it.
   `[loop]` console error. Read the console after every test run.
 - **Don't monkey-patch the scene and then run a harness.** Overrides survive
   scene restarts and skew the results. Reload first.
+- **Don't add or delete files under `src/` or `tools/` while a bench runs.**
+  The dev server reloads the page and the run is lost.
 
 ## 4. Shipping
 

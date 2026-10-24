@@ -113,6 +113,10 @@ sprite atlases for a future native build.
      or anyone;
    - `tools/fight-bench.js` before and after any combat or AI change. Run the
      old code twice to see how much the numbers vary on their own;
+   - `tools/perf.js` for anything that could cost frames or load time. The
+     rule is that nothing costs more because the map is bigger (never-again
+     rule 14). Measure on the dense 40× Vast (`?map=vast40d`) as well as the
+     main map;
    - `tools/map-test.js` for the integration tests. To try a new enemy, boss
      or system on its own, make a small test map in `src/data/maps/` and open
      it with `?map=<id>` (DESIGN.md §13 has the format);
