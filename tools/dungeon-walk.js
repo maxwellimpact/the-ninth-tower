@@ -459,12 +459,22 @@ export async function cave() {
   log.push({ step: 'entered', area: sc.area, kit: !!k });
   log.push({ step: 'start', treasureGateShut: solid(220, 14), lowerOpen: !solid(215, 26) });
   const c = k.crystals[0];
-  sc.party.forEach((h) => { h.x = 213 * 16 + 8; h.y = 23 * 16 + 8; });
-  c.damage(1, sc.leader); await step(40);
-  log.push({ step: 'hit switch', treasureGateOpen: !solid(220, 14), lowerShut: solid(215, 26) });
-  sc.party.forEach((h) => { h.x = 222 * 16 + 8; h.y = 10 * 16 + 8; }); await step(10);
-  c.damage(1, sc.leader); await step(40);
-  log.push({ step: 'hit again on the way out', lowerOpen: !solid(215, 26) });
+  // The switch flips on any hit, so this checks it with nothing else about:
+  // the cave's foes near it are cleared and the party holds still. (Before,
+  // Pip or Sable fighting those foes would catch the crystal with a stray
+  // spell or knife and flip it back, failing the check one run in three.)
+  for (const e of sc.enemies) if (e.alive && Math.hypot(e.x - c.x, e.y - c.y) < 320) { e.alive = false; e.destroy(); }
+  sc.enemies = sc.enemies.filter((e) => e.alive);
+  const held = sc.party.map((h) => [h, h.update]);
+  for (const [h] of held) h.update = () => {};
+  try {
+    sc.party.forEach((h) => { h.x = 213 * 16 + 8; h.y = 23 * 16 + 8; });
+    c.damage(1, sc.leader); await step(40);
+    log.push({ step: 'hit switch', treasureGateOpen: !solid(220, 14), lowerShut: solid(215, 26) });
+    sc.party.forEach((h) => { h.x = 222 * 16 + 8; h.y = 10 * 16 + 8; }); await step(10);
+    c.damage(1, sc.leader); await step(40);
+    log.push({ step: 'hit again on the way out', lowerOpen: !solid(215, 26) });
+  } finally { for (const [h, u] of held) h.update = u; }
   log.push({ errs: window.__errs || [] });
   return log;
 }
