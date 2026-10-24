@@ -128,6 +128,9 @@ Object.assign(BARKS.gap, { kesh: 'NEED A TOOL FOR THIS. NOT A FIST.', wren: "WE 
 // cottage art with nothing tied to it: as a landmark with no home to reopen, shown only while its chunk is in
 const PLAIN_COTTAGES = new Set(['shop', 'tavern', 'curio', 'bath', 'mayor']);
 
+// a warlock's bolt, coloured by its school (see Enemy.atkEl)
+const SCHOOL_TINT = { fire: 0xffa060, frost: 0x9fe6ff, venom: 0x9cff7a, shadow: 0xd28cff };
+
 export class Game extends Phaser.Scene {
   constructor() { super('Game'); }
 
@@ -913,7 +916,7 @@ export class Game extends Phaser.Scene {
     const [nx, ny] = norm(to.x - from.x, to.y - (from.y - 8));
     let s, sp = 210;
     if (kind === 'orb') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(2).setDepth(TOP - 21); sp = 110; audio.sfx('frost', { pitch: 0.6 }); }
-    else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
+    else if (kind === 'bolt') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setTint(SCHOOL_TINT[from.atkEl] || 0xd28cff).setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 160; audio.sfx('fireCast'); }
     else if (kind === 'thorn') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0x8a5c38).setScale(0.8); sp = 190; audio.sfx('swing', { pitch: 2 }); }
     else if (kind === 'ember') { s = this.add.sprite(from.x, from.y - 8, 'firebolt').play('firebolt').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); sp = 150; audio.sfx('fireCast', { pitch: 1.4 }); }
     else if (kind === 'heavy') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setScale(1.8).setTint(0xff9a8a); sp = 270; audio.sfx('dash'); }
@@ -966,7 +969,14 @@ export class Game extends Phaser.Scene {
         hit.damage(p.dmg, p.from);
         if (p.kind === 'ember') hit.addBurn?.(p.dmg * 0.12, 3);
         this.fx.burst(p.kind === 'arrow' || !p.kind ? 'spark' : 'curse', p.x, p.y, 4);
-        if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); }
+        if (p.kind === 'orb' && hit.buff) { hit.buff('slow', 0.6, 2.5 * (1 - (hit.stats?.resist?.[p.from?.atkEl] || 0))); this.floatText(hit.x, hit.y - 34, 'SLOWED', 'fontPlain', 0xd9b8ff); } // (a gem against the caster's element shortens it)
+        if (p.kind === 'bolt' && p.from?.kind === 'warlock' && hit.buff) { // a warlock's school leaves its mark: a short burn, chill, poison or hex-slow
+          const el = p.from.atkEl;
+          if (el === 'fire') hit.addBurn(p.dmg * 0.12, 2);
+          else if (el === 'frost') chillHero(hit, 1.2);
+          else if (el === 'venom') hit.addPoison(p.dmg * 0.12, 3);
+          else hit.buff('slow', 0.75, 1.5 * (1 - (hit.stats?.resist?.shadow || 0)));
+        }
         if (p.kind === 'web' && hit.buff) { hit.buff('slow', 0.05, 1.4); this.floatText(hit.x, hit.y - 34, 'WEBBED', 'fontPlain', 0xc9cfe0); }
         if (p.kind === 'snowball') { freezeHero(hit, 1.2); this.fx.burst('foam', p.x, p.y, 10); }
         if (p.kind === 'frogcurse') this.frogify(hit);

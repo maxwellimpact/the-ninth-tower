@@ -650,6 +650,10 @@ export class Menu extends Phaser.Scene {
       const [slot, target] = socketed.find(([, id]) => id === this.gemItem) || socketed[0];
       this.gemItem = target;
       const armour = slot !== 'weapon' && slot !== 'offhand';
+      // what this hero's armour gems add up to (each capped at 50%)
+      const hst = h.stats, pc = (v) => `${Math.round(v * 100)}%`;
+      const worn = [...Object.entries(hst.resist || {}).map(([el, v]) => `${pc(v)} ${el.toUpperCase()} RESIST`), hst.static && `STATIC ${pc(hst.static * 2)} ATK`, hst.radiance && `+${pc(hst.radiance)} HEALING`].filter(Boolean);
+      if (worn.length) { this.t(x, y, `ARMOUR GEMS: ${worn.join(' - ')}`, 'fontPlain', 0xbfe6f2).setMaxWidth(w); y += 10; }
       for (const [sl, id] of socketed) {
         if (!fits()) break;
         const sk = st.sockets[id] || [], picked = id === target;
@@ -662,18 +666,22 @@ export class Menu extends Phaser.Scene {
             this.render();
           });
       }
-      // what a gem does in the chosen piece (element gems only work in a weapon or off-hand)
+      // what a gem does in the chosen piece: element gems add damage in a weapon or off-hand;
+      // in armour most resist their element, storm jolts melee attackers and sun strengthens heals
       const G = CRAFT.gems, pct = (v) => `${Math.round(v * 1000) / 10}%`;
       const effect = (gem) => {
         const kind = G.kinds[gem.replace(/\d/g, '')], gi = +gem.replace(/\D/g, '') - 1;
-        if (kind.element) return armour ? null : `+${pct(G.elementDmg[gi])} ${kind.element.toUpperCase()} DAMAGE`;
+        if (kind.element && armour) {
+          const v = G.armourShare[gi];
+          return kind.element === 'storm' ? `STATIC: MELEE ATTACKERS TAKE ${pct(v * 2)} ATK` : kind.element === 'light' ? `+${pct(v)} HEALING RECEIVED` : `+${pct(v)} ${kind.element.toUpperCase()} RESIST`;
+        }
+        if (kind.element) return `+${pct(G.elementDmg[gi])} ${kind.element.toUpperCase()} DAMAGE`;
         return { hpPct: `+${pct(G.hpPct[gi])} MAX HP`, defPct: `+${pct(G.defPct[gi])} DEF`, crit: `+${pct(G.crit[gi])} CRIT`, regen: `REGEN ${pct(G.regen[gi])} HP/S` }[kind.stat];
       };
       for (const [gem, n] of gems) {
         if (!fits()) break;
         const can3 = n >= G.combine, cost = G.socketGold[+gem.replace(/\D/g, '') - 1], eff = effect(gem), rich = st.gold >= cost;
-        const sub = !eff ? 'NO EFFECT IN ARMOUR: WEAPON OR OFF-HAND ONLY'
-          : !rich ? `${eff} - NEEDS ${cost}G (YOU HAVE ${st.gold}G)`
+        const sub = !rich ? `${eff} - NEEDS ${cost}G (YOU HAVE ${st.gold}G)`
           : can3 ? `${eff} - ${cost}G - TAP LEFT TO COMBINE 3` : `${eff} - ${cost}G`;
         row(`icon_crystal`, `${gemName(gem)} X${n}`, 0xffffff, sub, !eff || !rich ? 0xff7a7a : 0x9d93b3, 'SET', !!eff && rich, () => {
           if (!eff || !rich) { audio.sfx('click'); return; }

@@ -10,6 +10,7 @@ import { computeStats, heroInfo, mitigate, xpToNext, skillRank, rankMul } from '
 import { SKILL_FX, TARGETED } from './skills.js';
 import { bakeHero } from './bake.js';
 import { updateStaged as updateStagedShow } from './setpiece.js';
+import { biomeAt } from '../world/map.js';
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
@@ -216,6 +217,7 @@ export class Hero extends Unit {
   // Poison from leeches / venom: ticks down HP for a few seconds.
   addPoison(dps, t) {
     if (this.downed || this.antidoteT > 0 || this.purifyT > 0) return;
+    t *= 1 - (this.stats.resist?.venom || 0); // venom gems in armour shorten it
     this.poison = { dps: Math.max(dps, this.poison?.dps || 0), t: Math.max(t, this.poison?.t || 0), next: this.poison?.next ?? 0.6 };
     this.sprite.setTint(0xb8ff9a);
   }
@@ -223,6 +225,7 @@ export class Hero extends Unit {
   // gear and Purify keep it off.
   addBurn(dps, t = 3) {
     if (this.downed || this.purifyT > 0 || this.hasPerk('flameproof') || this.hasPerk('emberheart') || this.hasTrait('heatproof')) return;
+    t *= 1 - (this.stats.resist?.fire || 0); // ember gems in armour shorten it
     this.burn = { dps: Math.max(dps, this.burn?.dps || 0), t: Math.max(t, this.burn?.t || 0), next: this.burn?.next ?? 0.5 };
     this.sprite.setTint(0xffb08a);
   }
@@ -234,6 +237,7 @@ export class Hero extends Unit {
     if (this.downed || amt <= 0) return;
     const bl = this.passive?.('blessed');
     if (bl) amt = Math.round(amt * (1.2 + 0.04 * (bl - 1))); // Blessed (Cleric): heals land harder
+    if (this.stats.radiance) amt = Math.round(amt * (1 + this.stats.radiance)); // Radiance (sun gems in armour)
     const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amt);
     if (this.hp > before) { this.scene.floatText(this.x, this.y - 26, `+${this.hp - before}`, 'font', 0x8cff8c); this.scene.fx.heal(this.x, this.y); }
@@ -536,7 +540,8 @@ export class Hero extends Unit {
     }
   }
 
-  damage(amount, src) {
+  // el: the element of the blow (a foe's own, unless the caller says)
+  damage(amount, src, el = src?.atkEl) {
     if (!this.alive || this.downed) return 0;
     if (this.invuln > 0) { this.scene.floatText(this.x, this.y - 28, 'DODGE', 'fontPlain'); return 0; }
     // Riposte: parry and counter with a guaranteed crit
@@ -552,6 +557,7 @@ export class Hero extends Unit {
     if (this.chainedT > 0) amount *= 1.2; // bound by a Chain Warden
     if (this.taunting > 0) amount *= this.provokeT > 0 && !this.skills.some((k) => k.id === 'taunt') ? 0.8 : 0.5; // Provoke's cut is gentler than Brann's Taunt
     if (this.wallT > 0) amount *= 0.2;
+    if (el && this.stats.resist?.[el]) amount *= 1 - this.stats.resist[el]; // element gems in armour
     if (this.passive('wardweave') && src && (src.s?.ranged || src.spell)) amount *= 0.8;
     if (this.action?.type === 'harvest') this.scene.cancelHarvest(this);
     const lion = this.hasPerk('lionheart') && this.hp < this.maxHp * 0.4 ? 1.25 : 1; // Lionheart Helm
@@ -577,6 +583,12 @@ export class Hero extends Unit {
     if (this.isLeader) this.scene.shake(70, 0.004);
     if (src) this.knock(this.x - src.x, this.y - src.y, 50);
     if (src?.alive && src.team === 'enemy' && !src.s?.ranged && this.hasTrait('thorns')) src.damage(Math.max(1, Math.round(amount * 0.1)), this, { knock: 0, dot: true });
+    // Static (storm gems in armour): whoever strikes this hero up close takes a jolt
+    if (this.stats.static && src?.alive && src.team === 'enemy' && !src.s?.ranged && this.scene.time.now > (this.staticT || 0)) {
+      this.staticT = this.scene.time.now + 600;
+      src.damage(Math.max(1, Math.round(this.stats.atk * this.stats.static * 2 * (src.elementMul ? src.elementMul('storm') : 1))), this, { knock: 0, dot: true });
+      this.scene.fx.burst('spark', src.x, src.y - 8, 5);
+    }
     if (this.hp <= 0 && this.passive('laststand') && !this.lastStandUsed) {
       this.lastStandUsed = true;
       this.hp = 1;
@@ -1195,13 +1207,13 @@ const ENEMY = enemyData;
 // Coldproof gear and Purify keep both off.
 export function chillHero(h, t = 2) {
   if (!h?.buff || h.downed || h.purifyT > 0 || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward')) return;
-  h.buff('slow', 0.65, t);
+  h.buff('slow', 0.65, t * (1 - (h.stats?.resist?.frost || 0))); // rime gems in armour shorten it
   const now = h.scene.time.now;
   if (!(h.chillTxtT > now)) { h.chillTxtT = now + 1500; h.scene.floatText(h.x, h.y - 34, 'CHILLED', 'fontPlain', 0x9fdcff); }
 }
 export function freezeHero(h, t = 1.2) {
   if (!h?.buff || h.downed || h.purifyT > 0 || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward')) return;
-  h.buff('slow', 0.04, t);
+  h.buff('slow', 0.04, t * (1 - (h.stats?.resist?.frost || 0)));
   h.flash?.(t * 1000, 0x9fe6ff);
   h.scene.floatText(h.x, h.y - 34, 'FROZEN', 'fontPlain', 0x9fe6ff);
   h.scene.fx.burst('foam', h.x, h.y - 8, 10);
@@ -1218,6 +1230,9 @@ export const AFFIXES = {
   swift: 'SWIFT', armored: 'ARMORED', vampiric: 'VAMPIRIC', volatile: 'VOLATILE',
   warded: 'WARDED', splitting: 'SPLITTING', shielder: 'SHIELDER', frenzied: 'FRENZIED',
 };
+
+// a warlock's school, by the region it's met in (anywhere else: shadow, the hex)
+const WARLOCK_SCHOOL = { marsh: 'venom', gloam: 'shadow', cinder: 'fire', frost: 'frost' };
 
 export class Enemy extends Unit {
   constructor(scene, kind, x, y, { level = 1, elite = false } = {}) {
@@ -1241,6 +1256,9 @@ export class Enemy extends Unit {
       if (this.affix === 'swift') { s.speed *= 1.4; if (s.windup) s.windup *= 0.75; if (s.recover) s.recover *= 0.8; }
     }
     this.s = s;
+    // the element its blows carry (enemies.json `element`; most foes have none).
+    // Warlocks cast the school of the region they're met in.
+    this.atkEl = base.element === 'region' ? WARLOCK_SCHOOL[biomeAt(Math.floor(x / 16), Math.floor(y / 16))] || 'shadow' : base.element || null;
     this.spawn = { x, y };
     this.state = 'idle';
     this.t = 0;
@@ -2162,7 +2180,7 @@ export class Enemy extends Unit {
     let ticks = 0;
     const ev = sc.time.addEvent({ delay: 500, repeat: 5, callback: () => {
       ticks++;
-      for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - x, h.y - y) < 12) { h.damage(dmg, null); sc.floatText(h.x, h.y - 30, 'BURN', 'fontPlain', 0xffa060); }
+      for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - x, h.y - y) < 12) { h.damage(dmg, null, 'fire'); sc.floatText(h.x, h.y - 30, 'BURN', 'fontPlain', 0xffa060); }
       if (ticks >= 6) sc.dangers = sc.dangers.filter((z) => z !== zone);
     } });
     void ev;
@@ -2260,7 +2278,7 @@ export class Enemy extends Unit {
         // the icicles land
         for (const z of P.zones) {
           sc.fx.burst('foam', z.x, z.y - 6, 10); audio.sfx('frost', { pitch: 1.6 });
-          for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.7 * sc.difficulty.dmg, null); chillHero(h, 2.5); }
+          for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.7 * sc.difficulty.dmg, null, 'frost'); chillHero(h, 2.5); }
         }
         for (const g of P.gfx) g?.destroy?.();
         for (const s of P.spikes) sc.tweens.add({ targets: s, alpha: 0, duration: 400, delay: 300, onComplete: () => s.destroy() });
@@ -3498,7 +3516,7 @@ export class Vulk extends Enemy {
         zone.until = 4; zone.linger = true; // now a puddle that sits there
         sc.tweens.add({ targets: pud, alpha: 0, duration: 4000, onComplete: () => { pud.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone); } });
         let k = 0;
-        sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) { h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null); h.addBurn(this.s.dmg * 0.08, 2); } } });
+        sc.time.addEvent({ delay: 600, repeat: 5, callback: () => { k++; for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - p.x, h.y - p.y) < 14) { h.damage(this.s.dmg * 0.15 * sc.difficulty.dmg, null, 'fire'); h.addBurn(this.s.dmg * 0.08, 2); } } });
         void k;
       });
     }
@@ -3520,7 +3538,7 @@ export class Vulk extends Enemy {
         g.destroy(); sc.dangers = sc.dangers.filter((z) => z !== zone);
         if (v.plugged || !this.alive) return;
         sc.fx.burst('ember', v.x, v.y - 10, 26); audio.sfx('fireImpact', { pitch: 0.8 });
-        for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - v.x, h.y - v.y) < 28 + h.r) h.damage(this.s.dmg * 0.8 * sc.difficulty.dmg, { x: v.x, y: v.y });
+        for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - v.x, h.y - v.y) < 28 + h.r) h.damage(this.s.dmg * 0.8 * sc.difficulty.dmg, { x: v.x, y: v.y }, 'fire');
       });
     }
   }
@@ -3697,7 +3715,7 @@ export class Isolde extends Enemy {
           g.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z);
           if (!this.alive) return;
           sc.fx.burst('foam', z.x, z.y - 6, 10); audio.sfx('frost', { pitch: 1.5 });
-          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - z.x, k.y - z.y) < z.r + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, null); chillHero(k, 2); }
+          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - z.x, k.y - z.y) < z.r + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, null, 'frost'); chillHero(k, 2); }
         });
       }
     }
@@ -3744,7 +3762,7 @@ export class Isolde extends Enemy {
     }
     if (this.phase === 3 && this.blizzard) {
       this.pulseT -= dt;
-      if (this.pulseT <= 0) { this.pulseT = 4; for (const h of this.heroes()) { chillHero(h, 2); h.damage(this.s.dmg * 0.2 * this.scene.difficulty.dmg, null); } this.scene.fx.burst('foam', this.x, this.y - 20, 12); }
+      if (this.pulseT <= 0) { this.pulseT = 4; for (const h of this.heroes()) { chillHero(h, 2); h.damage(this.s.dmg * 0.2 * this.scene.difficulty.dmg, null, 'frost'); } this.scene.fx.burst('foam', this.x, this.y - 20, 12); }
     }
     const t = this.target;
     if (this.engaged && this.state === 'chase' && !(this.stunT > 0) && t?.alive && this.onScreen()) {
@@ -3912,11 +3930,11 @@ export class Malgrim extends Enemy {
           g.destroy(); sc.dangers = sc.dangers.filter((k) => k !== z); if (!this.alive) return;
           sc.fx.burst('ember', p.x, p.y - 4, 14); audio.sfx('fireImpact');
           const pud = sc.add.ellipse(p.x, p.y, 30, 18, 0xff7b2e, 0.4).setDepth(-25); sc.tweens.add({ targets: pud, alpha: 0, duration: 3000, onComplete: () => pud.destroy() });
-          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - p.x, k.y - p.y) < 18 + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this); k.addBurn(this.s.dmg * 0.08, 3); }
+          for (const k of this.heroes()) if (k.invuln <= 0 && Math.hypot(k.x - p.x, k.y - p.y) < 18 + k.r) { k.damage(this.s.dmg * 0.6 * sc.difficulty.dmg, this, 'fire'); k.addBurn(this.s.dmg * 0.08, 3); }
         });
       }
     } else if (ph === 'ice') {
-      for (const k of hs) { chillHero(k, 2); k.damage(this.s.dmg * 0.18 * sc.difficulty.dmg, null); }
+      for (const k of hs) { chillHero(k, 2); k.damage(this.s.dmg * 0.18 * sc.difficulty.dmg, null, 'frost'); }
       sc.fx.burst('foam', this.x, this.y - 20, 16);
     } else if (ph === 'dark') {
       if (this.scene.enemies.filter((e) => e.alive && e.summonedBy === this).length < 3) for (const dx of [-24, 24]) { const e = sc.spawnEnemy('shade', this.x + dx, this.y + 10, true); e.summonedBy = this; e.summoned = true; }

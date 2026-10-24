@@ -302,7 +302,8 @@
   "drops": {
    "crystal": 0.3
   },
-  "gem": 0.15
+  "gem": 0.15,
+  "element": "region"
  },
  "snagtooth": {
   "name": "SNAGTOOTH",
@@ -380,7 +381,8 @@
   "gem": 0.15,
   "drops": {
    "bogmoss": 0.4
-  }
+  },
+  "element": "venom"
  },
  "leeches": {
   "name": "LEECH SWARM",
@@ -500,7 +502,8 @@
   "drops": {
    "pearl": 2,
    "crystal": 1
-  }
+  },
+  "element": "venom"
  },
  "pitchamp": {
   "name": "GUTCRUSHER",
@@ -600,7 +603,8 @@
   "resist": "venom",
   "drops": {
    "silk": 0.35
-  }
+  },
+  "element": "venom"
  },
  "spiderling": {
   "name": "SPIDERLING",
@@ -670,7 +674,8 @@
   },
   "tint": 13626623,
   "alpha": 0.82,
-  "hover": 7
+  "hover": 7,
+  "element": "shadow"
  },
  "mab": {
   "name": "QUEEN MAB",
@@ -789,7 +794,8 @@
   "resist": "fire",
   "drops": {
    "brimstone": 0.4
-  }
+  },
+  "element": "fire"
  },
  "slug": {
   "name": "MAGMA SLUG",
@@ -813,7 +819,8 @@
   "resist": "fire",
   "drops": {
    "brimstone": 0.45
-  }
+  },
+  "element": "fire"
  },
  "salamander": {
   "name": "SALAMANDER WARRIOR",
@@ -910,7 +917,8 @@
    "scale": 3,
    "brimstone": 2
   },
-  "named": true
+  "named": true,
+  "element": "fire"
  },
  "vulk": {
   "name": "FORGEMASTER VULK",
@@ -935,7 +943,8 @@
   "drops": {
    "scale": 3,
    "silver": 2
-  }
+  },
+  "element": "fire"
  },
  "frostwolf": {
   "name": "FROST WOLF",
@@ -960,7 +969,8 @@
   "resist": "frost",
   "drops": {
    "pelt": 0.45
-  }
+  },
+  "element": "frost"
  },
  "rimehorn": {
   "name": "RIMEHORN",
@@ -1012,7 +1022,8 @@
    "rimeglass": 0.4
   },
   "alpha": 0.85,
-  "hover": 6
+  "hover": 6,
+  "element": "frost"
  },
  "sentinel": {
   "name": "HEX SENTINEL",
@@ -1039,7 +1050,8 @@
   "drops": {
    "crystal": 0.5,
    "silver": 0.3
-  }
+  },
+  "element": "frost"
  },
  "raider": {
   "name": "SNOW GOBLIN RAIDER",
@@ -1114,7 +1126,8 @@
   "drops": {
    "rimeglass": 3,
    "silver": 2
-  }
+  },
+  "element": "frost"
  },
  "voidling": {
   "name": "VOIDLING",
@@ -1234,6 +1247,7 @@
   "shot": "bolt",
   "scale": 1.5,
   "weak": "light",
-  "resist": "shadow"
+  "resist": "shadow",
+  "element": "shadow"
  }
 }

@@ -256,6 +256,14 @@
    "FLAWLESS",
    "ROYAL"
   ],
+  "armourNote": "element gems in head, body and trinkets: ember, rime, venom and gloam resist their element's damage and shorten its status (6/10/15/20%, capped at 50%); storm jolts whoever strikes you in melee (that share x 2 of your ATK, at most every 0.6s); sun strengthens heals you receive (capped at 50%)",
+  "armourShare": [
+   0.06,
+   0.1,
+   0.15,
+   0.2
+  ],
+  "armourCap": 0.5,
   "elementDmg": [
    0.03,
    0.06,

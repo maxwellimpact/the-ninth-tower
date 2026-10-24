@@ -238,12 +238,17 @@ let MODS = { refine: {}, sockets: {}, blessing: false };
 export function setStatMods(state) { MODS = { get refine() { return state.refine; }, get sockets() { return state.sockets || {}; }, get blessing() { return !!state.flags.blessing; } }; }
 
 // Level + gear -> final stats.
+const G0 = crafting.gems;
 export function computeStats(id, level, equip, hs = null) {
   const base = heroInfo(id).stats;
   const s = { ...base, def: 0, cdr: 0, regen: 0, maxHp: Math.round(base.maxHp * (1 + (level - 1) * tuning.hpGrowth)), atk: base.atk + (level - 1) * tuning.atkGrowth };
   const traits = [];
   let hpPct = 0, defPct = 0;
   s.gemElements = [];
+  // element gems in armour (head, body, trinkets): ember, rime, venom and gloam
+  // resist their element; storm jolts melee attackers (Static); sun strengthens
+  // heals received (Radiance). See design/gear.md, armour gems.
+  s.resist = {}; s.static = 0; s.radiance = 0;
   for (const slot of ALL_SLOTS) {
     const iid = equip[slot];
     const it = items[iid];
@@ -263,13 +268,22 @@ export function computeStats(id, level, equip, hs = null) {
       if (!g) continue;
       const kind = g.replace(/\d/g, ''), grade = +g.slice(kind.length) - 1;
       const G = crafting.gems, gk = G.kinds[kind];
-      if (gk.element) s.gemElements.push({ el: gk.element, dmg: G.elementDmg[grade], armor: slot !== 'weapon' && slot !== 'offhand' });
+      const armour = slot !== 'weapon' && slot !== 'offhand';
+      if (gk.element) s.gemElements.push({ el: gk.element, dmg: G.elementDmg[grade], armor: armour });
+      if (gk.element && armour) {
+        const share = G.armourShare[grade];
+        if (gk.element === 'storm') s.static += share;
+        else if (gk.element === 'light') s.radiance += share;
+        else s.resist[gk.element] = (s.resist[gk.element] || 0) + share;
+      }
       else if (gk.stat === 'hpPct') hpPct += G.hpPct[grade];
       else if (gk.stat === 'defPct') defPct += G.defPct[grade];
       else if (gk.stat === 'crit') s.crit += G.crit[grade];
       else if (gk.stat === 'regen') s.regen += G.regen[grade];
     }
   }
+  for (const el of Object.keys(s.resist)) s.resist[el] = Math.min(G0.armourCap, s.resist[el]);
+  s.static = Math.min(G0.armourCap, s.static); s.radiance = Math.min(G0.armourCap, s.radiance);
   s.maxHp = Math.round(s.maxHp * (1 + hpPct));
   s.def = Math.round(s.def * (1 + defPct));
   if (MODS.blessing) s.maxHp = Math.round(s.maxHp * 1.15);
