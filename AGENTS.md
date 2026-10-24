@@ -69,7 +69,9 @@ the rule, the check) as well as fixing it.
     or system in isolation: open one with `?map=<id>`.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
     Launch with `evade-bench.js`'s `start()` from the title screen (it seeds
-    the party's gear and freezes levels).
+    the party's gear and freezes levels). It runs on its own test map, `bench`
+    (the Undercroft's hall and vault, copied); `start(20, 2, 'lab')` runs it in
+    the Dungeon Lab for comparing with numbers from before 2026-10-24.
   - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
     ranged stays put) and never uses a skill or chases far.
   - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.

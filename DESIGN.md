@@ -458,6 +458,51 @@ A world ten times Aldermere's overworld by area, for measuring load times and fr
 - **Load timings:** the debug panel shows them (world build, navigation, minimap, landmarks, first chunks, the worker's build, and ready from the tap), and every load logs a `[load]` line; `window.__loadTimes` has the lot.
 - **Frame profiling:** `tools/perf.js` (dev only). `profile()` times frames standing or walking (logic and drawing apart, and the Game scene's costliest methods), `engine()` splits a frame into animations and tweens, game logic, the cull, the HUD and drawing, and `tour()` profiles each of Aldermere's regions. The browser pane caps real frames at about 30 a second, so it steps the game by hand and measures CPU time per frame; GPU time isn't included.
 
+### Saves for separate maps **[PLAN 2026-10-24, not built]**
+Today there's one save, and only Aldermere writes it: the lab, the demos and every test map never save. Maps are going to diverge. Most test maps want a save of their own that can be wiped. A future map that extends the game (a new region, an expansion) should carry the party's progress across.
+
+**Each map says how it saves** (`save` in its definition):
+- **`none`** (today's behaviour, and the default for test and profiling maps: `arena`, `pack`, `bench`, the Vast) never saves.
+- **`own`** keeps a save of its own, separate from everything else, with a CLEAR button. The first visit starts either a fresh party (`start: "fresh"`, with the map's own level and gear, like the demos) or a copy of the main save's party (`start: "copy"`). Nothing flows back to the main save.
+- **`shared`** extends the main game. The party itself is one and the same everywhere. Each map keeps its own world progress, and it can read (never write) Aldermere's.
+
+**What's the party's, and what's the world's.** The save splits along this line. Aldermere becomes world `aldermere`.
+
+| The party's (shared by `shared` maps) | The world's (one per map) |
+|---|---|
+| leader, recruited, active, heroes (levels, XP, skills, gear), inventory, fresh, gold, materials, potions, gems, sockets, refine, relics, difficulty, playTime, stats | flags, cleared, respawn, pos, explored + exploredW, lore, flies, flyRewards, errand state |
+
+- **Flags are mostly the world's** (chests opened, wards broken, folk saved). A few are the story's: recruits joined, disciplines learned, Malgrim defeated, `postgame`. Those move to a small `progress` set in the party's half.
+- **Reading another world's flags:** an extension reads Aldermere's with a prefix (`aldermere:ward_marsh`), and only reads.
+
+**Shape:** `{ version: 2, party: {...}, progress: {...}, world: 'aldermere', worlds: { aldermere: {...}, <mapId>: {...} } }`.
+- In play, the game keeps reading `state.flags`, `state.pos` and the rest as today. At load, the active world's fields are spread over the top level. On save, or when travelling to another map, they're folded back into `worlds[id]`.
+- So almost no game code changes. Only the load, the save, and the step that switches worlds learn about worlds.
+
+**Slots and storage:**
+- `own` maps save under `ninthTower.save.v1.map.<id>`, each mirrored to its own cloud document.
+- `shared` maps live inside the main save (one key, one cloud document).
+- The title screen gets a MAPS list: every `own` map with a save, each with CONTINUE and CLEAR. CLEAR asks first, and wipes the local copy and the cloud copy.
+
+**Migration:** a version 1 save loads as version 2.
+- Its world fields move to `worlds.aldermere`, and its story flags move to `progress`.
+- The old key is read once and rewritten. A backup of the version 1 JSON is kept under `...v1.bak` until the next successful save.
+
+**Building it, in order:**
+1. **The split.** Do the split and migration, and run every walkthrough on a migrated save. Nothing should change in play.
+2. **`own` saves.** Add the slots, the clear, and the MAPS list.
+3. **`shared` worlds.** Add world switching (a warp whose target is another map), and reading another world's flags.
+4. **Tests.** Extend `tools/map-test.js`:
+   - an `own` map saves only to its key, and CLEAR removes only it;
+   - a `shared` map carries the party both ways but not the world's flags;
+   - a migrated old save plays as before.
+
+**Open questions:**
+- Should an `own` map's first visit copy the main party, or start fresh?
+- Should a `shared` map's foes level from the party (as now) or from their own bands?
+- Do golden flies and lore count across worlds, as one collection, or per world?
+
+
 ### iOS specifics (port phase)
 - **Rendering:** SpriteKit (pixel-perfect nearest-neighbor filtering, SKTileMapNode or custom chunked tile layers for the open world).
 - **Pathfinding/AI:** GameplayKit (GKGridGraph, state machines) or a direct port of the prototype's A*.
@@ -991,7 +1036,38 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 | **Emerald** | Regenerate 0.2 → 0.8% HP/s |
 
 - **An elemental gem in a weapon** with no element gives the weapon that element.
-- **A gem on armor** gives resistance to that element instead of damage.
+- **A gem on armor** gives resistance to that element instead of damage. (**Not built yet:** today the gems tab says element gems do nothing in armour. See the plan below.)
+
+#### Armour gems: resistance **[PLAN 2026-10-24, not built]**
+Nothing in the game deals elemental damage to the party yet, so there's nothing to resist. But every foe already has an element of its own: its `resist` field, the element it shrugs off.
+- **Fire (7):** imps, salamanders, slugs, brutes, beetles, the drake, Vulk.
+- **Frost (11):** crabs, frost wolves, rimehorns, ice wraiths, the troll, Isolde and others.
+- **Venom (9):** spiders, leeches, rootlings, hollows, Mab and others.
+- **Shadow (7):** shades, banshees, witchlings, voidlings, Malgrim and others.
+- **None (17):** goblins, hexlings, archers and the like.
+
+**The plan:**
+- **A foe's blows carry its element.** Its `resist` element (or a new `element` field, where those should differ) tags its hits, shots and danger zones. Foes with none stay physical.
+- **An element gem in armour resists that element:**
+  - Chipped 6%, Clear 10%, Flawless 15%, Royal 20% less damage from it.
+  - It stacks across the head, body and off-hand, capped at 50%.
+  - It also shortens that element's status by the same share: Burn (fire), Chill (frost), Poison (venom), Weaken (shadow).
+- **The gems tab shows it:** "+6% FIRE RESIST" in place of today's "NO EFFECT IN ARMOUR". Gear stats show the total per element.
+- **Places that give it purpose:**
+  - Cinderreach (fire) and Frosthelm (frost) already have heat and cold to prepare for, so resistance fits the "come prepared" idea.
+  - Mistfen and Gloamwood are venom and shadow.
+  - Gem drops could lean toward the region's counter-element.
+
+**Two gems have no foes to resist:**
+- **Storm** (no foe is storm): either make some foes storm (sentinels, gargoyles, warlocks' bolts and brutes already look electric), or have storm in armour give something else, such as a short slow on whoever hits you.
+- **Sun** (light; no foe is light, and shades are weak to it): in armour it could resist shadow (light against dark), which would make shadow the one element with two counters, or it could boost healing received.
+- My recommendation: make sentinels, gargoyles and warlocks storm, and let sun armour resist shadow.
+
+**Checks when built:**
+- Damage taken from tagged foes drops by the gem's share, and never past 50%.
+- Status durations shorten.
+- The fight bench with no gems socketed is unchanged.
+- One bench pass with the party wearing fire resistance against the fire foes.
 
 ### Wardrobe (cosmetic)
 - **Any look you've ever owned** can be shown over your current gear, slot by slot. This is cheap to do with the paper-doll baker, and it lets players keep a favourite look.
@@ -1847,3 +1923,4 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 | 2026-10-23 | **How the main game's content scales: the dense Vast.** Asked how Aldermere's extra content (it was still a little slower per frame than the 40x Vast) would scale on a map that size. Built `?map=vast40d`: the 40x Vast plus Aldermere's people and collectibles at Aldermere's density (1,769 golden flies, 1,669 errand-style people, 879 cursed townsfolk, 355 shrines, 3,415 blight patches, 8,080 tappable things). **Before:** it took **164 s to load** (161 s building landmarks) and 4.5 ms a frame (walking worst 10.3 ms) with 14,809 objects in the scene. **The load:** `townsfolkHomes` checked every person's spot and every home already given out for every tile it tried, for every townsperson (cubic), and ran for all of them though only the rescued need a home; `buildBlight` checked every camp, person, sign and chest at every sample (quadratic). Both now paint those rings into a grid once, and homes are only worked out when someone's been rescued (on a generated map, round the start rather than Brightwater's square). Same homes and the same 57 blight patches in Aldermere, checked against the old code. **The frame:** anything more than two chunks past the view and smaller than a chunk is now **parked**: taken out of the display list into a bucket for its chunk (not drawn, sorted, culled or animated), put back as the view comes within a chunk, re-filed once a second if it moved and dropped if destroyed. It stays alive, so the errands and townsfolk that hold it keep working (a far townsperson and Old Tam both came back animating with their markers and could be talked to). `bake.js` counts parked objects as using their textures. Plus: warps keep their own list (updateWarps walked every tappable thing), campfires are tested by distance before their flag key is built, flies are only checked near the leader, and the HUD's minimap asks only for markers round its window. **After:** dense 40x loads in 3.5 s, 1.6 ms a frame, walking 1.6 ms (worst 5.3), 386 objects drawn with 14,472 parked. Aldermere: 2.2 s, 1.3 ms, walking 1.6 ms (worst 4.7), 606 drawn and 866 parked. 40x: 3.1 s, 1.3 ms, walking 1.1 ms. map-test, the Undercroft walkthrough and the staged ambush test all pass |
 | 2026-10-23 | **The leader fights on without orders.** Playtest: "my lead hero should continue with his normal attack against nearby enemies in his range. Only I should be able to click his specials... it's odd that he just sits like a bump on a log." Left without an order, the leader only fought back against a foe hitting him from close by, and only if melee: a ranged leader (Pip, Wren) never fired, and nobody helped with foes on their friends. Now an idle leader keeps up their basic attack on the nearest foe already in the fight within their own reach (a ranged leader if the shot is clear). They never walk anywhere for it and never use a skill or ultimate, and never pick a foe still asleep, an errand's set piece, the Ward Stone or a wall. A melee leader still steps in at a foe hitting them from just out of reach. New `tools/leader-test.js` (pack map, no orders at all): Brann 4 swings, Pip 8 shots, 0 skills, each moved ~12 px, pack beaten. Quill's staged ambush is not set off by an idle party beside it. Fight bench (it orders the leader itself, so this is a no-regression check): damage taken 223.5 and 224.9, dealt 882 and 936, against 210-220 and 925-956 for today's earlier runs; the bench varies that much between identical runs. The title's THE VAST button now opens the dense 40x map |
 | 2026-10-23 | **A melee leader steps in.** Playtest: walking to attack is fine "if it's in a tight range. Melee has to walk. Archer doesn't." An idle melee leader now also steps in at a foe already in the fight up to `LEADER_STEP_IN` (40 px, about two and a half tiles) past their reach, along a clear line. They use an attack order marked as their own, and drop it if the foe backs off more than that. A ranged leader still only shoots what's in range and never moves. `tools/leader-test.js` (no orders but the leader's own step-ins): Brann 9 swings (4 before) and the pack down in 7 s instead of 20, Sable 9, Pip 4 shots having moved 7 px; nobody uses a skill; a foe in the fight set down 8 tiles away isn't followed by any of them. Quill's staged ambush is still not set off |
+| 2026-10-24 | **Housekeeping: the bench gets its own map, the Cave walkthrough is reliable, docs and guide caught up.** **Fight bench on a test map:** `src/data/maps/bench.json` copies the Undercroft's open hall and tight pillared vault tile for tile (doors walled, push blocks left solid), with the party and foe spots in the same places in each room, stamped in the Vale so foes come out at the party's level as in the lab. `tools/evade-bench.js` `start()` now opens it with the lab's own party (`Title.labParty()`, shared with `enterLab`); `start(20, 2, 'lab')` still runs in the lab. New baseline, two runs: damage taken 233.8 and 229.7, dealt 976 and 1,017 (about 4% apart; the lab's runs today were 210-225 taken and 882-956 dealt, so it isn't comparable with older lab numbers). **Cave walkthrough** (`dungeon-walk.js` `cave()`): the "hit switch" check failed about one run in three because Pip or Sable, fighting the cave's foes beside the switch, caught the crystal with a stray spell or knife and flipped it back (switches react to any hit, by design). The check now clears the foes near the switch and holds the party still while it tests the switch: 5 runs out of 5 pass. **Docs:** AGENTS.md, CONTRIBUTING.md and the README now carry never-again rule 14, `tools/perf.js`, `leader-test.js`, `staged-test.js` and the dense Vast; the stale "13 s for Aldermere" is corrected. **Guide:** the performance section's world-build and off-screen cards are up to date, with new cards for the bigger-map rule (the 40x map at ~1.6 ms a frame), drawing once (the barrier's 64,000 commands) and reusing buffers (0.2 ms a path search), and a profiling line in the testing section. **Plans written, not built:** saves for separate maps (§13) and armour gem resistance (Enchanter) |
