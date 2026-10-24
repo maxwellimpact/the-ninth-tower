@@ -1652,6 +1652,9 @@ export class Game extends Phaser.Scene {
       audio.sfx('click');
       return;
     }
+    // a tap on dropped gear: it comes to the leader (a foe beside it is still attacked first, above)
+    const loot = this.loot.filter((l) => !l.dead && !l.flying).sort((a, b) => Math.hypot(a.s.x - wx, a.s.y - wy) - Math.hypot(b.s.x - wx, b.s.y - wy))[0];
+    if (loot && Math.hypot(loot.s.x - wx, loot.s.y - wy) < 14) { this.pullLoot(loot); return; }
     // tapped right on something that won't break yet: say so, then treat the tap as a move
     const shut = this.breakables.find((b) => b.alive && b.breakableNow && !b.breakableNow() && Math.hypot(b.x - wx, b.y - 8 - wy) < 12);
     if (shut && this.time.now > (this.shutHintT || 0)) { this.shutHintT = this.time.now + 2500; this.bark(L, "IT WON'T BUDGE. WE'D NEED SOMETHING FAR STRONGER THAN A BLADE."); }
@@ -2567,17 +2570,32 @@ export class Game extends Phaser.Scene {
     for (const l of this.loot) {
       l.t += dt;
       if (l.t < 0.6) continue;
+      if (l.flying) continue;
       const h = this.party.find((p) => !p.downed && Math.hypot(p.x - l.x, p.y - l.y) < 16);
-      if (!h) continue;
-      l.dead = true;
-      l.s.destroy(); this.tweens.killTweensOf(l.beam); l.beam.destroy();
-      gainItems(this.state, [l.id]);
-      audio.sfx('chest');
-      this.fx.burst('gold', l.x, l.y - 6, 14);
-      this.events.emit('loot', { ids: [l.id] });
-      this.autosave('loot');
+      if (h) this.takeLoot(l, l.x, l.y);
     }
     this.loot = this.loot.filter((l) => !l.dead);
+  }
+
+  takeLoot(l, x, y) {
+    l.dead = true;
+    this.tweens.killTweensOf(l.s); l.s.destroy(); this.tweens.killTweensOf(l.beam); l.beam.destroy();
+    gainItems(this.state, [l.id]);
+    audio.sfx('chest');
+    this.fx.burst('gold', x, y - 6, 14);
+    this.events.emit('loot', { ids: [l.id] });
+    this.autosave('loot');
+  }
+
+  // Tapped loot flies to the leader, as coins do, instead of the party walking over to it.
+  pullLoot(l) {
+    l.flying = true;
+    this.tweens.killTweensOf(l.s); this.tweens.killTweensOf(l.beam);
+    l.beam.setVisible(false);
+    this.tapFeedback(l.s.x, l.s.y + 6, 'ringGold', { sprite: l.s });
+    audio.sfx('click');
+    const L = this.leader;
+    this.tweens.add({ targets: l.s, x: L.x, y: L.y - 10, duration: 260, ease: 'Quad.easeIn', onComplete: () => { if (!l.dead) this.takeLoot(l, this.leader.x, this.leader.y); } });
   }
 
   // The level (stats, full health) counts at once; the celebration waits until
