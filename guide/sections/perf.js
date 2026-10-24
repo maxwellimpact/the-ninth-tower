@@ -5,13 +5,16 @@ import { frameStats, animate, demoCount } from '../lib/loop.js';
 import { heroFrames } from '../lib/pixels.js';
 
 const CARDS = [
-  { k: 'build', title: 'Build the world once, off the main thread', body: 'The 512 × 320 map is generated from noise and a list of roads and landmarks. On this page a worker builds it while the opening scene waits, then keeps a copy for your next visit. (The game currently builds it twice, once per thread: a known cost, parked for now.)' },
+  { k: 'build', title: 'Build the world once, off the main thread', body: 'The 512 × 320 map is generated from noise and a list of roads and landmarks. On this page a worker builds it while the opening scene waits, then keeps a copy for your next visit. The game builds it on both threads, in about 0.3 s each. That used to be nearly 4 s: each tile asked which region it was in several times over, measuring itself against every road and landmark. Now each tile is worked out once, and only against what’s near it.' },
   { k: 'paint', title: 'Paint only what’s near', body: 'Terrain is painted per 256 px chunk in a worker, four at a time, nearest first. Chunks beyond the unload radius are freed, and at most 40 exist, so terrain never needs more than about 10 MB.' },
   { k: 'bake', title: 'Bake, don’t pose', body: 'Posing a puppet is too slow for every frame, so each hero is baked into one sheet when their gear changes. In play, a hero costs one sprite draw.' },
   { k: 'slice', title: 'Load in 12 ms slices', body: 'Generators run in slices that leave room for the frame, yielding through a MessageChannel. Region art loads only as the party approaches it.' },
   { k: 'res', title: 'Few pixels, scaled whole', body: 'A phone in landscape shows about 422 × 196 game pixels, scaled up by a whole number so every pixel stays square. Fewer pixels means less to fill each frame.' },
   { k: 'music', title: 'Music scheduled ahead', body: 'The sequencer queues notes 150 ms ahead on a 25 ms timer, so a busy frame never makes the music stumble, and it skips voices in silent layers.' },
-  { k: 'cull', title: 'Nothing off screen costs a frame', body: 'Props, sparkles and enemy groups spawn and despawn with their chunks. This page does the same: a demo only animates while you can see it.' },
+  { k: 'cull', title: 'Nothing off screen costs a frame', body: 'Props, chests, campfires and enemy packs spawn and despawn with their chunks. Anything else far off is parked: taken out of the scene but kept alive, and put back as you approach. Animations and endless tweens off screen pause. This page does the same: a demo only animates while you can see it.' },
+  { k: 'scale', title: 'Nothing costs more on a bigger map', body: 'The rule, checked on the Vast: a generated map 40 times the size, with the main game’s people and pickups at the same density. It loads in about 3.5 s and costs about the same per frame as the main map. Before the rule it took 164 s to load, because two setup steps compared everything with everything.' },
+  { k: 'draw', title: 'Draw once, not every frame', body: 'Vector drawings are rebuilt by the GPU every frame and are never skipped off screen. The Tower’s barrier was 64,000 of those commands, half of every frame anywhere on the map. It’s now drawn once into a texture.' },
+  { k: 'reuse', title: 'Reuse, don’t reallocate', body: 'Every path search used to allocate scratch arrays the size of the whole map. They’re reused now, stamped per search, with the same paths. On the 40× map a search went from 9 ms to 0.2 ms.' },
 ];
 
 export function mount(el) {
@@ -32,6 +35,9 @@ export function mount(el) {
   set('slice', '12', 'ms per slice');
   set('res', '422 × 196', 'game pixels');
   set('music', '150', 'ms lookahead');
+  set('scale', '40×', 'the size of the main map, at ~1.6 ms a frame');
+  set('draw', '64,000', 'drawing commands a frame, before');
+  set('reuse', '0.2', 'ms a path search on the 40× map');
   const t0 = performance.now(); heroFrames('kesh'); const bake = performance.now() - t0;
   set('bake', bake.toFixed(0), 'ms to bake 81 frames');
   const graph = el.querySelector('.pf-graph'), g = graph.getContext('2d'), live = el.querySelector('.pf-live .pf-num b');

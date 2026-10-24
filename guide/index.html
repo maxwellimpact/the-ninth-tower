@@ -154,6 +154,7 @@
     <p class="num" data-px="11"></p>
     <h2>Fitting in a phone</h2>
     <p>The budget is a mid-range phone in landscape. Most of the tricks are about doing work once, off the main thread, or not at all.</p>
+    <p>One rule covers a lot of it: nothing should cost more because the map is bigger. Per-frame work only touches what’s near you, and everything else waits, parked, until you come close. It’s checked on a generated map 40 times the size of the main one.</p>
   </div>
   <figure class="demo wide" id="demo-perf"></figure>
 </section>
@@ -163,6 +164,7 @@
     <p class="num" data-px="12"></p>
     <h2>How changes are proven</h2>
     <p>Playtests find the bugs; scripts make sure they stay found. The test tools run inside the live game from the browser console: one plays every errand start to finish, one walks every dungeon to its boss, one checks that everything and everyone in a region can be reached on foot.</p>
+    <p>Speed is measured too. A profiler steps the game and times each frame, split into logic and drawing, on the main map and on the 40× map.</p>
     <p>Combat changes are measured, not eyeballed. The old code runs twice first, to see how much the numbers wobble on their own, and only then the new code. Every bug that shipped once becomes a "never-again" rule in the design doc, with a check that catches it next time.</p>
   </div>
   <figure class="demo wide" id="demo-testing"></figure>

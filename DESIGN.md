@@ -440,7 +440,7 @@ Small maps for trying one thing in isolation (an enemy, a system, a demo), and f
   - `start`: where the party appears.
   - `content`: the map's own things, in the same shape as world.json's lists (`campfires`, `groups`, `chests`, `npcs`…), in the map's own coordinates. `questNpcs` and `errands` are its own people and errands.
 - **How it works:**
-  - The map is stamped into an otherwise solid grid of the usual size, so everything sized to the world works unchanged: navigation, the minimap, streaming and save bits. Building it costs next to nothing (about 2.7 s to playable, against 13 s for Aldermere on the test machine).
+  - The map is stamped into an otherwise solid grid of the usual size, so everything sized to the world works unchanged: navigation, the minimap, streaming and save bits. Building it costs next to nothing. (In 2026-10-21 it was 2.7 s to playable against 13 s for Aldermere; since the 2026-10-23 load fixes Aldermere is about 2.2 s too, so test maps are no longer much quicker to open, just isolated.)
   - `world/content.js` serves world.json and quests.json, or the test map's content in their place. Every list of things is swapped, and the settings (regions' level bands, the shop, bosses' tuning) are kept.
 - **Where it's stamped decides its rules:** grass colours, music, heat and cold, and the enemy level band all come from the region at `at`.
 - **Left out:**
