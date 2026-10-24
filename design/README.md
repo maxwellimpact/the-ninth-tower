@@ -28,14 +28,13 @@ doesn't count.
 | [progression.md](progression.md) | The whole game in order (C10), Brightwater's rebuild and services (C9) |
 | [art-audio.md](art-audio.md) | Art, animation and the code-generated audio |
 | [production.md](production.md) | Milestones, and the art and data counts the full build needs (C11) |
-| [tech.md](tech.md) | Tech plan, the web prototype, test maps, the Vast, profiling, the iOS port |
+| [tech.md](tech.md) | Tech plan, the web prototype, test maps, saves for separate maps, the Colosseum, the Vast, profiling, the iOS port |
 | [open-questions.md](open-questions.md) | Questions still open, and known prototype shortcuts |
 
 ## Plans (written, not built)
 
 | File | What it is |
 |---|---|
-| [plans/saves.md](plans/saves.md) | Saves for separate maps: none, own (clearable) or shared with the main game |
 | [plans/armour-gems.md](plans/armour-gems.md) | Element gems in armour resist that element |
 
 When a plan is built, fold it into its topic file and delete it from `plans/`.

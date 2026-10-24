@@ -40,6 +40,11 @@ the rule, the check) as well as fixing it.
   they're used, not into a constant at load: a test map swaps them. Anything
   Aldermere has that's placed in code (not listed in those files) checks `MAP`
   and stays off test maps.
+- **Saving goes by the map.** Each map's `save` (`none`, `own` or `shared`) decides
+  where `autosave` writes; never write a save any other way. Progress that
+  belongs to a place (flags, packs, lore, flies) lives in the world's fields,
+  so a shared map keeps it apart from Aldermere's. See "Saves for separate
+  maps" in [design/tech.md](design/tech.md).
 - **Nothing costs more because the map is bigger** (never-again rule 14).
   - Per-frame and per-check work only touches what's near the camera or the party.
   - Anything shown in the world is built with its chunk (`lazy()`, `spawnChunk`) or near the screen.
@@ -68,7 +73,8 @@ the rule, the check) as well as fixing it.
   - `tools/region-check.js`: reachability of everything in a region.
   - `tools/people-check.js`: everyone on dry land and reachable.
   - `tools/map-test.js`: integration tests on small test maps
-    (`src/data/maps`), away from the main map. Use a test map to try a new enemy
+    (`src/data/maps`), away from the main map, and the saves: a map's own
+    save, travelling to a shared map and back, an old save, the Colosseum. Use a test map to try a new enemy
     or system in isolation: open one with `?map=<id>`.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
     Launch with `evade-bench.js`'s `start()` from the title screen (it seeds
