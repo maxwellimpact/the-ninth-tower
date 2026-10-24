@@ -1,0 +1,80 @@
+{
+ "name": "THE TRIAL ROAD",
+ "sub": "A TEST MAP WITH ITS OWN SAVE",
+ "note": "An example of a map that keeps a save of its own (save: own): it starts with a fresh party of its own (party), never the main save's, saves under its own key, and can be cleared from the title's SAVED MAPS list. Open it with ?map=trial. For tools/map-test.js (own-save). Stamped in the Vale.",
+ "save": "own",
+ "party": {
+  "leader": "brann",
+  "recruited": [
+   "pip",
+   "sable"
+  ],
+  "level": 1
+ },
+ "at": [
+  40,
+  18
+ ],
+ "start": [
+  4,
+  9
+ ],
+ "rows": [
+  "TbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTT",
+  "b................................b",
+  "T................................T",
+  "b................................b",
+  "T...........o...............f....T",
+  "b................................b",
+  "T................................T",
+  "b................................b",
+  "T................................T",
+  "b===@============================b",
+  "T................................T",
+  "b................................b",
+  "T..............f.................T",
+  "b.......o........................b",
+  "T........................o.......T",
+  "b................................b",
+  "T................................T",
+  "bbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTb"
+ ],
+ "content": {
+  "groups": [
+   {
+    "id": "tr1",
+    "units": [
+     [
+      "goblin",
+      22,
+      8
+     ],
+     [
+      "goblin",
+      23,
+      10
+     ]
+    ]
+   }
+  ],
+  "chests": [
+   {
+    "id": "trial",
+    "x": 29,
+    "y": 4,
+    "items": [],
+    "gold": 40,
+    "mats": {
+     "herb": 2
+    }
+   }
+  ],
+  "campfires": [
+   {
+    "x": 6,
+    "y": 8,
+    "name": "THE TRIAL ROAD"
+   }
+  ]
+ }
+}

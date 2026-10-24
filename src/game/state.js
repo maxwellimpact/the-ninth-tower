@@ -138,21 +138,60 @@ export const switchCost = (hs, disc) => DISCIPLINES[disc].cost + (hs.disc ? 15 *
 // Rank multiplier: +15% per rank above 1.
 export const rankMul = (rank) => 1 + Math.max(0, rank - 1) * tuning.skillRankBonus;
 
-export function saveState(state) {
+// ------------------------------------------------------------------ worlds
+// A map says how it saves (`save` in its definition; design/tech.md, "Saves
+// for separate maps"): 'none' never saves (test and profiling maps), 'own'
+// keeps a save of its own under its own key, which can be cleared, and
+// 'shared' is part of the main game: one party everywhere, with each map's
+// own world progress kept beside Aldermere's.
+// The main save keeps Aldermere's world at the top level, as it always has
+// (so it reads as before, in older builds too), and each shared map's world
+// under worlds[id]. In play, the world the party is in sits at the top level,
+// and state.world names it when it isn't Aldermere.
+export const HOME = 'aldermere';
+export const WORLD_KEYS = ['map', 'flags', 'cleared', 'respawn', 'pos', 'explored', 'exploredW', 'lore', 'flies', 'flyRewards', 'quests', 'tracked'];
+// the few flags that are the party's story, not a place's: they go where the party goes
+export const PARTY_FLAGS = ['blessing', 'postgame', 'malgrimDefeated'];
+export const ownSaveKey = (mapId) => `${SAVE_KEY}.map.${mapId}`;
+const BACKUP_KEY = `${SAVE_KEY}.bak`;
+
+// Move the party into another world: the one it leaves is folded into
+// worlds[], the one it enters comes out to the top level (fresh, the first time).
+export function switchWorld(st, id) {
+  const from = st.world || HOME;
+  if (from === id) return st;
+  st.worlds ??= {};
+  const left = {};
+  for (const k of WORLD_KEYS) if (k in st) { left[k] = st[k]; delete st[k]; }
+  st.worlds[from] = left;
+  Object.assign(st, { flags: {}, cleared: {}, respawn: {}, pos: null, lore: [], flies: [], flyRewards: 0, quests: {}, tracked: null }, st.worlds[id]); // (anything a world never had starts empty)
+  delete st.worlds[id];
+  for (const f of PARTY_FLAGS) if (left.flags && f in left.flags) st.flags[f] = left.flags[f];
+  st.map = id === HOME ? null : id;
+  if (id === HOME) delete st.world; else st.world = id;
+  return st;
+}
+// another world's progress, to read and never write (its flags, flies, lore...)
+export const worldOf = (st, id) => ((st.world || HOME) === id ? st : st.worlds?.[id] || null);
+
+export function saveState(state, key = SAVE_KEY) {
   try {
     state.savedAt = new Date().toISOString();
-    const json = JSON.stringify(state);
-    cloudBackup(json, state.savedAt); // the Claude app can wipe localStorage, so keep a copy
-    localStorage.setItem(SAVE_KEY, json);
+    // on disk, Aldermere is always at the top level
+    const json = JSON.stringify(state.world ? switchWorld(JSON.parse(JSON.stringify(state)), HOME) : state);
+    // the first save this build makes keeps a copy of the save it replaces, once
+    if (key === SAVE_KEY) try { if (!localStorage.getItem(BACKUP_KEY)) { const old = localStorage.getItem(SAVE_KEY); if (old) localStorage.setItem(BACKUP_KEY, old); } } catch { /* storage full or blocked: carry on */ }
+    cloudBackup(key, json, state.savedAt); // the Claude app can wipe localStorage, so keep a copy
+    localStorage.setItem(key, json);
     return true;
   } catch { return false; }
 }
 
-export function loadState() {
+export function loadState(key = SAVE_KEY) {
   try {
     let raw = null;
-    try { raw = localStorage.getItem(SAVE_KEY); } catch { /* storage blocked */ }
-    raw ||= cloudCopy();
+    try { raw = localStorage.getItem(key); } catch { /* storage blocked */ }
+    raw ||= cloudCopy(key);
     if (!raw) return null;
     const s = JSON.parse(raw);
     if (!s || s.version !== 1) return null;
@@ -190,7 +229,7 @@ export function freshFor(state, heroId, kind) {
   return (state.fresh || []).filter((id) => state.inventory.includes(id) && items[id] && (!kind || (items[id].slot === kind)) && (items[id].slot === 'trinket' || items[id].hero === heroId));
 }
 
-export function clearSave() { cloudClear(); try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ } }
+export function clearSave(key = SAVE_KEY) { cloudClear(key); try { localStorage.removeItem(key); } catch { /* ignore */ } }
 
 export const heroInfo = (id) => heroData.find((h) => h.id === id);
 

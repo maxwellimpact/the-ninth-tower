@@ -1,0 +1,104 @@
+{
+ "name": "THE COLOSSEUM",
+ "sub": "ENDLESS WAVES - FIGHT UNTIL YOU FALL",
+ "note": "A shared map of the main game (save: shared): the main save's party fights wave after wave until it falls (game/colosseum.js). What the party gains here (XP, gold, gear) is the main save's; the best run is the Colosseum's own. Opened from the title screen. Stamped in the Vale.",
+ "save": "shared",
+ "at": [
+  40,
+  14
+ ],
+ "start": [
+  21,
+  22
+ ],
+ "legend": {
+  "P": [
+   "SAND",
+   "rock",
+   {
+    "big": true
+   }
+  ]
+ },
+ "arena": {
+  "gates": [
+   [
+    21,
+    3
+   ],
+   [
+    4,
+    13
+   ],
+   [
+    39,
+    13
+   ],
+   [
+    9,
+    6
+   ],
+   [
+    34,
+    6
+   ]
+  ],
+  "levelStart": 1,
+  "levelPerWave": 1,
+  "maxFoes": 10,
+  "prizeEvery": 5,
+  "rest": 3
+ },
+ "rows": [
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+  "wwwwwwwwwwwwwwppppppppppppppppwwwwwwwwwwwwww",
+  "wwwwwwwwwwwppp::::::::::::::::pppwwwwwwwwwww",
+  "wwwwwwwwppp::::::::::::::::::::::pppwwwwwwww",
+  "wwwwwwppp::::::::::::::::::::::::::pppwwwwww",
+  "wwwwwpp::::::::::::::::::::::::::::::ppwwwww",
+  "wwwwpp::::::::::::::::::::::::::::::::ppwwww",
+  "wwwpp::::::::::::::::::::::::::::::::::ppwww",
+  "wwpp::::::::P::::::::::::::::::P::::::::ppww",
+  "wwp::::::::::::::::::::::::::::::::::::::pww",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wpp::::::::::::::::::::::::::::::::::::::ppw",
+  "wwp::::::::::::::::::::::::::::::::::::::pww",
+  "wwpp::::::::P::::::::::::::::::P::::::::ppww",
+  "wwwpp::::::::::::::::::::::::::::::::::ppwww",
+  "wwwwpp::::::::::::::::::::::::::::::::ppwwww",
+  "wwwwwpp::::::::::::::::::::::::::::::ppwwwww",
+  "wwwwwwppp::::::::::::::::::::::::::pppwwwwww",
+  "wwwwwwwwppp::::::::::::::::::::::pppwwwwwwww",
+  "wwwwwwwwwwwppp::::::::::::::::pppwwwwwwwwwww",
+  "wwwwwwwwwwwwwwppppppppppppppppwwwwwwwwwwwwww",
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+ ],
+ "content": {
+  "campfires": [
+   {
+    "x": 25,
+    "y": 23,
+    "name": "THE COLOSSEUM"
+   }
+  ],
+  "warps": [
+   {
+    "x": 21,
+    "y": 24,
+    "to": {
+     "x": 21,
+     "y": 24
+    },
+    "toMap": null,
+    "stairs": true,
+    "label": "TO ALDERMERE"
+   }
+  ]
+ }
+}

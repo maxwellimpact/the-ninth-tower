@@ -6,10 +6,10 @@ const STARTERS = ['brann', 'pip', 'sable', 'wren'];
 const HEROES = ALL_HEROES.filter((h) => STARTERS.includes(h.id));
 import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
-import { newState, loadState, clearSave, newSkillState, skillDef } from '../game/state.js';
+import { newState, loadState, clearSave, newSkillState, skillDef, ownSaveKey, switchWorld } from '../game/state.js';
 import { cloudStatus } from '../game/cloudsave.js';
 import { dungeonStart } from '../game/dungeon.js';
-import { mapDef } from '../world/content.js';
+import { mapDef, saveMode, ownMapIds } from '../world/content.js';
 import { makeItem, tierForLevel } from '../game/itemgen.js';
 
 // Title + "choose your starting hero" (the other two join as first recruits).
@@ -116,10 +116,14 @@ export class Title extends Phaser.Scene {
     return st;
   }
 
-  // The deep-link sandboxes. They never read or write the real save.
+  // The deep-link sandboxes. They never read or write a save (a map that
+  // saves goes to enterOwn or enterShared instead).
   startDemo(kind, mapId = null) {
     if (kind === 'boss') { this.enterLab('undercroft'); return; }
     if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40d'; } // the title's button: forty times Aldermere, dense with its people and pickups (?map=vast40 plain, ?map=vast ten times)
+    // ?map= on a map that saves: its own save, or the main game's party (never a throwaway demo)
+    if (kind === 'map' && mapId && saveMode(mapId) === 'own') { this.enterOwn(mapId); return; }
+    if (kind === 'map' && mapId && saveMode(mapId) === 'shared') { this.enterShared(mapId); return; }
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
@@ -147,36 +151,104 @@ export class Title extends Phaser.Scene {
     this.enterWorld(st);
   }
 
+  // a framed menu button, centred on x; returns its objects (to destroy)
+  button(x, y, w, label, sub, fn) {
+    const g = this.add.graphics(), x0 = Math.round(x - w / 2);
+    const draw = (hot) => { g.clear().fillStyle(0x1a1423).fillRect(x0 - 1, y - 1, w + 2, 26).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(x0, y, w, 24).fillStyle(0x2b2140).fillRect(x0 + 1, y + 1, w - 2, 22); };
+    draw(false);
+    const t1 = this.add.bitmapText(x, y + 7, 'fontGold', label).setOrigin(0.5);
+    const t2 = this.add.bitmapText(x, y + 16, 'fontPlain', sub).setOrigin(0.5);
+    for (const t of [t1, t2]) if (t.width > w - 6) t.setScale((w - 6) / t.width); // never spill past the button
+    const z = this.add.zone(x0, y, w, 24).setOrigin(0).setInteractive({ useHandCursor: true });
+    z.on('pointerover', () => draw(true)); z.on('pointerout', () => draw(false));
+    z.on('pointerdown', fn);
+    return [g, t1, t2, z];
+  }
+
   saveMenu(save) {
     const W = this.scale.width;
     const objs = [];
     const lead = save.heroes[save.leader];
     const mins = Math.floor(save.playTime / 60);
-    const bw = Math.min(180, W - 16), bh = bw / 2;
-    const opt = (y, label, sub, fn) => {
-      const g = this.add.graphics();
-      const draw = (hot) => { g.clear().fillStyle(0x1a1423).fillRect(W / 2 - bh - 1, y - 1, bw + 2, 26).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(W / 2 - bh, y, bw, 24).fillStyle(0x2b2140).fillRect(W / 2 - bh + 1, y + 1, bw - 2, 22); };
-      draw(false);
-      const t1 = this.add.bitmapText(W / 2, y + 7, 'fontGold', label).setOrigin(0.5);
-      const t2 = this.add.bitmapText(W / 2, y + 16, 'fontPlain', sub).setOrigin(0.5);
-      if (t2.width > bw - 6) t2.setScale((bw - 6) / t2.width); // never spill past the button
-      const z = this.add.zone(W / 2 - bh, y, bw, 24).setOrigin(0).setInteractive({ useHandCursor: true });
-      z.on('pointerover', () => draw(true)); z.on('pointerout', () => draw(false));
-      z.on('pointerdown', fn);
-      objs.push(g, t1, t2, z);
-    };
-    opt(80, 'CONTINUE', `${save.leader.toUpperCase()} LV${lead.level} - ${save.recruited.length} HEROES - ${mins}M`, () => {
+    const bw = Math.min(180, W - 16);
+    objs.push(...this.button(W / 2, 80, bw, 'CONTINUE', `${save.leader.toUpperCase()} LV${lead.level} - ${save.recruited.length} HEROES - ${mins}M`, () => {
       audio.init(); audio.sfx('levelUp');
       this.cameras.main.fadeOut(500, 10, 6, 20);
       this.time.delayedCall(520, () => this.enterWorld(save));
-    });
-    opt(112, 'NEW GAME', 'START OVER', () => {
+    }));
+    objs.push(...this.button(W / 2, 112, bw, 'NEW GAME', 'START OVER', () => {
       audio.init(); audio.sfx('click');
       for (const o of objs) o.destroy();
       this.showLabLink(true);
       this.heroSelect();
+    }));
+    // the Colosseum (part of the main game: this party, its gains kept) and the Vast (never saved), side by side
+    const rw = Math.min(250, W - 16), hw = (rw - 6) / 2;
+    objs.push(...this.button(W / 2 - hw / 2 - 3, 144, hw, 'THE COLOSSEUM', 'ENDLESS WAVES', () => this.enterShared('colosseum')));
+    objs.push(...this.button(W / 2 + hw / 2 + 3, 144, hw, 'THE VAST', '40X WORLD - NOT SAVED', () => this.startDemo('vast')));
+    // maps with saves of their own: a corner button to their list
+    const own = ownMapIds().filter((id) => loadState(ownSaveKey(id)));
+    if (own.length) objs.push(...this.button(Math.max(50, W / 2 - bw / 2 - 52), 31, 92, 'SAVED MAPS', `${own.length} MAP${own.length > 1 ? 'S' : ''}`, () => { for (const o of objs) o.destroy(); this.mapsMenu(save); }));
+  }
+
+  // Maps that keep saves of their own, each with CONTINUE and CLEAR (tap
+  // CLEAR twice: it wipes that map's save here and in the cloud, nothing else).
+  mapsMenu(save) {
+    const W = this.scale.width;
+    const objs = [];
+    const back = () => { for (const o of objs) o.destroy(); this.saveMenu(save); };
+    const own = ownMapIds().map((id) => [id, loadState(ownSaveKey(id))]).filter(([, st]) => st);
+    if (!own.length) { back(); return; }
+    objs.push(this.add.bitmapText(W / 2, 62, 'font', 'MAPS WITH THEIR OWN SAVES').setOrigin(0.5));
+    const bw = Math.min(150, (W - 22) / 2);
+    own.slice(0, 3).forEach(([id, st], i) => {
+      const y = 76 + i * 30, d = mapDef(id);
+      objs.push(...this.button(W / 2 - bw / 2 - 3, y, bw, d.name, `LV${st.heroes[st.leader].level} - ${Math.floor(st.playTime / 60)}M - CONTINUE`, () => this.enterOwn(id)));
+      let sure = false;
+      const clr = this.button(W / 2 + bw / 2 + 3, y, bw, 'CLEAR', 'WIPE THIS MAP\'S SAVE', () => {
+        audio.init(); audio.sfx('click');
+        if (!sure) { sure = true; clr[1].setText('TAP AGAIN TO CLEAR'); clr[2].setText('THE MAIN SAVE IS KEPT'); return; }
+        clearSave(ownSaveKey(id));
+        for (const o of objs) o.destroy();
+        this.mapsMenu(save);
+      });
+      objs.push(...clr);
     });
-    opt(144, 'THE VAST', 'A DENSE 40X WORLD FOR PROFILING - NOT SAVED', () => this.startDemo('vast'));
+    objs.push(...this.button(W / 2, 76 + Math.min(3, own.length) * 30, Math.min(120, W - 16), 'BACK', '', back));
+  }
+
+  // A map with a save of its own: carry on where it was left, or start it
+  // fresh, with a party of its own (its `party`: leader, recruited, level),
+  // never the main save's.
+  enterOwn(id) {
+    if (this.leaving) return;
+    this.leaving = true;
+    audio.init(); audio.sfx('levelUp');
+    const d = mapDef(id);
+    let st = loadState(ownSaveKey(id));
+    if (!st) {
+      const p = d.party || {};
+      st = newState(p.leader || 'brann');
+      st.recruited = [...new Set([st.leader, ...(p.recruited || [])])]; st.active = st.recruited.slice(0, 3);
+      for (const h of st.recruited) { const hs = st.heroes[h]; hs.level = p.level || 1; hs.sp = (hs.sp || 0) + hs.level - 1; }
+      st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    }
+    st.map = id;
+    this.cameras.main.fadeOut(500, 10, 6, 20);
+    this.time.delayedCall(520, () => this.enterWorld(st));
+  }
+
+  // A shared map of the main game: the main save's party, in that map's own
+  // world. With no main save there's no party to bring, so nothing happens.
+  enterShared(id) {
+    const save = loadState(), d = mapDef(id);
+    if (!save || !d || this.leaving) return;
+    this.leaving = true;
+    audio.init(); audio.sfx('levelUp');
+    switchWorld(save, id);
+    if (!save.pos || d.arena) save.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 }; // (the Colosseum: every run starts at the gate)
+    this.cameras.main.fadeOut(500, 10, 6, 20);
+    this.time.delayedCall(520, () => this.enterWorld(save));
   }
 
   heroSelect() {

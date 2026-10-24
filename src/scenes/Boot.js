@@ -2,7 +2,8 @@
 // drawn, so "loading" is generation time). Biome sets load lazily in-game.
 import Phaser from 'phaser';
 import { loadGroup } from '../game/assets.js';
-import { SAVE_KEY } from '../game/state.js';
+import { SAVE_KEY, ownSaveKey } from '../game/state.js';
+import { ownMapIds } from '../world/content.js';
 import { cloudRestore } from '../game/cloudsave.js';
 
 export class Boot extends Phaser.Scene {
@@ -36,7 +37,7 @@ export class Boot extends Phaser.Scene {
     };
     draw(0);
     const t0 = performance.now();
-    const restored = cloudRestore(SAVE_KEY); // fetch the cloud save while the art generates
+    const restored = cloudRestore([SAVE_KEY, ...ownMapIds().map(ownSaveKey)]); // fetch the cloud saves (the main one, and each map's own) while the art generates
     Promise.all([loadGroup(this, 'core', (p, name) => draw(p, name), 14), restored]).then(() => {
       console.log(`[boot] core art generated in ${Math.round(performance.now() - t0)}ms`);
       draw(1);

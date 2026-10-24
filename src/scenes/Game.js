@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, Q as QDATA, MAP, useMap, mapRect } from '../world/content.js'; // world.json / quests.json, or a test map's own content
+import { W, Q as QDATA, MAP, useMap, mapRect, mapDef } from '../world/content.js'; // world.json / quests.json, or a test map's own content
 import { chimneyOf, doorOf } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, buildMapWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
@@ -18,7 +18,8 @@ import { DungeonKit, DUNGEONS, dungeonStart } from '../game/dungeon.js';
 import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
-import { saveState, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS, itemName, gemName } from '../game/state.js';
+import { Colosseum } from '../game/colosseum.js';
+import { saveState, switchWorld, ownSaveKey, HOME, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS, itemName, gemName } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
 import KEY_ITEMS from '../data/relics.json';
@@ -137,6 +138,7 @@ export class Game extends Phaser.Scene {
     useMap(st.map || null); // Aldermere, or a test map (src/data/maps): W and QDATA below then mean its content
     st.stats ??= { kills: 0, levelUps: [] };
     this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
+    this.travelling = false; this.colosseum = null;
     this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
@@ -263,14 +265,15 @@ export class Game extends Phaser.Scene {
       music.start(themeFor(this.musicRegion));
       music.setBard(!!this.flags.bard);
       if (curtain.sys.isActive()) curtain.done(); else curtain.events.once('create', () => curtain.done()); // (see teleportParty)
-      if (!st.lab && !st.demo) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints
+      if (!st.lab && !st.demo && !MAP) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints, and the opening lines are about Aldermere
       if (st.demo) this.startDemo(st.demo);
+      if (MAP?.arena) { this.colosseum = new Colosseum(this, MAP.arena, MAP.at); this.colosseum.start(); } // the Colosseum's waves
     });
 
     window.__game = this.game;
     window.__scene = this;
     // free the terrain worker and chunk textures if the scene is ever restarted
-    this.events.once('shutdown', () => { this.streamer?.destroy(); for (const w of this.wards || []) if (w.tex) this.textures.remove(`curseOverlay_${w.def.id}`); });
+    this.events.once('shutdown', () => { this.colosseum?.destroy(); this.streamer?.destroy(); for (const w of this.wards || []) if (w.tex) this.textures.remove(`curseOverlay_${w.def.id}`); });
   }
 
   // ============================================================ streaming
@@ -449,11 +452,11 @@ export class Game extends Phaser.Scene {
     // the party may not exist yet (errand fights rebuilt while the save loads): fall back to the saved levels
     const lv = this.party.length ? this.party.map((h) => h.level) : (this.state.active || [this.state.leader]).map((id) => this.state.heroes[id]?.level || 1);
     const avg = lv.reduce((a, l) => a + l, 0) / lv.length;
-    const [lo, hi] = regionBand(this.state, r);
+    const [lo, hi] = MAP?.band || regionBand(this.state, r); // a map with a band of its own uses it everywhere
     return Phaser.Math.Clamp(Math.round(avg), lo, hi);
   }
 
-  spawnEnemy(kind, x, y, engaged = false, elite = false) {
+  spawnEnemy(kind, x, y, engaged = false, elite = false, level = null) {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
     if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
@@ -465,7 +468,7 @@ export class Game extends Phaser.Scene {
     if (hexborn) elite = true;
     const open = this.nav.nearestOpen(Math.floor(x / TILE), Math.floor(y / TILE));
     if (open && this.nav.isSolid(Math.floor(x / TILE), Math.floor(y / TILE))) { x = open[0] * TILE + 8; y = open[1] * TILE + 8; }
-    const e = new Enemy(this, kind, x, y, { level: this.enemyLevel(x, y) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1)
+    const e = new Enemy(this, kind, x, y, { level: (level ?? this.enemyLevel(x, y)) + (elite ? 2 : 0), elite }); // elites sit 2 levels up (C1); the Colosseum sets each wave's level itself
     if (hexborn) { e.hexborn = true; e.s = { ...e.s, name: `HEXBORN ${e.s.name}` }; e.restoreTint(); }
     if (kind === 'mirror') this.makeMirror(e);
     this.enemies.push(e);
@@ -1371,18 +1374,22 @@ export class Game extends Phaser.Scene {
 
   // ============================================================ darkness (caves)
   buildDarkness() {
-    const [c, ctx] = makeCanvas(128, 128);
-    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-      const d = Math.hypot(x - 64, y - 64) / 64;
-      const a = d < 0.55 ? 1 : d > 1 ? 0 : 1 - (d - 0.55) / 0.45;
-      if (a > 0 && bayer(x, y) < a) { ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 1, 1); }
+    if (!this.textures.exists('lightMask')) { // (made once: the scene restarts when the party travels to another world)
+      const [c, ctx] = makeCanvas(128, 128);
+      for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+        const d = Math.hypot(x - 64, y - 64) / 64;
+        const a = d < 0.55 ? 1 : d > 1 ? 0 : 1 - (d - 0.55) / 0.45;
+        if (a > 0 && bayer(x, y) < a) { ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 1, 1); }
+      }
+      this.textures.addCanvas('lightMask', c);
     }
-    this.textures.addCanvas('lightMask', c);
     this.darkRT = this.add.renderTexture(0, 0, this.scale.width + 2, this.scale.height + 2).setOrigin(0).setScrollFactor(0).setDepth(TOP + 40).setVisible(false);
-    this.scale.on('resize', () => {
+    const onResize = () => {
       if (this.scale.width >= 2 && this.scale.height >= 2) { try { this.darkRT.resize(this.scale.width + 2, this.scale.height + 2); } catch (e) { console.warn('[dark] resize failed', e.message); } } // (never to a zero-sized screen)
       if (this.area) this.fitCameraBounds();
-    });
+    };
+    this.scale.on('resize', onResize);
+    this.events.once('shutdown', () => this.scale.off('resize', onResize)); // a restart's old scene must stop answering
   }
 
   updateDarkness() {
@@ -2272,7 +2279,7 @@ export class Game extends Phaser.Scene {
   }
 
   autosave(reason) {
-    if (this.state.lab || this.state.demo || MAP) return; // the dungeon lab, the deep-link demos and test maps never touch the real save
+    if (this.state.lab || this.state.demo || (MAP && (MAP.save || 'none') === 'none')) return; // the dungeon lab, the deep-link demos and test maps never touch a save
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
     this.state.exploredW = MAP_W; // so a later, wider map still reads it right
@@ -2283,7 +2290,22 @@ export class Game extends Phaser.Scene {
     this.state.pos = { x: Math.round(px0), y: Math.round(py0) };
     for (const h of this.party) h.hs.hp = h.hp;
     this.state.respawn = Object.fromEntries((this.groups || []).filter((g) => g.cleared && !g.active && !(g.once && this.state.cleared[g.id])).map((g) => [g.id, Math.max(0, Math.round(g.deadT))]));
-    if (saveState(this.state)) this.events.emit('saved', reason);
+    if (saveState(this.state, MAP?.save === 'own' ? ownSaveKey(MAP.id) : undefined)) this.events.emit('saved', reason); // a map with a save of its own keeps it apart from the main one
+  }
+
+  // Travel to another world of the main game (a shared map, or back to
+  // Aldermere: id null): save, swap the worlds over and rebuild the scene there.
+  goToWorld(id) {
+    if (this.travelling) return;
+    this.travelling = this.busy = true;
+    this.autosave('travel');
+    // swap the worlds over in a copy: this scene keeps running on its own state until it's gone
+    const next = switchWorld(JSON.parse(JSON.stringify(this.state)), id || HOME);
+    const d = id && mapDef(id);
+    if (d && (!next.pos || d.arena)) next.pos = { x: (d.at[0] + d.start[0]) * TILE + 8, y: (d.at[1] + d.start[1]) * TILE + 8 }; // a first visit (or a new run in the Colosseum): its own start
+    audio.sfx('warp');
+    this.cameras.main.fadeOut(350, 5, 3, 10);
+    this.time.delayedCall(380, () => { window.__loadT0 = performance.now(); this.scene.launch('Loading'); this.time.delayedCall(80, () => this.scene.restart({ state: next })); }); // the curtain gets a frame to draw, as from the title
   }
 
   nextFrame() { return new Promise((r) => this.events.once('postupdate', r)); }
@@ -2619,7 +2641,8 @@ export class Game extends Phaser.Scene {
     this.busy = true;
     this.cameras.main.fadeOut(900, 10, 6, 20);
     this.time.delayedCall(1100, () => {
-      this.state.gold -= Math.floor(this.state.gold * 0.1);
+      if (!this.colosseum) this.state.gold -= Math.floor(this.state.gold * 0.1); // (falling in the Colosseum costs nothing: it's how every run ends)
+      const run = this.colosseum?.onWipe();
       for (const h of this.party) { h.downed = false; h.hp = h.maxHp; h.sprite.setAlpha(1); h.anim = ''; }
       for (const e of this.enemies) if (e.alive) { e.x = e.spawn.x; e.y = e.spawn.y; e.state = 'idle'; e.target = null; e.engaged = false; e.hp = e.maxHp; e.clearZone(); }
       this.dungeon?.onWipe();
@@ -2631,6 +2654,7 @@ export class Game extends Phaser.Scene {
       this.teleportParty({ to: this.respawnCamp() }, () => {
         this.cameras.main.fadeIn(700); this.busy = false;
         if (errands.length) this.time.delayedCall(900, () => this.events.emit('banner', ...this.quests.wipeNote(errands[0])));
+        if (run) { this.events.emit('banner', ...run); this.autosave('run'); this.colosseum.start(4000); }
       }, 0, true);
     });
   }
@@ -2868,6 +2892,7 @@ export class Game extends Phaser.Scene {
     const dk = this.dungeon;
     if (dk?.respawn) return dk.respawn; // lab boss test
     if (this.state.demoAt) return this.state.demoAt; // a deep-link demo: back to its own field
+    if (this.colosseum) return W.start; // the Colosseum: back to the gate for the next run
     if (dk?.camp && (dk.lab || this.flags[`camp_${dk.camp.x}_${dk.camp.y}`])) return { x: dk.camp.x + 2, y: dk.camp.y }; // this dungeon's own fire, once found
     const L = this.leader;
     let fx = L.x / TILE, fy = L.y / TILE;
@@ -3475,6 +3500,7 @@ export class Game extends Phaser.Scene {
   }
 
   warp(w) {
+    if ('toMap' in w) { this.goToWorld(w.toMap); return; } // a way into another world (null: back to Aldermere)
     this.cullNow = true; // the camera jumps: re-cull on the next frame, not up to three later
     if (w.door) { this.doorWarp(w); return; }
     this.busy = true;

@@ -4,9 +4,9 @@
 // The game reads `W` and `Q` from here, not from the JSON files, and they're
 // live bindings: useMap() swaps them before the Game scene builds anything,
 // so every `W.campfires`, `W.groups`, `Q.npcs`… then means the test map's.
-// A test map keeps Aldermere's settings (regions' level bands, the shop, the
-// bosses' tuning) and replaces every list of things in the world with its
-// own, empty unless it lists some. Its coordinates are its own (0,0 is its
+// A test map keeps Aldermere's settings (regions' level bands unless it has a
+// `band` of its own, the shop, the bosses' tuning) and replaces every list of
+// things in the world with its own, empty unless it lists some. Its coordinates are its own (0,0 is its
 // top-left) and are moved to where the map is stamped (`at`).
 //
 // A generated map (world/vast.js: `vast`, `vast40`...) also brings its own
@@ -19,6 +19,10 @@ import { vastDef } from './vast.js';
 const MAPS = Object.fromEntries(Object.entries(import.meta.glob('../data/maps/*.json', { eager: true, import: 'default' })).map(([p, d]) => [p.match(/([^/]+)\.json$/)[1], d]));
 export const mapIds = () => Object.keys(MAPS); // the authored test maps (generated ones are made on request)
 export const mapDef = (id) => MAPS[id] || vastDef(id) || null;
+// How a map saves (its `save`): 'none' (the default for test and profiling
+// maps), 'own' or 'shared'. Aldermere is the main game. See game/state.js, worlds.
+export const saveMode = (id) => (id ? mapDef(id)?.save || 'none' : 'shared');
+export const ownMapIds = () => mapIds().filter((id) => MAPS[id].save === 'own');
 
 export let W = WORLD;
 export let Q = QUESTS;

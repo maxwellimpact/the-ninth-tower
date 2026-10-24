@@ -124,16 +124,19 @@ export class UI extends Phaser.Scene {
     this.speedUp = this.makeButton(null, () => this.g.setSpeed(this.g.speed + 0.05), '', 'FAST', 22);
 
     this.buildPortraits();
-    game.events.on('banner', this.showBanner, this);
-    game.events.on('dialogue', this.openDialog, this);
-    game.events.on('loot', this.showLoot, this);
-    game.events.on('keyItem', this.showKeyItem, this);
-    game.events.on('lore', this.showLore, this);
-    game.events.on('partyChanged', this.buildPortraits, this);
-    game.events.on('boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }, this);
-    game.events.on('saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }, this);
-    game.events.on('loading', (on) => this.loadTxt.setVisible(on), this);
-    this.scale.on('resize', () => this.layout());
+    // what the HUD listens for, taken off again when it shuts down: the Game
+    // scene restarts (travelling to another world) and relaunches the HUD, and
+    // listeners left behind would show every banner twice
+    const subs = [
+      ['banner', this.showBanner], ['dialogue', this.openDialog], ['loot', this.showLoot], ['keyItem', this.showKeyItem], ['lore', this.showLore], ['partyChanged', this.buildPortraits],
+      ['boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }],
+      ['saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }],
+      ['loading', (on) => this.loadTxt.setVisible(on)],
+    ];
+    for (const [ev, fn] of subs) game.events.on(ev, fn, this);
+    const onResize = () => this.layout();
+    this.scale.on('resize', onResize);
+    this.events.once('shutdown', () => { for (const [ev, fn] of subs) game.events.off(ev, fn, this); this.scale.off('resize', onResize); });
     this.layout();
   }
 
@@ -651,6 +654,9 @@ export class UI extends Phaser.Scene {
       this.trackTitle.setText(dk.def.name);
       const locks = dk.doors.some((d) => d.kind === 'key' || d.kind === 'boss'); // a hall with no locks (the sandbox) has no keys to count
       this.trackTxt.setText(!locks ? (game.state.demo ? 'NOTHING HERE IS SAVED' : '') : [`KEYS ${dk.keys}`, dk.big && 'SEAL', dk.map && 'MAP', dk.compass && 'COMPASS'].filter(Boolean).join('  '));
+    } else if (game.colosseum) {
+      this.trackTitle.setText('THE COLOSSEUM');
+      this.trackTxt.setText(`WAVE ${game.colosseum.wave || '-'}  BEST ${game.colosseum.best}`);
     } else {
       this.trackTitle.setText(tstep ? tq.title(tid) : ''); // no step fraction: next to a kill count ("3/6") a "1/2" read as the count
       const steam = (game.state.steamT || 0) > 0 ? `STEAMED: +15% XP ${Math.ceil(game.state.steamT / 60)}M` : ''; // the steam house's soak
