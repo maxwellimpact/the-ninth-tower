@@ -1,10 +1,10 @@
 // 12: how changes are proven. A real benchmark from tools/bench-results (the
 // dodge change: the old code twice, then the new), the never-again rules read
-// straight out of DESIGN.md, and the test tools.
+// straight out of design/rules.md, and the test tools.
 import old1 from '../../tools/bench-results/evade-old-1.json';
 import old2 from '../../tools/bench-results/evade-old-2.json';
 import neu from '../../tools/bench-results/evade-new.json';
-import design from '../../DESIGN.md?raw';
+import design from '../../design/rules.md?raw';
 
 const TOOLS = [
   ['errand-walk.js', 'plays every errand start to finish: talks, fights, gathers, escorts, turns in'],
@@ -19,7 +19,8 @@ const TOOLS = [
 export function mount(el) {
   // the never-again rules: "1. **Title.**" lines under §8
   const sec = design.slice(design.indexOf('### 8. Never-again rules'));
-  const rules = [...sec.slice(0, sec.indexOf('\n---')).matchAll(/^(\d+)\.\s+\*\*(.+?)\*\*/gm)].map((m) => m[2].replace(/\.$/, ''));
+  const end = sec.indexOf('\n---');
+  const rules = [...(end < 0 ? sec : sec.slice(0, end)).matchAll(/^(\d+)\.\s+\*\*(.+?)\*\*/gm)].map((m) => m[2].replace(/\.$/, ''));
   const runs = [['Old code, run 1', old1], ['Old code, run 2', old2], ['New code', neu]];
   const total = (r, k) => r.res.reduce((a, f) => a + f[k], 0);
   el.innerHTML = `
@@ -31,7 +32,7 @@ export function mount(el) {
       </div>
       <div>
         <h3 class="ts-h">Never again</h3>
-        <p class="caption">Each was a real bug in a playtest. Every new region, room and system is checked against them (from <code>DESIGN.md</code>).</p>
+        <p class="caption">Each was a real bug in a playtest. Every new region, room and system is checked against them (from <code>design/rules.md</code>).</p>
         <ol class="ts-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
       </div>
     </div>

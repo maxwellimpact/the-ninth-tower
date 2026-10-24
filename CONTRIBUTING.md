@@ -6,7 +6,7 @@ how its art and sound are made, and how to get a change in.
 
 ## The spirit of the game
 
-Read [DESIGN.md](DESIGN.md) §1–3 before anything bigger than a bug fix. In short:
+Read [design/vision.md](design/vision.md) (§1–3) before anything bigger than a bug fix. In short:
 
 - **What it is:** an open-world action RPG for phones, played in landscape. You
   lead a party of three; the other two are smart AI companions.
@@ -38,7 +38,7 @@ The **core story is fixed**:
 - **The structure:** the player picks the order, and the game ends at the top
   of the Tower.
 - **Each region's mystery:** a cursed vine drains a sacred place. The vine is
-  the trail that solves it (DESIGN.md C12 §1).
+  the trail that solves it ([design/regions.md](design/regions.md), C12 §1).
 
 **Within that, there's plenty of room:**
 
@@ -49,7 +49,7 @@ The **core story is fixed**:
   - new secrets;
   - improvements to existing dialogue.
 - **Bigger ideas** (a new region, hero, relic or system) are welcome too.
-  DESIGN.md §12a leaves room at the world's edges for new regions: sealed
+  [design/vision.md](design/vision.md) §12a leaves room at the world's edges for new regions: sealed
   borders, an unexplored coast, a sky island. A good proposal says how the idea
   fits the pillars and the Ward Stone story.
 - **Doesn't fit:**
@@ -81,7 +81,7 @@ synthesised at runtime:
   chunky grids with a lit top-left and the shared ink outline.
 - **Sound:** `src/audio/`. Sound effects are WebAudio synth patches in
   `synth.js`, and music is tracker patterns in `music.js`.
-- **New art must match the cast** (never-again rule 6 in DESIGN.md C12 §8).
+- **New art must match the cast** (never-again rule 6 in [design/rules.md](design/rules.md)).
   Render it beside existing sprites at 3× with `tools/sheet.js`, and include
   that sheet in your pull request. Use palette colours, not new ones, unless the
   change is about the palette.
@@ -99,8 +99,8 @@ sprite atlases for a future native build.
    fits the game. That way nobody spends a weekend on something that won't be
    merged.
 2. **Read the design for the part you're touching.** The never-again rules
-   (DESIGN.md C12 §8) are bugs that shipped once; check your work against all
-   of them. The latest decision log rows at the end of DESIGN.md explain recent
+   ([design/rules.md](design/rules.md)) are bugs that shipped once; check your work against all
+   of them. The latest rows in the newest file in `design/decisions/` explain recent
    choices. Don't undo one without discussing it first.
 3. **Content is data.** Heroes, skills, gear, enemies, the world, dungeons and
    errands live in `src/data/*.json`. Prefer adding data over adding code. Keep
@@ -119,12 +119,12 @@ sprite atlases for a future native build.
      main map;
    - `tools/map-test.js` for the integration tests. To try a new enemy, boss
      or system on its own, make a small test map in `src/data/maps/` and open
-     it with `?map=<id>` (DESIGN.md §13 has the format);
+     it with `?map=<id>` ([design/tech.md](design/tech.md) §13 has the format);
    - after every run, check the browser console for `[loop]` errors. A crash
      inside the game loop shows up nowhere else.
-5. **Log the decision:** add a dated row to the decision log at the end of
-   DESIGN.md: what changed, why, and how you tested it. Update the design
-   section too if you changed how something works.
+5. **Log the decision:** add a dated row to the end of the current decision
+   log file in `design/decisions/`: what changed, why, and how you tested it.
+   Update the design topic file too if you changed how something works.
 6. **Open a pull request:**
    - Keep commits small, each with a clear message.
    - Describe what you tested and what you didn't.

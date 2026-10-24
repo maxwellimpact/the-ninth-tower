@@ -1,20 +1,23 @@
 # Working on The Ninth Tower
 
-Read this at the start of every session, then the parts of DESIGN.md below. It
+Read this at the start of every session, then the design files below. It
 is the short version of how this project is built, tested and shipped.
 
 ## 1. Refresh on the design first
 
-[DESIGN.md](DESIGN.md) is the source of truth. Before changing anything, re-read:
+The design in [design/](design/README.md) is the source of truth, split by topic
+so each file can be read whole. [design/README.md](design/README.md) lists every
+file. Before changing anything, read in full:
 
-- **C12 §8 "Never-again rules"** (search `### 8. Never-again rules`). Every rule
-  there is a bug that shipped once and broke a playtest. Check new work against
-  all of them.
-- **The decision log** at the end of the file (the dated table rows). The latest
-  rows say what was decided recently and why. Don't undo a decision without
-  asking.
-- **The section for what you're touching:** heroes and skills (C3), gear (C4/C5),
-  relics and gates (C8), the region template (C12), and so on.
+- **[design/rules.md](design/rules.md), the never-again rules.** Every rule there
+  is a bug that shipped once and broke a playtest. Check new work against all
+  of them.
+- **The newest file in [design/decisions/](design/decisions/)**, the decision
+  log. Its latest rows say what was decided recently and why. Don't undo a
+  decision without asking.
+- **The topic file for what you're touching:** heroes and skills
+  (`heroes-skills.md`), gear and gems (`gear.md`), relics and gates
+  (`dungeons-relics.md`), the region template (`regions.md`), and so on.
 
 When a playtest turns up a new kind of bug, add a never-again rule for it (the bug,
 the rule, the check) as well as fixing it.
@@ -78,6 +81,8 @@ the rule, the check) as well as fixing it.
   - `tools/perf.js`: CPU time per frame (`profile()`, `engine()`, `tour()`).
     Use it on Aldermere and on the Vast (`?map=vast`, `vast40`, `vast40d`).
     The debug panel's LOAD line and `window.__loadTimes` give load timings.
+  - `node tools/design-check.mjs`: every design file is in `design/README.md`
+    and every link in the docs resolves. Run it after touching the design.
   - `tools/door-orbit.js`: how far companions swing round the leader after a door.
   - `tools/house-mix.js`: cottage art sheets.
 - **Combat or AI changes:** benchmark old against new. Run the old code twice
@@ -93,7 +98,8 @@ the rule, the check) as well as fixing it.
 
 After every change that ships:
 
-1. **Log it:** add a dated row to the DESIGN.md decision log (what changed and
+1. **Log it:** add a dated row to the current decision log file in
+   `design/decisions/` (what changed and
    why, plus test results).
 2. **Commit** in small stages, each with a clear message.
 3. **Deploy to GitHub Pages:** run `sh tools/deploy-pages.sh`. The game is

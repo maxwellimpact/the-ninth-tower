@@ -9,8 +9,8 @@
 
 - [ ] Played it at phone size, landscape 844×390
 - [ ] No `[loop]` errors in the browser console
-- [ ] Checked against the never-again rules (DESIGN.md C12 §8)
-- [ ] Added a decision log row to DESIGN.md
+- [ ] Checked against the never-again rules (design/rules.md)
+- [ ] Added a decision log row to the current file in design/decisions/
 - [ ] New art rendered beside the existing cast at 3× (`tools/sheet.js`), sheet attached below
 - [ ] Combat or AI change: fight-bench before and after (old code run twice), numbers below
 

@@ -95,8 +95,8 @@ src/lab/        the Sprite & Sound Lab
 tools/          dev test tools (see below)
 ```
 
-- **[DESIGN.md](DESIGN.md):** the full design. It covers the story, every system, each region's
-  content and a dated log of every decision.
+- **[design/](design/README.md):** the full design, split by topic. It covers the story, every system, each region's
+  content and a dated log of every decision. Start with its README.
 - **[AGENTS.md](AGENTS.md):** the working rules for building and testing the game.
 
 ## Dev tools
@@ -114,9 +114,9 @@ header says how to use it. Among them:
 - `tools/perf.js`: frame profiling (CPU time per frame, split into logic and drawing).
 - `tools/leader-test.js` and `tools/staged-test.js`: the idle leader's attacks, and errand set pieces.
 
-**Test maps** (`src/data/maps/`) are small maps for trying one thing in isolation, without the main world's packs, errands or load time: open one with `?map=<id>` (for example `?map=arena`). They never save. DESIGN.md (§13, "Test maps") has the format.
+**Test maps** (`src/data/maps/`) are small maps for trying one thing in isolation, without the main world's packs, errands or load time: open one with `?map=<id>` (for example `?map=arena`). They never save. [design/tech.md](design/tech.md) (§13, "Test maps") has the format.
 
-**The Vast** is a generated map ten times the size of the main world, for profiling load times and frame rates: open it with `?map=vast` (`?map=vast40` for forty times). The title screen's button opens `?map=vast40d`, the dense one, which adds the main game's people and collectibles at its density. Its load timings show in the debug panel and in a `[load]` console line. DESIGN.md (§13, "The Vast") has the details.
+**The Vast** is a generated map ten times the size of the main world, for profiling load times and frame rates: open it with `?map=vast` (`?map=vast40` for forty times). The title screen's button opens `?map=vast40d`, the dense one, which adds the main game's people and collectibles at its density. Its load timings show in the debug panel and in a `[load]` console line. [design/tech.md](design/tech.md) (§13, "The Vast") has the details.
 
 Deep links start the game in a sandbox that never reads or writes your save: `?demo=combat` (waves of foes on the `arena` test map), `?demo=boss` (the Gatewarden's Shadow) and `?demo=explore` (free roam from Brightwater). The guide embeds the combat one.
 

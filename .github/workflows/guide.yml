@@ -4,7 +4,7 @@ name: Guide
 on:
   push:
     branches: [main]
-    paths: ['guide/**', 'src/**', 'tools/bench-results/**', 'DESIGN.md', 'vite.guide.config.js', 'package.json', 'package-lock.json', '.github/workflows/guide.yml']
+    paths: ['guide/**', 'src/**', 'tools/bench-results/**', 'design/**', 'vite.guide.config.js', 'package.json', 'package-lock.json', '.github/workflows/guide.yml']
   workflow_dispatch:
 permissions:
   contents: read

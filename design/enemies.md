@@ -1,0 +1,123 @@
+# Enemies
+
+## C7. Enemies
+
+### Enemy AI rules **[BUILT, measured]**
+Each rule was added one at a time and checked before and after with the fight benchmark (`tools/fight-bench.js`). It runs seven fixed fights, from 3 goblins to 10 mixed foes, in an open hall and a tight pillared room, plus leash, area-attack and doorway tests. Results are in `tools/bench-results/`. Rerun it before shipping any enemy change.
+1. **Attack turns (tokens):** at most 2 foes wind up on one hero at the same moment (`tuning.attackTokens`, the main crowd-difficulty dial). The rest wait just outside reach. Bosses don't queue.
+2. **Surround, don't stack:** melee foes take spread-out spots on a ring around their target. Foes waiting, winding up or recovering keep a little room between them.
+3. **Sticky targets:** commit about 2 s and never switch mid-swing. After that, switch only for a reason: much more damage from someone else, or the target out of reach while another hero is right here. Remembered damage fades. A taunt always wins.
+4. **Ranged foes:** prefer the most fragile hero, spread across heroes so a line of archers doesn't queue on one. They back off along open floor, sidestep for a clear shot, and shift a little after shooting.
+5. **Leash:** none in sealed rooms. About 22 tiles in dungeons and caves, about 12 in the overworld. Foes only give up when they're also out of sight for 2.5 s, so backing off a step no longer resets and heals them.
+6. **Group roles:** in packs of four or more melee, about one in three flanks to the back line. Support roles (healers, buffers) come with the region enemies that need them.
+   - **Morale is rare [LOCKED from playtest]:** most foes stand and fight. About one small fry in six (goblins, rats, hexlings) has the nerve to break at a quarter health. It is never the last of its group, and never breaks while an ally nearby is already running. It shouts HELP (idle allies in view join in) and comes back. Measured with `tools/flee-test.js`: small fry fleeing 87.5% → 13.9%, and last survivors fleeing 7 → 0.
+7. **Elites read the party's telegraphs:** they step out of Meteor and Volley zones, abandoning a swing if they must. Regular foes don't, so area attacks stay strong against crowds.
+8. **Unsticking:** straight-line checks are as wide as the body, and a foe that barely moves for 0.4 s sidesteps and re-routes.
+
+
+**How to read the tables:**
+- **HP and DMG are multipliers of the Hex Goblin's** demo values at level 1 (100 HP, 20 damage). Level scaling (C1) is applied on top.
+- **Behaviour** describes what the player has to read or react to.
+- Every enemy has a telegraphed windup; Hard shortens it (§8).
+
+### Hex Legion (Malgrim's troops — appear everywhere, scaled to the band; all Hexed)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Hexling** (demo) | 0.7 | 0.8 | Slow blob; slams the ground around itself | Fire / — | Gel |
+| **Hex Goblin** (demo) | 1.0 | 1.0 | Melee rusher; swings in a frontal arc | Venom / — | Scrap |
+| **Goblin Archer** (demo) | 0.6 | 0.75 | Keeps away; aim line, then a dodgeable arrow | Venom / — | Scrap |
+| **Hex Knight** (demo) | 2.6 | 1.7 | Heavy; frontal shield blocks 70% until you flank it, hook it or break the guard | Fire / Frost | Ore, scrap |
+| **Hex Wisp** | 0.5 | 0.6 | Flying; drops curse orbs that slow | Light / Shadow | Crystal |
+| **Hex Warlock** | 0.8 | 1.2 | Shields allies and summons hexlings; priority target | Storm / Shadow | Crystal, gem (rare) |
+
+### Brightwater Vale (levels 1–6)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Thornback Boar** | 1.4 | 1.2 | Paws the ground, then charges in a straight line; stunned if it hits a wall | Fire / — | Hide (sells) |
+| **Pond Crab** | 0.9 | 0.8 | Armoured from the front; flips over on a Bash or hook | Storm / Frost | Pearl (rare) |
+| *Undercroft:* **Hollow Guard** | 1.8 | 1.3 | Animated armour; reassembles after 5s unless finished with Light or Fire | Light / Venom | Ore |
+| *Undercroft:* **Rat Swarm** | 0.4 ×6 | 0.3 | Floods out of holes; area attacks clear them | Fire / — | — |
+| *Mini-boss:* **Snagtooth the Goblin Chief** (bounty) | 8 | 1.5 | Spins, calls archers, throws bombs | Venom / — | Thornring |
+
+### Mistfen (marsh, sunken coast)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Mire Slime** (demo) | 0.95 | 0.95 | Splits into 2 small slimes when it dies | Frost / Venom | Gel, herb |
+| **Bog Lurker** | 1.6 | 1.4 | Hides underwater (bubbles give it away), then lunges | Storm / Venom | Pearl |
+| **Marsh Witchling** | 0.8 | 1.1 | Caster; slowing curse, teleports between pools | Light / Shadow | Bogmoss, gem (rare) |
+| **Leech Swarm** | 0.6 | 0.5 | Latches on and drains; dodge or burn it off | Fire / Venom | — |
+| **Drowned** | 1.3 | 1.1 | Undead; rises from the mud in groups | Light, Fire / Frost | Pearl, scrap |
+| **Croaker** | 2.2 | 1.3 | Giant toad; its tongue pulls you in for a bite | Frost / — | Toad oil (sells) |
+| *Mini-boss:* **Old Snapjaw** | 10 | 1.8 | Giant turtle; spins its shell, only its belly can be hurt | Storm / Frost | Silver ore, Unique (bounty) |
+
+### Gloamwood (haunted forest; darkness and illusions)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Shade** | 1.0 | 1.3 | Invisible until close; the Seer's Lens shows it | Light / Shadow | Ghostcap |
+| **Rootling** | 1.5 | 1.0 | Stays rooted and throws thorns; burns easily | Fire / Venom | Heartwood (sells) |
+| **Gloom Spider** | 1.1 | 1.1 | Webs that root you; climbs walls | Fire / Venom | Silkthread |
+| **Spectral Hound** | 0.8 | 0.9 | Packs of 3–4 that flank | Light / Frost | — |
+| **Wailing Banshee** | 1.2 | 0.8 | Scream interrupts your casts and staggers; break line of sight | Light / Shadow | Crystal |
+| *Mini-boss:* **Queen Mab** (bounty) | 9 | 1.6 | Spider queen; lays egg sacs and pulls with webs | Fire / Venom | Silk ×5 (makes Nightsilk Coat) |
+
+### Cinderreach (volcanic badlands; heat soft-gate)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Ember Imp** | 0.7 | 1.1 | Blinks around throwing firebolts | Frost / Fire | Brimstone |
+| **Magma Slug** | 1.6 | 0.9 | Leaves a burning trail | Frost / Fire | Brimstone |
+| **Salamander Warrior** | 2.0 | 1.4 | Shield and spear; lunges | Frost / Fire | Salamander scale |
+| **Basalt Brute** | 3.0 | 1.6 | Rock armour (−80% damage) until Storm, a Bomb or the Gauntlets crack it | Storm / Fire | Silver ore |
+| **Fire Beetle** | 0.5 | 2.0 | Rushes in and explodes; kill it at range | Frost / Fire | Brimstone |
+| *Mini-boss:* **Cinder Drake** | 12 | 2.0 | Young dragon; fire breath sweeps, takes off and dives | Frost / Fire | Gnasher |
+
+### Frosthelm (frozen highlands; cold soft-gate; cliffs)
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Frost Wolf** | 0.9 | 1.0 | Packs; bites that Chill | Fire / Frost | Wolf pelt |
+| **Rimehorn** | 2.8 | 1.5 | Big beast; throws snowballs that Freeze, then charges | Fire / Frost | Pelt, rimeglass |
+| **Ice Wraith** | 1.0 | 1.2 | Flying; flies through walls | Fire, Light / Frost | Rimeglass |
+| **Hex Sentinel** | 1.8 | 1.2 | Crystal turret; reflects spells from the front | Storm / Frost | Crystal, silver ore |
+| **Snow Goblin Raider** | 1.0 | 1.1 | Rides a sled and drops bombs in passes | Fire / Frost | Scrap |
+| *Mini-boss:* **Avalanche Troll** | 14 | 2.1 | Pounds the ground to bring down icicles; regenerates unless Burning | Fire / Frost | Troll-Hide Mantle |
+
+### Blight Basin & the Ninth Tower (levels 24+)
+Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and one affix. There are also four new enemies:
+
+| Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
+|---|---|---|---|---|---|
+| **Voidling** | 1.0 | 1.3 | Teleports next to the weakest party member | Light / Shadow | Void shard |
+| **Tower Gargoyle** | 2.5 | 1.6 | A statue while the leader faces it; moves when you turn away | Storm / Venom | Starmetal |
+| **Chain Warden** | 3.5 | 1.8 | Chains party members together; break the chain with the hook | Light / Shadow | Starmetal |
+| **Malgrim's Mirror** | = leader | = leader | Copies your current leader, including their gear look | Light / — | Void shard |
+
+### Elite affixes
+- **Elites** are gold-named, +2 levels, have one affix and always drop something (Fine or better, or materials).
+  - **Built:** about 1 group in 3 has one. Elites have 1.8× health and 1.15× damage on top of the +2 levels. A pulsing gold ring under their feet marks them before you engage, and **their affix name** (VAMPIRIC, ARMORED…) stays over their health bar during the fight. **[REVISED in playtest: was 2.2× / 1.3× with only a gold tint]**
+  - **All 8 affixes are built**, each with a visible cue:
+    - **Vampiric:** a red drain line and a heal number on every hit.
+    - **Armored:** a steel arc on its guarded side, and "GUARDED - FLANK IT".
+    - **Frenzied:** turns red with "FRENZY!".
+    - **Volatile:** pulses when nearly dead and leaves a blast circle.
+    - **Splitting:** "SPLIT!" and two smaller copies.
+    - **Shielder:** blue ward rings on its allies.
+    - **Swift** and **Warded** are named on the tag.
+    - Ranged elites never roll Splitting or Armored.
+- **Hard mode** gives elites two affixes.
+
+| Affix | Effect |
+|---|---|
+| **Swift** | +40% speed, shorter windups |
+| **Armored** | Frontal guard; flank it, hook it or Shock it |
+| **Vampiric** | Heals 30% of the damage it deals |
+| **Volatile** | Explodes 2s after death |
+| **Warded** | Resists every element except Light |
+| **Splitting** | Splits into 2 at 50% HP |
+| **Shielder** | Shields nearby allies |
+| **Frenzied** | +50% damage below half HP |
+
+### Bounties (18)
+- **Three named bounties per region** on the Brightwater board and at outposts, plus three in the Basin.
+- Each is a unique-looking elite with a short tell-tale line on the board, and pays gold, materials and often a Unique (see C4).
+  - Examples: Snagtooth, Flicker, Old Smokestack, The Lamplighter, Queen Mab, Greymaw.
+
+---
