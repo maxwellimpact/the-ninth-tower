@@ -74,6 +74,10 @@ const DEFS = {};
 // Aldermere's density (golden flies, shrines, cursed townsfolk, errand-style
 // people) and leaves the blight down, to see how the main game's kind of
 // content scales on a big map.
+// The forty-times maps keep a save of their own (`own`: a fresh party, its own
+// key, CLEAR on the title's SAVED MAPS list); every other size never saves.
+export const VAST_SAVED = ['vast40', 'vast40d'];
+
 export function vastDef(id) {
   const m = /^vast(\d+)?(d)?$/.exec(id || '');
   if (!m) return null;
@@ -393,6 +397,12 @@ export function vastDef(id) {
 
   const def = {
     id, name: 'THE VAST', sub: `${mult}X ALDERMERE${dense ? ', DENSE' : ''} - A TEST WORLD`, generated: true, mult, dense,
+    save: VAST_SAVED.includes(id) ? 'own' : 'none', label: `THE VAST ${mult}X${dense ? ' DENSE' : ''}`,
+    party: { leader: 'brann', recruited: ['pip', 'sable'], level: 1 },
+    // what a new save starts with: no Ward Stones to break, so the plain map's
+    // land starts freed (the dense one keeps its blight, as Aldermere does
+    // before the stones fall), and salves and tonics for the heat and cold
+    kit: { flags: dense ? {} : { wardBroken: true, ward_marsh: true, ward_gloam: true, ward_cinder: true, ward_frost: true }, potions: { salve: 4, tonic: 4 } },
     at: [0, 0], w: W, h: H, start: [home[0], home[1] + 4],
     size: { w: W, h: H, overworldW: W },
     regions: REGIONS.map((r) => ({ ...r, sub: `THE VAST - ${mult}X ALDERMERE` })),

@@ -14,7 +14,7 @@
 import WORLD from '../data/world.json';
 import QUESTS from '../data/quests.json';
 import { setMapShape } from './map.js';
-import { vastDef } from './vast.js';
+import { vastDef, VAST_SAVED } from './vast.js';
 
 const MAPS = Object.fromEntries(Object.entries(import.meta.glob('../data/maps/*.json', { eager: true, import: 'default' })).map(([p, d]) => [p.match(/([^/]+)\.json$/)[1], d]));
 export const mapIds = () => Object.keys(MAPS); // the authored test maps (generated ones are made on request)
@@ -22,7 +22,7 @@ export const mapDef = (id) => MAPS[id] || vastDef(id) || null;
 // How a map saves (its `save`): 'none' (the default for test and profiling
 // maps), 'own' or 'shared'. Aldermere is the main game. See game/state.js, worlds.
 export const saveMode = (id) => (id ? mapDef(id)?.save || 'none' : 'shared');
-export const ownMapIds = () => mapIds().filter((id) => MAPS[id].save === 'own');
+export const ownMapIds = () => [...mapIds(), ...VAST_SAVED].filter((id) => mapDef(id).save === 'own');
 
 export let W = WORLD;
 export let Q = QUESTS;

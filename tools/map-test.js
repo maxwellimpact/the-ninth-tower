@@ -129,12 +129,7 @@ export const TESTS = {
   'own-save': async () => withSaves(async () => {
     const S = await mainSave();
     const main = localStorage.getItem(S.SAVE_KEY), key = S.ownSaveKey('trial');
-    const { mapDef } = await import('/src/world/content.js');
-    const d = mapDef('trial');
-    // what the title's enterOwn builds on a first visit
-    const st = S.newState(d.party.leader);
-    st.recruited = [d.party.leader, ...d.party.recruited]; st.active = [...st.recruited];
-    st.map = 'trial'; st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    const st = (await import('/src/scenes/Title.js')).ownStart('trial'); // what the title builds on a first visit
     const sc = await boot({ state: st });
     await step(60);
     sc.state.gold = 77;
@@ -149,6 +144,32 @@ export const TESTS = {
     S.clearSave(key);
     out['CLEAR removes it'] = !localStorage.getItem(key);
     out['CLEAR leaves the main save'] = localStorage.getItem(S.SAVE_KEY) === main;
+    return out;
+  }),
+  // the 40x Vast (dense) keeps its own save too: a fresh party with the Vast's
+  // kit, saved under its own key; and how long a save of a map that big takes
+  'vast-save': async () => withSaves(async () => {
+    const S = await mainSave();
+    const main = localStorage.getItem(S.SAVE_KEY), key = S.ownSaveKey('vast40d');
+    const st = (await import('/src/scenes/Title.js')).ownStart('vast40d');
+    const sc = await boot({ state: st });
+    await step(60);
+    const t0 = performance.now();
+    sc.autosave('test');
+    const ms = Math.round(performance.now() - t0), raw = localStorage.getItem(key) || '';
+    const own = S.loadState(key), plain = (await import('/src/world/content.js')).mapDef('vast40');
+    const out = {
+      'on the dense 40x Vast': sc.state.map === 'vast40d',
+      'a fresh party (level 1)': sc.party.every((h) => h.level === 1) && sc.party.length === 3,
+      'salves and tonics for the heat and cold': st.potions.salve === 4 && st.potions.tonic === 4,
+      'blight left down (dense), land freed on the plain one': !st.flags.wardBroken && !!plain.kit.flags.wardBroken,
+      'saved under its own key': own?.map === 'vast40d',
+      'the main save untouched': localStorage.getItem(S.SAVE_KEY) === main,
+      'listed with the saved maps': (await import('/src/world/content.js')).ownMapIds().includes('vast40d'),
+      'the 10x Vast still never saves': (await import('/src/world/content.js')).saveMode('vast') === 'none',
+      [`a save takes ${ms} ms and ${Math.round(raw.length / 1024)} KB`]: ms < 100,
+    };
+    S.clearSave(key);
     return out;
   }),
   // a shared map (the Colosseum) carries the party both ways, keeps its own

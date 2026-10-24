@@ -12,6 +12,20 @@ import { dungeonStart } from '../game/dungeon.js';
 import { mapDef, saveMode, ownMapIds } from '../world/content.js';
 import { makeItem, tierForLevel } from '../game/itemgen.js';
 
+// A map with a save of its own, the first time: a fresh party of its own (its
+// `party`: leader, recruits, level) and whatever the map starts everyone with
+// (its `kit`: the Vast's freed land, salves and tonics), at its start.
+export function ownStart(id) {
+  const d = mapDef(id), p = d.party || {};
+  const st = newState(p.leader || 'brann');
+  st.recruited = [...new Set([st.leader, ...(p.recruited || [])])]; st.active = st.recruited.slice(0, 3);
+  for (const h of st.recruited) { const hs = st.heroes[h]; hs.level = p.level || 1; hs.sp = (hs.sp || 0) + hs.level - 1; }
+  Object.assign(st.flags, d.kit?.flags); Object.assign(st.potions, d.kit?.potions);
+  st.map = id;
+  st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+  return st;
+}
+
 // Title + "choose your starting hero" (the other two join as first recruits).
 export class Title extends Phaser.Scene {
   constructor() { super('Title'); }
@@ -54,7 +68,8 @@ export class Title extends Phaser.Scene {
     const showCloud = () => cs.setText(`CLOUD SAVE: ${cloudStatus().toUpperCase().replace(/[^A-Z0-9 .,!?:/()-]/g, " ")}`);
     showCloud(); this.time.addEvent({ delay: 1000, loop: true, callback: showCloud });
     // The Vast: a generated world forty times Aldermere's size, for profiling
-    // load times and frame rates, with a ready-made party. Never saves. (The
+    // load times and frame rates. It keeps a save of its own (a fresh party,
+    // cleared from SAVED MAPS); other sizes (?map=vast, vast20...) never save. (The
     // Dungeon Lab that used to sit here still opens via #dungeon or ?demo=boss.)
     // a framed button in the corner (the save menu adds a full-size one too),
     // kept clear of a landscape notch / rounded corner
@@ -120,7 +135,7 @@ export class Title extends Phaser.Scene {
   // saves goes to enterOwn or enterShared instead).
   startDemo(kind, mapId = null) {
     if (kind === 'boss') { this.enterLab('undercroft'); return; }
-    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40d'; } // the title's button: forty times Aldermere, dense with its people and pickups (?map=vast40 plain, ?map=vast ten times)
+    if (kind === 'vast') { kind = 'map'; mapId ||= 'vast40d'; } // the title's button: forty times Aldermere, dense with its people and pickups (?map=vast40 plain, ?map=vast ten times); the 40x ones have their own save
     // ?map= on a map that saves: its own save, or the main game's party (never a throwaway demo)
     if (kind === 'map' && mapId && saveMode(mapId) === 'own') { this.enterOwn(mapId); return; }
     if (kind === 'map' && mapId && saveMode(mapId) === 'shared') { this.enterShared(mapId); return; }
@@ -185,7 +200,7 @@ export class Title extends Phaser.Scene {
     // the Colosseum (part of the main game: this party, its gains kept) and the Vast (never saved), side by side
     const rw = Math.min(250, W - 16), hw = (rw - 6) / 2;
     objs.push(...this.button(W / 2 - hw / 2 - 3, 144, hw, 'THE COLOSSEUM', 'ENDLESS WAVES', () => this.enterShared('colosseum')));
-    objs.push(...this.button(W / 2 + hw / 2 + 3, 144, hw, 'THE VAST', '40X WORLD - NOT SAVED', () => this.startDemo('vast')));
+    objs.push(...this.button(W / 2 + hw / 2 + 3, 144, hw, 'THE VAST', '40X WORLD - OWN SAVE', () => this.startDemo('vast')));
     // maps with saves of their own: a corner button to their list
     const own = ownMapIds().filter((id) => loadState(ownSaveKey(id)));
     if (own.length) objs.push(...this.button(Math.max(50, W / 2 - bw / 2 - 52), 31, 92, 'SAVED MAPS', `${own.length} MAP${own.length > 1 ? 'S' : ''}`, () => { for (const o of objs) o.destroy(); this.mapsMenu(save); }));
@@ -203,7 +218,7 @@ export class Title extends Phaser.Scene {
     const bw = Math.min(150, (W - 22) / 2);
     own.slice(0, 3).forEach(([id, st], i) => {
       const y = 76 + i * 30, d = mapDef(id);
-      objs.push(...this.button(W / 2 - bw / 2 - 3, y, bw, d.name, `LV${st.heroes[st.leader].level} - ${Math.floor(st.playTime / 60)}M - CONTINUE`, () => this.enterOwn(id)));
+      objs.push(...this.button(W / 2 - bw / 2 - 3, y, bw, d.label || d.name, `LV${st.heroes[st.leader].level} - ${Math.floor(st.playTime / 60)}M - CONTINUE`, () => this.enterOwn(id)));
       let sure = false;
       const clr = this.button(W / 2 + bw / 2 + 3, y, bw, 'CLEAR', 'WIPE THIS MAP\'S SAVE', () => {
         audio.init(); audio.sfx('click');
@@ -224,15 +239,7 @@ export class Title extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
-    const d = mapDef(id);
-    let st = loadState(ownSaveKey(id));
-    if (!st) {
-      const p = d.party || {};
-      st = newState(p.leader || 'brann');
-      st.recruited = [...new Set([st.leader, ...(p.recruited || [])])]; st.active = st.recruited.slice(0, 3);
-      for (const h of st.recruited) { const hs = st.heroes[h]; hs.level = p.level || 1; hs.sp = (hs.sp || 0) + hs.level - 1; }
-      st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
-    }
+    const st = loadState(ownSaveKey(id)) || ownStart(id);
     st.map = id;
     this.cameras.main.fadeOut(500, 10, 6, 20);
     this.time.delayedCall(520, () => this.enterWorld(st));
