@@ -81,6 +81,27 @@ export class Title extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     audio.init(); audio.sfx('levelUp');
+    const st = this.labParty();
+    st.lab = id; st.labStart = 'boss';
+    const p = dungeonStart(id, 'boss');
+    st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };
+    this.cameras.main.fadeOut(400, 10, 6, 20);
+    this.time.delayedCall(420, () => this.enterWorld(st));
+  }
+
+  // The fight benchmark's own test map (src/data/maps/bench.json) with the
+  // lab's party, so benchmark fights don't depend on the Dungeon Lab. Never saves.
+  enterBench() {
+    if (this.leaving) return;
+    this.leaving = true;
+    const st = this.labParty(), d = mapDef('bench');
+    st.map = 'bench'; st.demo = 'map';
+    st.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
+    this.enterWorld(st);
+  }
+
+  // the lab's ready-made party (also the fight benchmark's)
+  labParty() {
     const st = newState('brann');
     st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
     // geared a tier above level 5 (rare weapon + body, fine head + off-hand) so
@@ -92,11 +113,7 @@ export class Title extends Phaser.Scene {
     }
     st.potions.potion = 6; st.potions.elixir = 3;
     st.relics = ['tide']; // carried from Mistfen, so the Sealed Vault can be tried (normally a return visit)
-    st.lab = id; st.labStart = 'boss';
-    const p = dungeonStart(id, 'boss');
-    st.pos = { x: p.x * 16 + 8, y: p.y * 16 + 8 };
-    this.cameras.main.fadeOut(400, 10, 6, 20);
-    this.time.delayedCall(420, () => this.enterWorld(st));
+    return st;
   }
 
   // The deep-link sandboxes. They never read or write the real save.

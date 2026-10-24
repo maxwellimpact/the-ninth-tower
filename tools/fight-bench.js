@@ -1,4 +1,7 @@
-// Enemy AI benchmark (dev only). Load into a running Dungeon Lab session:
+// Enemy AI benchmark (dev only). Runs on its own test map, `bench` (the
+// Undercroft's hall and vault copied tile for tile); launch it with
+// tools/evade-bench.js `start()` from the title screen. It still runs in a
+// Dungeon Lab session too (the rooms are found either way):
 //   const { bench } = await import('/tools/fight-bench.js'); await bench();
 // Spawns fixed enemy groups in fixed spots (open hall, tight pillared vault),
 // lets the party fight them with seeded randomness, and measures how the
@@ -15,14 +18,17 @@ const SCENARIOS = [
   { id: 'tightMixed', room: 'vault', units: ['goblin', 'goblin', 'goblin', 'goblin', 'archer', 'archer'] },
 ];
 // party stand point and enemy arc centre, in the lab dungeon's local tiles
-const ROOMS = { hall: { party: [37, 47], foes: [37, 40] }, vault: { party: [12, 13], foes: [12, 7] } };
+const LAB_ROOMS = { hall: { party: [37, 47], foes: [37, 40] }, vault: { party: [12, 13], foes: [12, 7] } };
 const WIND = new Set(['windup', 'chargeWindup', 'tongueWind']);
 
 function seeded(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 const step = async (n = 1) => { const g = window.__game; let t = g.loop.now || performance.now(); for (let i = 0; i < n; i++) { t += 16; g.step(t, 16); await new Promise((r) => setTimeout(r, 0)); } };
 
 export async function runScenario(sc, S, secs = 20) {
-  const O = sc.dungeon.def.origin, T = (lx, ly) => ({ x: (O[0] + lx) * 16 + 8, y: (O[1] + ly) * 16 + 8 });
+  // the bench map's rooms (in its own coordinates), or the lab's Undercroft
+  const onMap = sc.state.map === 'bench', MR = onMap && (await import('/src/world/content.js')).mapDef('bench');
+  const O = onMap ? MR.at : sc.dungeon.def.origin, T = (lx, ly) => ({ x: (O[0] + lx) * 16 + 8, y: (O[1] + ly) * 16 + 8 });
+  const ROOMS = onMap ? MR.rooms : LAB_ROOMS;
   const realRandom = Math.random;
   Math.random = seeded(S.id.split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
   try {

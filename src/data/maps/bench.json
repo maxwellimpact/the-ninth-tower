@@ -1,0 +1,55 @@
+{
+ "name": "THE BENCH",
+ "sub": "A TEST MAP: TWO ROOMS FOR THE FIGHT BENCHMARK",
+ "note": "For tools/fight-bench.js: the Undercroft's open hall (left) and its tight pillared vault (right), copied tile for tile with doors walled up and push blocks left as solid, so benchmark fights no longer depend on the Dungeon Lab. Stamped in the Vale (foes come out at the party's level, as in the lab).",
+ "at": [
+  40,
+  18
+ ],
+ "start": [
+  15,
+  11
+ ],
+ "rooms": {
+  "hall": {
+   "party": [
+    15,
+    11
+   ],
+   "foes": [
+    15,
+    4
+   ]
+  },
+  "vault": {
+   "party": [
+    44,
+    9
+   ],
+   "foes": [
+    44,
+    3
+   ]
+  }
+ },
+ "rows": [
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+  "w.............................wwwww...................w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww.....w.......w.....w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww...w...........w...w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww.....w.......w.....w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww...................w",
+  "w.............................wwwww...................w",
+  "w.............................wwwwwwwwwwwwwwwwwwwwwwwww",
+  "w.............................wwwwwwwwwwwwwwwwwwwwwwwww",
+  "w.............................wwwwwwwwwwwwwwwwwwwwwwwww",
+  "w.............................wwwwwwwwwwwwwwwwwwwwwwwww",
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+ ],
+ "content": {}
+}
