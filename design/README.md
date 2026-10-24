@@ -33,11 +33,7 @@ doesn't count.
 
 ## Plans (written, not built)
 
-| File | What it is |
-|---|---|
-| [plans/armour-gems.md](plans/armour-gems.md) | Element gems in armour resist that element |
-
-When a plan is built, fold it into its topic file and delete it from `plans/`.
+None right now. A plan goes in `plans/` and is listed here. When a plan is built, fold it into its topic file and delete it from `plans/`.
 
 ## Decisions
 

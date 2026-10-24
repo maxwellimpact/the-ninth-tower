@@ -92,6 +92,15 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 | **Chain Warden** | 3.5 | 1.8 | Chains party members together; break the chain with the hook | Light / Shadow | Starmetal |
 | **Malgrim's Mirror** | = leader | = leader | Copies your current leader, including their gear look | Light / — | Void shard |
 
+### Elemental attacks **[BUILT 2026-10-24]**
+Most foes hit with plain force. A few attack with an element, and armour gems of that element resist them (see [gear.md](gear.md), "Armour gems"). The rule: a foe attacks with an element only where its attack already burns, chills, poisons or is plainly a spell of that kind. What a foe *resists* is a separate thing: plenty resist an element they don't attack with (crabs and trolls resist frost; hollows and rootlings resist venom).
+- **Fire:** Ember Imps (their shots), Magma Slugs (burning trails), the Cinder Drake (breath and bite), Forgemaster Vulk.
+- **Frost:** Frost Wolves (chilling bites), Ice Wraiths, Hex Sentinels (ice shards), Isolde the Rimeguard; and the Avalanche Troll's chilling stomp (not its fists).
+- **Venom:** Gloom Spiders, Marsh Witchlings (their slowing orbs), Mother Murk.
+- **Shadow:** Wailing Banshees, Malgrim the Unkind (his bolts; his fire and frost hazards are fire and frost).
+- **Hex Warlocks cast the school of the region they're met in:** fire in Cinderreach, frost in Frosthelm, venom in Mistfen, shadow everywhere else (the hex). The bolt takes the school's colour and leaves its mark on a hit: a short burn (2 s), chill (1.2 s), poison (3 s) or hex-slow (1.5 s).
+- In data: `element` in enemies.json (`"region"` for the warlock's school); in play, `Enemy.atkEl`.
+
 ### Elite affixes
 - **Elites** are gold-named, +2 levels, have one affix and always drop something (Fine or better, or materials).
   - **Built:** about 1 group in 3 has one. Elites have 1.8× health and 1.15× damage on top of the +2 levels. A pulsing gold ring under their feet marks them before you engage, and **their affix name** (VAMPIRIC, ARMORED…) stays over their health bar during the fight. **[REVISED in playtest: was 2.2× / 1.3× with only a gold tint]**

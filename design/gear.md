@@ -1,6 +1,6 @@
 # Gear, upgrades and gems
 
-See also: [crafting.md](crafting.md), [heroes-skills.md](heroes-skills.md), [plans/armour-gems.md](plans/armour-gems.md).
+See also: [crafting.md](crafting.md), [heroes-skills.md](heroes-skills.md), [enemies.md](enemies.md) (which foes attack with an element).
 
 ## C4. Equipment
 
@@ -211,21 +211,33 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 - **Removing a gem is free** and gives the gem back.
 - **Gem grades:** Chipped → Clear → Flawless → Royal. Combining 3 of one grade makes the next.
 
-| Gem | Effect (Chipped → Royal) |
-|---|---|
-| **Ember** | Fire damage on hit 3 → 12%, plus Burn chance |
-| **Rime** | Frost damage 3 → 12%, plus Chill chance |
-| **Storm** | Storm damage 3 → 12%, plus Shock chance |
-| **Venom** | Venom damage 3 → 12%, plus Poison chance |
-| **Sun** | Light damage 3 → 12%, plus Radiant |
-| **Gloam** | Shadow damage 3 → 12%, plus Weaken |
-| **Ruby** | +4 → +16% max HP |
-| **Onyx** | +4 → +16% DEF |
-| **Topaz** | +2 → +8% crit |
-| **Emerald** | Regenerate 0.2 → 0.8% HP/s |
+| Gem | In a weapon or off-hand (Chipped → Royal) | In armour: head, body, trinkets (Chipped → Royal) |
+|---|---|---|
+| **Ember** | Fire damage on hit 3 → 12%, plus Burn chance | Fire resist 6 → 20%, and shorter burns |
+| **Rime** | Frost damage 3 → 12%, plus Chill chance | Frost resist 6 → 20%, and shorter chills and freezes |
+| **Venom** | Venom damage 3 → 12%, plus Poison chance | Venom resist 6 → 20%, and shorter poison |
+| **Gloam** | Shadow damage 3 → 12%, plus Weaken | Shadow resist 6 → 20%, and shorter hex-slows |
+| **Storm** | Storm damage 3 → 12%, plus Shock chance | **Static:** melee attackers take 12 → 40% of your ATK as a jolt |
+| **Sun** | Light damage 3 → 12%; light hits heal the party a little | **Radiance:** heals you receive +6 → 20% |
+| **Ruby** | +4 → +16% max HP | the same |
+| **Onyx** | +4 → +16% DEF | the same |
+| **Topaz** | +2 → +8% crit | the same |
+| **Emerald** | Regenerate 0.2 → 0.8% HP/s | the same |
 
 - **An elemental gem in a weapon** with no element gives the weapon that element.
-- **A gem on armor** gives resistance to that element instead of damage. (**Not built yet:** today the gems tab says element gems do nothing in armour. See the plan below.)
+
+#### Armour gems **[BUILT 2026-10-24]**
+Element gems in armour are a defence (four of them) or a bonus (storm and sun). The armour share is 6 / 10 / 15 / 20% by grade (Chipped → Royal); several stack, each total capped at 50%.
+- **Resist (ember, rime, venom, gloam):** less damage from blows of that element, and that element's status on you runs shorter by the same share: burns (fire), chills and freezes (frost), poison (venom), and the slows from a foe's orbs or bolts (the shooter's element). Only some foes attack with an element; see [enemies.md](enemies.md), "Elemental attacks". Against everything else these gems do nothing, so they're for preparing for a region or a boss.
+- **Static (storm):** a foe that strikes the hero up close takes a jolt of the storm share x 2 of the hero's ATK (a Royal pair: 80% ATK), at most once every 0.6 s. Storm-weak foes take more. It suits whoever holds the line.
+- **Radiance (sun):** heals the hero receives are stronger by the sun share. With sun in the weapon too (light hits heal), the hero sustains themselves.
+- **The gems tab** says what each gem does in the chosen piece, and sums the hero's armour gems ("ARMOUR GEMS: 40% FIRE RESIST - STATIC 24% ATK").
+- **Measured** (`tools/gem-bench.js`; bench party at level 5, 3 seeds; damage per hit taken, none → Clear pair → Royal pair → Royal pair of the wrong element):
+  - Fire 19.6 → 16.7 → 14.0 → 19.5; burning 24 → 15 → 15 hero-seconds a minute.
+  - Frost 21.8 → 19.1 → 16.4 → 22.4. Venom 18.4 → 15.7 → 12.5 → 19.2. Shadow 17.1 → 14.9 → 12.7 → 17.5; hex-slowed 59 → 45 → 39.
+  - The Royal pair cuts each element's hits by 40%; whole fights come out 25-32% lower because some blows stay plain (the hexlings warlocks summon). Chills barely shorten in practice: wolves bite again before one wears off.
+  - Storm (Royal pair) on six goblins: the party's damage out 156 → 175 a second (+12%). Sun (Royal in each weapon, then a Royal pair in armour too): healing 210 → 272 a minute (+30%).
+  - `checks()` confirms the exact numbers: 0.6x damage from a Royal pair, 0.5x at the cap, 1x from the wrong element or a plain foe, burns and chills 40% shorter, a jolt of 80% ATK no more than every 0.6 s, a 100 heal giving 140.
 
 ### Wardrobe (cosmetic)
 - **Any look you've ever owned** can be shown over your current gear, slot by slot. This is cheap to do with the paper-doll baker, and it lets players keep a favourite look.

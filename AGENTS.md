@@ -81,6 +81,10 @@ the rule, the check) as well as fixing it.
     the party's gear and freezes levels). It runs on its own test map, `bench`
     (the Undercroft's hall and vault, copied); `start(20, 2, 'lab')` runs it in
     the Dungeon Lab for comparing with numbers from before 2026-10-24.
+  - `tools/gem-bench.js`: armour gems. `checks()` hits, burns, chills and
+    heals a hero with and without gems for exact numbers; `start()` fights
+    each element's foes with no gems, half, matching and wrong gems, and
+    goblins with storm and sun. Read damage per hit: whole fights drift apart.
   - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
     ranged stays put) and never uses a skill or chases far.
   - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.
