@@ -1,5 +1,5 @@
 // Minimap: one pixel per tile, coloured by terrain, hidden under fog of war
-// until explored. Exploration is saved as a base64 bitset in the save state.
+// until explored. Exploration is saved in the save state as runs (see serialize).
 import { rgb } from '../gfx/palette.js';
 import { makeCanvas } from '../gfx/pixel.js';
 import { T, MAP_W, MAP_H, biomeAt } from '../world/map.js';
@@ -111,23 +111,36 @@ export class MiniMap {
 
   isExplored(tx, ty) { return !!this.explored[ty * MAP_W + tx]; }
 
+  // Explored tiles are saved as runs, row by row: alternate lengths of
+  // unexplored and explored tiles, in base 36 ("r:" then "4c3.1k.9a..."). What
+  // you've seen is a few blobs, so even the 40x Vast fully walked is a few KB,
+  // where a bit per tile was 400 KB however little you'd explored.
   serialize() {
-    const bytes = new Uint8Array(Math.ceil((MAP_W * MAP_H) / 8));
-    for (let i = 0; i < MAP_W * MAP_H; i++) if (this.explored[i]) bytes[i >> 3] |= 1 << (i & 7);
-    let s = '';
-    for (const b of bytes) s += String.fromCharCode(b);
-    return btoa(s);
+    const out = [], n = MAP_W * MAP_H;
+    let cur = 0, run = 0;
+    for (let i = 0; i < n; i++) {
+      if (this.explored[i] === cur) { run++; continue; }
+      out.push(run.toString(36)); cur ^= 1; run = 1;
+    }
+    out.push(run.toString(36));
+    return `r:${out.join('.')}`;
   }
 
-  // Explored tiles are saved as a bit per tile, row by row, so they only line
-  // up at the map width they were saved with. Saves record that width
-  // (state.exploredW); older saves predate it and were written at 320 wide.
-  decode(b64) {
+  // Saves record the map width they were written at (state.exploredW): the
+  // tiles only line up at that width. Older saves predate it (320 wide), and
+  // saves before 2026-10-25 hold a base64 bit per tile instead of runs.
+  decode(saved) {
     const out = new Uint8Array(MAP_W * MAP_H);
-    if (!b64) return out;
+    if (!saved) return out;
     try {
-      const s = atob(b64);
       const w = this.state.exploredW || LEGACY_W;
+      const put = (i) => { const x = i % w, y = (i / w) | 0; if (x < MAP_W && y < MAP_H) out[y * MAP_W + x] = 1; };
+      if (saved.startsWith('r:')) {
+        let i = 0, on = 0;
+        for (const r of saved.slice(2).split('.')) { const len = parseInt(r, 36); if (on) for (let k = 0; k < len; k++) put(i + k); i += len; on ^= 1; }
+        return out;
+      }
+      const s = atob(saved);
       const bit = (i) => s.charCodeAt(i >> 3) & (1 << (i & 7));
       for (let y = 0; y < MAP_H; y++) for (let x = 0; x < Math.min(w, MAP_W); x++) if (bit(y * w + x)) out[y * MAP_W + x] = 1;
     } catch { /* corrupt -> start fresh */ }
