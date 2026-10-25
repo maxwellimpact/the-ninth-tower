@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { W, Q as QDATA, MAP, useMap, mapRect, mapDef } from '../world/content.js'; // world.json / quests.json, or a test map's own content
-import { chimneyOf, doorOf } from '../gfx/props.js';
+import { chimneyOf, doorOf, colosseumArt, COLOSSEUM } from '../gfx/props.js';
 import { vnoise } from '../gfx/pixel.js';
 import { buildWorld, buildMapWorld, LANDMARKS, TILE, MAP_W, MAP_H, T, SOLID, biomeAt, areaAt, AREAS, MARSH_Y, SOUTH_Y, RIDGE_X, FROST_Y, frostEdge, southEdge, ridgeAt, TOWER, BARRIER_R, OW_W } from '../world/map.js';
 import { makeTerrainPainter, CHUNK } from '../gfx/terrain.js';
@@ -132,6 +132,27 @@ const PLAIN_COTTAGES = new Set(['shop', 'tavern', 'curio', 'bath', 'mayor']);
 const REGION_GEM = { cinder: 'ember', frost: 'rime', marsh: 'venom', gloam: 'gloam' };
 // a warlock's bolt, coloured by its school (see Enemy.atkEl)
 const SCHOOL_TINT = { fire: 0xffa060, frost: 0x9fe6ff, venom: 0x9cff7a, shadow: 0xd28cff };
+
+// Who sits where in the Colosseum: looks sorted into families that read
+// alike (brown hair, green hoods, red caps...), so that no two of a family sit
+// side by side or one behind the other, and each family is used about as
+// often as the rest. About one seat in six stays empty. The one-of-a-kind
+// characters (the king, the mayor, the ferryman, the hermit, Aldric) aren't in the crowd.
+const CROWD_FAMILIES = [['tam', 'hobb', 'greta', 'hale', 'tolly'], ['brisk', 'rowan', 'inka', 'wynn', 'kaari'], ['margo', 'tansy', 'iren'], ['fennel', 'brew', 'hilde'],
+  ['ada', 'wick', 'orla', 'quill', 'bess', 'moss'], ['bard', 'ember', 'bjorna'], ['oswin', 'rook', 'oda', 'marek', 'halloway'], ['hew', 'coal', 'dusty'], ['piet', 'vey', 'tamsin', 'ignatius']];
+function crowdFor(seats) {
+  const famOf = [], used = new Map(), famUsed = CROWD_FAMILIES.map(() => 0);
+  return seats.map((st, i) => {
+    if (hash(i, 7, 43) < 0.16) return null;
+    const near = seats.slice(0, i).map((o, j) => [o, famOf[j]]).filter(([o, fam]) => fam !== undefined && Math.abs(o.x - st.x) < 13);
+    const order = CROWD_FAMILIES.map((_, k) => k).filter((k) => !near.some(([, fam]) => fam === k)).sort((a, b2) => famUsed[a] - famUsed[b2] || hash(a, i, 44) - hash(b2, i, 44));
+    const k = order[0] ?? Math.floor(hash(i, 8, 43) * CROWD_FAMILIES.length);
+    famOf[i] = k; famUsed[k]++;
+    const id = [...CROWD_FAMILIES[k]].sort((a, b2) => (used.get(a) || 0) - (used.get(b2) || 0) || hash(a.length, i, 45) - hash(b2.length, i, 45))[0];
+    used.set(id, (used.get(id) || 0) + 1);
+    return id;
+  });
+}
 
 export class Game extends Phaser.Scene {
   constructor() { super('Game'); }
@@ -1182,6 +1203,7 @@ export class Game extends Phaser.Scene {
         });
         continue;
       }
+      if (b.kind === 'colosseum') { this.buildColosseum(b); continue; }
       const shut = b.opens && this.folkCount() < b.opens; // a Brightwater home still boarded up
       const img = this.add.image(bx, by, `house_${b.kind === 'tower' && this.flags.malgrimDefeated ? 'towerRuin' : b.kind}${shut ? '_shut' : ''}`).setOrigin(0.5, 1).setDepth(by);
       this.add.image(bx + 3, by - 4, 'shadowXL').setAlpha(0.25).setDepth(-4).setScale(1.5, 1.6);
@@ -2844,6 +2866,66 @@ export class Game extends Phaser.Scene {
       this.time.delayedCall(5200, () => { this.events.emit('banner', 'THE BARD HAS COME HOME', 'TILLY PLAYS BY THE TAVERN DOOR - LISTEN FOR THE HARP'); music.setBard(true); audio.sfx('levelUp'); });
     }
     this.autosave('townsfolk');
+  }
+
+  // ------------------------------------------------------------ the Colosseum
+  // Its stands, a crowd of townsfolk on the benches (head and shoulders: each
+  // sprite cropped at the bench in front of them), then its near wall and
+  // gate over them. Built with its chunk. The crowd breathes, someone looks
+  // round now and then, someone hops up cheering; with the party near, cheers
+  // roll along the stands.
+  buildColosseum(b) {
+    const bx = b.x * TILE + 8, by = (b.y + 1) * TILE, x0 = bx - COLOSSEUM.W / 2, y0 = by - COLOSSEUM.H;
+    const seats = (COLOSSEUM.seats ??= colosseumArt().seats);
+    this.lazy(bx, by, (e) => {
+      const objs = [this.add.image(bx, by, 'colosseum_back').setOrigin(0.5, 1).setDepth(by - 2)];
+      const crowd = crowdFor(seats);
+      const fans = [];
+      seats.forEach((st, i) => {
+        const id = crowd[i];
+        if (!id || !this.textures.exists(id)) return;
+        // frame rows 13-24 (head and shoulders) sit just above the bench line
+        const s = this.add.sprite(x0 + st.x - 24, y0 + st.y - 25, id, 'idle_down_0').setOrigin(0).setDepth(by - 2 + 0.5 + st.tier * 0.5).setCrop(15, 13, 18, 12);
+        const f = { s, id, st, baseY: s.y, face: st.face };
+        this.faceFan(f, st.face);
+        s.anims.setProgress(hash(i, 5, 41)); s.anims.timeScale = 0.8 + hash(i, 6, 41) * 0.5; // each breathes on their own beat
+        fans.push(f); objs.push(s);
+      });
+      objs.push(this.add.image(bx, by, 'colosseum_front').setOrigin(0.5, 1).setDepth(by));
+      let waveT = 0;
+      e.timers.push(this.time.addEvent({ delay: 300, loop: true, callback: () => {
+        if (!this.cameras.main.worldView.contains(bx, by - 30)) return;
+        const r = Math.random(), f = fans[Math.floor(Math.random() * fans.length)];
+        if (!f) return;
+        if (r < 0.12) this.cheerFan(f); // someone hops up
+        else if (r < 0.2 && f.st.face === 'down' && !f.glance) { // someone looks along the row
+          f.glance = true; this.faceFan(f, Math.random() < 0.5 ? 'left' : 'right');
+          this.time.delayedCall(1200 + Math.random() * 1500, () => { if (f.s.active) { this.faceFan(f, 'down'); f.glance = false; } });
+        }
+        // the party near the gate: a cheer rolls along the stands every few seconds
+        const L = this.leader;
+        if ((waveT -= 0.3) <= 0 && L && Math.hypot(L.x - bx, L.y - by) < 10 * TILE) {
+          waveT = 4 + Math.random() * 3;
+          const dir = Math.random() < 0.5 ? 1 : -1;
+          for (const k of fans) this.time.delayedCall(Math.max(0, (k.st.x - (dir > 0 ? 0 : COLOSSEUM.W)) * dir) * 6 + k.st.tier * 60, () => k.s.active && this.cheerFan(k));
+        }
+      } }));
+      return objs;
+    });
+  }
+
+  faceFan(f, face) {
+    f.s.play(`${f.id}_idle_${face === 'down' ? 'down' : 'side'}`, true).setFlipX(face === 'left');
+    f.s.setCrop(15, 13, 18, 12);
+  }
+
+  // a hop with the arms up: the crop grows with the hop, so no gap opens above the bench
+  cheerFan(f) {
+    if (f.cheering) return;
+    f.cheering = true;
+    this.tweens.add({ targets: f.s, y: f.baseY - 4, duration: 130, yoyo: true, repeat: 1, ease: 'Quad.easeOut',
+      onUpdate: () => f.s.setCrop(15, 13, 18, 12 + Math.round(f.baseY - f.s.y)),
+      onComplete: () => { f.s.y = f.baseY; f.s.setCrop(15, 13, 18, 12); f.cheering = false; } });
   }
 
   // ------------------------------------------------------------ lore pages
