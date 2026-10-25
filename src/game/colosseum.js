@@ -5,7 +5,7 @@
 // run gets says how strong the party is. Kills give XP, gold and drops as
 // anywhere else, and every `prizeEvery` waves the crowd throws a prize. The
 // party's gains go to the main save; the best run is the Colosseum's own
-// (its world's flags.arenaBest).
+// (its world's flags.arenaBest), and a new run starts at half of it.
 import Phaser from 'phaser';
 import tuning from '../data/tuning.json';
 import { makeItem, tierForLevel } from './itemgen.js';
@@ -34,9 +34,14 @@ export class Colosseum {
   get best() { return this.sc.flags.arenaBest || 0; }
   levelOf(wave) { return Math.min(tuning.levelCap + 5, this.cfg.levelStart + (wave - 1) * this.cfg.levelPerWave); }
 
-  // a new run, from wave 1
+  // the wave a new run starts at: half the best run so far, so a strong party
+  // doesn't wade through waves it can't feel (wave 1 until there's a best of 4)
+  get startWave() { return Math.max(1, Math.floor(this.best / 2)); }
+
+  // a new run
   start(delay = 1800) {
-    this.wave = 0;
+    this.wave = this.startWave - 1;
+    this.first = this.startWave;
     this.foes = [];
     this.queue(delay);
   }
@@ -65,7 +70,7 @@ export class Colosseum {
       this.foes.push(e);
     }
     audio.sfx('roar');
-    sc.events.emit('banner', `WAVE ${n}`, `LEVEL ${lv} - ${count} FOES${elites ? ` - ${elites} ELITE` : ''}${n === 1 && this.best ? ` - BEST ${this.best}` : ''}`);
+    sc.events.emit('banner', `WAVE ${n}`, n === this.first && n > 1 ? `HALF YOUR BEST (${this.best}) - LEVEL ${lv}` : `LEVEL ${lv} - ${count} FOES${elites ? ` - ${elites} ELITE` : ''}${n === 1 && this.best ? ` - BEST ${this.best}` : ''}`);
   }
 
   check() {
@@ -95,12 +100,12 @@ export class Colosseum {
   // The party fell: the run is over. Clear the sand, say how it went, and
   // start a new run once the party is back on its feet (see Game.wipe).
   onWipe() {
-    const lasted = Math.max(0, this.wave - 1);
+    const reached = this.wave;
     this.next?.remove(); this.next = null;
     for (const e of this.sc.enemies) if (e.alive) { e.alive = false; e.clearZone(); e.destroy(); }
     this.foes = [];
     this.wave = 0;
-    return ['THE CROWD ROARS', `YOU LASTED ${lasted} WAVE${lasted === 1 ? '' : 'S'} - BEST ${this.best}`];
+    return ['THE CROWD ROARS', `FELL ON WAVE ${reached} - BEST ${this.best}`];
   }
 
   destroy() { this.watch?.remove(); this.next?.remove(); }

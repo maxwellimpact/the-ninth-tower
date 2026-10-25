@@ -25,6 +25,9 @@ const slotKind = (slot) => (slot.startsWith('trinket') ? 'trinket' : slot);
 // one-line stat summary for an item
 export const statLine = (it) => Object.entries(it.stats).map(([k, v]) => (k === 'crit' || k === 'cdr' ? `+${Math.round(v * 100)}% ${k === 'cdr' ? 'CDR' : 'CRIT'}` : `+${v} ${k.toUpperCase()}`)).join('  ');
 
+// armour gem lines in the hero's stats, by element (the gems' own colours)
+const GEM_TINT = { fire: 0xffa060, frost: 0x9fe6ff, venom: 0x9cff7a, shadow: 0xd28cff, storm: 0xfff6c8, light: 0xffe08a };
+
 export class Menu extends Phaser.Scene {
   constructor() { super('Menu'); }
 
@@ -298,7 +301,7 @@ export class Menu extends Phaser.Scene {
       const wM = Math.min(130, Math.max(110, (W - 230) * 0.45));
       const colR = colM + wM + 8, wR = W - colR - 10;
       this.drawPreview(10, top, wL, 84);
-      this.drawStats(10, top + 92, wL, 1);
+      this.drawStats(10, top + 92, wL, 1, H - 34 - (top + 92) - 4);
       this.drawSlotsColumn(colM, top, wM, 28);
       this.listRegion(colR, top, wR, H - 38, 24);
       this.drawDesc(colM, H - 34, W - colM - 10);
@@ -307,7 +310,7 @@ export class Menu extends Phaser.Scene {
       const wM = Math.min(124, Math.max(100, (W - 220) * 0.45));
       const colR = colM + wM + 6, wR = W - colR - 8;
       this.drawPreview(10, top, wL, 66);
-      this.drawStats(10, top + 70, wL, 2);
+      this.drawStats(10, top + 70, wL, 2, H - 4 - (top + 70));
       this.drawSlotsColumn(colM, top, wM, 25);
       this.listRegion(colR, top, wR, H - 34, 22);
       this.drawDesc(colM, H - 30, W - colM - 8);
@@ -315,7 +318,7 @@ export class Menu extends Phaser.Scene {
       const y0 = 60;
       const pw = Math.min(84, Math.floor(W * 0.44));
       this.drawPreview(8, y0, pw, 84);
-      this.drawStats(pw + 16, y0 + 2, W - pw - 24, 1);
+      this.drawStats(pw + 16, y0 + 2, W - pw - 24, 1, 88);
       const sy = y0 + 92;
       this.drawSlotsRow(8, sy, W - 16);
       this.listRegion(8, sy + 54, W - 16, H - 40, 24, false);
@@ -434,7 +437,8 @@ export class Menu extends Phaser.Scene {
     this.t(x + w - 9, y + h - 10, '>', 'fontGold'); this.btn(x + w - 22, y + h - 24, 22, 24, () => this.rotate(1));
   }
 
-  drawStats(x, y, w, cols) {
+  // room: the height there is, so armour gem lines are only added while they fit
+  drawStats(x, y, w, cols, room = 99) {
     const h = this.hero, hs = h.hs, st = h.stats;
     const compact = cols > 1;
     const lines = [
@@ -443,6 +447,16 @@ export class Menu extends Phaser.Scene {
       ['ATK', `${st.atk}`], ['DEF', `${st.def}`], ['CRIT', `${Math.round(st.crit * 100)}%`], ['DODGE', `${Math.round((st.evade || 0) * 100)}%`],
     ];
     const per = Math.ceil(lines.length / cols), cw = Math.floor(w / cols);
+    // armour gems: their own short rows under the base stats (which stay put),
+    // each label in its element's colour, only what the hero wears, and only
+    // as many as fit (labels kept to 5 letters for the narrow columns)
+    const pc = (v) => `${Math.round(v * 100)}%`;
+    const gems = [
+      ...[['fire', 'FIRE'], ['frost', 'FROST'], ['venom', 'VENOM'], ['shadow', 'DARK']].filter(([el]) => st.resist?.[el]).map(([el, k]) => [k, pc(st.resist[el]), GEM_TINT[el]]),
+      st.static && ['JOLT', pc(st.static * 2), GEM_TINT.storm], st.radiance && ['HEAL', `+${pc(st.radiance)}`, GEM_TINT.light],
+    ].filter(Boolean);
+    const gemRows = Math.min(Math.ceil(gems.length / cols), Math.max(0, Math.floor((room - (compact ? 16 : 0) - 2) / 9) - per));
+    const gy = y + per * 9 + 2;
     lines.forEach(([k, v], i) => {
       const cx = x + Math.floor(i / per) * cw, cy = y + (i % per) * 9;
       this.t(cx + 2, cy, k, 'fontPlain');
@@ -453,8 +467,14 @@ export class Menu extends Phaser.Scene {
         if (bw > 6) this.gfx.fillStyle(C.ink).fillRect(bx, cy + 1, bw, 5).fillStyle(C.night).fillRect(bx + 1, cy + 2, bw - 2, 3).fillStyle(0xc8a0ff).fillRect(bx + 1, cy + 2, Math.round((bw - 2) * f), 3);
       }
     });
+    gems.slice(0, gemRows * cols).forEach(([k, v, tint], i) => {
+      const cx = x + (i % cols) * cw, cy = gy + Math.floor(i / cols) * 9;
+      this.t(cx + 2, cy, k, 'fontPlain', tint);
+      this.t(cx + cw - 4 - v.length * 5, cy, v, 'font');
+    });
+    const bottom = gemRows ? gy + gemRows * 9 - 1 : y + per * 9;
     if (compact) { // the columns are too narrow for an inline bar: a full-width one under them
-      const by = y + per * 9 + 1, f = Math.max(0, Math.min(1, hs.xp / xpToNext(hs.level)));
+      const by = bottom + 1, f = Math.max(0, Math.min(1, hs.xp / xpToNext(hs.level)));
       this.gfx.fillStyle(C.ink).fillRect(x + 2, by, w - 4, 5).fillStyle(C.night).fillRect(x + 3, by + 1, w - 6, 3).fillStyle(0xc8a0ff).fillRect(x + 3, by + 1, Math.round((w - 6) * f), 3);
       this.t(x + 2, by + 7, `${hs.xp}/${xpToNext(hs.level)} TO LV${hs.level + 1}`, 'fontPlain', 0x9d93b3, w - 4);
     }

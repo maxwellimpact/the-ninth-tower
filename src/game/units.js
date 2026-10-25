@@ -1207,7 +1207,12 @@ const ENEMY = enemyData;
 // Coldproof gear and Purify keep both off.
 export function chillHero(h, t = 2) {
   if (!h?.buff || h.downed || h.purifyT > 0 || h.hasTrait?.('coldproof') || h.hasPerk?.('frostward')) return;
-  h.buff('slow', 0.65, t * (1 - (h.stats?.resist?.frost || 0))); // rime gems in armour shorten it
+  // rime gems in armour shorten it, and once it wears off the hero stays
+  // thawed for a moment (5 s x their frost resist) before another can take hold
+  const r = h.stats?.resist?.frost || 0;
+  if (r && h.buffs.thaw) return;
+  h.buff('slow', 0.65, t * (1 - r));
+  if (r) h.buffs.thaw = { mul: 1, t: t * (1 - r) + 5 * r }; // (counts down with the other buffs)
   const now = h.scene.time.now;
   if (!(h.chillTxtT > now)) { h.chillTxtT = now + 1500; h.scene.floatText(h.x, h.y - 34, 'CHILLED', 'fontPlain', 0x9fdcff); }
 }
