@@ -354,8 +354,8 @@ export function buildWorld() {
   rect(73, 15, 74, 16, T.MOUTH); // hidden grotto, sealed by a cracked boulder
 
   // The Colosseum (Highmeadow): solid where its walls stand (only the tiles
-  // its sprite covers, so no ground shows through), the gate open, a paved apron
-  { const C = LANDMARKS.colosseum; rect(C.x - 3, C.y - 3, C.x + 3, C.y - 1, T.HOUSE); rect(C.x - 2, C.y, C.x + 2, C.y, T.HOUSE); rect(C.x - 2, C.y + 1, C.x + 2, C.y + 1, T.PAVED); set(C.x, C.y, T.PAVED); }
+  // its sprite covers, so no ground shows through), the gate open
+  { const C = LANDMARKS.colosseum; rect(C.x - 4, C.y - 2, C.x + 4, C.y - 1, T.HOUSE); set(C.x - 1, C.y, T.HOUSE); set(C.x + 1, C.y, T.HOUSE); set(C.x, C.y, T.PATH); rect(C.x - 1, C.y + 1, C.x + 1, C.y + 2, T.PATH); } // the road runs right up into the gate
 
   // Old watchtower (Highmeadow)
   rect(156, 15, 167, 25, T.PAVED);
@@ -630,7 +630,7 @@ export function buildWorld() {
   for (const c of W.climbs || []) { reserve(c.x, c.y, 3); reserve(c.top[0], c.top[1], 3); }
   for (const gl of W.glides || []) { reserve(gl.x, gl.y, 3); reserve(gl.land[0], gl.land[1], 3); }
   reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
-  reserve(LANDMARKS.colosseum.x, LANDMARKS.colosseum.y - 1, 7); // the Colosseum and its apron
+  reserve(LANDMARKS.colosseum.x, LANDMARKS.colosseum.y - 1, 8); // the Colosseum and its apron
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   // every reserved circle painted into a grid once, instead of checking each one at every tile

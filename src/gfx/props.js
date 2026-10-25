@@ -871,67 +871,84 @@ export function forgeGate() {
   return c;
 }
 
-// The Colosseum (Highmeadow): an old sandstone amphitheatre seen from the
-// south. The rim curves away over the sand inside, a two-tier arcade runs
-// round the front, and the great gate stands open under a raised portcullis,
-// with the realm's red banners along the top. 128 x 80.
-export function colosseum(warm = true) {
-  const W = 128, H = 80, cx = 64, cy = 22, rx = 60, ry = 14, wallH = 50;
-  // warm sandstone (the default) or the grey limestone of the cottages
-  const S = warm ? { lit: 'sand', mid: 'dirtL', shade: 'dirt', course: 'dirtD', courseL: 'dirt', top: 'sand', jamb: 'dirtL' } : { lit: 'white', mid: 'bone', shade: 'mist', course: 'slate', courseL: 'stone', top: 'white', jamb: 'mist' };
-  const [c, ctx] = makeCanvas(W, H);
-  const front = (x) => cy + ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); // the near edge of the rim
-  // inside, over the rim: the far stands (stone tiers with a speckle of crowd) and the sand
-  for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) {
-    const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-    if (e > 1) continue;
-    const inner = ((x - cx) / (rx - 14)) ** 2 + ((y - cy - 3) / (ry - 6)) ** 2;
-    if (inner < 1) px(ctx, x, y, inner > 0.75 ? 'dirtL' : 'sand'); // the sand floor
-    else {
-      const tier = Math.floor(e * 6) % 2; // the stepped seats
-      const crowd = y < cy && hash(x, y, 31) < 0.22;
-      px(ctx, x, y, crowd ? ['redL', 'blueL', 'goldL', 'bone', 'skin'][Math.floor(hash(x, y, 32) * 5)] : tier ? 'stone' : 'mist');
+// The Colosseum (Highmeadow), built the way a walled town is: a ring of
+// sandstone on a shallow oval, drawn column by column. The far half shows its
+// inner face - two tiers of benches under a colonnade, with awning masts on
+// the rim - and the near half its outer face: two arcades, a cornice, a lit
+// walk, and the gate under a raised portcullis in a taller block. Two layers,
+// so the crowd (real townsfolk sprites, Game.buildColosseum) sits between
+// them: `back` (stands and sand) and `front` (the near wall and the gate),
+// both 176 x 86 with their feet on the bottom row. `seats` lists where each
+// spectator's head-and-shoulders sit, from the canvas's top-left: x, the
+// bench line y, the tier (0 back, 1 front) and which way they face.
+export const COLOSSEUM = { W: 176, H: 86, RX: 82, RY: 9, WH: 26, WB: 38 };
+const SANDSTONE = ['dirtD', 'dirt', 'dirtL', 'sand', 'bone'];
+const tone = (l, x, y) => SANDSTONE[Math.max(0, Math.min(4, Math.floor(l * 5 + (bayer(x, y) - 0.5) * 0.5)))];
+// big irregular blocks: 4px courses, each row's blocks a different width and offset
+function sandBlock(x, y, top, seed) {
+  const row = Math.floor((y - top) / 4), off = Math.floor(hash(row, 1, seed) * 9), bw = 7 + Math.floor(hash(row, 2, seed) * 4);
+  return { joint: (x + off) % bw === 0 || (y - top) % 4 === 3, tone: (hash(Math.floor((x + off) / bw), row, seed + 5) - 0.5) * 0.22 };
+}
+export function colosseumArt() {
+  const { W, H, RX, RY, WH, WB } = COLOSSEUM, CX = W / 2, ECY = H - 2 - RY;
+  const at = (deg) => { const a = (deg * Math.PI) / 180; return [CX + Math.cos(a) * RX, ECY + Math.sin(a) * RY]; };
+  const run = (ctx, a0, a1, col) => { let last = null; for (let a = a0; a <= a1; a += 0.2) { const [x, y] = at(a), ix = Math.round(x); if (ix === last) continue; last = ix; col(ix, Math.round(y), a); } };
+  const [back, bctx] = makeCanvas(W, H), [front, fctx] = makeCanvas(W, H);
+  // the far half: the colonnade, then benches (a 2px lit seat, an 8px riser in shadow)
+  run(bctx, 180, 360, (x, gy, a) => {
+    const top = gy - WB, light = 0.5 - (x - CX) / RX * 0.12;
+    for (let y = top; y <= gy; y++) {
+      const r = y - top;
+      if (r < 7) { const open = r > 1 && r < 6 && Math.floor((x + 1) / 3) % 2 === 0; px(bctx, x, y, open ? 'night' : tone(r === 0 ? light + 0.25 : light, x, y)); continue; }
+      const k = (r - 7) % 10;
+      px(bctx, x, y, tone(k < 2 ? light + 0.22 - k * 0.1 : light - 0.2 - (k > 7 ? 0.08 : 0), x, y));
     }
+    if (Math.round(a) % 30 === 0) { px(bctx, x, top - 7, 'woodD', 1, 7); px(bctx, x + 1, top - 6, 'red', 3, 3); } // awning masts
+  });
+  for (let y = Math.floor(ECY - RY); y <= ECY + RY; y++) for (let x = Math.floor(CX - RX); x <= CX + RX; x++) { // the sand, where any shows
+    if (((x - CX) / RX) ** 2 + ((y - ECY) / RY) ** 2 <= 0.9) px(bctx, x, y, hash(x, y, 4) < 0.15 ? 'dirtL' : 'sand');
   }
-  // the front wall: sandstone courses, darker toward the shaded east side
-  for (let x = cx - rx; x <= cx + rx; x++) {
-    const top = Math.round(front(x)), f = (x - (cx - rx)) / (rx * 2);
-    const h = Math.round(wallH - (1 - Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2))) * 18); // shorter as it curves away
-    for (let y = top; y < Math.min(H - 1, top + h); y++) {
-      const course = (y - top) % 6 === 5 || ((x + Math.floor((y - top) / 6) * 4) % 9 === 0 && (y - top) % 6 !== 0);
-      px(ctx, x, y, course ? (f > 0.75 ? S.course : S.courseL) : f < 0.2 ? S.lit : f < 0.7 ? S.mid : S.shade);
-    }
-    px(ctx, x, top, S.top); px(ctx, x, top + 1, S.course); // the cornice
-  }
-  // two tiers of arches, following the curve: the upper arcade and the ground arcade
-  const arch = (ax, ay, w, h, fill) => {
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const r = w / 2, dx = x + 0.5 - r, dy = Math.max(0, r - y - 0.5);
-      if (dx * dx + dy * dy <= r * r) px(ctx, ax + x, ay + y, fill(x, y));
-    }
+  outline(back, 'ink');
+  // the near half: the outer face with two arcades, cornices and the walk
+  const step = 7;
+  const inArch = (a, r0, r1, gy, y) => {
+    const u = (((a % step) + step) % step) / step - 0.5, half = 0.24;
+    if (Math.abs(u) > half) return false;
+    return y >= gy - r1 + Math.round((1 - Math.sqrt(1 - (u / half) ** 2)) * 3) && y <= gy - r0;
   };
-  for (let ax = cx - rx + 6; ax <= cx + rx - 10; ax += 11) {
-    const mid = ax + 3, top = Math.round(front(mid)), side = Math.abs(mid - cx) / rx;
-    if (Math.abs(mid - cx) < 14) continue; // room for the great gate
-    arch(ax, top + 6, 7, Math.round(9 - side * 3), (x, y) => (y < 2 && x > 1 && x < 5 ? 'slate' : 'night'));
-    arch(ax, top + 19, 7, Math.round(13 - side * 5), (x, y) => (y < 2 && x > 1 && x < 5 ? 'slate' : 'ink'));
-    px(ctx, ax - 2, top + 4, S.lit, 1, Math.round(28 - side * 8)); // a pilaster between the arches
+  run(fctx, 0, 180, (x, gy, a) => {
+    const top = gy - WH, light = 0.62 - (x - CX) / RX * 0.16 - Math.abs(Math.cos((a * Math.PI) / 180)) * 0.12, mid = Math.round(WH * 0.5);
+    for (let y = top; y <= gy; y++) {
+      const r = gy - y, b = sandBlock(x, y, top, 3);
+      let l = light + b.tone - (b.joint ? 0.28 : 0) - (r < 2 ? 0.15 : 0);
+      if (y === top) l = light + 0.35; else if (y === top + 1 || r === mid) l = light + 0.12; else if (y === top + 2 || r === mid - 1) l = light - 0.3;
+      if (inArch(a + step * 0.45, 2, Math.round(WH * 0.4), gy, y)) { px(fctx, x, y, y - (gy - Math.round(WH * 0.4)) < 2 ? 'night' : 'ink'); continue; }
+      if (inArch(a, Math.round(WH * 0.58), Math.round(WH * 0.84), gy, y)) { px(fctx, x, y, 'night'); continue; }
+      px(fctx, x, y, tone(l, x, y));
+    }
+  });
+  // the gate: a taller block with a low pediment, a banner and the raised portcullis
+  const gx = Math.round(CX), gy = H - 2, gw = 26, gTop = gy - WH - 6;
+  for (let y = gTop; y <= gy; y++) for (let x = gx - gw / 2; x < gx + gw / 2; x++) {
+    const b = sandBlock(x, y, gTop, 8), f = (x - (gx - gw / 2)) / gw;
+    let l = 0.66 - f * 0.22 + b.tone - (b.joint ? 0.28 : 0);
+    if (y === gTop) l = 0.95; else if (y === gTop + 1) l = 0.75; else if (y === gTop + 2) l = 0.3;
+    px(fctx, x, y, tone(l, x, y));
   }
-  // the great gate: a tall arch, open, the portcullis raised into its top
-  const gTop = Math.round(front(cx)) + 14;
-  arch(cx - 10, gTop, 20, H - 2 - gTop, (x, y) => (y < 4 ? (x % 3 === 0 ? 'steelD' : 'ink') : y < 6 && x % 3 === 0 ? 'steel' : 'ink'));
-  for (let y = gTop - 2; y < H - 1; y++) { px(ctx, cx - 12, y, S.lit); px(ctx, cx + 11, y, S.jamb); } // its jambs
-  px(ctx, cx - 3, gTop - 5, 'gold', 6, 3); px(ctx, cx - 2, gTop - 4, 'goldL', 4, 1); // a gilded crest on the keystone
-  // banners along the rim
-  for (const bx of [cx - 46, cx - 24, cx + 22, cx + 44]) {
-    const by = Math.round(front(bx)) - 9;
-    px(ctx, bx, by, 'woodD', 1, 10); px(ctx, bx, by - 1, 'gold');
-    px(ctx, bx + 1, by + 1, 'red', 4, 5); px(ctx, bx + 1, by + 1, 'redL', 4, 1); px(ctx, bx + 1, by + 6, 'redD', 1, 1); px(ctx, bx + 4, by + 6, 'redD', 1, 1); px(ctx, bx + 2, by + 3, 'gold', 2, 1);
+  for (let i = 0; i < 6; i++) px(fctx, gx - 12 + i * 2, gTop - 1 - i, 'sand', 24 - i * 4, 1);
+  for (let y = 0; y < 22; y++) for (let x = 0; x < 18; x++) { const dx = x + 0.5 - 9, dy = Math.max(0, 9 - y - 0.5); if (dx * dx + dy * dy <= 81) px(fctx, gx - 9 + x, gy - 22 + y, y < 1 ? 'dirtD' : 'ink'); }
+  for (let x = 0; x < 18; x += 3) px(fctx, gx - 9 + x, gy - 19, 'steelD', 1, 4);
+  px(fctx, gx - 8, gy - 16, 'steel', 16, 1);
+  px(fctx, gx - 3, gTop + 5, 'red', 6, 9); px(fctx, gx - 3, gTop + 5, 'redL', 6, 1); px(fctx, gx - 1, gTop + 8, 'gold', 2, 2);
+  for (const bx of [gx - 17, gx + 13]) { px(fctx, bx, gy - 2, 'steelD', 4, 2); px(fctx, bx + 1, gy, 'steelD', 2, 1); px(fctx, bx + 1, gy - 5, 'fire', 2, 3); px(fctx, bx + 1, gy - 6, 'fireL', 2, 1); } // braziers
+  outline(front, 'ink');
+  // the seats: two tiers along the far half, the ends turned toward the middle
+  const seats = [];
+  for (const tier of [0, 1]) for (let a = 196 + tier * 4.75; a <= 344; a += 9.5) {
+    const [x, gy] = at(a);
+    seats.push({ x: Math.round(x), y: Math.round(gy) - WB + 18 + tier * 10, tier, face: a < 222 ? 'right' : a > 318 ? 'left' : 'down' });
   }
-  // braziers either side of the gate
-  for (const fx of [cx - 18, cx + 15]) { px(ctx, fx, H - 9, 'steelD', 4, 2); px(ctx, fx + 1, H - 7, 'steelD', 2, 6); px(ctx, fx + 1, H - 12, 'fire', 2, 3); px(ctx, fx + 1, H - 13, 'fireL', 2, 1); }
-  outline(c, 'ink');
-  return c;
+  return { back, front, seats };
 }
 
 // ================================================================ Frosthelm
