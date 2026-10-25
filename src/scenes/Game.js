@@ -128,6 +128,8 @@ Object.assign(BARKS.gap, { kesh: 'NEED A TOOL FOR THIS. NOT A FIST.', wren: "WE 
 // cottage art with nothing tied to it: as a landmark with no home to reopen, shown only while its chunk is in
 const PLAIN_COTTAGES = new Set(['shop', 'tavern', 'curio', 'bath', 'mayor']);
 
+// the gem that resists a region's elemental foes (see design/enemies.md, elemental attacks)
+const REGION_GEM = { cinder: 'ember', frost: 'rime', marsh: 'venom', gloam: 'gloam' };
 // a warlock's bolt, coloured by its school (see Enemy.atkEl)
 const SCHOOL_TINT = { fire: 0xffa060, frost: 0x9fe6ff, venom: 0x9cff7a, shadow: 0xd28cff };
 
@@ -1154,9 +1156,9 @@ export class Game extends Phaser.Scene {
       const x = px(w.x), y = px(w.y);
       const o = this.addInteractable({ x, y, reach: 22, standOff: 10, h: 16, kind: 'warp', warp: w, armed: false, interact: () => this.tryWarp(w) });
       (this.warpObjs ??= []).push(o);
-      if (w.stairs) {
-        // a visible stairwell; you go down by tapping it, never by stumbling in
-        this.add.image(x, y + 8, 'stairsDown').setOrigin(0.5, 1).setDepth(-40);
+      if (w.stairs || (w.tap && w.label)) {
+        // a visible stairwell (or a named gate, like the Colosseum's): you go in by tapping it, never by stumbling in
+        if (w.stairs) this.add.image(x, y + 8, 'stairsDown').setOrigin(0.5, 1).setDepth(-40);
         o.label = this.add.bitmapText(x, y - 22, 'fontGold', w.label || 'STAIRS DOWN').setOrigin(0.5).setDepth(TOP).setAlpha(0);
         o.labelArrow = this.add.bitmapText(x, y - 14, 'fontGold', 'V').setOrigin(0.5).setDepth(TOP).setAlpha(0);
         this.tweens.add({ targets: o.labelArrow, y: y - 11, duration: 450, yoyo: true, repeat: -1 });
@@ -2408,9 +2410,11 @@ export class Game extends Phaser.Scene {
     for (const h of this.party) if (!h.downed) h.gainXp(xpFor(h.level, e.level, e.s.xp));
     this.state.stats.kills++;
     if (e.s.gem && Math.random() < e.s.gem) {
-      // warlocks and witchlings sometimes carry a chipped gem
+      // warlocks and witchlings sometimes carry a chipped gem; in a region whose
+      // foes strike with an element, half the time it's the gem that resists it
       const kinds = ['ember', 'rime', 'storm', 'venom', 'sun', 'gloam', 'ruby', 'onyx', 'topaz', 'emerald'];
-      const g = `${kinds[Math.floor(Math.random() * kinds.length)]}1`;
+      const counter = REGION_GEM[biomeAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE))];
+      const g = `${counter && Math.random() < 0.5 ? counter : kinds[Math.floor(Math.random() * kinds.length)]}1`;
       this.state.gems[g] = (this.state.gems[g] || 0) + 1;
       this.time.delayedCall(400, () => this.floatText(e.x, e.y - 40, 'A GEM!', 'fontGold'));
     }
