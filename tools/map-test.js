@@ -167,8 +167,21 @@ export const TESTS = {
       'the main save untouched': localStorage.getItem(S.SAVE_KEY) === main,
       'listed with the saved maps': (await import('/src/world/content.js')).ownMapIds().includes('vast40d'),
       'the 10x Vast still never saves': (await import('/src/world/content.js')).saveMode('vast') === 'none',
-      [`a save takes ${ms} ms and ${Math.round(raw.length / 1024)} KB`]: ms < 100,
+      [`a save takes ${ms} ms and ${Math.round(raw.length / 1024)} KB`]: ms < 100 && raw.length < 64 * 1024,
     };
+    // the explored map, saved as runs: it reads back exactly, and an old save's
+    // bit per tile still reads
+    const M = await import('/src/world/map.js');
+    const mm = sc.minimap, n = mm.explored.length, keep = mm.explored.slice();
+    for (let k = 0; k < 40; k++) { const cx = Math.floor(Math.random() * (M.MAP_W - 80)), cy = Math.floor(Math.random() * (M.MAP_H - 60)); for (let y = cy; y < cy + 60; y++) for (let x = cx; x < cx + 80; x++) mm.explored[y * M.MAP_W + x] = 1; }
+    const runs = mm.serialize(), back = mm.decode(runs);
+    const bytes = new Uint8Array(Math.ceil(n / 8)); for (let i = 0; i < n; i++) if (mm.explored[i]) bytes[i >> 3] |= 1 << (i & 7);
+    let b = ''; for (const x of bytes) b += String.fromCharCode(x);
+    const old = mm.decode(btoa(b));
+    const same = (a) => { for (let i = 0; i < n; i++) if (a[i] !== mm.explored[i]) return false; return true; };
+    out[`explored map as runs reads back exactly (${Math.round(runs.length / 1024)} KB with 40 patches seen)`] = same(back);
+    out['an old bit-per-tile save still reads'] = same(old);
+    mm.explored.set(keep);
     S.clearSave(key);
     return out;
   }),
@@ -243,9 +256,11 @@ export const TESTS = {
     const w2 = C.foes.map((e) => e.level);
     const disk = JSON.parse(localStorage.getItem(S.SAVE_KEY));
     const gold = sc.state.gold;
+    sc.flags.arenaBest = 12; // as if an earlier run had reached wave 12: the next starts at half that
     for (const h of sc.party) { h.hp = 0; h.downed = true; }
     sc.wipe();
-    const restarted = await waitFor(() => C.wave === 1 && C.foes.length && !sc.busy, 900);
+    const restarted = await waitFor(() => C.wave === 6 && C.foes.length && !sc.busy, 900);
+    const w6 = C.foes.map((e) => e.level);
     return {
       'wave 1 at level 1': w1.length >= 2 && w1.every((l) => l === 1),
       'the party cleared it': cleared,
@@ -253,7 +268,7 @@ export const TESTS = {
       'the best run is kept in the Colosseum\'s world': disk.worlds?.colosseum?.flags?.arenaBest >= 1 && !disk.flags.arenaBest,
       'the party\'s XP saved to the main game': disk.heroes.brann.xp > 0 || disk.heroes.brann.level > 8,
       'falling costs no gold': sc.state.gold === gold,
-      'a new run starts at wave 1': restarted,
+      'with a best of 12, the next run starts at wave 6, level 6': restarted && w6.every((l) => l === 6 || l === 8), // (elites sit 2 up)
       'Aldermere untouched on disk': disk.flags.chest_plateau && disk.flags.ward_marsh,
     };
   }),

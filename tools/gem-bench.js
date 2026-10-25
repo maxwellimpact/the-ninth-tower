@@ -105,6 +105,9 @@ export async function checks() {
   wear(['rime4', 'rime4']);
   out.wrongGemOnFire = +(hit(imp) / base).toFixed(2); // expect 1
   h.buffs = {}; chillHero(h, 2); out.chillSecs = +(h.buffs.slow?.t ?? 0).toFixed(2); // expect 1.2
+  h.buffs.slow.t = 0.1; chillHero(h, 2); out.thawHolds = h.buffs.slow.t === 0.1; // straight after: still thawed, no new chill
+  wear([]); h.buffs = {}; chillHero(h, 2); h.buffs.slow.t = 0.1; chillHero(h, 2); out.noRimeRechills = h.buffs.slow.t === 2;
+  wear(['rime4', 'rime4']);
   wear([]); st.sockets[eq.head] = ['ember4', 'ember4']; st.sockets[eq.body] = ['ember4', 'ember4']; h.refreshStats(); // four Royals (80%), two to a piece
   out.fourRoyalCapped = +(hit(imp) / base).toFixed(2); // expect 0.5
   wear(['storm4', 'storm4']);
@@ -116,7 +119,7 @@ export async function checks() {
   wear([]); h.hp = 1; h.heal(100); out.plainHeal = h.hp - 1; // expect 100
   for (const e of [imp, gob]) { e.alive = false; e.destroy(); }
   h.maxHp = h.stats.maxHp; h.hp = h.maxHp; h.buffs = {}; h.burn = null;
-  out.pass = out.royalPairCutsFire === 0.6 && out.fireGemsLeaveGoblins === 1 && out.wrongGemOnFire === 1 && out.burnSecs === 1.8 && out.chillSecs === 1.2 && out.fourRoyalCapped === 0.5 && out.staticJolt > 0 && out.staticWaits && out.radianceHeal === 140 && out.plainHeal === 100;
+  out.pass = out.royalPairCutsFire === 0.6 && out.fireGemsLeaveGoblins === 1 && out.wrongGemOnFire === 1 && out.burnSecs === 1.8 && out.chillSecs === 1.2 && out.thawHolds && out.noRimeRechills && out.fourRoyalCapped === 0.5 && out.staticJolt > 0 && out.staticWaits && out.radianceHeal === 140 && out.plainHeal === 100;
   return out;
 }
 

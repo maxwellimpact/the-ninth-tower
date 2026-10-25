@@ -228,14 +228,17 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 
 #### Armour gems **[BUILT 2026-10-24]**
 Element gems in armour are a defence (four of them) or a bonus (storm and sun). The armour share is 6 / 10 / 15 / 20% by grade (Chipped → Royal); several stack, each total capped at 50%.
-- **Resist (ember, rime, venom, gloam):** less damage from blows of that element, and that element's status on you runs shorter by the same share: burns (fire), chills and freezes (frost), poison (venom), and the slows from a foe's orbs or bolts (the shooter's element). Only some foes attack with an element; see [enemies.md](enemies.md), "Elemental attacks". Against everything else these gems do nothing, so they're for preparing for a region or a boss.
+- **Resist (ember, rime, venom, gloam):** less damage from blows of that element, and that element's status on you runs shorter by the same share: burns (fire), chills and freezes (frost), poison (venom), and the slows from a foe's orbs or bolts (the shooter's element).
+- **Rime thaws** (2026-10-25): once a chill lands on a rime wearer, no new one can until it has worn off plus 5 s x their frost resist (2 s with a Royal pair). Shorter chills alone did little: wolves bite again before one wears off. Only some foes attack with an element; see [enemies.md](enemies.md), "Elemental attacks". Against everything else these gems do nothing, so they're for preparing for a region or a boss.
 - **Static (storm):** a foe that strikes the hero up close takes a jolt of the storm share x 2 of the hero's ATK (a Royal pair: 80% ATK), at most once every 0.6 s. Storm-weak foes take more. It suits whoever holds the line.
 - **Radiance (sun):** heals the hero receives are stronger by the sun share. With sun in the weapon too (light hits heal), the hero sustains themselves.
 - **The gems tab** says what each gem does in the chosen piece, and sums the hero's armour gems ("ARMOUR GEMS: 40% FIRE RESIST - STATIC 24% ATK").
+- **The hero's stats** (gear tab) show them too, in short rows under the base stats, which stay where they were: each label in its element's colour (FIRE, FROST, VENOM, DARK, JOLT, HEAL) with its total, only what the hero wears, and only as many rows as the panel has room for (two at phone size).
+- **Gem drops lean to the region** (2026-10-25): a gem from a witchling or warlock is the region's counter half the time (ember in Cinderreach, rime in Frosthelm, venom in Mistfen, gloam in Gloamwood); elsewhere any kind.
 - **Measured** (`tools/gem-bench.js`; bench party at level 5, 3 seeds; damage per hit taken, none → Clear pair → Royal pair → Royal pair of the wrong element):
   - Fire 19.6 → 16.7 → 14.0 → 19.5; burning 24 → 15 → 15 hero-seconds a minute.
   - Frost 21.8 → 19.1 → 16.4 → 22.4. Venom 18.4 → 15.7 → 12.5 → 19.2. Shadow 17.1 → 14.9 → 12.7 → 17.5; hex-slowed 59 → 45 → 39.
-  - The Royal pair cuts each element's hits by 40%; whole fights come out 25-32% lower because some blows stay plain (the hexlings warlocks summon). Chills barely shorten in practice: wolves bite again before one wears off.
+  - The Royal pair cuts each element's hits by 40%; whole fights come out 25-32% lower because some blows stay plain (the hexlings warlocks summon). Chills barely shortened in practice (frost fights: chilled 102 → 83 → 90 hero-seconds a minute), so rime got its thaw: now 91 → 44 → 38, wrong gem 96.
   - Storm (Royal pair) on six goblins: the party's damage out 156 → 175 a second (+12%). Sun (Royal in each weapon, then a Royal pair in armour too): healing 210 → 272 a minute (+30%).
   - `checks()` confirms the exact numbers: 0.6x damage from a Royal pair, 0.5x at the cap, 1x from the wrong element or a plain foe, burns and chills 40% shorter, a jolt of 80% ATK no more than every 0.6 s, a 100 heal giving 140.
 
