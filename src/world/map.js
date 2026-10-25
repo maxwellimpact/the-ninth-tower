@@ -163,6 +163,7 @@ function aldermereBiome(tx, ty) {
 export const LANDMARKS = {
   start: W.start,
   frog: { x: 44, y: 26 },
+  colosseum: { x: 160, y: 44 }, // Highmeadow: the gate of the old arena (a way into the Colosseum's world)
   ward: { x: 82, y: 38 },
   curse: { x: 82, y: 38, r: 15 },
   // Gloamwood landmarks (tiles)
@@ -203,6 +204,7 @@ const PATHS = [
   { w: 1.15, pts: [[33, 33], [44, 34], [55, 36], [66, 36], [74, 37], [80, 39]] },
   { w: 0.9, pts: [[60, 36], [64, 28], [66, 20], [66, 17]] },
   { w: 1.1, pts: [[66, 36], [90, 31], [110, 33], [126, 36], [142, 36], [156, 26], [161, 22]] },
+  { w: 0.85, pts: [[142, 36], [149, 40], [155, 44], [160, 45.5]] }, // off the Watchtower Road to the Colosseum's gate
   { w: 1.1, pts: [[20, 37], [20, 50], [25, 62], [30, 72], [44, 82], [60, 88], [80, 92], [96, 94]] },
   { w: 0.9, pts: [[44, 82], [41, 92], [40, 102]] },
   { w: 0.9, pts: [[96, 94], [110, 99], [124, 104]] },
@@ -350,6 +352,10 @@ export function buildWorld() {
   for (let y = 3; y <= 16; y++) { set(57, y, T.RIM); set(81, y, T.RIM); }
   rect(66, 15, 67, 16, T.STAIRS);
   rect(73, 15, 74, 16, T.MOUTH); // hidden grotto, sealed by a cracked boulder
+
+  // The Colosseum (Highmeadow): solid where its walls stand (only the tiles
+  // its sprite covers, so no ground shows through), the gate open, a paved apron
+  { const C = LANDMARKS.colosseum; rect(C.x - 3, C.y - 3, C.x + 3, C.y - 1, T.HOUSE); rect(C.x - 2, C.y, C.x + 2, C.y, T.HOUSE); rect(C.x - 2, C.y + 1, C.x + 2, C.y + 1, T.PAVED); set(C.x, C.y, T.PAVED); }
 
   // Old watchtower (Highmeadow)
   rect(156, 15, 167, 25, T.PAVED);
@@ -624,6 +630,7 @@ export function buildWorld() {
   for (const c of W.climbs || []) { reserve(c.x, c.y, 3); reserve(c.top[0], c.top[1], 3); }
   for (const gl of W.glides || []) { reserve(gl.x, gl.y, 3); reserve(gl.land[0], gl.land[1], 3); }
   reserve(LANDMARKS.forgeGate.x, LANDMARKS.forgeGate.y + 3, 6);
+  reserve(LANDMARKS.colosseum.x, LANDMARKS.colosseum.y - 1, 7); // the Colosseum and its apron
   reserve(W.start.x, W.start.y, 4); reserve(80, 85, 9); reserve(LANDMARKS.frog.x, LANDMARKS.frog.y, 3); for (const wd of W.wards) reserve(wd.x, wd.y, 9);
   for (const g of W.groups) for (const [, x, y] of g.units) reserve(x, y, 1.5);
   // every reserved circle painted into a grid once, instead of checking each one at every tile

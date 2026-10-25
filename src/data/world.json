@@ -2221,6 +2221,18 @@
  ],
  "warps": [
   {
+   "id": "colosseumIn",
+   "x": 160,
+   "y": 44,
+   "to": {
+    "x": 160,
+    "y": 45
+   },
+   "toMap": "colosseum",
+   "tap": true,
+   "label": "THE COLOSSEUM"
+  },
+  {
    "id": "caveIn",
    "x": 96,
    "y": 90,
@@ -2915,6 +2927,13 @@
   }
  ],
  "buildings": [
+  {
+   "id": "colosseum",
+   "x": 160,
+   "y": 44,
+   "kind": "colosseum",
+   "landmark": true
+  },
   {
    "id": "shop",
    "x": 14,

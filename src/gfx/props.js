@@ -871,6 +871,69 @@ export function forgeGate() {
   return c;
 }
 
+// The Colosseum (Highmeadow): an old sandstone amphitheatre seen from the
+// south. The rim curves away over the sand inside, a two-tier arcade runs
+// round the front, and the great gate stands open under a raised portcullis,
+// with the realm's red banners along the top. 128 x 80.
+export function colosseum(warm = true) {
+  const W = 128, H = 80, cx = 64, cy = 22, rx = 60, ry = 14, wallH = 50;
+  // warm sandstone (the default) or the grey limestone of the cottages
+  const S = warm ? { lit: 'sand', mid: 'dirtL', shade: 'dirt', course: 'dirtD', courseL: 'dirt', top: 'sand', jamb: 'dirtL' } : { lit: 'white', mid: 'bone', shade: 'mist', course: 'slate', courseL: 'stone', top: 'white', jamb: 'mist' };
+  const [c, ctx] = makeCanvas(W, H);
+  const front = (x) => cy + ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); // the near edge of the rim
+  // inside, over the rim: the far stands (stone tiers with a speckle of crowd) and the sand
+  for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) {
+    const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (e > 1) continue;
+    const inner = ((x - cx) / (rx - 14)) ** 2 + ((y - cy - 3) / (ry - 6)) ** 2;
+    if (inner < 1) px(ctx, x, y, inner > 0.75 ? 'dirtL' : 'sand'); // the sand floor
+    else {
+      const tier = Math.floor(e * 6) % 2; // the stepped seats
+      const crowd = y < cy && hash(x, y, 31) < 0.22;
+      px(ctx, x, y, crowd ? ['redL', 'blueL', 'goldL', 'bone', 'skin'][Math.floor(hash(x, y, 32) * 5)] : tier ? 'stone' : 'mist');
+    }
+  }
+  // the front wall: sandstone courses, darker toward the shaded east side
+  for (let x = cx - rx; x <= cx + rx; x++) {
+    const top = Math.round(front(x)), f = (x - (cx - rx)) / (rx * 2);
+    const h = Math.round(wallH - (1 - Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2))) * 18); // shorter as it curves away
+    for (let y = top; y < Math.min(H - 1, top + h); y++) {
+      const course = (y - top) % 6 === 5 || ((x + Math.floor((y - top) / 6) * 4) % 9 === 0 && (y - top) % 6 !== 0);
+      px(ctx, x, y, course ? (f > 0.75 ? S.course : S.courseL) : f < 0.2 ? S.lit : f < 0.7 ? S.mid : S.shade);
+    }
+    px(ctx, x, top, S.top); px(ctx, x, top + 1, S.course); // the cornice
+  }
+  // two tiers of arches, following the curve: the upper arcade and the ground arcade
+  const arch = (ax, ay, w, h, fill) => {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const r = w / 2, dx = x + 0.5 - r, dy = Math.max(0, r - y - 0.5);
+      if (dx * dx + dy * dy <= r * r) px(ctx, ax + x, ay + y, fill(x, y));
+    }
+  };
+  for (let ax = cx - rx + 6; ax <= cx + rx - 10; ax += 11) {
+    const mid = ax + 3, top = Math.round(front(mid)), side = Math.abs(mid - cx) / rx;
+    if (Math.abs(mid - cx) < 14) continue; // room for the great gate
+    arch(ax, top + 6, 7, Math.round(9 - side * 3), (x, y) => (y < 2 && x > 1 && x < 5 ? 'slate' : 'night'));
+    arch(ax, top + 19, 7, Math.round(13 - side * 5), (x, y) => (y < 2 && x > 1 && x < 5 ? 'slate' : 'ink'));
+    px(ctx, ax - 2, top + 4, S.lit, 1, Math.round(28 - side * 8)); // a pilaster between the arches
+  }
+  // the great gate: a tall arch, open, the portcullis raised into its top
+  const gTop = Math.round(front(cx)) + 14;
+  arch(cx - 10, gTop, 20, H - 2 - gTop, (x, y) => (y < 4 ? (x % 3 === 0 ? 'steelD' : 'ink') : y < 6 && x % 3 === 0 ? 'steel' : 'ink'));
+  for (let y = gTop - 2; y < H - 1; y++) { px(ctx, cx - 12, y, S.lit); px(ctx, cx + 11, y, S.jamb); } // its jambs
+  px(ctx, cx - 3, gTop - 5, 'gold', 6, 3); px(ctx, cx - 2, gTop - 4, 'goldL', 4, 1); // a gilded crest on the keystone
+  // banners along the rim
+  for (const bx of [cx - 46, cx - 24, cx + 22, cx + 44]) {
+    const by = Math.round(front(bx)) - 9;
+    px(ctx, bx, by, 'woodD', 1, 10); px(ctx, bx, by - 1, 'gold');
+    px(ctx, bx + 1, by + 1, 'red', 4, 5); px(ctx, bx + 1, by + 1, 'redL', 4, 1); px(ctx, bx + 1, by + 6, 'redD', 1, 1); px(ctx, bx + 4, by + 6, 'redD', 1, 1); px(ctx, bx + 2, by + 3, 'gold', 2, 1);
+  }
+  // braziers either side of the gate
+  for (const fx of [cx - 18, cx + 15]) { px(ctx, fx, H - 9, 'steelD', 4, 2); px(ctx, fx + 1, H - 7, 'steelD', 2, 6); px(ctx, fx + 1, H - 12, 'fire', 2, 3); px(ctx, fx + 1, H - 13, 'fireL', 2, 1); }
+  outline(c, 'ink');
+  return c;
+}
+
 // ================================================================ Frosthelm
 // The Rimeglass Spire: the old astronomers' tower of pale glass on the
 // Highfold - a tapering faceted shaft ringed with frosted bands, slit

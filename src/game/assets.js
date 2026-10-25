@@ -94,6 +94,7 @@ export const GROUPS = {
       s.textures.addCanvas('house_elder', P.elderTree());
       for (let k = 0; k < 3; k++) s.textures.addCanvas(`tent${k}`, P.tent(k));
       s.textures.addCanvas('house_forgegate', P.forgeGate());
+      s.textures.addCanvas('house_colosseum', P.colosseum());
       s.textures.addCanvas('boulder_cracked', P.crackedBoulder());
       s.textures.addCanvas('wall_cracked', P.crackedWall());
       frames(s, 'fly', P.goldenFly(), 8);
