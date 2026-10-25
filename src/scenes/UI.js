@@ -632,7 +632,7 @@ export class UI extends Phaser.Scene {
       p.img.setAlpha(h.downed ? 0.35 : 1);
       p.nm.setTint(lead ? C.goldL : 0xffffff);
       // health over XP in one dark strip, as wide as the portrait's frame (x-1 .. x+sz+1)
-      const fr = Math.max(0, h.hp / h.maxHp), xf = Math.max(0, Math.min(1, (h.hs.xp || 0) / xpToNext(h.level)));
+      const fr = Math.max(0, Math.min(1, h.hp / h.maxHp)), xf = Math.max(0, Math.min(1, (h.hs.xp || 0) / xpToNext(h.level)));
       const bx = p.x - 1, bw = sz + 2, by = p.y + sz + 2;
       g.fillStyle(C.ink).fillRect(bx, by, bw, 7);
       g.fillStyle(0x3a2f52).fillRect(bx + 1, by + 1, bw - 2, 3);

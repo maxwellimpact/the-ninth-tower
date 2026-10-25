@@ -79,5 +79,12 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
      - Scratch buffers are reused, not reallocated.
      - Big static drawings are baked into a texture: Graphics are never culled.
    - **Check:** profile the 40x Vast and the dense one (`?map=vast40d`) with `tools/perf.js` (`engine()`, and `profile({ walk: true })`). Both should load in a few seconds, cost about what Aldermere does per frame, and keep their worst walking frame under 8 ms.
+15. **A test never writes over a real save.**
+   - **The bug:** the Colosseum test boosted the party's HP 20x so a run couldn't fail, and put the browser's saves back when it finished. But the game it left running autosaved after the next wave, so the boosted party became the save. Played in the browser pane, every HP bar ran across the screen (2026-10-25).
+   - **The rule:**
+     - A test that touches saves sets them aside first and puts them back after (`withSaves` in tools/map-test.js), and the game it leaves running can't save again (its state becomes a demo).
+     - Anything loaded from a save is held to its limits (HP never above max), so a bad save can't break play.
+     - Bars never draw past their frame.
+   - **Check:** after a test run, the browser's save is the one from before it (same `savedAt`).
 
 ---

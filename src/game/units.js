@@ -156,7 +156,7 @@ export class Hero extends Unit {
     this.hs = hs;               // persistent hero state (level, xp, equip, ult)
     this.def = { id, name: info.name, title: info.title, voice: info.voice };
     this.stats = st;
-    this.hp = hs.hp ?? st.maxHp;
+    this.hp = Math.min(st.maxHp, hs.hp ?? st.maxHp); // (never more than full, whatever the save says)
     this.skills = [];
     this.buildSkills();
     this.buffs = {};

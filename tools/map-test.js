@@ -32,6 +32,9 @@ async function withSaves(fn) {
   const keep = Object.keys(localStorage).filter((k) => k.startsWith('ninthTower.save')).map((k) => [k, localStorage.getItem(k)]);
   for (const [k] of keep) localStorage.removeItem(k);
   try { return await fn(); } finally {
+    // the game the test left running must not save again (a later autosave
+    // would write the test's party, boosted HP and all, over the real save)
+    if (window.__scene?.state) window.__scene.state.demo = 'test';
     for (const k of Object.keys(localStorage)) if (k.startsWith('ninthTower.save')) localStorage.removeItem(k);
     for (const [k, v] of keep) localStorage.setItem(k, v);
   }
