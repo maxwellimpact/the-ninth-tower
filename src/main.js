@@ -14,6 +14,12 @@ import { Minigame } from './scenes/Minigame.js';
 import { FrogRace } from './scenes/FrogRace.js';
 import { FxLab } from './scenes/FxLab.js';
 
+// No sound at all while the game runs in the background for tests: ?mute, or
+// a flag set in this tab (sessionStorage 'ninthTower.mute', kept across reloads)
+let muteTab = false;
+try { muteTab = new URLSearchParams(location.search).has('mute') || sessionStorage.getItem('ninthTower.mute') === '1'; } catch { /* storage blocked */ }
+if (muteTab) { window.__muteTests = true; audio.setMuted(true); }
+
 // Pixel-perfect integer scaling: pick the integer zoom that gets the view
 // closest to ~216px tall, then let the width flex to the screen's aspect.
 const BASE_H = 216;

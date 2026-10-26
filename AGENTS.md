@@ -106,6 +106,9 @@ the rule, the check) as well as fixing it.
   `[loop]` console error. Read the console after every test run.
 - **Don't monkey-patch the scene and then run a harness.** Overrides survive
   scene restarts and skew the results. Reload first.
+- **Run the game muted.** Before testing in the browser pane, set
+  `sessionStorage.setItem('ninthTower.mute', '1')` in the tab (kept across
+  reloads) so the game makes no sound while the user works.
 - **Don't add or delete files under `src/` or `tools/` while a bench runs.**
   The dev server reloads the page and the run is lost.
 
