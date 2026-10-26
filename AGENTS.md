@@ -53,6 +53,11 @@ the rule, the check) as well as fixing it.
   - Big static drawings are baked into a texture (Graphics are never culled).
   - Prove it with `tools/perf.js` on the dense 40x Vast (`?map=vast40d`).
 - **New art matches the cast.** Render new sprites beside existing ones at 3x.
+- **Key objects get real design; small scenery stays simple.** Landmarks,
+  entrances, buildings and bosses are designed like a painter works: the shape
+  and silhouette first, then light and volume, then the mid-scale structure,
+  then fine detail. See "Detail scales with importance" in
+  [design/art-audio.md](design/art-audio.md).
 - **Only change what was asked.** Mention other problems you notice instead of
   quietly changing them.
 

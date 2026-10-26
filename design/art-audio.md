@@ -16,6 +16,15 @@ See also: [regions.md](regions.md), [tech.md](tech.md).
 - **Art source — [DRAFT: procedural/drawn-in-code first, gated by a POC]**
   - Heroes, tiles and effects are drawn in code (as in Lumen), but upgraded for animation: frames defined as layered pixel grids with a shared palette, plus tooling to preview animations.
   - **The art POC (Milestone 0) decides** whether we commit, go hybrid (code-drawn characters + asset-pack tiles, or the reverse) or switch to packs.
+- **[LOCKED 2026-10-26] Detail scales with importance.** Small, repeated scenery (trees, bushes, rocks, tufts) stays simple: a few shaded blobs read well because they're small and there are many. **Key objects** (landmarks, entrances, buildings, bosses: the elder tree, the Colosseum, the Forge Gate, the Tower) get real design. The same treatment that works on a 44 px tree looks puffy and sloppy at 128 px; a big object needs detail at its own scale.
+  - **Design like a painter: shape first, then detail.**
+    1. **Shape and silhouette.** Block in the big forms and the outline, and get them reading right at a glance, zoomed out. Find a reference in the game's camera (a top-down 3/4 view, light from the upper left) before drawing: Keep Defense's keep showed how the Colosseum should be built.
+    2. **Light and volume.** Shade each big form as a solid (a dome, a cylinder, a block) lit from the upper left, with shadow where one form sits behind or under another.
+    3. **Mid-scale structure.** Break each form into the parts it's made of (a crown's lobes and clumps; bark's ridges and furrows; a wall's blocks and arcades).
+    4. **Fine detail last.** Single leaves and edges catching the light, cracks, knots, moss, hanging roots, small accents. Detail supports the shape and never replaces it.
+  - **Tell the story it has to tell.** An entrance has to read as a way in (a lit threshold, steps going down, depth inside); a landmark has to say what it is from across the screen.
+  - **Check:** at 3-6x beside the cast and the scenery around it, then in place at phone size (844x390), zoomed in and out. Iterate in rounds and keep the comparison sheets (snapshots/). Watch the cost: anything drawn at boot stays in the tens of milliseconds.
+  - **Examples:** the elder tree over Witchroot Hollow (2026-10-25/26: puffy blobs, then lit lobes textured by leaf clumps; ridged round bark; a stairway into the hollow) and the Colosseum (a drum, then flat facades, then a ring built the keep's way, with a seated crowd).
 
 ---
 
