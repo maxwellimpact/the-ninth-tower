@@ -1332,13 +1332,14 @@ export class Game extends Phaser.Scene {
   // damage taken, yanked back if they pull apart). Tap it with the Grapple
   // Hook to break it.
   chainHeroes(a, b, src) {
-    const ch = { a, b, t: 6, g: this.add.graphics().setDepth(TOP - 25) };
+    const ch = { a, b, t: 6, g: this.add.graphics().setDepth(TOP - 25), label: this.add.bitmapText(0, 0, 'fontPlain', '').setOrigin(0.5).setTint(0xd9b8ff).setDepth(TOP - 24) };
     ch.o = this.addInteractable({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, reach: 30, standOff: 0, h: 10, kind: 'chain', interact: () => {
       if (!this.state.relics.includes('grapple')) { this.bark(this.leader, "IT'S TOO STRONG TO PULL APART BY HAND."); return; }
       ch.t = 0; this.fx.burst('spark', ch.o.x, ch.o.y - 8, 12); audio.sfx('zip'); this.floatText(ch.o.x, ch.o.y - 20, 'CHAIN BROKEN', 'fontGold');
     } });
     (this.chains ??= []).push(ch);
     this.floatText((a.x + b.x) / 2, (a.y + b.y) / 2 - 30, 'CHAINED TOGETHER!', 'fontPlain', 0xd9b8ff);
+    if (!this.flags.chainHint) { this.flags.chainHint = true; this.bark(this.leader, this.state.relics.includes('grapple') ? 'A CHAIN WARDEN BOUND US! THE HOOK CAN SNAP IT - TAP THE CHAIN.' : "A CHAIN WARDEN BOUND US TOGETHER! IT WON'T HOLD LONG. STAY CLOSE."); } // the first time, say what it is
     void src;
   }
 
@@ -1347,16 +1348,27 @@ export class Game extends Phaser.Scene {
     for (const ch of this.chains) {
       const { a, b } = ch;
       ch.t -= dt;
-      if (ch.t <= 0 || a.downed || b.downed || !a.alive || !b.alive) { ch.g.destroy(); this.removeInteractable(ch.o); ch.dead = true; continue; }
+      if (ch.t <= 0 || a.downed || b.downed || !a.alive || !b.alive) { ch.g.destroy(); ch.label.destroy(); this.removeInteractable(ch.o); ch.dead = true; continue; }
       a.chainedT = b.chainedT = 0.2; a.buff('slow', 0.6, 0.2); b.buff('slow', 0.6, 0.2);
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       if (d > 70) { const k = (d - 70) / d * 0.25; const dx = (b.x - a.x) * k, dy = (b.y - a.y) * k; a.x += dx; a.y += dy; b.x -= dx; b.y -= dy; }
       ch.o.x = (a.x + b.x) / 2; ch.o.y = (a.y + b.y) / 2;
-      const g = ch.g.clear();
-      g.lineStyle(3, 0x2b2140, 1).lineBetween(a.x, a.y - 10, b.x, b.y - 10);
-      g.lineStyle(1, 0xa3a1b9, 1);
-      const n = Math.max(2, Math.round(d / 6));
-      for (let i = 0; i < n; i += 2) { const t0 = i / n, t1 = (i + 1) / n; g.lineBetween(a.x + (b.x - a.x) * t0, a.y - 10 + (b.y - a.y) * t0, a.x + (b.x - a.x) * t1, a.y - 10 + (b.y - a.y) * t1); }
+      // drawn as a chain: iron links along a sagging curve, a faint hex glow
+      // under it, a shackle at each hero's waist, and a label over its middle
+      const g = ch.g.clear(), ax = a.x, ay = a.y - 9, bx = b.x, by = b.y - 9, sag = Math.min(14, 4 + d * 0.08);
+      const pt = (t) => [ax + (bx - ax) * t, ay + (by - ay) * t + Math.sin(t * Math.PI) * sag];
+      const pulse = 0.25 + Math.sin(this.time.now / 160) * 0.1;
+      g.lineStyle(4, 0xb24ce6, pulse);
+      for (let i = 0; i < 12; i++) { const [x0, y0] = pt(i / 12), [x1, y1] = pt((i + 1) / 12); g.lineBetween(x0, y0, x1, y1); }
+      const n = Math.max(4, Math.round(d / 4));
+      for (let i = 0; i <= n; i++) {
+        const [x, y] = pt(i / n);
+        if (i % 2) g.fillStyle(0x1a1423).fillRect(Math.round(x) - 1, Math.round(y) - 2, 3, 5).fillStyle(0xc4cfe2).fillRect(Math.round(x), Math.round(y) - 1, 1, 3); // a link edge-on
+        else g.fillStyle(0x1a1423).fillRect(Math.round(x) - 2, Math.round(y) - 1, 5, 3).fillStyle(0x8593b0).fillRect(Math.round(x) - 1, Math.round(y), 3, 1); // a link face-on
+      }
+      for (const [x, y] of [[ax, ay], [bx, by]]) g.lineStyle(2, 0x1a1423, 1).strokeEllipse(x, y, 12, 5).lineStyle(1, 0x8593b0, 1).strokeEllipse(x, y - 1, 12, 5); // the shackles
+      const [mx, my] = pt(0.5);
+      ch.label.setPosition(Math.round(mx), Math.round(Math.min(a.y, b.y)) - 34) // over their heads.setText(this.state.relics.includes('grapple') ? `CHAINED ${Math.ceil(ch.t)} - TAP TO BREAK` : `CHAINED ${Math.ceil(ch.t)}`);
     }
     this.chains = this.chains.filter((c) => !c.dead);
   }
@@ -1409,13 +1421,13 @@ export class Game extends Phaser.Scene {
   // ============================================================ darkness (caves)
   buildDarkness() {
     if (!this.textures.exists('lightMask')) { // (made once: the scene restarts when the party travels to another world)
+      // a light: full in the middle, fading smoothly to nothing at the edge (a
+      // plain fade, filtered smoothly, rather than a dithered pixel pattern)
       const [c, ctx] = makeCanvas(128, 128);
-      for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-        const d = Math.hypot(x - 64, y - 64) / 64;
-        const a = d < 0.55 ? 1 : d > 1 ? 0 : 1 - (d - 0.55) / 0.45;
-        if (a > 0 && bayer(x, y) < a) { ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 1, 1); }
-      }
-      this.textures.addCanvas('lightMask', c);
+      const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.5, 'rgba(255,255,255,0.95)'); grad.addColorStop(0.8, 'rgba(255,255,255,0.45)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 128, 128);
+      this.textures.addCanvas('lightMask', c).setFilter(Phaser.Textures.FilterMode.LINEAR);
     }
     this.darkRT = this.add.renderTexture(0, 0, this.scale.width + 2, this.scale.height + 2).setOrigin(0).setScrollFactor(0).setDepth(TOP + 40).setVisible(false);
     const onResize = () => {
@@ -1440,6 +1452,10 @@ export class Game extends Phaser.Scene {
     if (!inCave && gloom <= 0) return;
     const cam = this.cameras.main;
     const rt = this.darkRT;
+    // a zoomed-out camera (up a lookout) shrinks everything toward the screen's
+    // middle, this layer included: scale it back up so it still covers the screen
+    const z = cam.zoom || 1;
+    rt.setOrigin(0.5).setPosition(this.scale.width / 2, this.scale.height / 2).setScale(1 / z);
     rt.clear();
     const lantern = this.state.relics.includes('lantern');
     // Every light is a stamp from a pool, placed where it shines, and they're
@@ -1447,7 +1463,7 @@ export class Game extends Phaser.Scene {
     // opened and closed the texture per light (~0.9 ms a frame in Gloamwood).
     const pool = (this.lightPool ??= []);
     let n = 0;
-    const stamp = (wx, wy, s) => { const im = (pool[n] ??= this.make.image({ key: 'lightMask', add: false }).setOrigin(0.5)); n++; im.setScale(s).setPosition(Math.round(wx - cam.worldView.x), Math.round(wy - cam.worldView.y)); };
+    const stamp = (wx, wy, s) => { const im = (pool[n] ??= this.make.image({ key: 'lightMask', add: false }).setOrigin(0.5)); n++; im.setScale(s * z).setPosition(Math.round((wx - cam.worldView.x) * z + 1), Math.round((wy - cam.worldView.y) * z + 1)); }; // (in the layer's own pixels)
     if (!inCave) {
       rt.fill(0x060a14, gloom * (lantern ? 0.42 : 0.52));
       stamp(L.x, L.y - 10, (lantern ? 2.8 : 2.1) + Math.sin(this.time.now / 180) * 0.03);
