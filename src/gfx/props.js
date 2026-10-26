@@ -744,31 +744,72 @@ export function web(seed = 0) {
 export function elderTree() {
   const W = 128, H = 128;
   const [c, ctx] = makeCanvas(W, H);
-  // great trunk: furrowed bark running up it, lit on the left, flaring to the roots
+  // the wood, detailed like the crown: lit from the upper left and shaded
+  // round like a cylinder, its bark in plates (staggered columns following
+  // the curve, deep furrows between, cracks across, lit top-left edges)
+  const BARK = ['ink', 'barkD', 'leatherD', 'bark', 'barkL', 'stone'];
+  const wood = (x, y, l) => px(ctx, x, y, BARK[Math.max(0, Math.min(BARK.length - 1, Math.floor(l * BARK.length + (bayer(x, y) - 0.5) * 0.35)))]);
+  const plates = (s0, v, seed) => { // s: across the bark (unrolled), v: along it; returns the bark's own light offset
+    const s = s0 + Math.sin(v * 0.13 + s0 * 0.21) * 1.4; // the furrows meander
+    const col = Math.floor(s / 4.5), sIn = s - col * 4.5;
+    const vv = v + hash(col, 1, seed) * 20, len = 15 + Math.floor(hash(col, 2, seed) * 12);
+    const row = Math.floor(vv / len), vIn = vv - row * len;
+    if (sIn < 1) return -0.4; // a deep furrow between ridges
+    if (vIn < 1 && hash(col, row, seed + 7) < 0.6) return -0.22; // now and then a crack across
+    let o = (hash(col, row, seed + 3) - 0.5) * 0.1; // each run of ridge its own shade
+    if (sIn < 2) o += 0.14; else if (sIn > 3.6) o -= 0.08; // lit on its left edge, shaded on its right
+    return o;
+  };
+  const trunkW = (y) => 34 + ((y - 46) / 78) ** 2 * 38;
   for (let y = 46; y < 124; y++) {
-    const t = (y - 46) / 78, w = Math.round(34 + t * t * 38), x0 = 64 - (w >> 1);
-    for (let x = x0; x < x0 + w; x++) {
-      const u = (x - x0) / w, furrow = Math.sin(x * 0.9 + Math.sin(y * 0.09) * 2.2) > 0.55;
-      px(ctx, x, y, u < 0.06 || u > 0.94 ? 'barkD' : furrow ? 'barkD' : u < 0.35 ? 'barkL' : u < 0.75 ? 'bark' : 'barkD');
+    const w = trunkW(y), x0 = 64 - w / 2;
+    for (let x = Math.floor(x0); x < Math.ceil(x0 + w); x++) {
+      const u = (x + 0.5 - x0) / w;
+      if (u < 0 || u > 1) continue;
+      const ang = Math.asin(Math.max(-1, Math.min(1, u * 2 - 1))); // round the trunk
+      let l = 0.74 - Math.abs(u - 0.3) * 1.0 + plates(ang * 22, y, 11);
+      if (y > 114 && u > 0.66 && hash(x >> 1, y >> 1, 41) < 0.4) { px(ctx, x, y, hash(x, y, 42) < 0.3 ? 'moss' : 'fernD'); continue; } // moss patches at the foot, on the shaded side
+      wood(x, y, l);
     }
   }
-  // roots spilling out at the base
-  for (const [x, dx] of [[30, -1], [40, -1.4], [88, 1.4], [98, 1]]) for (let k = 0; k < 14; k++) px(ctx, Math.round(x + dx * k), 118 + Math.round(k * 0.35), k % 3 ? 'bark' : 'barkD', 4, 3);
-  // the hollow mouth
-  for (let y = 98; y < 124; y++) {
-    const w = Math.round(18 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 26) ** 2)));
-    px(ctx, 64 - w, y, 'ink', w * 2, 1);
+  // knots: a dark eye with a lit rim
+  for (const [kx, ky, kr] of [[52, 72, 3], [77, 90, 2.5]]) for (let y = -4; y <= 4; y++) for (let x = -5; x <= 5; x++) {
+    const d = Math.hypot(x / 1.3, y) / kr;
+    if (d <= 0.55) px(ctx, kx + x, ky + y, 'ink'); else if (d <= 0.85) px(ctx, kx + x, ky + y, y < 0 || x < 0 ? 'barkL' : 'barkD'); else if (d <= 1.1) px(ctx, kx + x, ky + y, 'leatherD');
   }
-  for (let y = 100; y < 124; y += 2) px(ctx, 60, y, 'night', 8, 1);
-  // the trunk forks into great limbs that taper as they climb into the crown
-  const limb = (x0, y0, x1, y1, w0, w1) => {
-    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
-    for (let i = 0; i <= n; i++) {
-      const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, w = Math.max(1, Math.round(w0 + (w1 - w0) * t));
-      for (let k = 0; k < w; k++) px(ctx, Math.round(x - w / 2 + k), Math.round(y), k === 0 ? 'barkL' : k === w - 1 ? 'barkD' : 'bark');
+  // roots: buttresses swelling out of the base and tapering into the ground
+  const root = (x0, y0, dir, len, w0) => {
+    for (let i = 0; i <= len; i++) {
+      const t = i / len, x = x0 + dir * i, yc = y0 + t * t * 6, w = Math.max(1, w0 * (1 - t * 0.85));
+      for (let k = -w; k <= w * 0.4; k++) { const y = Math.round(yc + k), v = (k + w) / (w * 1.4); wood(Math.round(x), y, 0.74 - v * 0.45 + plates(k * 2.2, i * 1.5, 13) * 0.5); }
     }
   };
-  limb(52, 50, 26, 26, 12, 4); limb(76, 50, 102, 24, 12, 4); limb(60, 48, 48, 14, 10, 4); limb(68, 48, 82, 12, 10, 4); limb(64, 50, 64, 20, 10, 5);
+  root(44, 116, -1, 18, 6); root(34, 120, -1, 11, 3.5); root(84, 116, 1, 18, 6); root(94, 120, 1, 11, 3.5); root(56, 121, -1, 7, 3); root(72, 121, 1, 7, 3);
+  // the hollow mouth, with a lit lip of bark round it
+  for (let y = 96; y < 124; y++) {
+    const w = 18 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 27) ** 2)), wi = 16 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 25) ** 2));
+    for (let x = Math.floor(64 - w); x < Math.ceil(64 + w); x++) {
+      const inner = Math.abs(x + 0.5 - 64) < wi && y >= 99;
+      if (inner) px(ctx, x, y, 'ink');
+      else wood(x, y, x < 64 ? 0.78 : 0.4); // the lip: lit on the left
+    }
+  }
+  for (let y = 101; y < 124; y += 2) px(ctx, 60, y, 'night', 8, 1); // the steps down
+  // the trunk forks into great limbs, each shaded round across its width with
+  // the same plated bark along it, and a wrinkled collar where it leaves the trunk
+  const limb = (x0, y0, x1, y1, w0, w1) => {
+    const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / len, uy = (y1 - y0) / len, nx = -uy, ny = ux; // along, across
+    for (let i = 0; i <= len; i += 0.5) {
+      const t = i / len, w = Math.max(1, w0 + (w1 - w0) * t);
+      for (let k = -w / 2; k <= w / 2; k += 0.5) {
+        const x = Math.round(x0 + ux * i + nx * k), y = Math.round(y0 + uy * i + ny * k), v = (k + w / 2) / w; // 0 on its upper-left side
+        let l = 0.74 - Math.abs(v - 0.3) * 0.95 + plates(v * w * 2.2, i, 17) * 0.8;
+        if (i < 5 && Math.floor(i * 2) % 3 === 0) l -= 0.18; // the collar's wrinkles
+        wood(x, y, l);
+      }
+    }
+  };
+  limb(52, 52, 26, 26, 12, 4); limb(76, 52, 102, 24, 12, 4); limb(60, 50, 48, 14, 10, 4); limb(68, 50, 82, 12, 10, 4); limb(64, 52, 64, 20, 10, 5);
   limb(30, 30, 16, 26, 4, 2); limb(98, 28, 112, 26, 4, 2); // and their side branches
   // the crown, detailed at its own size: a handful of big lobes (each a dome
   // of leaves lit on its upper left, dark where it turns under), built from
