@@ -744,15 +744,12 @@ export function web(seed = 0) {
 export function elderTree() {
   const W = 128, H = 128;
   const [c, ctx] = makeCanvas(W, H);
-  // great trunk
-  for (let y = 40; y < 124; y++) {
-    const t = (y - 40) / 84;
-    const w = Math.round(38 + t * t * 34);
-    const x0 = 64 - (w >> 1);
-    px(ctx, x0, y, 'barkD', w, 1);
-    for (let x = x0 + 2; x < x0 + w - 2; x++) {
-      const n = Math.sin(x * 0.7 + y * 0.05) + Math.sin(x * 0.23 - y * 0.11);
-      px(ctx, x, y, n > 1.1 ? 'barkL' : n > -0.6 ? 'bark' : 'barkD');
+  // great trunk: furrowed bark running up it, lit on the left, flaring to the roots
+  for (let y = 46; y < 124; y++) {
+    const t = (y - 46) / 78, w = Math.round(34 + t * t * 38), x0 = 64 - (w >> 1);
+    for (let x = x0; x < x0 + w; x++) {
+      const u = (x - x0) / w, furrow = Math.sin(x * 0.9 + Math.sin(y * 0.09) * 2.2) > 0.55;
+      px(ctx, x, y, u < 0.06 || u > 0.94 ? 'barkD' : furrow ? 'barkD' : u < 0.35 ? 'barkL' : u < 0.75 ? 'bark' : 'barkD');
     }
   }
   // roots spilling out at the base
@@ -763,11 +760,40 @@ export function elderTree() {
     px(ctx, 64 - w, y, 'ink', w * 2, 1);
   }
   for (let y = 100; y < 124; y += 2) px(ctx, 60, y, 'night', 8, 1);
-  // a crown of dead boughs and a few clinging leaves
-  const bough = (x, y, dx, dy, n) => { for (let i = 0; i < n; i++) px(ctx, Math.round(x + dx * i), Math.round(y + dy * i), i % 4 ? 'bark' : 'barkD', 3, 2); };
-  bough(52, 44, -1.2, -0.9, 30); bough(76, 44, 1.2, -0.9, 30); bough(60, 40, -0.4, -1, 32); bough(68, 40, 0.5, -1, 30); bough(64, 42, 0, -1, 36);
-  for (let i = 0; i < 9; i++) shadedBlob(ctx, 18 + hash(i, 1, 9) * 92, 6 + hash(i, 2, 9) * 30, 7, 5, GLOOM_LEAF, { bias: -0.2 });
-  // the vine's sigil glow in the hollow
+  // the trunk forks into great limbs that taper as they climb into the crown
+  const limb = (x0, y0, x1, y1, w0, w1) => {
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, w = Math.max(1, Math.round(w0 + (w1 - w0) * t));
+      for (let k = 0; k < w; k++) px(ctx, Math.round(x - w / 2 + k), Math.round(y), k === 0 ? 'barkL' : k === w - 1 ? 'barkD' : 'bark');
+    }
+  };
+  limb(52, 50, 26, 26, 12, 4); limb(76, 50, 102, 24, 12, 4); limb(60, 48, 48, 14, 10, 4); limb(68, 48, 82, 12, 10, 4); limb(64, 50, 64, 20, 10, 5);
+  limb(30, 30, 16, 26, 4, 2); limb(98, 28, 112, 26, 4, 2); // and their side branches
+  // the crown: big leaf masses, darker and further back first, lit ones in front,
+  // leaving gaps where the limbs show through
+  const masses = [
+    [24, 22, 16, 12, 0.1], [104, 20, 16, 12, 0.1], [64, 12, 22, 12, 0.05], [44, 16, 16, 11, 0], [86, 14, 16, 11, 0], // back
+    [16, 34, 12, 9, -0.1], [112, 32, 12, 9, -0.1], [36, 32, 15, 10, -0.15], [92, 30, 15, 10, -0.15], [64, 28, 16, 9, -0.2], // middle
+    [26, 12, 10, 8, -0.25], [56, 6, 12, 7, -0.3], [78, 6, 12, 7, -0.3], [102, 10, 10, 8, -0.25], // the lit top
+  ];
+  for (const [x, y, rx, ry, bias] of masses) shadedBlob(ctx, x, y, rx, ry, GLOOM_LEAF, { bias });
+  // leafy edges and sunlit speckles on the upper sides of each mass
+  for (let i = 0; i < 70; i++) {
+    const [x, y, rx, ry] = masses[Math.floor(hash(i, 1, 13) * masses.length)];
+    const a = Math.PI + hash(i, 2, 13) * Math.PI, d = 0.55 + hash(i, 3, 13) * 0.4;
+    px(ctx, Math.round(x + Math.cos(a) * rx * d), Math.round(y + Math.sin(a) * ry * d), hash(i, 4, 13) < 0.5 ? 'fernL' : 'gloomXL');
+  }
+  // a few gaps where the canopy is thin, the limbs showing through
+  for (const [x, y] of [[40, 26], [86, 24], [62, 20]]) for (let k = 0; k < 3; k++) px(ctx, x + k, y + (k % 2), 'barkD');
+  // moss and old vines hanging from the underside of the crown
+  for (let i = 0; i < 16; i++) {
+    const x = 10 + Math.floor(hash(i, 5, 13) * 108), y0 = 36 + Math.floor(hash(i, 6, 13) * 8), n = 4 + Math.floor(hash(i, 7, 13) * 10);
+    if (x > 44 && x < 84 && y0 > 40) continue; // not across the trunk
+    for (let k = 0; k < n; k++) px(ctx, x + (k > n / 2 && i % 3 === 0 ? 1 : 0), y0 + k, k > n - 2 ? 'gloomXL' : 'fernD');
+  }
+  // witchroot's curse in it: a few pale violet blooms among the leaves, the sigil glow in the hollow
+  for (let i = 0; i < 6; i++) px(ctx, 14 + Math.floor(hash(i, 8, 13) * 100), 8 + Math.floor(hash(i, 9, 13) * 26), 'curseL');
   px(ctx, 62, 112, 'curse', 4, 2);
   outline(c, 'ink');
   return c;

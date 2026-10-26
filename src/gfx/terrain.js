@@ -183,7 +183,7 @@ export function makeTerrainPainter(world) {
     if (t === T.LOAM || (gloam && (t === T.GRASS || t === T.HOUSE))) { // under the elder's trunk too
       // a dark rim where the floor meets a road
       if (typeAt(x, y + 2) === T.PATH || typeAt(x, y - 2) === T.PATH || typeAt(x - 2, y) === T.PATH || typeAt(x + 2, y) === T.PATH) return C.gloomD;
-      return gloamColor(x, y, t === T.GRASS);
+      return gloamColor(x, y, t !== T.LOAM); // (the ground under the elder's trunk matches the forest floor round it, so no dark squares show beside the trunk)
     }
     const cinder = bm === 'cinder';
     if (t === T.ASH || (cinder && t === T.GRASS)) {
