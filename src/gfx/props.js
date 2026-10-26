@@ -785,16 +785,49 @@ export function elderTree() {
     }
   };
   root(44, 116, -1, 18, 6); root(34, 120, -1, 11, 3.5); root(84, 116, 1, 18, 6); root(94, 120, 1, 11, 3.5); root(56, 121, -1, 7, 3); root(72, 121, 1, 7, 3);
-  // the hollow mouth, with a lit lip of bark round it
+  // the way in: an arched opening in the foot of the trunk with a lit lip of
+  // bark. Inside, the hollow's own walls recede into the dark, worn steps go
+  // down (the nearest wide and lit, each further one higher, narrower and
+  // darker), a violet glow rises from Witchroot below, and old roots hang
+  // from the arch.
+  const MX = 64;
+  const outerW = (y) => 18 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 27) ** 2));
+  const innerW = (y) => 15.5 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 24.5) ** 2));
   for (let y = 96; y < 124; y++) {
-    const w = 18 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 27) ** 2)), wi = 16 * Math.sqrt(Math.max(0, 1 - ((y - 124) / 25) ** 2));
-    for (let x = Math.floor(64 - w); x < Math.ceil(64 + w); x++) {
-      const inner = Math.abs(x + 0.5 - 64) < wi && y >= 99;
-      if (inner) px(ctx, x, y, 'ink');
-      else wood(x, y, x < 64 ? 0.78 : 0.4); // the lip: lit on the left
+    const wo = outerW(y), wi = innerW(y);
+    for (let x = Math.floor(MX - wo); x < Math.ceil(MX + wo); x++) {
+      const dx = x + 0.5 - MX, depth = (124 - y) / 24;
+      if (Math.abs(dx) >= wi) { wood(x, y, dx < 0 ? 0.8 - depth * 0.1 : 0.42); continue; } // the lip
+      if (Math.abs(dx) > wi - 3.5) { // the hollow's walls, receding: the far (right) one catches a little light
+        wood(x, y, (dx > 0 ? 0.34 : 0.2) - depth * 0.14 + plates((wi - Math.abs(dx)) * 3, y * 1.5, 19) * 0.4);
+        continue;
+      }
+      px(ctx, x, y, 'ink');
     }
   }
-  for (let y = 101; y < 124; y += 2) px(ctx, 60, y, 'night', 8, 1); // the steps down
+  // the violet glow rising from below: soft rings, brightest deep in
+  for (let y = 99; y < 116; y++) for (let x = MX - 10; x < MX + 10; x++) {
+    const d = Math.hypot((x + 0.5 - MX) / 10, (y - 105) / 7);
+    if (d <= 1) px(ctx, x, y, d < 0.3 ? 'purp' : d < 0.62 ? 'purpD' : 'hexD');
+  }
+  // the curse's mark, far down: a small glowing rune
+  px(ctx, MX - 1, 102, 'curseL', 2, 1); px(ctx, MX - 2, 103, 'curse', 4, 1); px(ctx, MX - 1, 103, 'curseL', 2, 1); px(ctx, MX - 2, 104, 'curse', 4, 1); px(ctx, MX - 1, 105, 'curse', 2, 1);
+  // the steps down: each a worn wooden tread, lit along its front edge, with a
+  // dark riser under it; further down, narrower and dimmer, until the glow takes over
+  for (const [y, sw, tread, edge] of [[120, 12, 'bark', 'stone'], [116, 10, 'leatherD', 'barkL'], [112, 8, 'barkD', 'bark'], [109, 6, 'barkD', 'leatherD']]) {
+    for (let x = Math.round(MX - sw); x < Math.round(MX + sw); x++) {
+      const end = x === Math.round(MX - sw) || x === Math.round(MX + sw) - 1;
+      px(ctx, x, y, end ? 'barkD' : edge); px(ctx, x, y + 1, end ? 'ink' : tread); px(ctx, x, y + 2, 'ink');
+    }
+  }
+  // old roots hanging from the arch, pale at their tips
+  for (const [dx, len, thick] of [[-12, 4, 1], [-8, 8, 2], [-3, 4, 1], [2, 9, 2], [7, 5, 1], [11, 6, 1]]) {
+    const top = Math.ceil(124 - 24.5 * Math.sqrt(Math.max(0, 1 - (dx / 15.5) ** 2)));
+    for (let k = 0; k < len; k++) {
+      const x = MX + dx + (k > len / 2 ? (dx < 0 ? -1 : 1) : 0), w = k < len - 2 ? thick : 1;
+      px(ctx, x, top + k, k === len - 1 ? 'barkL' : 'bark', w, 1); if (w > 1) px(ctx, x + 1, top + k, 'barkD');
+    }
+  }
   // the trunk forks into great limbs, each shaded round across its width with
   // the same plated bark along it, and a wrinkled collar where it leaves the trunk
   const limb = (x0, y0, x1, y1, w0, w1) => {
@@ -868,9 +901,8 @@ export function elderTree() {
     if (y0 < 0 || (x > 46 && x < 82)) continue; // not across the trunk
     for (let k = 0; k < n; k++) px(ctx, x + (k > n / 2 && i % 3 === 0 ? 1 : 0), y0 + k, k > n - 2 ? 'gloomXL' : k % 3 === 2 ? 'fern' : 'fernD');
   }
-  // witchroot's curse in it: a few pale violet blooms among the leaves, the sigil glow in the hollow
+  // witchroot's curse in it: a few pale violet blooms among the leaves
   for (let i = 0; i < 6; i++) px(ctx, 14 + Math.floor(hash(i, 8, 13) * 100), 8 + Math.floor(hash(i, 9, 13) * 26), 'curseL');
-  px(ctx, 62, 112, 'curse', 4, 2);
   outline(c, 'ink');
   return c;
 }
