@@ -785,6 +785,38 @@ export function elderTree() {
     }
   };
   root(44, 116, -1, 18, 6); root(34, 120, -1, 11, 3.5); root(84, 116, 1, 18, 6); root(94, 120, 1, 11, 3.5); root(56, 121, -1, 7, 3); root(72, 121, 1, 7, 3);
+  // and the old roots beyond them, weaving in and out of the ground: each
+  // arches up out of the soil, dives back under and surfaces again further
+  // out, thinning as it goes. Where it's up it's shaded round (lit on top)
+  // with a thin shadow on the ground under the arch; where it goes in or
+  // comes out there's a little mound of earth; moss on a few.
+  const weave = (x0, y0, dx, dy, len, w0, humps, phase, seed) => {
+    const pts = [];
+    for (let i = 0; i <= len; i += 0.5) {
+      const t = i / len, gx = x0 + dx * i + Math.sin(t * 7 + seed) * 1.5, gy = y0 + dy * i + Math.sin(t * 5 + seed * 2) * 0.8;
+      const wave = Math.sin(t * Math.PI * humps + phase), w = Math.max(1.5, w0 * (1 - t * 0.7));
+      pts.push({ gx, gy, lift: Math.max(0, wave) * (1.5 + w0 * 0.5) * (1 - t * 0.4), up: wave > -0.2, w, t });
+    }
+    // the ground first: shadows under the arches, mounds where it goes in and out
+    pts.forEach((p, k) => {
+      if (p.up && p.lift > 1) px(ctx, Math.round(p.gx), Math.round(p.gy + 1), 'gloomD');
+      const prev = pts[k - 1];
+      if (prev && prev.up !== p.up) { px(ctx, Math.round(p.gx) - 1, Math.round(p.gy) + 1, 'mudD', 3, 1); px(ctx, Math.round(p.gx), Math.round(p.gy), 'mud'); } // a little mound of earth
+    });
+    // then the root itself, where it's above ground
+    for (const p of pts) {
+      if (!p.up) continue;
+      for (let k = 0; k < p.w; k += 0.5) {
+        const y = Math.round(p.gy - p.lift - k), v = k / p.w; // v: 0 underside .. 1 top
+        wood(Math.round(p.gx), y, (v > 0.8 ? 0.82 : 0.28 + v * 0.42) + plates(p.t * 40, k * 3, seed) * 0.22);
+      }
+      if (hash(Math.round(p.gx), seed, 51) < 0.12 && p.w > 2) px(ctx, Math.round(p.gx), Math.round(p.gy - p.lift - p.w + 0.5), 'fernD'); // moss on its back
+    }
+  };
+  // (each leaves the trunk already above ground: the phase keeps the wave up at its start)
+  weave(31, 117, -1, 0.1, 31, 5, 2, 0.5, 1); weave(38, 121, -1, 0.14, 26, 3.5, 1.7, 0.7, 2); // west
+  weave(97, 117, 1, 0.1, 31, 5, 2, 0.5, 4); weave(90, 121, 1, 0.14, 26, 3.5, 1.7, 0.7, 5); // east
+  weave(45, 123, -0.6, 0.3, 15, 3, 1.3, 0.4, 7); weave(83, 123, 0.6, 0.3, 15, 3, 1.3, 0.4, 8); // forward, either side of the stair
   // the way in: an arched opening in the foot of the trunk with a lit lip of
   // bark. Inside, the hollow's own walls recede into the dark, worn steps go
   // down (the nearest wide and lit, each further one higher, narrower and
