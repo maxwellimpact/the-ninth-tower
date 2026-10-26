@@ -89,7 +89,7 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 |---|---|---|---|---|---|
 | **Voidling** | 1.0 | 1.3 | Teleports next to the weakest party member | Light / Shadow | Void shard |
 | **Tower Gargoyle** | 2.5 | 1.6 | A statue while the leader faces it; moves when you turn away | Storm / Venom | Starmetal |
-| **Chain Warden** | 3.5 | 1.8 | Chains party members together; break the chain with the hook | Light / Shadow | Starmetal |
+| **Chain Warden** | 3.5 | 1.8 | Chains two party members together for 6 s (slowed, +20% damage taken, yanked back if they pull apart), drawn as iron links with shackles and a countdown; break it by tapping it with the hook | Light / Shadow | Starmetal |
 | **Malgrim's Mirror** | = leader | = leader | Copies your current leader, including their gear look | Light / — | Void shard |
 
 ### Elemental attacks **[BUILT 2026-10-24]**
