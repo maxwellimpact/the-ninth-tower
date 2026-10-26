@@ -770,27 +770,62 @@ export function elderTree() {
   };
   limb(52, 50, 26, 26, 12, 4); limb(76, 50, 102, 24, 12, 4); limb(60, 48, 48, 14, 10, 4); limb(68, 48, 82, 12, 10, 4); limb(64, 50, 64, 20, 10, 5);
   limb(30, 30, 16, 26, 4, 2); limb(98, 28, 112, 26, 4, 2); // and their side branches
-  // the crown: big leaf masses, darker and further back first, lit ones in front,
-  // leaving gaps where the limbs show through
-  const masses = [
-    [24, 22, 16, 12, 0.1], [104, 20, 16, 12, 0.1], [64, 12, 22, 12, 0.05], [44, 16, 16, 11, 0], [86, 14, 16, 11, 0], // back
-    [16, 34, 12, 9, -0.1], [112, 32, 12, 9, -0.1], [36, 32, 15, 10, -0.15], [92, 30, 15, 10, -0.15], [64, 28, 16, 9, -0.2], // middle
-    [26, 12, 10, 8, -0.25], [56, 6, 12, 7, -0.3], [78, 6, 12, 7, -0.3], [102, 10, 10, 8, -0.25], // the lit top
+  // the crown, detailed at its own size: a handful of big lobes (each a dome
+  // of leaves lit on its upper left, dark where it turns under), built from
+  // many small clumps that texture them, with deep shadow in the seams where
+  // one lobe sits behind another; single leaves speckle it, leaf tips break
+  // the scalloped outline, and through a few gaps the limbs show. The tones
+  // are the Gloamwood trees' own, mostly dark, the light kept for the tops.
+  const RAMP = ['gloomD', 'gloom', 'gloomL', 'gloomXL', 'fern', 'fernL'];
+  const LOBES = [ // back to front: [cx, cy, rx, ry]
+    [64, 11, 21, 10], [37, 14, 14, 10], [91, 14, 14, 10],
+    [22, 30, 16, 11], [106, 29, 16, 11], [46, 25, 19, 12], [82, 24, 19, 12], [64, 37, 20, 8],
   ];
-  for (const [x, y, rx, ry, bias] of masses) shadedBlob(ctx, x, y, rx, ry, GLOOM_LEAF, { bias });
-  // leafy edges and sunlit speckles on the upper sides of each mass
-  for (let i = 0; i < 70; i++) {
-    const [x, y, rx, ry] = masses[Math.floor(hash(i, 1, 13) * masses.length)];
-    const a = Math.PI + hash(i, 2, 13) * Math.PI, d = 0.55 + hash(i, 3, 13) * 0.4;
-    px(ctx, Math.round(x + Math.cos(a) * rx * d), Math.round(y + Math.sin(a) * ry * d), hash(i, 4, 13) < 0.5 ? 'fernL' : 'gloomXL');
+  const inLobe = (x, y, [cx, cy, rx, ry], k = 0.86) => ((x - cx) / (rx * k)) ** 2 + ((y - cy) / (ry * k)) ** 2 <= 1;
+  // the clumps: scattered through each lobe; the ones near its edge make its outline bumpy
+  const clumps = [];
+  LOBES.forEach((L, li) => { for (let i = 0; i < 60; i++) { const a = hash(i, li, 21) * Math.PI * 2, r = Math.sqrt(hash(i, li, 22)) * 0.98; const x = L[0] + Math.cos(a) * r * L[2], y = L[1] + Math.sin(a) * r * L[3]; clumps.push([x, y, 2.6 + hash(i, li, 23) * 2.2, li]); } });
+  // which lobe is frontmost at each pixel (its core, or one of its clumps), worked out once
+  const LOBE = new Int8Array(W * 56).fill(-1);
+  LOBES.forEach((L, k) => {
+    for (let y = 0; y < 56; y++) for (let x = 0; x < W; x++) if (inLobe(x, y, L)) LOBE[y * W + x] = k;
+    for (const cl of clumps) if (cl[3] === k) for (let y = Math.max(0, Math.floor(cl[1] - cl[2])); y <= Math.min(55, Math.ceil(cl[1] + cl[2])); y++) for (let x = Math.max(0, Math.floor(cl[0] - cl[2])); x <= Math.min(W - 1, Math.ceil(cl[0] + cl[2])); x++) if (Math.hypot(x - cl[0], (y - cl[1]) * 1.2) <= cl[2]) LOBE[y * W + x] = k;
+  });
+  const lobeAt = (x, y) => (x < 0 || y < 0 || x >= W || y >= 56 ? -1 : LOBE[y * W + x]);
+  const inCrown = (x, y) => lobeAt(x, y) >= 0;
+  const gaps = [[40, 35, 4, 2], [88, 34, 4, 2], [31, 19, 2, 2], [97, 18, 2, 2]]; // where the limbs show through
+  const inGap = (x, y) => gaps.some(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+  const crownLow = (x) => { let b = -1; for (const [cx, cy, rx, ry] of LOBES) { const u = (x - cx) / rx; if (Math.abs(u) < 1) b = Math.max(b, cy + ry * Math.sqrt(1 - u * u)); } return b; };
+  for (let y = 0; y < 52; y++) for (let x = 2; x < 126; x++) {
+    const k = lobeAt(x, y);
+    if (k < 0 || inGap(x, y)) continue;
+    const [cx, cy, rx, ry] = LOBES[k], nx = (x - cx) / rx, ny = (y - cy) / ry;
+    let l = 0.44 - nx * 0.18 - ny * 0.36; // the lobe's dome, lit on its upper left
+    if (ny < -0.35 && nx < 0.25) l += 0.08; // its sunlit cap
+    if (ny > 0.5) l -= 0.14; // turning under
+    const up = lobeAt(x - 2, y - 2); // a lobe up-and-left of here sits in front: its shadow falls on this one
+    if (up > k) l -= 0.3;
+    else if (up >= 0 && up < k && lobeAt(x + 2, y + 2) !== k) l += 0.05;
+    // the clumps that texture it: each one a little lit on its upper left, a thin seam between
+    let d1 = 1e9, d2 = 1e9, near = null;
+    for (const cl of clumps) { if (cl[3] !== k) continue; const d = Math.hypot(x - cl[0], (y - cl[1]) * 1.2) / cl[2]; if (d < d1) { d2 = d1; d1 = d; near = cl; } else if (d < d2) d2 = d; }
+    l += -((x - near[0]) / near[2] * 0.5 + (y - near[1]) / near[2] * 0.8) * 0.13;
+    if (d2 - d1 < 0.16) l -= 0.13;
+    const sp = hash(x, y, 29);
+    if (sp < 0.06 && l > 0.38) l += 0.22; else if (sp > 0.95) l -= 0.14; // single leaves catching the light, or in shadow
+    px(ctx, x, y, RAMP[Math.max(0, Math.min(RAMP.length - 1, Math.floor(l * RAMP.length)))]);
   }
-  // a few gaps where the canopy is thin, the limbs showing through
-  for (const [x, y] of [[40, 26], [86, 24], [62, 20]]) for (let k = 0; k < 3; k++) px(ctx, x + k, y + (k % 2), 'barkD');
+  // leaf tips breaking the outline: a pixel beyond the edge, lit along the top
+  for (let y = 0; y < 54; y++) for (let x = 1; x < 127; x++) {
+    if (inCrown(x, y) || hash(x, y, 31) > 0.24) continue;
+    const by = [[0, 1], [0, -1], [1, 0], [-1, 0]].find(([ox, oy]) => inCrown(x + ox, y + oy) && !inGap(x + ox, y + oy));
+    if (by) px(ctx, x, y, by[1] === 1 ? (hash(x, y, 33) < 0.35 ? 'gloomXL' : 'gloomL') : by[1] === -1 ? 'gloomD' : 'gloom');
+  }
   // moss and old vines hanging from the underside of the crown
-  for (let i = 0; i < 16; i++) {
-    const x = 10 + Math.floor(hash(i, 5, 13) * 108), y0 = 36 + Math.floor(hash(i, 6, 13) * 8), n = 4 + Math.floor(hash(i, 7, 13) * 10);
-    if (x > 44 && x < 84 && y0 > 40) continue; // not across the trunk
-    for (let k = 0; k < n; k++) px(ctx, x + (k > n / 2 && i % 3 === 0 ? 1 : 0), y0 + k, k > n - 2 ? 'gloomXL' : 'fernD');
+  for (let i = 0; i < 22; i++) {
+    const x = 8 + Math.floor(hash(i, 5, 13) * 112), y0 = Math.floor(crownLow(x)) - 1, n = 3 + Math.floor(hash(i, 7, 13) * 9);
+    if (y0 < 0 || (x > 46 && x < 82)) continue; // not across the trunk
+    for (let k = 0; k < n; k++) px(ctx, x + (k > n / 2 && i % 3 === 0 ? 1 : 0), y0 + k, k > n - 2 ? 'gloomXL' : k % 3 === 2 ? 'fern' : 'fernD');
   }
   // witchroot's curse in it: a few pale violet blooms among the leaves, the sigil glow in the hollow
   for (let i = 0; i < 6; i++) px(ctx, 14 + Math.floor(hash(i, 8, 13) * 100), 8 + Math.floor(hash(i, 9, 13) * 26), 'curseL');
