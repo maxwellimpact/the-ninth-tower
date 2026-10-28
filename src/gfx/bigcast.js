@@ -28,6 +28,26 @@ function layer(ctx, W, H, draw) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(c, 0, 0); ctx.restore();
 }
 
+// a part on its own layer edged in a dark tone of its own (not ink), so it
+// reads where it crosses the body in the same colour, with no edge near
+// `joins` (where it grows out of the body: a line there reads as a cut-out)
+function layerSoft(ctx, W, H, tone, joins, draw) {
+  const [c, g] = makeCanvas(W, H);
+  g.setTransform(ctx.getTransform());
+  draw(g);
+  const [e, eg] = makeCanvas(W, H);
+  eg.drawImage(c, 0, 0);
+  outline(e, tone);
+  const t = ctx.getTransform(), img = eg.getImageData(0, 0, W, H), src = g.getImageData(0, 0, W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const k = (y * W + x) * 4;
+    if (src.data[k + 3] || !img.data[k + 3]) continue; // only the new edge pixels
+    if (joins.some(([jx, jy]) => Math.hypot(x - (jx + t.e), y - (jy + t.f)) < 4.5)) img.data[k + 3] = 0;
+  }
+  eg.putImageData(img, 0, 0);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(e, 0, 0); ctx.restore();
+}
+
 // a limb as a shaded cylinder from a to b, radius r0 to r1: light, mid and
 // dark bands across it by which side faces the light; `bands` recolour
 // stretches of it (bracers, cuffs, sleeves) as [t0, t1, [light, mid, dark]]
@@ -295,7 +315,6 @@ const SNAG_THRUST = {
   up: [{ hand: [42, 36], ang: -1.57, reach: 30, crouch: 1 }, { hand: [41, 27], ang: -1.6, reach: 26 }, { hand: [42, 31], ang: -1.57, reach: 28 }],
   side: [{ hand: [27, 31], ang: -0.05, reach: 36, crouch: 1 }, { hand: [38, 32], ang: 0.02, reach: 36, lunge: 2 }, { hand: [34, 32], ang: 0, reach: 36 }],
 };
-export const buildSnagtooth = (views = VIEWS) => cycle(snagtooth, SNAG_THRUST, { bob: 1, crouch: 1, eye: 'white' }, views);
 
 // rows given as "offset:pixels|offset:pixels", padded out to the width w:
 // for big shapes where most of each row is empty or the counting is the hard part
@@ -447,4 +466,136 @@ const MAL_CAST = {
   up: [{ hand: [45, 31], ang: -1.57, glow: 1, reach: 22 }, { hand: [44, 27], ang: -1.57, glow: 2, reach: 22, bob: -1 }, { hand: [45, 31], ang: -1.57, glow: 1, reach: 22 }],
   side: [{ hand: [43, 32], ang: -1.65, glow: 1, reach: 22 }, { hand: [43, 28], ang: -1.65, glow: 2, reach: 22, bob: -1 }, { hand: [43, 32], ang: -1.65, glow: 1, reach: 22 }],
 };
-export const buildMalgrim = (views = VIEWS) => cycle(malgrim, MAL_BOLT, { bob: 1, crouch: 1, eye: 'white', ang: -1.75 }, views, MAL_CAST);
+
+// ------------------------------------------------- the front views, redrawn
+// (2026-10-28, the user's notes on the first pass: ink lines where an arm or
+// an ear joins the body read as cut-outs, and Snagtooth was a cartoon ogre,
+// not a goblin.) Drawn on the cast's own proportions: a big head, a stubby
+// body and short arms, a face of a few clean pixels, and ink only round the
+// outside: parts are told apart by their tones, never by black lines inside.
+
+// Snagtooth facing you: the goblin's own head (the hood, the ears out along
+// the brim, wide-set gold eyes, a row of teeth) grown, a tusk up past the
+// teeth, a red feather in the hood, a wolf pelt over his shoulders for a
+// chief's mantle, the goblin's brown tunic belted with gold, dark legs, boots.
+const SNAGF_MAP = { ...SNAG_MAP, V: 'mist', v: 'stone', u: 'slate', R: 'redD', o: 'grassD', O: 'leafD' };
+export const SNAGF = {
+  head: rows('snag front head', [
+    '........hhhhhhhh........',
+    '......hhHHHHHHHHhh......',
+    '.....hHHjjHHHHHHHHh.....',
+    '.....hHjHHHHHHHHHHh.....',
+    '....hhHHHHHHHHHHHHhh....',
+    'LLL..ghhhhhhhhhhhhg..ggg',
+    'XXLLLGGgGGGGGGGGgGGgggdd',
+    '..gLLGGLGGGGGGGGGGgggd..',
+    '....gGLGGGGGGGGGGGGg....',
+    '....GGyYGGGGGGGGyYGG....',
+    '....GGYYGGGGGGGGYYGg....',
+    '....gGGrGGGLgGGGrGGg....',
+    '.....gGGwGGGGGGGGgg.....',
+    '.....gGGwwwwwGGgg.......',
+    '.......gggggggg.........',
+  ]),
+  torso: rows('snag front torso', [
+    '..VVvVvvvvVvvu..',
+    '.VVvVvvvvvvvVvu.',
+    'VVvVvuvvvvuvvvuu',
+    '.uvDTuTTTTuTTvu.',
+    '.DTTTTTTTTTTTTt.',
+    '.DTTrTTTTTTTTTt.',
+    '.DTTTTTTTTrTTTt.',
+    '.hhhhhhYYhhhhhh.',
+    '.DTTTTTTTTTTTTt.',
+    '..tTTtTTTtTTTt..',
+    '..t.tTt..tTt.t..',
+  ]),
+  legL: rows('snag front leg L', ['.ooO.', '.ooO.', '.ooO.', '.ooO.', '.ooO.', 'hHhh.', 'hHhhh', 'hhhhh']),
+  legR: rows('snag front leg R', ['.oOO.', '.oOO.', '.oOO.', '.oOO.', '.oOO.', '.hhhh', 'hHhhh', 'hhhhh']),
+  fist: rows('snag front fist', ['LGg', 'GGg', 'ggd']),
+};
+function snagFront({ bob = 0, step = 0, hand = null, ang = null, reach = 36, crouch = 0, eye = null } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = SNAGF_MAP, by = bob + crouch;
+  const put = (r, x, y, m = M) => grid(ctx, r, m, x, y);
+  put(SNAGF.legL, 26, 41 - (step > 0 ? 1 : 0)); put(SNAGF.legR, 33, 41 - (step < 0 ? 1 : 0));
+  put(SNAGF.torso, 24, 30 + by);
+  const arm = (s, h) => { limb(ctx, s, h, 1.7, 1.5, SKIN); put(SNAGF.fist, h[0] - 1, h[1] - 1); };
+  const hd = hand ? [hand[0], hand[1] + by] : [23, 38 + by];
+  arm([39, 33 + by], [41, 38 + by + step]); // the off arm
+  snagSpear(ctx, hd, ang ?? -1.57, reach, 0.25);
+  arm([25, 33 + by], hd);
+  put(SNAGF.head, 20, 17 + by, eye ? { ...M, Y: eye, y: eye } : M);
+  for (const [x, y, col, w] of [[36, 17, 'redD', 2], [37, 16, 'red', 2], [38, 15, 'red', 2], [39, 14, 'redL', 2], [40, 13, 'redL', 1]]) px(ctx, x, y + by, col, w, 1); // a red feather tucked in the hood, swept back
+  outline(c, 'ink');
+  return c;
+}
+
+// Malgrim facing you, on the heroes' proportions: the crooked hat a little
+// taller than his head, a pale face with the curse in his eyes under dark
+// brows and an iron-grey beard, the red-lined collar standing up beside it,
+// a shorter violet coat over pointed boots, short bell sleeves, the staff.
+export const MALF = {
+  hat: rows('mal front hat', MAL.hat.down.filter((_, i) => ![1, 3, 5, 7].includes(i))),
+  face: rows('mal front face', [
+    '.vvvvvvvvvvvv.',
+    '.fnnffffffnnv.',
+    '.fnCffffffCnv.',
+    '.ffffffFfffvv.',
+    '.fffffFFfffvv.',
+    '..fdggggggdv..',
+    '..vgGgEEgggv..',
+    '...gGgggggd...',
+    '....gGgggd....',
+    '.....gGd......',
+  ]),
+  collar: rowsAt('mal front collar', 22, ['1:P|20:x', '1:Pr|19:rx', '1:PRr|18:rrx', '1:PRrr|17:rrrx', '0:PPpRr|16:rRppx', '0:PPpppppppppppppppxxxx']),
+  hand: rows('mal front hand', ['ff.', 'fFv', '.vv']),
+};
+function malCoatFront(ctx, cx, y0, sway = 0) {
+  const n = 15;
+  for (let i = 0; i < n; i++) {
+    let hw = 7.5 + i * 0.24;
+    if (i >= 3 && i <= 5) hw -= 0.5; // the waist, pulled in by the belt
+    const sw = i >= 8 ? Math.round(sway * (i - 7) / 7) : 0;
+    const l = Math.round(cx - hw) + sw, r = Math.round(cx + hw) - 1 + sw, y = y0 + i;
+    for (let x = l; x <= r; x++) {
+      const u = (x - l) / Math.max(1, r - l), rel = x - (cx + sw);
+      let col = u < 0.1 ? 'purpL' : u > 0.8 ? 'purpD' : 'purp';
+      if (Math.abs(rel + 0.5) < 2.6) col = Math.abs(rel + 0.5) > 1.6 ? 'redD' : 'night'; // the front panel, red lining at its edges
+      if (i >= 7 && i <= 12 && (rel === -5 || rel === 4)) col = 'purpD'; // folds
+      if (i === 4) col = 'hexD'; // the belt
+      if (i === n - 2) col = (x + 1) % 4 === 0 ? 'curse' : 'purpD'; // the hem's runes
+      if (i === n - 1 && (x + sway) % 3 === 0) continue; // a ragged edge
+      px(ctx, x, y, col);
+    }
+  }
+  px(ctx, cx - 1, y0 + 4, 'curseL', 2, 1); px(ctx, cx - 2, y0 + 4, 'curse'); px(ctx, cx + 1, y0 + 4, 'curse'); // the hex for a buckle
+  for (const i of [8, 11]) px(ctx, cx - 1, y0 + i, 'curse', 2, 1); // runes down the panel
+}
+const MALF_MAP = { ...MAL_MAP, f: 'skinL', F: 'white', v: 'skin', C: 'curse', g: 'mist', G: 'bone', d: 'stone' }; // a pale but living face, the curse burning in his eyes, a grey-white beard (a darker grey read as a mask)
+function malFront({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = null, cast = 0, crouch = 0, eye = null, reach = 30 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = MAL_MAP, by = bob + crouch, lights = [];
+  grid(ctx, MAL.boot, M, 30, 52 - (step > 0 ? 1 : 0)); grid(ctx, MAL.boot, M, 37, 52 - (step < 0 ? 1 : 0));
+  malCoatFront(ctx, 36, 38 + by, -step);
+  grid(ctx, MALF.collar, COAT_MAP, 25, 31 + by);
+  const sleeve = (s, h) => layerSoft(ctx, W, H, 'hexD', [s], (g) => { limb(g, s, [h[0], h[1] - 1], 2, 2.8, SLEEVE); px(g, h[0] - 1, h[1] - 1, 'night', 3, 1); grid(g, MALF.hand, M, h[0] - 1, h[1]); }); // edged in the coat's darkest violet where it crosses the coat
+  const hd = hand ? [hand[0], hand[1] + by] : [25, 45 + by], oh = off ? [off[0], off[1] + by] : [47, 45 + by - step];
+  sleeve([45, 39 + by], oh);
+  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 9, glow }));
+  sleeve([27, 39 + by], hd);
+  grid(ctx, MALF.face, eye ? { ...MALF_MAP, C: eye } : MALF_MAP, 29, 24 + by);
+  grid(ctx, MALF.hat, M, 25, 11 + by);
+  outline(c, 'ink');
+  malGlow(ctx, lights[0], glow);
+  if (cast) malGlow(ctx, [oh[0], oh[1] + 1], cast);
+  return c;
+}
+
+// the front views' attacks, on the new proportions
+const SNAGF_THRUST = [{ hand: [23, 34], ang: 1.75, reach: 24, crouch: 1 }, { hand: [25, 40], ang: 1.62, reach: 20 }, { hand: [23, 37], ang: 1.7, reach: 22 }];
+const MALF_BOLT = [{ hand: [26, 42], ang: -1.85, glow: 1, off: [44, 40], cast: 1 }, { hand: [26, 44], ang: -1.4, glow: 2, off: [40, 47], cast: 2 }, { hand: [25, 45], ang: -1.5, glow: 1 }];
+const MALF_CAST = [{ hand: [27, 38], ang: -1.57, glow: 1, reach: 26, off: [47, 40], cast: 1 }, { hand: [28, 35], ang: -1.57, glow: 2, reach: 26, off: [48, 37], cast: 2, bob: -1 }, { hand: [27, 38], ang: -1.57, glow: 1, reach: 26, off: [47, 40], cast: 1 }];
+// facing you: the redrawn front; the side and back views are still the first pass
+const front = (fn, other) => (view, pose) => (view === 'down' ? fn(pose) : other(view, pose));
+export const buildSnagtooth = (views = VIEWS) => cycle(front(snagFront, snagtooth), { ...SNAG_THRUST, down: SNAGF_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);
+export const buildMalgrim = (views = VIEWS) => cycle(front(malFront, malgrim), { ...MAL_BOLT, down: MALF_BOLT }, { bob: 1, crouch: 1, eye: 'white', ang: -1.75 }, views, { ...MAL_CAST, down: MALF_CAST });
