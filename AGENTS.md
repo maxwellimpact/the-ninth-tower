@@ -90,6 +90,9 @@ the rule, the check) as well as fixing it.
     heals a hero with and without gems for exact numbers; `start()` fights
     each element's foes with no gems, half, matching and wrong gems, and
     goblins with storm and sun. Read damage per hit: whole fights drift apart.
+  - `tools/art-compare.js`: before/after sheets for key-object art (`save()`
+    the art as it is, change it, then `pair()`), and `cast()`: a row of foes
+    at their in-game size beside Brann. Show the user before and after.
   - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
     ranged stays put) and never uses a skill or chases far.
   - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.
@@ -106,6 +109,9 @@ the rule, the check) as well as fixing it.
   `[loop]` console error. Read the console after every test run.
 - **Don't monkey-patch the scene and then run a harness.** Overrides survive
   scene restarts and skew the results. Reload first.
+- **Tests never save.** The test boot (`boot()` in tools/dungeon-walk.js)
+  marks its game as a test unless given `saves: true`; only the save tests in
+  `map-test.js` pass that, inside `withSaves`. Never delete the page's save.
 - **Run the game muted.** Before testing in the browser pane, set
   `sessionStorage.setItem('ninthTower.mute', '1')` in the tab (kept across
   reloads) so the game makes no sound while the user works.
