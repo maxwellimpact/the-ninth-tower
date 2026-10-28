@@ -1292,7 +1292,7 @@ export class Enemy extends Unit {
     else if (this.frenzy) this.sprite.setTint(0xff8a7a);
     else if (this.mirrorOf) this.sprite.setTint(0x8a6cc4); // Malgrim's Mirror: a dark copy
     else if (this.hexborn) this.sprite.setTint(0xc9a0ff); // the Basin's Hexborn
-    else if (this.elite) this.sprite.setTint(0xffd889);
+    else if (this.elite && !this.named) this.sprite.setTint(0xffd889); // a named foe is a boss: its title says so, its colours stay its own
     else if (this.s.tint) this.sprite.setTint(this.s.tint); // ghosts keep their pallor
     else if (this.puppet && this.cursed) this.sprite.setTint(0xd9b8ff);
     else this.sprite.clearTint();

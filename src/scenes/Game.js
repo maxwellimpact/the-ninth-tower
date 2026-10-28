@@ -2237,10 +2237,12 @@ export class Game extends Phaser.Scene {
     // an elite's tag shows exactly when its bar does (hidden here, re-shown
     // below); otherwise it was left frozen where the fight happened
     for (const e of this.enemies) e.eliteTag?.setVisible(false);
+    let named = null;
     for (const e of this.enemies) {
       if (!e.alive || e.boss || e.submerged || e.riseT > 0 || e.hidden) continue; // a veiled Shade shows nothing
       const hurt = e.hp < e.maxHp;
       if (!(e.engaged || (hurt && e.state !== 'idle' && e.state !== 'return'))) continue;
+      if (e.named) { if (e.engaged) named ??= e; continue; } // a named foe fights under the boss bar's gold title, as a Ward boss does
       const w = e.named ? 26 : e.elite ? 20 : 16;
       // measured once: per-frame sprite sizes (attack poses) made the bar and tag hop
       e.barH ??= e.sprite.displayHeight * e.sprite.originY;
@@ -2258,6 +2260,7 @@ export class Game extends Phaser.Scene {
         e.eliteTag.setPosition(Math.round(e.x), y - 2).setVisible(true);
       }
     }
+    if (!this.golem?.alive && named !== this.namedBar) { this.namedBar = named; this.events.emit('boss', named); }
     // heroes in trouble: below half health a bar shows over their head (yellow, then
     // red below 35%, as on their portrait) and goes again once they're back in the green
     for (const h of this.party) {
