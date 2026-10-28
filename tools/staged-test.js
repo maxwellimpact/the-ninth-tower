@@ -11,10 +11,10 @@ async function boot() {
   try { window.__game.sound.mute = true; } catch { /* no audio yet */ }
   for (let i = 0; i < 40 && !window.__game.scene.isActive('Title'); i++) await step(30);
   const { newState } = await import('/src/game/state.js');
-  localStorage.removeItem('ninthTower.save.v1');
   const st = newState('brann'); st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
   for (const h of st.recruited) st.heroes[h].level = 4;
   st.pos = { x: 94 * 16 + 8, y: 33 * 16 + 8 };
+  st.demo = 'test'; // a test game never saves (never-again rule 15)
   window.__game.scene.getScene('Title').enterWorld(st);
   for (let i = 0; i < 200 && !(window.__scene && !window.__scene.busy && window.__scene.state === st); i++) await step(10);
   await step(20);

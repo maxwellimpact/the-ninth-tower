@@ -355,18 +355,20 @@ export async function spire() {
 }
 
 // A fresh real game (not the lab): Brann, Pip and Sable at `level`, with the
-// given relics, at the start of the world. Clears the saved game first.
-export async function boot({ level = 6, relics = ['grapple'], state = null } = {}) {
+// given relics, at the start of the world (or the `state` given). It never
+// saves (never-again rule 15: the browser's own save is left alone) unless
+// `saves` is set, which only the save tests do, inside withSaves.
+export async function boot({ level = 6, relics = ['grapple'], state = null, saves = false } = {}) {
   try { window.__game.sound.mute = true; } catch { /* no audio yet */ }
   for (let i = 0; i < 40 && !window.__game.scene.isActive('Title') && !window.__scene; i++) await step(30);
   const { newState } = await import('/src/game/state.js');
   let st = state;
   if (!st) {
-    localStorage.removeItem('ninthTower.save.v1');
     st = newState('brann'); st.recruited = ['brann', 'pip', 'sable']; st.active = [...st.recruited];
     for (const h of st.recruited) st.heroes[h].level = level;
     st.relics = [...relics];
   }
+  if (!saves) st.demo ??= 'test'; // a test game: nothing in it is saved
   if (window.__game.scene.isActive('Title')) window.__game.scene.getScene('Title').enterWorld(st);
   else window.__game.scene.getScene('Game').scene.restart({ state: st }); // a game is already running
   for (let i = 0; i < 200 && !(window.__scene && !window.__scene.busy && window.__scene.state === st); i++) await step(10);
