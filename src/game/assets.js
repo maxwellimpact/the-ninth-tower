@@ -19,6 +19,16 @@ const frames = (scene, key, list, rate, repeat = -1) => {
   scene.anims.create({ key, frames: list.map((_, i) => ({ key, frame: `${i}` })), frameRate: rate, repeat });
 };
 
+// a creature drawn in all three views ({ down, side, up }, each { anim: frames }):
+// frames `${view}_${anim}_${i}`, animations `${key}_${anim}_${view}` (as the puppets)
+function creatureViews(scene, key, views, rates, loops) {
+  const list = [];
+  for (const [v, fr] of Object.entries(views)) for (const [a, fs] of Object.entries(fr)) fs.forEach((canvas, i) => list.push({ name: `${v}_${a}_${i}`, canvas }));
+  packFrames(scene, key, list);
+  for (const [v, fr] of Object.entries(views)) for (const [a, fs] of Object.entries(fr)) {
+    scene.anims.create({ key: `${key}_${a}_${v}`, frames: fs.map((_, i) => ({ key, frame: `${v}_${a}_${i}` })), frameRate: rates[a] || 6, repeat: loops.includes(a) ? -1 : 0 });
+  }
+}
 function creature(scene, key, fr, rates, loops) {
   const list = [];
   for (const [a, fs] of Object.entries(fr)) fs.forEach((canvas, i) => list.push({ name: `${a}_${i}`, canvas }));
@@ -39,7 +49,7 @@ export const GROUPS = {
     ['hex knight', (s) => registerPuppet(s, 'knight', KNIGHT)],
     ['hexling', (s) => creature(s, 'hexling', buildHexling(), HEX_RATES, ['idle', 'walk', 'windup'])],
     ['hex golem', (s) => {
-      creature(s, 'golem', buildGolem(), { idle: 2.5, walk: 5, windup: 4, slam: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'golem', buildGolem(), { idle: 2.5, walk: 5, windup: 4, slam: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup']);
       s.textures.addCanvas('boulder', boulder());
       s.textures.addCanvas('plate', golemPlate());
     }],

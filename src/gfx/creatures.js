@@ -1,5 +1,5 @@
 // Non-humanoid creatures and NPCs, drawn procedurally or from small grids.
-import { makeCanvas, grid, px, outline, bayer } from './pixel.js';
+import { makeCanvas, grid, px, outline, bayer, hash } from './pixel.js';
 
 // Shaded ellipse "blob" body, lit from the top-left, with ordered dithering
 // between tones. Basis for slimes, bushes, canopies.
@@ -58,45 +58,123 @@ export function buildHexling(tones = HEX_TONES, eye = 'curseL') {
 }
 
 // ------------------------------------------------------------- Hex Golem
-// 64x64 frames, feet at y=60. Rock body, glowing hex runes, mossy shoulders.
+// 64x64 frames, feet at y=60. Designed as a key object (shape, then light,
+// then structure, then detail): a hulk of hewn stone blocks - two great
+// shoulder stones, a chest block carved with the hex, a small head sunk
+// between the shoulders, short heavy legs and huge fists - held together by
+// the curse, whose violet light shows in the seams between the blocks. Each
+// block is chiselled into facets lit from the upper left (a flat face, its
+// edges catching the light on the lit side, the far facets in shadow), with
+// cracks and chips, and moss on the tops of the shoulders and head.
 const STONE = ['slate', 'stone', 'mist', 'bone'];
-const GOLEM = ['night', 'slate', 'stone', 'mist']; // darker so it pops against cursed ground
-function golemFrame({ fl, fr, bob = 0, eye = 'curseL', crouch = 0, rune = 'curseL' }) {
+const GOLEM = ['ink', 'night', 'slate', 'stone', 'mist']; // darker so it pops against cursed ground
+// one hewn block: an irregular polygon, faceted and shaded, its seams dark
+function stoneBlock(ctx, cx, cy, rx, ry, seed, { moss = false, cracks = 1, far = false } = {}) {
+  const n = 7, V = [];
+  for (let i = 0; i < n; i++) { const a = ((i + hash(i, seed, 401) * 0.5) / n) * Math.PI * 2 - Math.PI / 2; const k = 0.86 + hash(i, seed, 402) * 0.18; V.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k, a]); }
+  const inside = (x, y) => { let c = false; for (let i = 0, j = n - 1; i < n; j = i++) { const [xi, yi] = V[i], [xj, yj] = V[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+  const pts = [];
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) if (inside(x + 0.5, y + 0.5)) pts.push([x, y]);
+  const isIn = new Set(pts.map(([x, y]) => x * 1000 + y));
+  for (const [x, y] of pts) {
+    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry, d = Math.hypot(nx, ny);
+    let l;
+    if (d < 0.55) l = 0.56 - nx * 0.12 - ny * 0.16; // the flat face
+    else { // a facet round it: which way it leans decides its light
+      let a = Math.atan2(ny, nx), fa = V[0][2];
+      for (let i = 0; i < n; i++) { const a0 = V[i][2], a1 = V[(i + 1) % n][2] + (i === n - 1 ? Math.PI * 2 : 0); let aa = a; while (aa < a0) aa += Math.PI * 2; if (aa < a1) { fa = (a0 + a1) / 2; break; } }
+      l = 0.5 + (-Math.cos(fa) * 0.55 - Math.sin(fa) * 0.75) * 0.42;
+      if (d < 0.66 && -Math.cos(fa) - Math.sin(fa) > 0.3) l += 0.2; // the edge of the face, catching the light
+    }
+    const edge = !isIn.has((x - 1) * 1000 + y) || !isIn.has((x + 1) * 1000 + y) || !isIn.has(x * 1000 + y - 1) || !isIn.has(x * 1000 + y + 1);
+    if (edge) l = !isIn.has(x * 1000 + y - 1) && ny < 0 ? l + 0.12 : l - 0.3; // the block's own rim: a lit top, dark seams elsewhere
+    if (hash(x >> 1, y >> 1, seed + 3) < 0.06) l -= 0.12; // pitted
+    if (far) l -= 0.16; // the far side, in the body's shadow
+    px(ctx, x, y, GOLEM[Math.max(0, Math.min(GOLEM.length - 1, Math.floor(l * GOLEM.length + (bayer(x, y) - 0.5) * 0.15)))]);
+    if (moss && ny < -0.45 && hash(x, y, seed + 5) < 0.7 - (ny + 0.45) * -0.4) px(ctx, x, y, hash(x, y, seed + 6) < 0.3 ? 'grass' : 'leafD');
+  }
+  for (let k = 0; k < cracks; k++) { // a crack across the face
+    let x = cx + (hash(k, seed, 404) - 0.5) * rx * 0.8, y = cy - ry * 0.3;
+    for (let i = 0; i < ry * 0.9; i++) { if (isIn.has(Math.round(x) * 1000 + Math.round(y))) px(ctx, Math.round(x), Math.round(y), 'ink'); x += hash(i, seed + k, 405) < 0.5 ? -0.6 : 0.6; y += 1; }
+  }
+}
+// the curse's light in the seams: a soft violet core behind the blocks
+function hexCore(ctx, cx, cy, rx, ry, hot) {
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+    const d = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry);
+    if (d <= 1) px(ctx, x, y, d < 0.3 ? hot : d < 0.6 ? 'curse' : d < 0.85 ? 'purp' : 'purpD');
+  }
+}
+// The three views (down = toward you, side = facing right, up = away) are
+// built from the same blocks at the same heights (feet on 60, hips 48, chest
+// 38, shoulders 30, head 23), as Keep Defense's ART_GUIDE asks, so it turns
+// without changing size. Far parts are drawn first and a little darker.
+const GOLEM_ROWS = { feet: 56, hips: 48, chest: 38, shoulder: 30, head: 23 };
+function golemArm(ctx, sx, sy, f, seed, hot, far) {
+  for (let i = 1; i <= 8; i++) { const t = i / 10; hexCore(ctx, sx + (f.x - sx) * t, sy + (f.y - sy) * t, 1.8, 1.8, hot); } // the light in the joints (not over the fist)
+  stoneBlock(ctx, sx + (f.x - sx) * 0.3, sy + (f.y - sy) * 0.3, 4.6, 4.6, seed, { cracks: 0, far });
+  stoneBlock(ctx, sx + (f.x - sx) * 0.66, sy + (f.y - sy) * 0.66, 4.2, 4.2, seed + 20, { cracks: 0, far });
+}
+function golemFist(ctx, f, seed, far, side = false) {
+  stoneBlock(ctx, f.x, f.y, 7, 6, seed, { cracks: 0, far });
+  if (!far) for (let k = -1; k <= 1; k++) px(ctx, Math.round(f.x) + (side ? 2 : k * 3 - 1), Math.round(f.y) + (side ? k * 2 : 2), 'night', side ? 1 : 2, 1); // knuckles
+}
+function golemFrame(view, { fl, fr, bob = 0, eye = 'curseL', crouch = 0, rune = 'curseL', step = 0 }) {
   const [c, ctx] = makeCanvas(64, 64);
-  const by = bob + crouch;
-  // legs
-  shadedBlob(ctx, 25.5, 56, 5, 4.5, GOLEM);
-  shadedBlob(ctx, 38.5, 56, 5, 4.5, GOLEM);
-  // arms (thick stone limbs) behind the body
-  const limb = (sx, sy, ex, ey) => {
-    const n = Math.ceil(Math.hypot(ex - sx, ey - sy));
-    for (let i = 0; i <= n; i++) { const t = i / n; px(ctx, Math.round(sx + (ex - sx) * t) - 2, Math.round(sy + (ey - sy) * t) - 2, 'slate', 5, 5); }
-  };
-  limb(19, 33 + by, fl.x, fl.y);
-  limb(45, 33 + by, fr.x, fr.y);
-  // body + head
-  shadedBlob(ctx, 32, 40 + by, 15, 12.5, GOLEM);
-  shadedBlob(ctx, 32, 23 + by, 8.5, 7, GOLEM);
-  // hex runes
-  for (const [x, y] of [[31, 35], [32, 36], [33, 35], [32, 37], [32, 38], [32, 39], [31, 40], [33, 40], [26, 43], [27, 44], [26, 45], [38, 43], [37, 44], [38, 45], [22, 38], [42, 38]]) px(ctx, x, y + by, rune);
-  px(ctx, 31, 37 + by, 'curseL', 3, 1);
-  // eyes
-  px(ctx, 28, 23 + by, eye, 2, 2); px(ctx, 34, 23 + by, eye, 2, 2);
-  px(ctx, 27, 21 + by, 'night', 4, 1); px(ctx, 33, 21 + by, 'night', 4, 1);
-  // moss
-  for (const [x, y, w] of [[20, 29, 6], [38, 29, 6], [29, 16, 6], [24, 31, 3]]) px(ctx, x, y + by, 'grass', w, 1);
-  for (const [x, y] of [[21, 30], [25, 30], [40, 30], [43, 30], [31, 17]]) px(ctx, x, y + by, 'leafD', 1, 2);
-  // fists in front
-  shadedBlob(ctx, fl.x, fl.y, 6, 5.5, GOLEM);
-  shadedBlob(ctx, fr.x, fr.y, 6, 5.5, GOLEM);
+  const by = bob + crouch, hot = rune === 'white' ? 'white' : 'curseL', R = GOLEM_ROWS;
+  if (view === 'side') {
+    // facing right: fl is the far fist, fr the near one; step swings the legs
+    const sw = [0, 3, 0, -3][step % 4];
+    golemArm(ctx, 34, R.shoulder + 2 + by, fl, 11, hot, true); golemFist(ctx, fl, 51, true, true);
+    hexCore(ctx, 28 - sw * 0.3, 52, 2.5, 2.5, hot); stoneBlock(ctx, 28 - sw, R.feet, 6.4, 4.4, 31, { cracks: 0, far: true }); // the far leg
+    hexCore(ctx, 31, R.chest - 1 + by, 11, 11, hot);
+    stoneBlock(ctx, 30, R.hips + by, 10, 5, 40);
+    stoneBlock(ctx, 36, R.shoulder - 2 + by, 7.5, 6.5, 43, { moss: true, far: true }); // the far shoulder, behind
+    stoneBlock(ctx, 31, R.chest + by, 11.5, 10, 41, { cracks: 1 }); // as deep from the side as the front is wide, near enough: a hulk, not a slab
+    for (const [x, y] of [[42, 35], [42, 36], [42, 37]]) px(ctx, x, y + by, rune === 'white' ? 'white' : 'curse'); // the hex's light, at the front edge of the chest
+    hexCore(ctx, 37, 28 + by, 3.5, 3, hot);
+    stoneBlock(ctx, 40, R.head + 2 + by, 6, 5.6, 44, { moss: true, cracks: 0 }); // the head, carried low and forward
+    px(ctx, 39, 22 + by, 'stone', 5, 1); px(ctx, 40, 23 + by, 'night', 6, 1); // the brow
+    px(ctx, 42, 24 + by, 'ink', 3, 3); px(ctx, 43, 25 + by, eye, 2, 1); px(ctx, 43, 24 + by, eye === 'white' ? 'white' : 'curse', 2, 1); // one eye, deep in its socket
+    hexCore(ctx, 34 + sw * 0.3, 52, 2.5, 2.5, hot); stoneBlock(ctx, 34 + sw, R.feet, 6.6, 4.4, 32, { cracks: 0 }); // the near leg
+    stoneBlock(ctx, 28, R.shoulder + by, 10, 8.4, 42, { moss: true }); // the near shoulder: the biggest stone in the profile
+    for (const [x, n] of [[20, 3], [23, 2]]) for (let k = 0; k < n; k++) px(ctx, x, 32 + by + k, k === n - 1 ? 'grass' : 'leafD');
+    golemArm(ctx, 29, R.shoulder + 2 + by, fr, 12, hot, false); golemFist(ctx, fr, 52, false, true);
+    outline(c, 'ink');
+    return c;
+  }
+  const up = view === 'up';
+  if (up) { golemFist(ctx, fl, 51, true); golemFist(ctx, fr, 52, true); } // facing away, the fists are beyond the body
+  for (const [sx, f, sd] of [[19, fl, 11], [45, fr, 12]]) golemArm(ctx, sx, R.shoulder + 2 + by, f, sd, hot, up);
+  for (const [lx, sd] of [[25, 31], [39, 32]]) { hexCore(ctx, lx, 52 + crouch * 0.5, 3, 2.5, hot); stoneBlock(ctx, lx, R.feet, 6, 4.4, sd, { cracks: 0 }); }
+  hexCore(ctx, 32, R.chest - 1 + by, 12, 10, hot);
+  stoneBlock(ctx, 32, R.hips + by, 11.5, 5, 40);
+  if (up) { // the back: two great stones with the hex glowing up the seam between them
+    stoneBlock(ctx, 26, R.chest + by, 7.5, 9.5, 45, { cracks: 1 }); stoneBlock(ctx, 38, R.chest + by, 7.5, 9.5, 46, { cracks: 1 });
+    let sx = 32; for (let y = 30; y < 47; y++) { sx += hash(y, 1, 407) < 0.25 ? -1 : hash(y, 2, 407) < 0.25 ? 1 : 0; sx = Math.max(31, Math.min(33, sx)); px(ctx, sx, y + by, y % 5 ? 'curse' : hot); } // a jagged seam
+  } else stoneBlock(ctx, 32, R.chest + by, 13.5, 9.5, 41, { cracks: 1 });
+  stoneBlock(ctx, 19, R.shoulder + by, 9, 7.6, 42, { moss: true });
+  stoneBlock(ctx, 45, R.shoulder + by, 9, 7.6, 43, { moss: true });
+  hexCore(ctx, 32, 27 + by, 5, 3, hot);
+  stoneBlock(ctx, 32, R.head + by, 6.5, 5.6, 44, { moss: true, cracks: up ? 1 : 0 });
+  if (!up) {
+    // the face: a heavy brow over two deep sockets, the eyes burning in them
+    px(ctx, 27, 21 + by, 'night', 10, 1); px(ctx, 27, 20 + by, 'stone', 4, 1);
+    for (const ex of [28, 34]) { px(ctx, ex - 1, 22 + by, 'ink', 4, 3); px(ctx, ex, 23 + by, eye, 2, 1); px(ctx, ex, 22 + by, eye === 'white' ? 'white' : 'curse', 2, 1); }
+    // the hex carved into the chest, glowing
+    for (const [x, y] of [[31, 33], [32, 34], [33, 33], [32, 35], [32, 36], [32, 37], [31, 38], [33, 38], [30, 39], [34, 39]]) px(ctx, x, y + by, rune);
+    px(ctx, 31, 35 + by, hot, 3, 1);
+    for (const [x, y] of [[30, 34], [34, 34], [29, 39], [35, 39]]) px(ctx, x, y + by, 'purp');
+  }
+  for (const [x, n] of [[14, 3], [17, 2], [47, 2], [50, 3]]) for (let k = 0; k < n; k++) px(ctx, x, 31 + by + k, k === n - 1 ? 'grass' : 'leafD');
+  if (!up) { golemFist(ctx, fl, 51, false); golemFist(ctx, fr, 52, false); } // facing you, the fists are in front
   outline(c, 'ink');
   return c;
 }
 
 export function buildGolem() {
-  const F = (o) => golemFrame(o);
   const rest = { fl: { x: 13, y: 46 }, fr: { x: 51, y: 46 } };
-  return {
+  const front = (F) => ({
     idle: [F({ ...rest }), F({ ...rest, bob: 1, fl: { x: 13, y: 47 }, fr: { x: 51, y: 47 } })],
     walk: [
       F({ fl: { x: 13, y: 43 }, fr: { x: 51, y: 48 }, bob: 0 }),
@@ -117,7 +195,19 @@ export function buildGolem() {
       F({ fl: { x: 13, y: 46 }, fr: { x: 44, y: 34 }, bob: 1 }),
     ],
     hurt: [F({ ...rest, eye: 'white' })],
+  });
+  // side (facing right): fl the far fist, fr the near; the arms swing against the legs
+  const S = (o) => golemFrame('side', o);
+  const hang = { fl: { x: 27, y: 46 }, fr: { x: 37, y: 48 } };
+  const side = {
+    idle: [S({ ...hang }), S({ fl: { x: 28, y: 47 }, fr: { x: 36, y: 48 }, bob: 1 })],
+    walk: [0, 1, 2, 3].map((st) => S({ step: st, bob: -(st % 2), fl: { x: 27 + [0, -3, 0, 3][st], y: 46 }, fr: { x: 37 + [0, 3, 0, -3][st], y: 48 } })),
+    windup: [S({ fl: { x: 31, y: 12 }, fr: { x: 35, y: 13 }, eye: 'white', bob: -1 }), S({ fl: { x: 31, y: 9 }, fr: { x: 35, y: 10 }, eye: 'white', bob: -2, rune: 'white' })],
+    slam: [S({ fl: { x: 43, y: 56 }, fr: { x: 47, y: 57 }, crouch: 3, rune: 'white' }), S({ fl: { x: 42, y: 56 }, fr: { x: 46, y: 57 }, crouch: 2 })],
+    throw: [S({ fl: { x: 28, y: 46 }, fr: { x: 22, y: 14 }, eye: 'white' }), S({ fl: { x: 28, y: 46 }, fr: { x: 46, y: 30 }, bob: 1 })],
+    hurt: [S({ ...hang, eye: 'white' })],
   };
+  return { down: front((o) => golemFrame('down', o)), side, up: front((o) => golemFrame('up', o)) };
 }
 
 // Thrown boulder.

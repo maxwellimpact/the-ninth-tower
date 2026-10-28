@@ -19,7 +19,7 @@ export default function ({ section, animCell }) {
   const mire = buildHexling(MIRE_TONES, 'goldL');
   animCell(row, 'mire slime walk', mire.walk, 8, 4);
   const gol = buildGolem();
-  for (const [k, f] of Object.entries(gol)) animCell(row, `golem ${k}`, f, k === 'walk' ? 5 : 3, 2, true);
+  for (const [v, anims] of Object.entries(gol)) for (const [k, f] of Object.entries(anims)) animCell(row, `golem ${v} ${k}`, f, k === 'walk' ? 5 : 3, 2, true);
 
   const p = section('Props');
   const r2 = document.createElement('div'); r2.className = 'row'; p.appendChild(r2);

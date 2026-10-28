@@ -2574,7 +2574,7 @@ export class Enemy extends Unit {
     }
     if (!z) return; // its marker was already cleared mid-windup (interrupted): the swing lands on nothing
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
-    else if (this.kind === 'golem') { this.sprite.play('golem_slam'); this.anim = 'golem_slam'; sc.fx.slam(z.x, z.y, z.r); }
+    else if (this.kind === 'golem') { const k = `golem_slam_${this.view || 'down'}`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); }
     else { this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`; audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
     if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     if (this.s.drain) for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.addPoison?.(this.s.dmg * 0.5, 3);
@@ -2603,14 +2603,14 @@ export class Golem extends Enemy {
     if (this.isShadow) { this.maxHp = Math.round(this.maxHp * 0.6); this.hp = this.maxHp; this.sprite.setTint(0x8a6cc4); }
     this.throwT = 5;
     this.boss = true;
-    this.sprite.play('golem_idle');
+    this.view = 'down';
+    this.sprite.play('golem_idle_down');
   }
 
   play(anim) {
-    const key = `golem_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}`;
+    const key = `golem_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}_${this.view || 'down'}`; // it turns like the puppets: down, side (mirrored for left), up
     if (this.anim !== key) { this.anim = key; this.sprite.play(key); }
   }
-  face() { /* symmetric front-facing boss */ }
   knock(dx, dy, p) { super.knock(dx, dy, p * 0.12); }
   stun(t) { super.stun(t * 0.3); }
   setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
@@ -2756,7 +2756,7 @@ export class Golem extends Enemy {
     this.state = 'throw';
     this.t = 0;
     this.throwT = this.phase === 3 ? 3 : this.phase === 2 ? 4.5 : 6;
-    this.anim = ''; this.sprite.play('golem_throw'); this.anim = 'golem_throw';
+    this.anim = ''; this.sprite.play(`golem_throw_${this.view || 'down'}`); this.anim = `golem_throw_${this.view || 'down'}`;
     const tx = t.x, ty = t.y, r = 20;
     const zone = { x: tx, y: ty, r, until: 0.95 };
     sc.dangers.push(zone);
