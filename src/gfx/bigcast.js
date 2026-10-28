@@ -1000,3 +1000,108 @@ const GUTF_SMASH = [{ hand: [24, 28], ang: -1.4, reach: 20, back: 0.3, crouch: 1
 const GUTS_SMASH = [{ hand: [30, 30], ang: -2.4, reach: 20, back: 0.3, crouch: 1 }, { hand: [39, 40], ang: 0.9, reach: 16, back: 0.3, lunge: 2 }, { hand: [37, 40], ang: 0.3, reach: 18, back: 0.3 }];
 const GUTB_SMASH = [{ hand: [40, 40], ang: -1.57, reach: 18, back: 0.3, crouch: 1 }, { hand: [40, 30], ang: -1.6, reach: 14, back: 0.3 }, { hand: [41, 35], ang: -1.57, reach: 18, back: 0.4 }];
 export const buildGutcrusher = (views = VIEWS) => cycle(byView({ down: gutFront, side: gutSide, up: gutBack }), { down: GUTF_SMASH, side: GUTS_SMASH, up: GUTB_SMASH }, { bob: 1, crouch: 1, eye: 'white' }, views);
+
+// ---------------------------------------------------------- the Pale Huntsman
+// Gloamwood's hunter, drained of colour, and as tall as he was (the user: the
+// others keep their size): gaunt, a skull for a face with cold green eyes
+// burning in it, a deep hood with antlers branching from it, a ragged pelt
+// mantle open on a bare ribcage, a long cloak behind, a quiver on his back
+// and a great longbow. 72x72, feet on y 54.
+const HUNT_MAP = {
+  n: 'night', u: 'slate', v: 'stone', V: 'mist', B: 'bone', W: 'white', k: 'night', G: 'glow', g: 'glow',
+  h: 'leatherD', b: 'bone', m: 'mist',
+};
+export const HUNT = {
+  head: rows('hunt head', ['...uuuu...', '..unnnnu..', '.unnnnnnu.', '.unWBBBnu.', 'unkGBBkGnu', 'unBBkBBBnu', 'unBkBkBknu', '.unBBBBnu.', '.uunnnnuu.', '..uuuuuu..']),
+  antler: rows('hunt antler', ['b...b.', 'b..b..', 'bb.b..', '.bbb.b', '..bbb.', '...bm.', '....mm', '.....m']),
+  torso: rows('hunt torso', ['..uvvvvvvvvu..', '.uvVvvvvvvvvu.', 'uvVvvvvvvvvvvu', 'uvVvvunnuvvvvu', 'uvvvvunnuvvvuu', '.uvvvunnuvvuu.', '.uvuvunnuvuvu.', '..u.unnnnu.u..', '....uhhhhu....', '....uvvvvu....', '...uvvvvvvu...', '...u.v..v.u...']),
+  legL: rows('hunt leg L', ['.Vvu', '.Vvu', '.Vvu', '.uuu', '.Vvu', '.Vvu', '.Vvu', '.uuu', '.Vvu', '.Vvu', 'nnnu', 'nnnn']),
+  legR: rows('hunt leg R', ['Vvu.', 'Vvu.', 'Vvu.', 'uuu.', 'Vvu.', 'Vvu.', 'Vvu.', 'uuu.', 'Vvu.', 'Vvu.', 'unnn', 'nnnn']),
+  hand: rows('hunt hand', ['BV', 'VV']),
+};
+const BONEARM = ['mist', 'stone', 'slate'];
+// the longbow: a tall curved stave of black wood, its string pulled back by `draw` (0 slack .. 1 full) to the hand at `nock`
+function huntBow(g, [hx, hy], { half = 15, bend = 3, dir = 1, draw = 0, nock = null, arrow = false } = {}) {
+  let top = null, bot = null;
+  for (let t = -1; t <= 1.001; t += 1 / (half * 1.5)) {
+    const x = hx + dir * (1 - t * t) * bend, y = hy + t * half;
+    px(g, Math.round(x), Math.round(y), Math.abs(t) > 0.8 ? 'barkD' : 'barkL');
+    px(g, Math.round(x) + dir, Math.round(y), 'barkD');
+    if (t <= -1) top = [x, y]; bot = [x, y];
+  }
+  const mid = draw && nock ? nock : [hx - dir, hy];
+  for (const [a, b] of [[top, mid], [mid, bot]]) { const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])); for (let i = 0; i <= n; i++) px(g, Math.round(a[0] + (b[0] - a[0]) * i / n), Math.round(a[1] + (b[1] - a[1]) * i / n), 'bone'); }
+  if (arrow && nock) { const n = Math.ceil(Math.abs(hx + dir * 4 - nock[0])); for (let i = 0; i <= n; i++) px(g, Math.round(nock[0] + dir * i), Math.round(nock[1]), i > n - 2 ? 'glowL' : 'mist'); px(g, nock[0] - dir, nock[1] - 1, 'bone'); px(g, nock[0] - dir, nock[1] + 1, 'bone'); } // the arrow, its head cold as his eyes
+}
+// the hood's long pelt cloak, hanging behind him to the ground in tatters
+function huntCloak(ctx, cx, y0, n, hw0, grow, sway = 0, [lit, mid] = ['slate', 'night']) {
+  for (let i = 0; i < n; i++) { const hw = hw0 + i * grow, y = y0 + i, sw = i > n / 2 ? sway : 0; for (let x = Math.round(cx - hw) + sw; x < Math.round(cx + hw) + sw; x++) { if (i >= n - 2 && (x * 7 + i) % 3 === 0) continue; px(ctx, x, y, i >= n - 2 ? lit : x < cx - hw + 2 ? lit : mid); } }
+}
+function huntFront({ bob = 0, step = 0, draw = 0, release = false, crouch = 0, eye = null, bowUp = 0 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...HUNT_MAP, G: eye } : HUNT_MAP, by = bob + crouch;
+  huntCloak(ctx, 35.5, 31 + by, 22, 5.5, 0.14, -step); // the cloak, behind: dark, so his pale limbs read against it
+  grid(ctx, HUNT.legL, M, 31, 42 - (step > 0 ? 1 : 0)); grid(ctx, HUNT.legR, M, 37, 42 - (step < 0 ? 1 : 0));
+  grid(ctx, HUNT.torso, M, 29, 30 + by);
+  for (const [x, y] of [[31, 28], [32, 27], [33, 28]]) px(ctx, x, y + by, 'bone', 1, 2); // fletchings, over his shoulder from the quiver on his back
+  const bh = [44, 40 + by - bowUp * 4], nock = draw ? [bh[0] - 2 - Math.round(draw * 6), bh[1]] : null;
+  limb(ctx, [41, 32 + by], bh, 1.2, 1, BONEARM); // the bow arm
+  huntBow(ctx, bh, { dir: 1, draw, nock, arrow: draw > 0 && !release });
+  grid(ctx, HUNT.hand, M, bh[0] - 1, bh[1] - 1);
+  const dh = nock || [29, 40 + by + step];
+  limb(ctx, [30, 32 + by], dh, 1.2, 1, BONEARM); grid(ctx, HUNT.hand, M, dh[0] - 1, dh[1] - 1); // the drawing hand
+  grid(ctx, HUNT.head, M, 31, 21 + by);
+  grid(ctx, HUNT.antler, M, 26, 14 + by); grid(ctx, HUNT.antler, M, 40, 14 + by, true);
+  outline(c, 'ink');
+  if (release) for (const [dx, dy] of [[0, 0], [-2, -1], [-2, 1]]) px(ctx, bh[0] - 3 + dx, bh[1] + dy, 'glowL'); // the loosed arrow's cold flash
+  c.portraitAt = [28, 18];
+  return c;
+}
+// from the side (facing right): the skull looking out of the hood's opening,
+// an antler swept back, the quiver on his back, the cloak trailing behind,
+// the bow held out ahead and drawn to his cheek
+Object.assign(HUNT, {
+  headSide: rows('hunt side head', ['..uuuu....', '.unnnnu...', 'unnnnnnu..', 'unnnWBBu..', 'unnnBkGBu.', 'unnnBBBBBu', 'unnnBkBkBu', '.unnnBBBu.', '.uunnnnu..', '..uuuuu...']),
+  torsoSide: rows('hunt side torso', ['.uvvvvu..', 'uvVvvvvu.', 'uvVvvvvvu', 'uvvvvvvnu', 'uvvvvvvnu', '.uvvvvvnu', '.uvuvvunu', '..u.unnnu', '....uhhhu', '....uvvvu', '...uvvvvu', '...u.v.vu']),
+  legSide: rows('hunt side leg', ['.Vvu.', '.Vvu.', '.Vvu.', '.uuu.', '.Vvu.', '.Vvu.', '.Vvu.', '.uuu.', '.Vvu.', '.Vvu.', '.nnnn', 'nnnnn']),
+  // from behind: the hood, the cloak down his back with the quiver slung across it
+  headBack: rows('hunt back head', ['...uuuu...', '..unnnnu..', '.unnnnnnu.', '.unnnnnnu.', 'unnnnnnnnu', 'unnnnnnnnu', 'unnnnnnnnu', '.unnnnnnu.', '.uunnnnuu.', '..uuuuuu..']),
+});
+function huntQuiver(ctx, x, y) { // a leather quiver slung on his back, the fletchings out of its mouth
+  for (let k = 0; k < 10; k++) { const X = x + Math.round(k * 0.45); px(ctx, X, y + k, 'leather'); px(ctx, X + 1, y + k, 'leather'); px(ctx, X + 2, y + k, 'leatherD'); }
+  for (const [dx, dy] of [[-1, -2], [0, -3], [1, -2], [2, -3], [3, -2]]) px(ctx, x + dx, y + dy, dx % 2 ? 'mist' : 'bone', 1, 2);
+}
+function huntSide({ bob = 0, step = 0, draw = 0, release = false, crouch = 0, eye = null, bowUp = 0 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...HUNT_MAP, G: eye } : HUNT_MAP, by = bob + crouch, st = step * 2;
+  for (let i = 0; i < 22; i++) { const w = 3 + Math.round(i * 0.25), y = 31 + by + i; for (let x = 33 - w; x <= 34; x++) if (!(i >= 20 && (x * 7 + i) % 3 === 0)) px(ctx, x - (i > 11 ? step : 0), y, x < 35 - w ? 'slate' : 'night'); } // the cloak, trailing behind
+  huntQuiver(ctx, 30, 30 + by);
+  grid(ctx, HUNT.legSide, { ...M, V: 'stone', v: 'slate' }, 32 - st, 42 - (step < 0 ? 1 : 0)); // the far leg, in shadow
+  const bh = [44, 38 + by - bowUp * 3], nock = draw ? [bh[0] - 3 - Math.round(draw * 5), bh[1]] : null;
+  limb(ctx, [37, 32 + by], bh, 1.1, 1, ['stone', 'slate', 'night']); // the bow arm, the far one, out ahead
+  huntBow(ctx, bh, { dir: 1, draw, nock, arrow: draw > 0 && !release });
+  grid(ctx, HUNT.hand, M, bh[0] - 1, bh[1] - 1);
+  grid(ctx, HUNT.legSide, M, 34 + st, 42 - (step > 0 ? 1 : 0));
+  grid(ctx, HUNT.torsoSide, M, 31, 30 + by);
+  grid(ctx, HUNT.headSide, M, 32, 21 + by);
+  grid(ctx, HUNT.antler, M, 27, 14 + by);
+  const dh = nock || [37, 40 + by + step];
+  limb(ctx, [35, 32 + by], dh, 1.2, 1, BONEARM); grid(ctx, HUNT.hand, M, dh[0] - 1, dh[1] - 1); // the near hand, on the string
+  outline(c, 'ink');
+  if (release) for (const [dx, dy] of [[0, 0], [2, -1], [2, 1]]) px(ctx, bh[0] + 4 + dx, bh[1] + dy, 'glowL');
+  return c;
+}
+function huntBack({ bob = 0, step = 0, draw = 0, release = false, crouch = 0, bowUp = 0 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = HUNT_MAP, by = bob + crouch;
+  const bh = [27, 40 + by - bowUp * 4];
+  huntBow(ctx, bh, { dir: -1, draw, nock: draw ? [bh[0] + 2 + Math.round(draw * 6), bh[1]] : null, arrow: draw > 0 && !release }); // facing away, the bow is beyond him
+  grid(ctx, HUNT.legL, M, 31, 42 - (step < 0 ? 1 : 0)); grid(ctx, HUNT.legR, M, 37, 42 - (step > 0 ? 1 : 0));
+  huntCloak(ctx, 35.5, 30 + by, 22, 6, 0.14, step, ['stone', 'slate']); // the cloak, all down his back, a shade lighter than the hood so the two part
+  huntQuiver(ctx, 37, 30 + by);
+  limb(ctx, [30, 32 + by], bh, 1.2, 1, BONEARM); grid(ctx, HUNT.hand, M, bh[0] - 1, bh[1] - 1);
+  limb(ctx, [41, 32 + by], [42, 40 + by - step], 1.2, 1, BONEARM); grid(ctx, HUNT.hand, M, 41, 39 + by - step);
+  grid(ctx, HUNT.headBack, M, 31, 21 + by);
+  grid(ctx, HUNT.antler, M, 26, 14 + by); grid(ctx, HUNT.antler, M, 40, 14 + by, true);
+  outline(c, 'ink');
+  return c;
+}
+const HUNTF_SHOT = [{ draw: 1, bowUp: 1, crouch: 1 }, { release: true, bowUp: 1 }, { draw: 0.3 }];
+export const buildHuntsman = (views = VIEWS) => cycle(byView({ down: huntFront, side: huntSide, up: huntBack }), { down: HUNTF_SHOT, side: HUNTF_SHOT, up: HUNTF_SHOT }, { bob: 1, crouch: 1, eye: 'white' }, views);
