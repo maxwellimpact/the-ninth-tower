@@ -38,6 +38,21 @@ export function registerPuppet(scene, key, def, recolor = null) {
   return fr;
 }
 
+// A big boss built as a model (gfx/bosses.js): frames already in the puppets'
+// shape, 64x64 with the feet on y=48, registered under the puppets' names
+// (`${anim}_${view}_${i}`, animations `${key}_${anim}_${view}`) so the enemy
+// code plays it as it plays a puppet.
+export function registerBigPuppet(scene, key, fr) {
+  const list = [];
+  for (const [anim, views] of Object.entries(fr)) for (const [v, frames] of Object.entries(views)) frames.forEach((canvas, i) => list.push({ name: `${anim}_${v}_${i}`, canvas }));
+  packFrames(scene, key, list);
+  for (const [anim, views] of Object.entries(fr)) for (const [v, frames] of Object.entries(views)) {
+    scene.anims.create({ key: `${key}_${anim}_${v}`, frames: frames.map((_, i) => ({ key, frame: `${anim}_${v}_${i}` })), frameRate: ANIM_RATES[anim], repeat: ['idle', 'walk'].includes(anim) ? -1 : 0 });
+  }
+  scene.textures.addCanvas(`${key}_portrait`, portraitFrom(fr.idle.down[0], fr.idle.down[0].width / 2 - 8, fr.idle.down[0].height - 56, 16));
+  return fr;
+}
+
 // Is any live game object (in any scene) still drawing this texture?
 function textureInUse(game, key) {
   for (const sc of game.scene.scenes) {
