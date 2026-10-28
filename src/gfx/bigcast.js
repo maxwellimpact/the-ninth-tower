@@ -520,10 +520,10 @@ function snagFront({ bob = 0, step = 0, hand = null, ang = null, reach = 34, cro
   const arm = (s, h) => { limb(ctx, s, h, 1.5, 1.3, SKIN); put(SNAGF.fist, h[0] - 1, h[1]); }; // the goblin's thin arms, a little longer
   const hd = hand ? [hand[0], hand[1] + by] : [24, 38 + by];
   arm([39, 33 + by], [40, 38 + by + step]); // the off arm
-  snagSpear(ctx, hd, ang ?? -1.57, reach, 0.27);
-  arm([25, 33 + by], hd);
   put(SNAGF.head, 24, 20 + by, eye ? { ...M, Y: eye, y: eye } : M);
   for (const [x, y, col, w] of [[36, 21, 'redD', 2], [37, 20, 'red', 2], [38, 19, 'red', 2], [39, 18, 'redL', 1]]) px(ctx, x, y + by, col, w, 1); // a red feather tucked in the hood, swept back
+  snagSpear(ctx, hd, ang ?? -1.57, reach, 0.27); // held in front of him: over the ear, not behind it
+  arm([25, 33 + by], hd);
   outline(c, 'ink');
   return c;
 }
@@ -595,6 +595,168 @@ const SNAGF_THRUST = [{ hand: [24, 34], ang: 1.75, reach: 24, crouch: 1 }, { han
 const MALF_BOLT = [{ hand: [26, 40], ang: -1.85, glow: 1, off: [39, 38], cast: 1 }, { hand: [26, 41], ang: -1.4, glow: 2, off: [41, 41], cast: 2 }, { hand: [25, 42], ang: -1.5, glow: 1 }];
 const MALF_CAST = [{ hand: [25, 37], ang: -1.6, glow: 1, reach: 18, off: [39, 38], cast: 1 }, { hand: [25, 34], ang: -1.6, glow: 2, reach: 18, off: [40, 35], cast: 2, bob: -1 }, { hand: [25, 37], ang: -1.6, glow: 1, reach: 18, off: [39, 38], cast: 1 }]; // raised beside his face, not across it
 // facing you: the redrawn front; the side and back views are still the first pass
-const front = (fn, other) => (view, pose) => (view === 'down' ? fn(pose) : other(view, pose));
-export const buildSnagtooth = (views = VIEWS) => cycle(front(snagFront, snagtooth), { ...SNAG_THRUST, down: SNAGF_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);
-export const buildMalgrim = (views = VIEWS) => cycle(front(malFront, malgrim), { ...MAL_BOLT, down: MALF_BOLT }, { bob: 1, crouch: 1, eye: 'white', ang: -1.75 }, views, { ...MAL_CAST, down: MALF_CAST });
+// ------------------------------------------- the side and back views, redrawn
+// on the fronts' proportions and sizes (2026-10-28), so they turn without
+// changing size or style
+
+// Snagtooth from the side (facing right): the hood toward the back, an ear
+// sweeping back under it, brows down to the front, the gold eye, a long nose,
+// the tusk up past a turned-down mouth; the pelt over his shoulders, the tunic
+// belted with the buckle at the front, the spear held low and forward, ready
+Object.assign(SNAGF, {
+  headSide: rows('snag side head', [
+    '.....hhhh.......',
+    '...hhHHHHhh.....',
+    '..hHHjjHHHHh....',
+    '..hHjHHHHHHHh...',
+    'LLggGhhhhhhhhG..',
+    '.XLLGGGGGGdGGGg.',
+    '...gLGGGGGGddGG.',
+    '...gGGGGGGGGYGGG',
+    '...gGGGGGGGGGGLg',
+    '...ggGGGGGGwEEg.',
+    '....gGGGGGGwgEg.',
+    '.....gggggggg...',
+  ]),
+  torsoSide: rows('snag side torso', ['VVvVvvVu.', 'uvuTTuTvu', 'tDTTTTTTt', 'tDTTrTTTt', 'tDTTTTTTt', 'tDTTTTTrt', 'hhhhhhhYh', '.tTt.tTt.']),
+  legSide: rows('snag side leg', ['.ooO..', '.ooO..', '.ooO..', '.ooO..', '.ooO..', '.ooO..', '.hHhh.', '.hHhhh', '.hhhhh']),
+  // from behind: the hood over the back of his head, the ears out under it,
+  // the wolf pelt draped down his back with its tail over the belt, heels
+  headBack: rows('snag back head', [
+    '......hhhh......',
+    '....hhHHHHhh....',
+    '...hHHjjHHHHh...',
+    '...hHjHHHHHHh...',
+    'LXLghhhhhhhhhggd',
+    '.LLGGGGGGGGGGgg.',
+    '...gGGGGGGGGGg..',
+    '...gGGGGGGGGGg..',
+    '...gGGGGGGGGgg..',
+    '....gGGGGGGgg...',
+    '.....gggggg.....',
+  ]),
+  torsoBack: rows('snag back torso', ['VVvVvvVvvVvuu', 'VVvVvvvvvVvuu', 'uVvvvVvvvvvuu', 'tuVvvvvvvvuut', 'tDuVvvvvvuuTt', 'tDTuvVvvvuTTt', '.hhhhuVuhhhh.', '.tTt.uvu.tTt.']),
+  legBackL: rows('snag back leg L', ['oooO.', 'oooO.', 'oooO.', 'oooO.', 'oooO.', 'oooO.', 'hhhh.', 'hhhhh', '.hhh.']),
+  legBackR: rows('snag back leg R', ['.ooOO', '.ooOO', '.ooOO', '.ooOO', '.ooOO', '.ooOO', '.hhhh', 'hhhhh', '.hhh.']),
+});
+function snagSide({ bob = 0, step = 0, hand = null, ang = null, reach = 34, crouch = 0, eye = null, lunge = 0 } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = SNAGF_MAP, by = bob + crouch, st = step * 2;
+  const put = (r, x, y, m = M) => grid(ctx, r, m, x, y);
+  const far = { ...M, o: 'leafD', O: 'leafD', h: 'leatherD', H: 'leatherD' };
+  put(SNAGF.legSide, 28 - st, 40 - (step < 0 ? 1 : 0), far); // the far leg, in shadow
+  limb(ctx, [34 + lunge, 33 + by], [35 + lunge - step, 38 + by], 1.4, 1.2, ['grass', 'grassD', 'leafD']); // the far arm, behind
+  put(SNAGF.legSide, 30 + st, 40 - (step > 0 ? 1 : 0));
+  put(SNAGF.torsoSide, 28 + lunge, 32 + by);
+  put(SNAGF.headSide, 25 + lunge, 20 + by, eye ? { ...M, Y: eye, y: eye } : M);
+  for (const [x, y, col, w] of [[27, 21, 'redD', 2], [26, 20, 'red', 2], [25, 19, 'red', 2], [24, 18, 'redL', 1]]) px(ctx, x + lunge, y + by, col, w, 1); // the feather, swept back
+  const hd = hand ? [hand[0] + lunge, hand[1] + by] : [34, 38 + by];
+  snagSpear(ctx, hd, ang ?? -0.42, reach, 0.27);
+  limb(ctx, [31 + lunge, 33 + by], hd, 1.5, 1.3, SKIN); grid(ctx, SNAGF.fist, M, hd[0] - 1, hd[1]);
+  outline(c, 'ink');
+  return c;
+}
+function snagBack({ bob = 0, step = 0, hand = null, ang = null, reach = 34, crouch = 0 } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = SNAGF_MAP, by = bob + crouch;
+  const put = (r, x, y, m = M) => grid(ctx, r, m, x, y);
+  const hd = hand ? [hand[0], hand[1] + by] : [40, 38 + by];
+  snagSpear(ctx, hd, ang ?? -1.57, reach, 0.27); // facing away, the spear is beyond him
+  put(SNAGF.legBackL, 26, 40 - (step < 0 ? 1 : 0)); put(SNAGF.legBackR, 33, 40 - (step > 0 ? 1 : 0));
+  put(SNAGF.torsoBack, 26, 32 + by);
+  const arm = (s, h) => { limb(ctx, s, h, 1.5, 1.3, SKIN); grid(ctx, SNAGF.fist, M, h[0] - 1, h[1]); };
+  arm([25, 33 + by], [24, 38 + by - step]);
+  arm([39, 33 + by], hd);
+  put(SNAGF.headBack, 24, 21 + by);
+  for (const [x, y, col, w] of [[36, 21, 'redD', 2], [37, 20, 'red', 2], [38, 19, 'red', 2], [39, 18, 'redL', 1]]) px(ctx, x, y + by, col, w, 1); // the feather
+  outline(c, 'ink');
+  return c;
+}
+const SNAGS_THRUST = [{ hand: [27, 36], ang: -0.05, reach: 32, crouch: 1 }, { hand: [36, 37], ang: 0.02, reach: 32, lunge: 2 }, { hand: [33, 37], ang: 0, reach: 32 }];
+const SNAGB_THRUST = [{ hand: [41, 40], ang: -1.57, reach: 26, crouch: 1 }, { hand: [40, 32], ang: -1.6, reach: 22 }, { hand: [41, 36], ang: -1.57, reach: 24 }];
+
+// Malgrim from the side (facing right): the hat's tip leaning back and its
+// brim out over his brow, grey hair at the back, a hooked nose, the glowing
+// eye, the beard jutting forward; the collar's wing standing up behind his
+// head; the coat open at the front on its red lining; the staff held out ahead
+Object.assign(MALF, {
+  hatSide: rowsAt('mal side hat', 15, ['3:xx', '3:pxx', '4:pPx', '4:pPpx', '5:pPppx', '4:pPpppxx', '4:xcxCxcxx', '1:xpPPppppppppx', '0:xpPpppppppppxx', '1:xxxxxxxxxxxxx']),
+  faceSide: rows('mal side face', [
+    '.ggvvvvvv.',
+    '.ggfffnnf.',
+    '.ggffffnCf',
+    '.gvfffffff',
+    '..vffffffv',
+    '..vfgggggv',
+    '..vgggEEg.',
+    '...gGgggd.',
+    '....gGggd.',
+    '.....gGd..',
+    '......gd..',
+  ]),
+  collarSide: rowsAt('mal side collar', 12, ['1:P', '1:Pp', '1:PPp', '0:PPpp|7:rrn', '0:PPpppppppxxx']),
+  // from behind: the hat (its tip leaning the other way), grey hair, the
+  // collar's back standing up like a fan, the coat with the hex's sigil on it
+  hatBack: rowsAt('mal back hat', 15, ['4:px', '4:ppx', '5:pPx', '5:pPpx', '5:pPppx', '4:pPpppxx', '3:xcxCxcxCx', '1:xpPPpppppppxx', '0:xpPpppppppppxx', '1:xxxxxxxxxxxxx']),
+  faceBack: rows('mal back hair', ['.gggggggg.', '.gGggggdg.', '.gGgggddg.', '..gGggdd..', '..ggggdd..', '...gggd...']),
+  collarBack: rowsAt('mal back collar', 16, ['1:P|14:x', '1:Pp|13:px', '1:PPp' + 'p'.repeat(3) + 'x' + 'p'.repeat(4) + 'ppx', '0:PPpp' + 'p'.repeat(3) + 'x' + 'p'.repeat(4) + 'ppxx', '0:PP' + 'p'.repeat(10) + 'xxxx']),
+  bootSide: rows('mal side boot', ['.xxx..', 'Ppxxxx']),
+  sigil: rows('mal back sigil', ['.c.', 'cCc', '.c.']),
+});
+// the coat seen from the side or from behind, on the front's proportions
+function malCoatTurned(ctx, cx, y0, view, sway = 0) {
+  const n = 11, side = view === 'side';
+  for (let i = 0; i < n; i++) {
+    let hw = side ? 4 + i * 0.25 : 5 + i * 0.3;
+    if (i >= 2 && i <= 3) hw -= 0.5;
+    const sw = i >= 6 ? Math.round(sway * (i - 5) / 5) : 0;
+    const l = Math.round(cx - hw) + sw, r = Math.round(cx + hw) - 1 + sw + (side ? 1 : 0), y = y0 + i;
+    for (let x = l; x <= r; x++) {
+      const u = (x - l) / Math.max(1, r - l);
+      let col = u < 0.12 ? 'purpL' : u > 0.8 ? 'purpD' : 'purp';
+      if (side && x === r) col = i > 3 ? 'redD' : 'purpD'; // the coat open at the front, its red lining showing
+      if (!side && i >= 5 && i <= 8 && x - (cx + sw) === 0) col = 'purpD'; // the back seam
+      if (i === 3) col = 'hexD'; // the belt
+      if (i === n - 1) col = (x - l) % 4 === 2 ? 'curse' : 'purpD'; // the hem, a rune stitched in it here and there
+      px(ctx, x, y, col);
+    }
+  }
+  if (!side) grid(ctx, MALF.sigil, MAL_MAP, cx - 2, y0 + 5); // the hex's sigil across his back
+}
+function malSide({ bob = 0, step = 0, hand = null, ang = null, glow = 0, cast = 0, crouch = 0, eye = null, reach = 22 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = MAL_MAP, by = bob + crouch, lights = [];
+  grid(ctx, MALF.bootSide, { ...M, P: 'purpD', p: 'hexD' }, 28 - step, 46); // the far boot
+  grid(ctx, MALF.bootSide, M, 30 + step, 46);
+  malCoatTurned(ctx, 31, 36 + by, 'side', -step);
+  grid(ctx, MALF.collarSide, COAT_MAP, 25, 33 + by);
+  grid(ctx, MALF.faceSide, eye ? { ...MALF_MAP, C: eye } : MALF_MAP, 28, 28 + by);
+  grid(ctx, MALF.hatSide, M, 25, 18 + by);
+  const hd = hand ? [hand[0], hand[1] + by] : [38, 42 + by];
+  lights.push(malStaff(ctx, hd, ang ?? -1.6, { up: reach, down: 6, glow }));
+  layerSoft(ctx, W, H, 'hexD', [[31, 37 + by]], (g) => { limb(g, [31, 37 + by], [hd[0], hd[1] - 1], 1.4, 2, SLEEVE); px(g, hd[0] - 1, hd[1] - 1, 'night', 2, 1); grid(g, MALF.hand, MALF_MAP, hd[0] - 1, hd[1]); });
+  outline(c, 'ink');
+  malGlow(ctx, lights[0], glow);
+  if (cast) malGlow(ctx, [hd[0] + 3, hd[1] - 4], cast);
+  return c;
+}
+function malBack({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = null, cast = 0, crouch = 0, reach = 22 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = MAL_MAP, by = bob + crouch, lights = [];
+  const hd = hand ? [hand[0], hand[1] + by] : [39, 42 + by], oh = off ? [off[0], off[1] + by] : [25, 42 + by + step];
+  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 6, glow })); // facing away, the staff is beyond him
+  grid(ctx, MALF.boot, { ...M, P: 'purpD' }, 27, 46 - (step < 0 ? 1 : 0)); grid(ctx, MALF.boot, { ...M, P: 'purpD' }, 33, 46 - (step > 0 ? 1 : 0));
+  malCoatTurned(ctx, 32, 36 + by, 'up', step);
+  const sleeve = (s, h) => layerSoft(ctx, W, H, 'hexD', [s], (g) => { limb(g, s, [h[0], h[1] - 1], 1.4, 2, SLEEVE); grid(g, MALF.hand, MALF_MAP, h[0] - 1, h[1]); });
+  sleeve([27, 37 + by], oh); sleeve([37, 37 + by], hd);
+  grid(ctx, MALF.collarBack, COAT_MAP, 24, 32 + by);
+  grid(ctx, MALF.faceBack, { ...MALF_MAP, g: 'stone', G: 'mist', d: 'slate' }, 27, 28 + by); // grey hair, darker than the beard (a pale block from behind read as a face)
+  grid(ctx, MALF.hatBack, M, 25, 18 + by);
+  outline(c, 'ink');
+  malGlow(ctx, lights[0], glow);
+  return c;
+}
+const MALS_BOLT = [{ hand: [35, 40], ang: -2.1, glow: 1 }, { hand: [40, 39], ang: -0.3, glow: 2, reach: 16 }, { hand: [39, 41], ang: -0.9, glow: 1 }];
+const MALS_CAST = [{ hand: [37, 37], ang: -1.65, glow: 1, reach: 18 }, { hand: [37, 34], ang: -1.65, glow: 2, reach: 18, bob: -1, cast: 2 }, { hand: [37, 37], ang: -1.65, glow: 1, reach: 18 }];
+const MALB_BOLT = [{ hand: [39, 40], ang: -1.3, glow: 1 }, { hand: [39, 38], ang: -1.65, glow: 2, reach: 18 }, { hand: [39, 41], ang: -1.6, glow: 1 }];
+const MALB_CAST = [{ hand: [38, 37], ang: -1.57, glow: 1, reach: 18 }, { hand: [38, 34], ang: -1.57, glow: 2, reach: 18, bob: -1 }, { hand: [38, 37], ang: -1.57, glow: 1, reach: 18 }];
+
+const byView = (fns) => (view, pose) => fns[view](pose);
+export const buildSnagtooth = (views = VIEWS) => cycle(byView({ down: snagFront, side: snagSide, up: snagBack }), { down: SNAGF_THRUST, side: SNAGS_THRUST, up: SNAGB_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);
+export const buildMalgrim = (views = VIEWS) => cycle(byView({ down: malFront, side: malSide, up: malBack }), { down: MALF_BOLT, side: MALS_BOLT, up: MALB_BOLT }, { bob: 1, crouch: 1, eye: 'white', ang: -1.75 }, views, { down: MALF_CAST, side: MALS_CAST, up: MALB_CAST });
