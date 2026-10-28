@@ -579,10 +579,10 @@ function malFront({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = 
   const sleeve = (s, h) => layerSoft(ctx, W, H, 'hexD', [s], (g) => { limb(g, s, [h[0], h[1] - 1], 1.4, 2, SLEEVE); px(g, h[0] - 1, h[1] - 1, 'night', 2, 1); grid(g, MALF.hand, MALF_MAP, h[0] - 1, h[1]); }); // edged in the coat's darkest violet where it crosses the coat
   const hd = hand ? [hand[0], hand[1] + by] : [25, 42 + by], oh = off ? [off[0], off[1] + by] : [39, 42 + by - step];
   sleeve([37, 37 + by], oh);
-  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 6, glow }));
-  sleeve([27, 37 + by], hd);
   grid(ctx, MALF.face, eye ? { ...MALF_MAP, C: eye } : MALF_MAP, 27, 28 + by);
   grid(ctx, MALF.hat, M, 25, 18 + by);
+  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 6, glow })); // held out in front of him: over the hat's brim, not behind it
+  sleeve([27, 37 + by], hd);
   outline(c, 'ink');
   malGlow(ctx, lights[0], glow);
   if (cast) malGlow(ctx, [oh[0], oh[1] + 1], cast);
@@ -593,7 +593,7 @@ function malFront({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = 
 // the front views' attacks, on the new proportions
 const SNAGF_THRUST = [{ hand: [24, 34], ang: 1.75, reach: 24, crouch: 1 }, { hand: [26, 40], ang: 1.62, reach: 20 }, { hand: [24, 37], ang: 1.7, reach: 22 }];
 const MALF_BOLT = [{ hand: [26, 40], ang: -1.85, glow: 1, off: [39, 38], cast: 1 }, { hand: [26, 41], ang: -1.4, glow: 2, off: [41, 41], cast: 2 }, { hand: [25, 42], ang: -1.5, glow: 1 }];
-const MALF_CAST = [{ hand: [27, 37], ang: -1.57, glow: 1, reach: 18, off: [39, 38], cast: 1 }, { hand: [28, 34], ang: -1.57, glow: 2, reach: 18, off: [40, 35], cast: 2, bob: -1 }, { hand: [27, 37], ang: -1.57, glow: 1, reach: 18, off: [39, 38], cast: 1 }];
+const MALF_CAST = [{ hand: [25, 37], ang: -1.6, glow: 1, reach: 18, off: [39, 38], cast: 1 }, { hand: [25, 34], ang: -1.6, glow: 2, reach: 18, off: [40, 35], cast: 2, bob: -1 }, { hand: [25, 37], ang: -1.6, glow: 1, reach: 18, off: [39, 38], cast: 1 }]; // raised beside his face, not across it
 // facing you: the redrawn front; the side and back views are still the first pass
 const front = (fn, other) => (view, pose) => (view === 'down' ? fn(pose) : other(view, pose));
 export const buildSnagtooth = (views = VIEWS) => cycle(front(snagFront, snagtooth), { ...SNAG_THRUST, down: SNAGF_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);
