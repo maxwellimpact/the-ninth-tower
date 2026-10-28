@@ -244,12 +244,11 @@ export function makeTerrainPainter(world) {
       const n = vnoise(x / 30, y / 30, 254) * 0.75 + vnoise(x / 7, y / 7, 255) * 0.25 + (bayer(x, y) - 0.5) * 0.12;
       return n < 0.3 ? C.hexD : n < 0.62 ? C.night : n < 0.86 ? C.slate : C.purpD;
     }
-    if (bm === 'basin' && t === T.PATH) { // the causeway: black flagstones, purple in the joints
+    if (bm === 'basin' && (t === T.PATH || t === T.HOUSE)) { // the causeway: black flagstones, purple in the joints (and the Tower stands on them)
       const row = Math.floor(y / 8), ox = (row % 2) * 5;
       if (y % 8 === 7 || (x + ox) % 10 === 9) return hash(x, y, 256) < 0.3 ? C.purp : C.purpD;
       return hash(Math.floor((x + ox) / 10), row, 257) < 0.5 ? C.night : C.slate;
     }
-    if (bm === 'basin' && t === T.HOUSE) return C.ink; // under the Tower
     switch (t) {
       case T.GRASS:
       case T.PLATEAU: {

@@ -1186,33 +1186,167 @@ export function bones(seed = 0) {
   if (hash(seed, 1, 263) < 0.5) { px(ctx, 10, 1, 'bone', 3, 3); px(ctx, 11, 2, 'ink'); } // a skull
   return c;
 }
-// The Ninth Tower: Malgrim's black spire - a tall tapering shaft of dark
-// stone in tiers, violet light in its windows and seams, a crown of horns
-// at the top round a burning hex, and a great door at its foot.
+// The Ninth Tower: Malgrim's black spire, designed as a key object (shape,
+// then light, then structure, then detail). The silhouette steps in as it
+// climbs: a broad stepped plinth braced by two great buttresses, four tiers
+// of shaft each a little narrower than the one below with an overhanging
+// ledge on corbels, then Malgrim's chamber, a wider drum with a crenellated
+// parapet and torn banners, and over it a crown of five horns cupping a
+// burning hex. The stone is black and round (lit from the upper left),
+// laid in courses that follow its curve; violet light comes from inside -
+// pointed windows, the open door, the hex - and spills onto the stone near
+// it, and the curse's veins climb the walls from the foot.
 export function ninthTower() {
-  const W = 104, H = 236;
+  const W = 120, H = 240, cx = 60, G = 238; // G: the ground line
   const [c, ctx] = makeCanvas(W, H);
-  const cx = 52;
-  for (let y = 30; y < 226; y++) {
-    const half = Math.round(10 + (y - 30) * 0.13);
-    for (let x = cx - half; x <= cx + half; x++) {
-      const f = (x - (cx - half)) / (half * 2);
-      let col = f < 0.15 ? 'slate' : f < 0.55 ? 'night' : f < 0.85 ? 'hexD' : 'ink';
-      if ((y - 30) % 28 < 2) col = f < 0.5 ? 'stone' : 'slate'; // tier ledges
-      if (Math.abs(x - cx) === Math.round(half * 0.4) && hash(x, y, 264) < 0.35) col = 'purpD'; // seams
-      px(ctx, x, y, col);
+  const clamp = (v, n) => Math.max(0, Math.min(n - 1, v));
+  const STONE = ['ink', 'basaltD', 'night', 'slate', 'stone', 'mist'];
+  const LIT = ['ink', 'hexD', 'purpD', 'purp', 'curse', 'curseL']; // stone lit by the violet light
+  // where the violet light falls: [x, y, reach, strength]
+  const LIGHTS = [[cx, 18, 26, 0.9], [cx, 216, 22, 0.85], [cx, 60, 14, 0.6]];
+  const glowAt = (x, y) => { let g = 0; for (const [lx, ly, r, k] of LIGHTS) { const d = Math.hypot(x - lx, (y - ly) * 1.15) / r; if (d < 1) g = Math.max(g, k * (1 - d)); } return g; };
+  const stone = (x, y, l) => {
+    const gl = glowAt(x, y), d = (bayer(x, y) - 0.5) * 0.2;
+    if (gl > 0.22 + d * 0.3) px(ctx, x, y, LIT[clamp(Math.floor((l * 0.4 + gl * 0.6) * LIT.length + d * 0.4), LIT.length - 1)]);
+    else px(ctx, x, y, STONE[clamp(Math.floor(l * STONE.length + d), STONE.length)]);
+  };
+  // coursed masonry on a round wall: blocks across the curve, staggered each course
+  const course = (s, y, ch, bw, seed) => {
+    const row = Math.floor(y / ch), off = hash(row, 3, seed) * bw, col = Math.floor((s + off) / bw);
+    if (y % ch === 0) return -0.13; // the bed joint
+    if ((s + off) - col * bw < 0.9) return -0.11; // the head joint
+    let o = (hash(col, row, seed) - 0.5) * 0.08; // each block its own shade
+    if (hash(col, row, seed + 9) < 0.04) o -= 0.1; // a weathered one
+    return o;
+  };
+  // a round section of wall from y0 to y1, its half-width running h0 -> h1
+  const drum = (y0, y1, h0, h1, { ch = 6, bw = 11, seed = 1, base = 0.66 } = {}) => {
+    for (let y = y0; y < y1; y++) {
+      const half = h0 + (h1 - h0) * ((y - y0) / Math.max(1, y1 - y0 - 1));
+      for (let x = Math.floor(cx - half); x < Math.ceil(cx + half); x++) {
+        const u = (x + 0.5 - (cx - half)) / (half * 2);
+        if (u < 0 || u > 1) continue;
+        const ang = Math.asin(Math.max(-1, Math.min(1, u * 2 - 1)));
+        stone(x, y, base - Math.abs(u - 0.22) * 0.95 + (u < 0.07 ? 0.2 : 0) + course(ang * half + 40, y, ch, bw, seed)); // a rim of light down the lit edge
+      }
+    }
+  };
+  // a ledge round the shaft: a lit top, a dark lip, and corbels under it
+  const ledge = (y, half) => {
+    for (let x = Math.floor(cx - half); x < Math.ceil(cx + half); x++) {
+      const u = (x + 0.5 - (cx - half)) / (half * 2), l = 0.62 - Math.abs(u - 0.28) * 0.6;
+      stone(x, y, l + 0.2); stone(x, y + 1, l); stone(x, y + 2, l - 0.25);
+      if ((x - cx + 64) % 4 === 0 && u > 0.04 && u < 0.96) { stone(x, y + 3, l - 0.3); stone(x, y + 4, l - 0.4); } // the corbels
+    }
+    for (const sgn of [-1, 1]) { const x = Math.round(cx + sgn * half) - (sgn > 0 ? 1 : 0); px(ctx, x + sgn, y - 1, 'night'); px(ctx, x + sgn * 2, y - 2, 'basaltD'); } // a spike at each end
+  };
+
+  // ---- the shape: buttresses behind, the stepped plinth, the four tiers
+  for (const sgn of [-1, 1]) { // the great buttresses, sloping out to the ground
+    for (let y = 170; y < 230; y++) {
+      const t = (y - 170) / 60, reach = 28 + t * t * 24;
+      for (let k = 20; k < reach; k++) {
+        const x = Math.round(cx + sgn * k), top = k > reach - 2.5;
+        stone(x, y, (sgn < 0 ? 0.5 : 0.16) + (top ? (sgn < 0 ? 0.22 : 0.12) : 0) - t * 0.06 + course(k * 1.4, y, 7, 9, 7) * 0.8);
+      }
     }
   }
-  for (let t = 0; t < 6; t++) { const wy = 44 + t * 28; px(ctx, cx - 2, wy, 'ink', 5, 9); px(ctx, cx - 1, wy + 1, t % 2 ? 'curse' : 'curseL', 3, 7); } // lit windows
-  for (let t = 0; t < 5; t++) for (const s of [-1, 1]) { const wy = 58 + t * 28, half = Math.round(10 + (wy - 30) * 0.13); px(ctx, cx + s * Math.round(half * 0.7) - 1, wy, 'curse', 2, 4); }
-  // the horned crown and the hex burning in it
-  for (let i = 0; i < 5; i++) { const x0 = cx - 16 + i * 8; for (let y = 0; y < 14 - Math.abs(i - 2) * 3; y++) px(ctx, x0 + Math.round(y * (i - 2) * 0.12), 30 - y, i % 2 ? 'night' : 'slate', 2, 1); }
-  for (let y = 4; y < 22; y++) { const half = Math.round(Math.sqrt(Math.max(0, 64 - (y - 13) * (y - 13)))); px(ctx, cx - half, y, y < 10 ? 'curseL' : 'curse', half * 2 + 1, 1); }
-  px(ctx, cx - 2, 11, 'white', 5, 4);
-  // the base and the great door
-  for (let y = 222; y < 234; y++) px(ctx, cx - 40 + (y - 222), y, y < 226 ? 'slate' : 'night', 80 - (y - 222) * 2, 1);
-  for (let y = 196; y < 232; y++) { const w = y < 204 ? 2 + (y - 196) : 10; px(ctx, cx - w, y, y < 204 ? 'purpD' : 'ink', w * 2 + 1, 1); }
-  px(ctx, cx - 1, 210, 'curse', 3, 3);
+  const TIERS = [[76, 104, 15, 17], [106, 136, 18, 21], [138, 168, 22, 25], [170, 200, 26, 29]];
+  TIERS.forEach(([y0, y1, h0, h1], i) => drum(y0, y1, h0, h1, { seed: 10 + i }));
+  TIERS.forEach(([y0, , h0]) => ledge(y0 - 3, h0 + 3));
+  drum(200, 222, 33, 35, { ch: 7, bw: 13, seed: 20, base: 0.68 }); // the plinth
+  ledge(198, 34);
+  // the steps up to the door: each a lit tread over a dark riser
+  for (const [y0, y1, half] of [[222, 228, 40], [228, 233, 44], [233, G, 48]]) for (let y = y0; y < y1; y++) for (let x = cx - half; x < cx + half; x++) {
+    const u = (x - (cx - half)) / (half * 2);
+    stone(x, y, y === y0 ? 0.7 - u * 0.3 : 0.34 - u * 0.2 + course(x, y, 9, 8, 21) * 0.6);
+  }
+
+  // ---- Malgrim's chamber: a wider drum on corbels, a crenellated parapet
+  for (let y = 70; y < 76; y++) { const half = 15 + (76 - y) * 0.9; for (let x = Math.floor(cx - half); x < Math.ceil(cx + half); x++) { const u = (x + 0.5 - (cx - half)) / (half * 2); stone(x, y, 0.3 - Math.abs(u - 0.3) * 0.5 - ((x & 1) ? 0.08 : 0)); } }
+  drum(50, 70, 20, 20, { ch: 5, bw: 9, seed: 30 });
+  ledge(47, 22);
+  for (let x = cx - 22; x < cx + 22; x++) { // the parapet: merlons and crenels
+    const m = Math.floor((x - cx + 22) / 4) % 2 === 0, u = (x - cx + 22) / 44;
+    for (let y = m ? 40 : 43; y < 47; y++) stone(x, y, (y === (m ? 40 : 43) ? 0.72 : 0.5) - Math.abs(u - 0.28) * 0.6);
+  }
+
+  // ---- the crown: five horns from the parapet, curling in round the hex
+  for (const [bx, len, lean] of [[cx - 17, 30, -1], [cx - 9, 36, -0.55], [cx, 24, 0], [cx + 9, 36, 0.55], [cx + 17, 30, 1]]) {
+    for (let i = 0; i <= len; i += 0.5) {
+      const t = i / len, w = 5 * (1 - t) + 0.8;
+      const x0 = bx + lean * (Math.sin(t * Math.PI * 0.85) * 7 - t * t * 5), y = Math.round(42 - i);
+      for (let k = -w / 2; k <= w / 2; k += 0.5) {
+        const x = Math.round(x0 + k), v = (k + w / 2) / w; // 0 on its left
+        const inner = lean > 0 ? 1 - v : v; // the side that faces the hex
+        stone(x, y, 0.6 - v * 0.45 + (inner > 0.7 && t > 0.2 ? 0.25 : 0) + (Math.floor(i) % 5 === 0 ? -0.12 : 0) + (t > 0.85 ? 0.2 : 0));
+      }
+    }
+  }
+  // the hex burning in the crown: a soft-edged orb, white-hot at its heart
+  for (let y = 4; y < 34; y++) for (let x = cx - 14; x < cx + 14; x++) {
+    const d = Math.hypot(x + 0.5 - cx, y + 0.5 - 18) / 9, n = (bayer(x, y) - 0.5) * 0.18;
+    if (d + n < 0.32) px(ctx, x, y, 'white');
+    else if (d + n < 0.55) px(ctx, x, y, 'curseL');
+    else if (d + n < 0.85) px(ctx, x, y, 'curse');
+    else if (d + n < 1) px(ctx, x, y, 'purp');
+  }
+  for (const [x, y] of [[cx - 12, 6], [cx + 13, 10], [cx + 4, 0]]) px(ctx, x, y, 'curseL'); // sparks shed by it
+  for (const [x0, y0, x1, y1] of [[cx + 21, 12, cx + 9, 17]]) { // a crackle of hex from a horn tip
+    for (let i = 0; i <= 8; i++) { const t = i / 8; px(ctx, Math.round(x0 + (x1 - x0) * t), Math.round(y0 + (y1 - y0) * t + (i % 2 ? 1 : -1) * (i % 3 === 0 ? 0 : 1)), i % 3 ? 'curse' : 'curseL'); }
+  }
+
+  // ---- the light from inside: pointed windows, glowing in their deep reveals
+  const lancet = (wx, wy, w, h, hot) => {
+    const head = Math.ceil(w * 0.75);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = Math.abs(x + 0.5 - w / 2);
+      if (y < head && dx > (w / 2) * Math.sqrt((y + 1) / head)) continue; // the pointed head
+      const edge = dx > w / 2 - 1;
+      px(ctx, wx + x, wy + y, edge ? 'hexD' : y > h - 2 ? 'purp' : hot && dx < w / 4 ? 'curseL' : 'curse');
+    }
+    px(ctx, wx - 1, wy + h, 'stone', w + 2, 1); // the lit sill
+  };
+  lancet(cx - 4, 54, 8, 13, true); lancet(cx - 16, 56, 3, 10, false); lancet(cx + 13, 56, 3, 10, false); // the chamber's
+  lancet(cx - 3, 82, 6, 12, true); lancet(cx + 8, 116, 4, 11, false); lancet(cx - 12, 114, 4, 11, false); // the tiers': staggered round the curve
+  lancet(cx - 3, 146, 6, 12, true); lancet(cx + 12, 178, 4, 11, false); lancet(cx - 17, 176, 4, 11, false);
+  for (let t = 0; t < 4; t++) for (let k = 0; k < 3; k++) px(ctx, cx - 1 + k * 2 - (t % 2), TIERS[t][0] + 22 + (t % 2) * 3, 'purpD'); // arrow slits
+
+  // ---- the great door: a pointed arch in lit voussoirs, its iron leaves
+  // swung in on a violet glow, a brazier of hexfire either side
+  const DS = 222, arch = (span, y) => { const r = span, a = Math.sqrt(r * r - (span / 2) ** 2); const dy = DS - 10 - y; if (dy < 0) return span / 2; if (dy > a) return -1; return Math.sqrt(r * r - dy * dy) - span / 2; };
+  for (let y = 186; y < DS; y++) for (let x = cx - 14; x < cx + 14; x++) {
+    const dx = Math.abs(x + 0.5 - cx), outer = arch(24, y), inner = arch(16, y);
+    if (dx < inner) { const deep = (DS - y) / 30; px(ctx, x, y, dx < inner - 3 ? (y > DS - 8 && dx < 4 ? 'purp' : deep < 0.5 && dx < 3 ? 'purpD' : 'ink') : 'steelD'); if (dx >= inner - 3 && dx < inner - 2 && y % 6 === 3) px(ctx, x, y, 'purp'); continue; } // the glow inside, the iron leaves at its sides with violet studs
+    if (dx < outer) { const blk = Math.floor(Math.atan2(DS - 10 - y, x + 0.5 - cx) * 5); stone(x, y, (blk % 2 ? 0.6 : 0.52) + (x < cx ? 0.1 : -0.12) - (dx > outer - 1 ? 0.2 : 0)); } // the voussoirs
+  }
+  px(ctx, cx - 2, 189, 'curse', 4, 3); px(ctx, cx - 1, 190, 'curseL', 2, 1); // a hex rune on the keystone
+  for (const bx of [cx - 22, cx + 19]) { // the braziers
+    px(ctx, bx, 219, 'steelD', 4, 3); px(ctx, bx + 1, 222, 'night', 2, 4); px(ctx, bx - 1, 219, 'steel', 6, 1);
+    px(ctx, bx, 216, 'curse', 4, 3); px(ctx, bx + 1, 214, 'curseL', 2, 3); px(ctx, bx + 1, 212, 'curse');
+  }
+
+  // ---- the curse's veins, climbing the walls from the foot
+  for (const [x0, seed, len] of [[cx - 11, 1, 64], [cx + 14, 2, 46], [cx - 27, 3, 24]]) {
+    let x = x0;
+    for (let y = 220; y > 220 - len; y--) {
+      x += hash(y, seed, 271) < 0.12 ? -1 : hash(y, seed, 272) < 0.12 ? 1 : 0;
+      const half = y > 200 ? 34 : TIERS.find(([y0, y1]) => y >= y0 - 3 && y < y1)?.[3] ?? 13;
+      if (Math.abs(x - cx) >= half - 1) { x -= Math.sign(x - cx); continue; }
+      if (Math.abs(x + 0.5 - cx) < arch(24, y)) continue; // not across the door
+      const fade = (220 - y) / len;
+      if (fade > 0.5 && hash(x, y, 278) < (fade - 0.5) * 1.6) continue; // thinning out as it climbs
+      px(ctx, x, y, hash(x, y, 273) < 0.12 * (1 - fade) ? 'curse' : fade < 0.45 ? 'purp' : 'purpD');
+      if (hash(y, seed, 274) < 0.03) { const d = hash(y, seed, 275) < 0.5 ? -1 : 1; for (let k = 1; k < 5; k++) px(ctx, x + d * k, y - k, k < 3 ? 'purp' : 'purpD'); } // a branch
+    }
+  }
+
+  // ---- the torn banners on the chamber, and old rubble at the foot
+  for (const bx of [cx - 21, cx + 17]) for (let y = 48; y < 66; y++) for (let k = 0; k < 4; k++) {
+    if (y > 61 && hash(k, y, 276 + bx) < (y - 61) * 0.25) continue; // ragged ends
+    px(ctx, bx + k, y, k === 0 ? 'purp' : y === 48 ? 'steelD' : k === 3 ? 'hexD' : 'purpD');
+  }
+  for (let i = 0; i < 9; i++) { const x = 6 + Math.floor(hash(i, 1, 277) * 108), y = G - 2 + Math.floor(hash(i, 2, 277) * 2); if (Math.abs(x - cx) < 50) continue; shadedBlob(ctx, x, y, 2 + hash(i, 3, 277) * 2, 1.6, ['ink', 'basaltD', 'night', 'slate']); }
   outline(c, 'ink');
   return c;
 }
