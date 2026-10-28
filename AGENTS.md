@@ -91,8 +91,10 @@ the rule, the check) as well as fixing it.
     each element's foes with no gems, half, matching and wrong gems, and
     goblins with storm and sun. Read damage per hit: whole fights drift apart.
   - `tools/art-compare.js`: before/after sheets for key-object art (`save()`
-    the art as it is, change it, then `pair()`), and `cast()`: a row of foes
-    at their in-game size beside Brann. Show the user before and after.
+    the art as it is, change it, then `pair()`), `cast()`: a row of foes
+    at their in-game size beside Brann, and `turnaround()`: a modelled boss
+    (gfx/bosses.js) in all three views through its animations. Show the user
+    before and after.
   - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
     ranged stays put) and never uses a skill or chases far.
   - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.

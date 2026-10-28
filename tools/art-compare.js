@@ -71,3 +71,29 @@ export async function cast(name, kinds, { ground = '#5c7a4f', cols = 6 } = {}) {
   await post(`art-${name}.png`, cv);
   return { w: cv.width, h: cv.height };
 }
+
+// A boss's turnaround: for each builder in gfx/bosses.js (puppet-shaped
+// frames), rows of down, side and up through idle, walk, the attack, the cast and hurt,
+// at 3x with Brann for scale; saved as snapshots/art-<name>.png. Returns each
+// builder's build time.
+//   await A.turnaround('gobboss', ['buildSnagtooth', 'buildGutcrusher'])
+export async function turnaround(name, builders, { mod = 'gfx/bosses.js', ground = '#5c7a4f' } = {}) {
+  const B = await fresh(mod), rows = [], ms = {};
+  for (const b of builders) {
+    const t0 = performance.now(), f0 = B[b](); ms[b] = Math.round(performance.now() - t0);
+    const f = f0.down ? Object.fromEntries(Object.keys(f0.down).map((a) => [a, { down: f0.down[a], side: f0.side[a], up: f0.up[a] }])) : f0; // a creature's frames come by view
+    const hit = f.attack || f.slam, extra = f.cast || f.fly || f.windup;
+    for (const v of ['down', 'side', 'up']) rows.push([f.idle[v][0], f.walk[v][1], f.walk[v][3], (f.windup || f.attack)[v][f.windup ? 1 : 0], hit[v][f.windup ? 0 : 1], extra[v][extra[v].length > 1 ? 1 : 0], f.hurt[v][0]]);
+  }
+  const cell = Math.max(...rows.flat().map((c) => c.width)) + 2, rh = Math.max(...rows.flat().map((c) => c.height)) + 2;
+  const hf = window.__scene?.textures.getFrame('brann', 'idle_down_0'), cv = document.createElement('canvas');
+  cv.width = (7 * cell + 30) * S; cv.height = rows.length * rh * S;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.fillStyle = ground; g.fillRect(0, 0, cv.width, cv.height);
+  rows.forEach((row, r) => {
+    row.forEach((x, i) => g.drawImage(x, 0, 0, x.width, x.height, (i * cell + (cell - x.width) / 2) * S, (r * rh + rh - 2 - x.height) * S, x.width * S, x.height * S));
+    if (hf) g.drawImage(hf.source.image, hf.cutX, hf.cutY, hf.cutWidth, hf.cutHeight, 7 * cell * S, (r * rh + rh - 2 - row[0].height * 0.25 - 36) * S, hf.cutWidth * S, hf.cutHeight * S);
+  });
+  await post(`art-${name}.png`, cv);
+  return ms;
+}
