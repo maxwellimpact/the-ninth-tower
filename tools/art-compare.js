@@ -97,3 +97,38 @@ export async function turnaround(name, builders, { mod = 'gfx/bosses.js', ground
   await post(`art-${name}.png`, cv);
   return ms;
 }
+
+// Close-ups: canvases side by side at `S`x, saved as snapshots/<name>.png.
+//   const N = await import('/src/gfx/bigcast.js'); const f = N.buildSnagtooth();
+//   await A.zoom('snag-zoom', [f.idle.down[0], f.idle.side[0], f.idle.up[0]], 6)
+export async function zoom(name, canvases, S = 6, ground = '#5c7a4f') {
+  const w = canvases.reduce((a, c) => a + c.width + 4, 0), h = Math.max(...canvases.map((c) => c.height));
+  const cv = document.createElement('canvas'); cv.width = w * S; cv.height = h * S;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = ground; g.fillRect(0, 0, cv.width, cv.height);
+  let x = 0;
+  for (const c of canvases) { g.drawImage(c, 0, 0, c.width, c.height, x * S, (h - c.height) * S, c.width * S, c.height * S); x += c.width + 4; }
+  await post(`${name}.png`, cv);
+  return { w: cv.width, h: cv.height };
+}
+
+// Frame sheets: for each [label, frames] (puppet-shaped, { anim: { view: [canvas] } }),
+// a row per view of idle, two walk frames, the windup, the strike and hurt,
+// with Brann and a goblin (front and side) at the end for scale; at 3x.
+//   await A.sheet('snag', [['NEW', N.buildSnagtooth()], ['OLD', O.buildSnagtooth(['down'])]])
+export async function sheet(name, sets, { ground = '#5c7a4f' } = {}) {
+  const T = window.__game.textures, fr = (k, f) => { const x = T.getFrame(k, f), c = document.createElement('canvas'); c.width = x.cutWidth; c.height = x.cutHeight; c.getContext('2d').drawImage(x.source.image, x.cutX, x.cutY, x.cutWidth, x.cutHeight, 0, 0, x.cutWidth, x.cutHeight); return c; };
+  const out = [];
+  for (const [label, f] of sets) for (const v of ['down', 'side', 'up']) if (f.idle[v]) out.push([`${label} ${v}`, [f.idle[v][0], f.walk[v][0], f.walk[v][2], f.attack[v][0], f.attack[v][1], (f.cast?.[v] || f.hurt[v])[1] || f.hurt[v][0], f.hurt[v][0]]]);
+  const cast = [fr('brann', 'idle_down_0'), fr('goblin', 'idle_down_0'), fr('brann', 'idle_side_0'), fr('goblin', 'idle_side_0')];
+  const cell = Math.max(...out.flatMap(([, r]) => r.map((c) => c.width))) + 4, rh = Math.max(...out.flatMap(([, r]) => r.map((c) => c.height))) + 2;
+  const cv = document.createElement('canvas'); cv.width = (7 * cell + 4 * 50) * S; cv.height = (out.length * rh + 6) * S;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = ground; g.fillRect(0, 0, cv.width, cv.height);
+  g.font = `bold ${4 * S}px monospace`; g.textBaseline = 'top';
+  out.forEach(([lab, row], r) => {
+    row.forEach((x, i) => g.drawImage(x, 0, 0, x.width, x.height, (i * cell + (cell - x.width) / 2) * S, (r * rh + 6 + rh - x.height) * S, x.width * S, x.height * S));
+    g.fillStyle = '#16121f'; g.fillText(lab, 2 * S, (r * rh + 6) * S);
+  });
+  cast.forEach((x, i) => g.drawImage(x, 0, 0, x.width, x.height, (7 * cell + i * 50) * S, (6 + rh - x.height - 12) * S, x.width * S, x.height * S));
+  await post(`${name}.png`, cv);
+  return { w: cv.width, h: cv.height };
+}
