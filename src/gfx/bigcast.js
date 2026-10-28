@@ -528,75 +528,72 @@ function snagFront({ bob = 0, step = 0, hand = null, ang = null, reach = 34, cro
   return c;
 }
 
-// Malgrim facing you, on the heroes' proportions: the crooked hat a little
-// taller than his head, a pale face with the curse in his eyes under dark
-// brows and an iron-grey beard, the red-lined collar standing up beside it,
-// a shorter violet coat over pointed boots, short bell sleeves, the staff.
+// Malgrim facing you: a man, not a giant (the user, 2026-10-28), so a little
+// bigger than the heroes, about 1.3x their height, on their proportions: the
+// crooked hat with its runes, a gaunt face with the curse in his eyes and a
+// thin grey beard, the red-lined collar his head sits down into, a violet
+// coat over pointed boots, bell sleeves, the staff. 64x64, the feet on y 48.
 export const MALF = {
-  hat: rows('mal front hat', MAL.hat.down.filter((_, i) => ![1, 3, 5, 7].includes(i))),
+  hat: rowsAt('mal front hat', 15, ['9:xx', '8:pxx', '7:pPx', '6:pPpx', '5:pPppx', '4:pPpppxx', '3:xcxCxcxCx', '1:xpPPpppppppxx', '0:xpPpppppppppxx', '1:xxxxxxxxxxxxx']),
   face: rows('mal front face', [
-    '.vvvvvvvvvv.',
-    '.vnnnffnnnv.',
-    '.vfnCffCnfv.',
-    '.vffffFfffv.',
-    '..vffFvffv..',
-    '..dggvvggd..',
-    '..vgdEEdgv..',
-    '...gGggggd..',
-    '...gGgggd...',
-    '....gGgd....',
-    '....gGd.....',
-    '.....gd.....',
-    '.....d......',
+    '.vnnffnnv.',
+    '.vnCffCnv.',
+    '.vffFfffv.',
+    '..vggggv..',
+    '..vgEEgv..',
+    '...gGgd...',
+    '...gGd....',
+    '....gd....',
   ]),
   // the collar's wings, red-lined, and its dark inside between them: his head sits down into it
-  collar: rowsAt('mal front collar', 22, ['1:P|20:x', '1:Pr|19:rx', '1:PRr|18:rrx', '1:PRrnnnnnnnnnnnnnnrrx', '1:PRrrnnnnnnnnnnnnrrrx', '0:PPpRrnnnnnnnnnnnnrRppx', '0:PPppppppppppppppppxxxx']),
-  hand: rows('mal front hand', ['ff.', 'fFv', '.vv']),
+  collar: rowsAt('mal front collar', 16, ['1:P|14:x', '1:Pr|13:rx', '1:PRr' + 'n'.repeat(8) + 'rrx', '0:PPRr' + 'n'.repeat(8) + 'rRpx', '0:PP' + 'p'.repeat(10) + 'xxxx']),
+  hand: rows('mal front hand', ['fv', 'vv']),
+  boot: rows('mal front boot', ['.xxx', 'Ppxx']),
 };
+const MALF_MAP = { ...MAL_MAP, f: 'skinL', F: 'skinL', v: 'skin', C: 'curse', g: 'mist', G: 'bone', d: 'stone' }; // a pale but living face, the curse burning in his eyes, a grey-white beard (a darker grey read as a mask)
 function malCoatFront(ctx, cx, y0, sway = 0) {
-  const n = 15;
+  const n = 11;
   for (let i = 0; i < n; i++) {
-    let hw = 7.5 + i * 0.24;
-    if (i >= 3 && i <= 5) hw -= 0.5; // the waist, pulled in by the belt
-    const sw = i >= 8 ? Math.round(sway * (i - 7) / 7) : 0;
+    let hw = 5 + i * 0.3;
+    if (i >= 2 && i <= 3) hw -= 0.5; // the waist, pulled in by the belt
+    const sw = i >= 6 ? Math.round(sway * (i - 5) / 5) : 0;
     const l = Math.round(cx - hw) + sw, r = Math.round(cx + hw) - 1 + sw, y = y0 + i;
     for (let x = l; x <= r; x++) {
       const u = (x - l) / Math.max(1, r - l), rel = x - (cx + sw);
-      let col = u < 0.1 ? 'purpL' : u > 0.8 ? 'purpD' : 'purp';
-      if (Math.abs(rel + 0.5) < 2.6) col = Math.abs(rel + 0.5) > 1.6 ? 'redD' : 'night'; // the front panel, red lining at its edges
-      if (i >= 7 && i <= 12 && (rel === -5 || rel === 4)) col = 'purpD'; // folds
-      if (i === 4) col = 'hexD'; // the belt
-      if (i === n - 2) col = (x + 1) % 4 === 0 ? 'curse' : 'purpD'; // the hem's runes
-      if (i === n - 1 && (x + sway) % 3 === 0) continue; // a ragged edge
+      let col = u < 0.12 ? 'purpL' : u > 0.8 ? 'purpD' : 'purp';
+      if (Math.abs(rel + 0.5) < 2) col = Math.abs(rel + 0.5) > 1 ? 'redD' : 'night'; // the front panel, red lining at its edges
+      if (i >= 5 && i <= 8 && rel === 3) col = 'purpD'; // a fold
+      if (i === 3) col = 'hexD'; // the belt
+      if (i === n - 1) col = (x - l) % 4 === 2 ? 'curse' : 'purpD'; // the hem, a rune stitched in it here and there
       px(ctx, x, y, col);
     }
   }
-  px(ctx, cx - 1, y0 + 4, 'curseL', 2, 1); px(ctx, cx - 2, y0 + 4, 'curse'); px(ctx, cx + 1, y0 + 4, 'curse'); // the hex for a buckle
-  for (const i of [8, 11]) px(ctx, cx - 1, y0 + i, 'curse', 2, 1); // runes down the panel
+  px(ctx, cx - 1, y0 + 3, 'curseL', 2, 1); // the hex for a buckle
+  px(ctx, cx - 1, y0 + 6, 'curse', 2, 1); // a rune down the panel
 }
-const MALF_MAP = { ...MAL_MAP, f: 'skinL', F: 'skinL', v: 'skin', C: 'curse', g: 'mist', G: 'bone', d: 'stone' }; // a pale but living face, the curse burning in his eyes, a grey-white beard (a darker grey read as a mask)
-function malFront({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = null, cast = 0, crouch = 0, eye = null, reach = 30 } = {}) {
-  const W = 72, H = 72, [c, ctx] = frame(W, H), M = MAL_MAP, by = bob + crouch, lights = [];
-  grid(ctx, MAL.boot, M, 30, 52 - (step > 0 ? 1 : 0)); grid(ctx, MAL.boot, M, 37, 52 - (step < 0 ? 1 : 0));
-  malCoatFront(ctx, 36, 38 + by, -step);
-  grid(ctx, MALF.collar, COAT_MAP, 25, 32 + by);
-  const sleeve = (s, h) => layerSoft(ctx, W, H, 'hexD', [s], (g) => { limb(g, s, [h[0], h[1] - 1], 1.8, 2.5, SLEEVE); px(g, h[0] - 1, h[1] - 1, 'night', 3, 1); grid(g, MALF.hand, MALF_MAP, h[0] - 1, h[1]); }); // edged in the coat's darkest violet where it crosses the coat
-  const hd = hand ? [hand[0], hand[1] + by] : [25, 45 + by], oh = off ? [off[0], off[1] + by] : [47, 45 + by - step];
-  sleeve([45, 39 + by], oh);
-  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 9, glow }));
-  sleeve([27, 39 + by], hd);
-  grid(ctx, MALF.face, eye ? { ...MALF_MAP, C: eye } : MALF_MAP, 30, 25 + by);
-  grid(ctx, MALF.hat, M, 25, 12 + by);
+function malFront({ bob = 0, step = 0, hand = null, ang = null, glow = 0, off = null, cast = 0, crouch = 0, eye = null, reach = 22 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = MAL_MAP, by = bob + crouch, lights = [];
+  grid(ctx, MALF.boot, M, 27, 46 - (step > 0 ? 1 : 0)); grid(ctx, MALF.boot, M, 33, 46 - (step < 0 ? 1 : 0));
+  malCoatFront(ctx, 32, 36 + by, -step);
+  grid(ctx, MALF.collar, COAT_MAP, 24, 33 + by);
+  const sleeve = (s, h) => layerSoft(ctx, W, H, 'hexD', [s], (g) => { limb(g, s, [h[0], h[1] - 1], 1.4, 2, SLEEVE); px(g, h[0] - 1, h[1] - 1, 'night', 2, 1); grid(g, MALF.hand, MALF_MAP, h[0] - 1, h[1]); }); // edged in the coat's darkest violet where it crosses the coat
+  const hd = hand ? [hand[0], hand[1] + by] : [25, 42 + by], oh = off ? [off[0], off[1] + by] : [39, 42 + by - step];
+  sleeve([37, 37 + by], oh);
+  lights.push(malStaff(ctx, hd, ang ?? -1.57, { up: reach, down: 6, glow }));
+  sleeve([27, 37 + by], hd);
+  grid(ctx, MALF.face, eye ? { ...MALF_MAP, C: eye } : MALF_MAP, 27, 28 + by);
+  grid(ctx, MALF.hat, M, 25, 18 + by);
   outline(c, 'ink');
   malGlow(ctx, lights[0], glow);
   if (cast) malGlow(ctx, [oh[0], oh[1] + 1], cast);
+  c.portraitAt = [24, 21]; // his face for the HUD (the frame's default crop is for a taller figure)
   return c;
 }
 
 // the front views' attacks, on the new proportions
 const SNAGF_THRUST = [{ hand: [24, 34], ang: 1.75, reach: 24, crouch: 1 }, { hand: [26, 40], ang: 1.62, reach: 20 }, { hand: [24, 37], ang: 1.7, reach: 22 }];
-const MALF_BOLT = [{ hand: [26, 42], ang: -1.85, glow: 1, off: [44, 40], cast: 1 }, { hand: [26, 44], ang: -1.4, glow: 2, off: [40, 47], cast: 2 }, { hand: [25, 45], ang: -1.5, glow: 1 }];
-const MALF_CAST = [{ hand: [27, 38], ang: -1.57, glow: 1, reach: 26, off: [47, 40], cast: 1 }, { hand: [28, 35], ang: -1.57, glow: 2, reach: 26, off: [48, 37], cast: 2, bob: -1 }, { hand: [27, 38], ang: -1.57, glow: 1, reach: 26, off: [47, 40], cast: 1 }];
+const MALF_BOLT = [{ hand: [26, 40], ang: -1.85, glow: 1, off: [39, 38], cast: 1 }, { hand: [26, 41], ang: -1.4, glow: 2, off: [41, 41], cast: 2 }, { hand: [25, 42], ang: -1.5, glow: 1 }];
+const MALF_CAST = [{ hand: [27, 37], ang: -1.57, glow: 1, reach: 18, off: [39, 38], cast: 1 }, { hand: [28, 34], ang: -1.57, glow: 2, reach: 18, off: [40, 35], cast: 2, bob: -1 }, { hand: [27, 37], ang: -1.57, glow: 1, reach: 18, off: [39, 38], cast: 1 }];
 // facing you: the redrawn front; the side and back views are still the first pass
 const front = (fn, other) => (view, pose) => (view === 'down' ? fn(pose) : other(view, pose));
 export const buildSnagtooth = (views = VIEWS) => cycle(front(snagFront, snagtooth), { ...SNAG_THRUST, down: SNAGF_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);

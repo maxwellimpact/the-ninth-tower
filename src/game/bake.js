@@ -49,7 +49,8 @@ export function registerBigPuppet(scene, key, fr) {
   for (const [anim, views] of Object.entries(fr)) for (const [v, frames] of Object.entries(views)) {
     scene.anims.create({ key: `${key}_${anim}_${v}`, frames: frames.map((_, i) => ({ key, frame: `${anim}_${v}_${i}` })), frameRate: ANIM_RATES[anim], repeat: ['idle', 'walk'].includes(anim) ? -1 : 0 });
   }
-  scene.textures.addCanvas(`${key}_portrait`, portraitFrom(fr.idle.down[0], fr.idle.down[0].width / 2 - 8, fr.idle.down[0].height - 56, 16));
+  const f0 = fr.idle.down[0], [px0, py0] = f0.portraitAt || [f0.width / 2 - 8, f0.height - 56]; // a frame may say where its face is
+  scene.textures.addCanvas(`${key}_portrait`, portraitFrom(f0, px0, py0, 16));
   return fr;
 }
 
