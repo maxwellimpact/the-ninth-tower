@@ -328,7 +328,6 @@
   },
   "weak": "venom",
   "hexed": true,
-  "scale": 1.5,
   "named": true
  },
  "drowned": {
@@ -528,7 +527,6 @@
   },
   "weak": "venom",
   "hexed": true,
-  "scale": 1.7,
   "named": true
  },
  "shade": {
@@ -742,7 +740,6 @@
   "r": 7,
   "ranged": true,
   "keepAway": 72,
-  "scale": 1.45,
   "weak": "light",
   "resist": "shadow",
   "drops": {
@@ -767,7 +764,6 @@
   "r": 7,
   "ranged": true,
   "keepAway": 72,
-  "scale": 1.45,
   "tint": 13623807
  },
  "imp": {
@@ -937,7 +933,6 @@
   "r": 10,
   "zone": "front",
   "zr": 30,
-  "scale": 1.7,
   "weak": "frost",
   "resist": "fire",
   "drops": {
@@ -1120,7 +1115,6 @@
   "r": 8,
   "zone": "front",
   "zr": 30,
-  "scale": 1.6,
   "weak": "fire",
   "resist": "frost",
   "drops": {
@@ -1245,7 +1239,6 @@
   "ranged": true,
   "keepAway": 70,
   "shot": "bolt",
-  "scale": 1.5,
   "weak": "light",
   "resist": "shadow",
   "element": "shadow"

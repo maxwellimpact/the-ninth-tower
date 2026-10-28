@@ -485,9 +485,9 @@ export class Game extends Phaser.Scene {
   spawnEnemy(kind, x, y, engaged = false, elite = false, level = null) {
     if (['mire', 'drowned', 'witchling', 'leeches', 'lurker', 'croaker', 'snapjaw', 'murk'].includes(kind) && !loaded.has('marsh')) loadGroupNow(this, 'marsh');
     if (['shade', 'rootling', 'spider', 'spiderling', 'hound', 'banshee', 'mab', 'eggsac', 'huntsman', 'huntecho'].includes(kind) && !loaded.has('gloam')) loadGroupNow(this, 'gloam');
-    if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
+    if (['imp', 'slug', 'salamander', 'brute', 'beetle', 'drake', 'vulk'].includes(kind) && !loaded.has('cinder')) loadGroupNow(this, 'cinder');
     if (['frostwolf', 'rimehorn', 'icewraith', 'sentinel', 'raider', 'troll', 'isolde'].includes(kind) && !loaded.has('frost')) loadGroupNow(this, 'frost');
-    if (['voidling', 'gargoyle', 'chainwarden'].includes(kind) && !loaded.has('basin')) loadGroupNow(this, 'basin');
+    if (['voidling', 'gargoyle', 'chainwarden', 'malgrim'].includes(kind) && !loaded.has('basin')) loadGroupNow(this, 'basin');
     // the Blight Basin: the Hex Legion comes as Hexborn (elite, with an affix)
     const bAt = biomeAt(Math.floor(x / TILE), Math.floor(y / TILE));
     const hexborn = HEXBORN.has(kind) && (bAt === 'basin' || bAt.startsWith('tower') || !!this.flags.postgame); // Hexborn remnants spread after the end
@@ -2389,6 +2389,16 @@ export class Game extends Phaser.Scene {
     if (ty > FROST_Y - 10 && tx > 100 && area === 'overworld') out.push('basin');
     if (Math.hypot(tx - 96, ty - 90) < 26 || Math.hypot(tx - 73, ty - 16) < 20 || area !== 'overworld') out.push('cave');
     if (Math.hypot(tx - 17, ty - 30) < 24 || area === 'shop' || area === 'tavern') out.push('interior', 'cave');
+    // the big bosses' art (assets.js BOSSES), ahead of where they're fought: their region, their dungeon, the Tower's echoes
+    const boss = (...ks) => { for (const k of ks) if (!out.includes(`boss_${k}`)) out.push(`boss_${k}`); };
+    if (area === 'overworld' && Math.hypot(tx - 178, ty - 30) < 34) boss('snagtooth'); // his camp
+    if (area === 'overworld' && Math.hypot(tx - 60, ty - 104) < 34) boss('pitchamp'); // the pit
+    if ((area === 'overworld' && Math.hypot(tx - 82, ty - 38) < 30) || area === 'undercroft') boss('golem'); // the Vale's stone, the Undercroft
+    if (out.includes('marsh') || area === 'abbey') boss('snapjaw', 'murk');
+    if (out.includes('gloam') || area === 'witchroot') boss('huntsman', 'mab');
+    if (out.includes('cinder') || area === 'forge') boss('vulk', 'drake');
+    if (out.includes('frost') || area === 'spire') boss('troll', 'isolde');
+    if (out.includes('basin') || area.startsWith('tower')) boss('malgrim', 'golem', 'murk', 'huntsman', 'vulk', 'isolde'); // Malgrim, and the Ward Echoes on the floors
     return out;
   }
 

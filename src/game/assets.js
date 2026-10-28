@@ -2,17 +2,24 @@
 // tasks. Tasks are grouped: `core` runs behind the boot progress bar; biome
 // groups run lazily (time-sliced) when the party approaches that biome, which
 // is how a much larger world stays within memory and startup budgets.
-import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, HUNTSMAN, SALAMANDER, VULK, WRAITH, ISOLDE, WARDEN, MALGRIM, malgrimRecolor, ghostRecolor, paleRecolor, scaleRecolor, iceRecolor, rimeRecolor } from '../gfx/heroes.js';
+import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DROWNED, WITCHLING, SHADE, BANSHEE, SALAMANDER, WRAITH, WARDEN, ghostRecolor, scaleRecolor, iceRecolor } from '../gfx/heroes.js';
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import * as PORTAL from '../gfx/portal.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildMurk, buildRootling, buildSpider, buildMab, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildDrake, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, buildSpider, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
 import { itemIcon } from '../gfx/gear.js';
 import items from '../data/items.json';
-import { packFrames, registerPuppet } from './bake.js';
+import { packFrames, registerPuppet, registerBigPuppet } from './bake.js';
+import { buildSnagtooth, buildGutcrusher, buildHuntsman, buildVulk, buildIsolde, buildMalgrim, buildMab, buildMurk, buildDrake, mergeViews } from '../gfx/bosses.js';
+
+// a hand-built boss (gfx/bosses.js) as loader tasks: one view a task, then registered (each view is ~20 ms)
+const bigBoss = (key, build) => {
+  const parts = [];
+  return [...['down', 'side', 'up'].map((v) => [`${key} ${v}`, () => parts.push(build([v]))]), [`${key} register`, (s) => registerBigPuppet(s, key, mergeViews(parts))]];
+};
 
 const frames = (scene, key, list, rate, repeat = -1) => {
   packFrames(scene, key, list.map((canvas, i) => ({ name: `${i}`, canvas })));
@@ -25,6 +32,7 @@ function creatureViews(scene, key, views, rates, loops) {
   const list = [];
   for (const [v, fr] of Object.entries(views)) for (const [a, fs] of Object.entries(fr)) fs.forEach((canvas, i) => list.push({ name: `${v}_${a}_${i}`, canvas }));
   packFrames(scene, key, list);
+  scene.textures.get(key).customData.views = true; // the enemy plays `${key}_${anim}_${view}` (units.js animKey)
   for (const [v, fr] of Object.entries(views)) for (const [a, fs] of Object.entries(fr)) {
     scene.anims.create({ key: `${key}_${a}_${v}`, frames: fs.map((_, i) => ({ key, frame: `${v}_${a}_${i}` })), frameRate: rates[a] || 6, repeat: loops.includes(a) ? -1 : 0 });
   }
@@ -49,7 +57,6 @@ export const GROUPS = {
     ['hex knight', (s) => registerPuppet(s, 'knight', KNIGHT)],
     ['hexling', (s) => creature(s, 'hexling', buildHexling(), HEX_RATES, ['idle', 'walk', 'windup'])],
     ['hex golem', (s) => {
-      creatureViews(s, 'golem', buildGolem(), { idle: 2.5, walk: 5, windup: 4, slam: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup']);
       s.textures.addCanvas('boulder', boulder());
       s.textures.addCanvas('plate', golemPlate());
     }],
@@ -148,8 +155,6 @@ export const GROUPS = {
       creature(s, 'leeches', buildLeeches(), { idle: 4, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'lurker', buildLurker(), { idle: 2, walk: 3, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'croaker', buildCroaker(), { idle: 2, walk: 6, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'snapjaw', buildSnapjaw(), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1, flipped: 5 }, ['idle', 'walk', 'windup', 'flipped']);
-      creature(s, 'murk', buildMurk(), { idle: 2.5, walk: 4, windup: 5, slam: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'drowned', DROWNED);
       registerPuppet(s, 'witchling', WITCHLING);
     }],
@@ -172,8 +177,6 @@ export const GROUPS = {
       creature(s, 'spiderling', buildSpider(0.6), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'hound', buildHound(), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'banshee', BANSHEE, ghostRecolor);
-      registerPuppet(s, 'huntsman', HUNTSMAN, paleRecolor);
-      creature(s, 'mab', buildMab(), { idle: 2, walk: 9, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       s.textures.addCanvas('eggsac', eggSac());
     }],
     ['gloomtrees', (s) => { for (let k = 0; k < 6; k++) s.textures.addCanvas(`gloomtree${k}`, P.gloomTree(k)); }],
@@ -195,9 +198,7 @@ export const GROUPS = {
       creature(s, 'brute', buildBrute(false), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'bruteCracked', buildBrute(true), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'beetle', buildBeetle(), { idle: 4, walk: 12, windup: 10, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'drake', buildDrake(), { idle: 2, walk: 6, windup: 6, attack: 8, fly: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'fly']);
       registerPuppet(s, 'salamander', SALAMANDER, scaleRecolor);
-      registerPuppet(s, 'vulk', VULK, scaleRecolor);
     }],
     ['badlands', (s) => {
       for (let k = 0; k < 6; k++) s.textures.addCanvas(`ashtree${k}`, P.ashTree(k));
@@ -215,9 +216,7 @@ export const GROUPS = {
       creature(s, 'rimehorn', buildRimehorn(), { idle: 2, walk: 5, windup: 6, attack: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'throw']);
       creature(s, 'sentinel', buildSentinel(), { idle: 2, walk: 2, windup: 8, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'raider', buildRaider(), { idle: 4, walk: 8, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'troll', buildTroll(), { idle: 2, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'icewraith', WRAITH, iceRecolor);
-      registerPuppet(s, 'isolde', ISOLDE, rimeRecolor);
     }],
     ['highlands', (s) => {
       for (let k = 0; k < 6; k++) s.textures.addCanvas(`snowpine${k}`, P.snowPine(k));
@@ -235,7 +234,6 @@ export const GROUPS = {
       creature(s, 'voidling', buildVoidling(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'gargoyle', buildGargoyle(), { idle: 1, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'chainwarden', WARDEN);
-      registerPuppet(s, 'malgrim', MALGRIM, malgrimRecolor);
     }],
     ['blight', (s) => {
       for (let k = 0; k < 4; k++) { s.textures.addCanvas(`hexcrystal${k}`, P.hexCrystal(k)); s.textures.addCanvas(`hexcrystalB${k}`, P.hexCrystal(k, true)); s.textures.addCanvas(`bones${k}`, P.bones(k)); }
@@ -258,6 +256,32 @@ export const GROUPS = {
     ['light', (s) => s.textures.addCanvas('lightShaft', P.lightShaft())],
   ],
 };
+
+// Each big boss's art is a group of its own (2026-10-28): built a view a
+// task, so no task holds a frame for long, and loaded where it's fought
+// (Game.groupsNear) or, if it turns up first, right then (Enemy: ensureBossArt).
+const VIEWS3 = ['down', 'side', 'up'];
+const creatureBoss = (key, build, rates, loops) => {
+  const parts = [];
+  return [...VIEWS3.map((v) => [`${key} ${v}`, () => parts.push(build([v]))]), [`${key} register`, (s) => creatureViews(s, key, Object.assign({}, ...parts), rates, loops)]];
+};
+const BOSSES = {
+  golem: creatureBoss('golem', buildGolem, { idle: 2.5, walk: 5, windup: 4, slam: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup']),
+  snapjaw: creatureBoss('snapjaw', buildSnapjaw, { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1, flipped: 5 }, ['idle', 'walk', 'windup', 'flipped']),
+  murk: creatureBoss('murk', buildMurk, { idle: 2.5, walk: 4, windup: 5, slam: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
+  mab: creatureBoss('mab', buildMab, { idle: 2, walk: 9, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
+  drake: creatureBoss('drake', buildDrake, { idle: 2, walk: 6, windup: 6, attack: 8, fly: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'fly']),
+  troll: creatureBoss('troll', buildTroll, { idle: 2, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
+  snagtooth: bigBoss('snagtooth', buildSnagtooth),
+  pitchamp: bigBoss('pitchamp', buildGutcrusher),
+  huntsman: bigBoss('huntsman', buildHuntsman),
+  vulk: bigBoss('vulk', buildVulk),
+  isolde: bigBoss('isolde', buildIsolde),
+  malgrim: bigBoss('malgrim', buildMalgrim),
+};
+for (const [k, tasks] of Object.entries(BOSSES)) GROUPS[`boss_${k}`] = tasks;
+// a boss's art, built now if it isn't yet (its texture key: ENEMY_TEX)
+export function ensureBossArt(scene, key) { const g = `boss_${key}`; if (GROUPS[g] && !loaded.has(g)) loadGroupNow(scene, g); }
 // errand townsfolk + props are small and needed across the Vale, so they ride with core
 GROUPS.core.push(
   ['gadgets', (s) => {

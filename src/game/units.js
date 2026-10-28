@@ -9,6 +9,7 @@ import tuning from '../data/tuning.json';
 import { computeStats, heroInfo, mitigate, xpToNext, skillRank, rankMul } from './state.js';
 import { SKILL_FX, TARGETED } from './skills.js';
 import { bakeHero } from './bake.js';
+import { ensureBossArt } from './assets.js';
 import { updateStaged as updateStagedShow } from './setpiece.js';
 import { biomeAt } from '../world/map.js';
 
@@ -1226,7 +1227,7 @@ export function freezeHero(h, t = 1.2) {
 
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
-const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'goblin', pitchamp: 'goblin', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann', malgrim: 'malgrim' };
+const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'snagtooth', pitchamp: 'pitchamp', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann', malgrim: 'malgrim' };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror', 'malgrim']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
@@ -1248,9 +1249,11 @@ export class Enemy extends Unit {
     const hpMul = (1 + L1 * tuning.enemyHpGrowth) * (elite ? 1.8 : 1);
     const dmgMul = (1 + L1 * tuning.enemyDmgGrowth) * (elite ? 1.15 : 1);
     const s = { ...base, dmg: base.dmg * dmgMul, xp: Math.round(base.xp * (1 + L1 * tuning.enemyXpGrowth) * (elite ? 2.5 : 1)), gold: base.gold.map((g) => Math.round(g * (elite ? 2 : 1) * (1 + L1 * tuning.enemyGoldGrowth))) };
-    super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : base.inert ? undefined : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
+    ensureBossArt(scene, ENEMY_TEX[kind]); // a big boss's art, if it wasn't loaded ahead (assets.js)
+    super(scene, x, y, { key: ENEMY_TEX[kind], frame: PUPPETS.has(kind) ? 'idle_down_0' : base.inert ? undefined : scene.textures.get(ENEMY_TEX[kind])?.customData?.views ? 'down_idle_0' : 'idle_0', maxHp: Math.round(base.maxHp * hpMul * scene.difficulty.hp), team: 'enemy', r: s.r, shadow: s.boss ? 'shadowXL' : 'shadow' });
     this.kind = kind;
     this.tex = ENEMY_TEX[kind];
+    this.viewed = !!scene.textures.get(this.tex)?.customData?.views; // drawn in three views (assets.js creatureViews)
     this.puppet = PUPPETS.has(kind);
     this.level = level;
     this.elite = elite;
@@ -1307,8 +1310,16 @@ export class Enemy extends Unit {
     return 0;
   }
 
+  // an animation's key: puppets and creatures drawn in three views add the
+  // view (down, side, up); other creatures have one set of frames
+  animKey(anim) {
+    const a = anim === 'recover' ? 'idle' : anim;
+    if (this.puppet) return `${this.tex}_${a === 'windup' ? 'attack' : a}_${this.view}`;
+    return this.viewed ? `${this.tex}_${a}_${this.view || 'down'}` : `${this.tex}_${a}`;
+  }
+
   play(anim) {
-    const key = this.puppet ? `${this.tex}_${anim === 'windup' ? 'attack' : anim === 'recover' ? 'idle' : anim}_${this.view}` : `${this.tex}_${anim === 'recover' ? 'idle' : anim}`;
+    const key = this.animKey(anim);
     if (this.anim !== key) {
       this.anim = key;
       if (this.puppet && anim === 'windup') {
@@ -1321,7 +1332,7 @@ export class Enemy extends Unit {
 
   stun(t) {
     if (!this.alive || !this.sprite?.active) return; // the hit that stuns can be the one that killed it (a crab would try to flip a gone sprite)
-    if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play(`${this.tex}_flipped`); this.anim = `${this.tex}_flipped`; this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
+    if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play(this.animKey('flipped')); this.anim = this.animKey('flipped'); this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
     this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain');
   }
 
@@ -2276,7 +2287,7 @@ export class Enemy extends Unit {
       this.play('windup');
       if (P.t >= 0.9 && !P.slammed) {
         P.slammed = true;
-        this.anim = ''; this.sprite.play(`${this.tex}_attack`); this.anim = `${this.tex}_attack`;
+        this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
         sc.fx.slam(this.x, this.y, 40); sc.shake(300, 0.01); audio.sfx('bash', { pitch: 0.6 });
         for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - this.x, h.y - this.y) <= 40 + h.r) { h.damage(this.s.dmg * sc.difficulty.dmg, this); h.knock(h.x - this.x, h.y - this.y, 120); }
       }
@@ -2484,7 +2495,7 @@ export class Enemy extends Unit {
     const sc = this.scene, t = this.tongueTarget;
     this.clearZone();
     this.state = 'recover'; this.t = 0; this.tongueCd = 4;
-    this.anim = ''; this.sprite.play(`${this.tex}_attack`); this.anim = `${this.tex}_attack`;
+    this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
     if (!t?.alive || t.downed || t.invuln > 0 || Math.hypot(t.x - this.x, t.y - this.y) > (this.s.pullRange || this.s.reach) + 20) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     audio.sfx('zip');
     const [nx, ny] = norm(this.x - t.x, this.y - t.y);
@@ -2568,14 +2579,14 @@ export class Enemy extends Unit {
     this.t = 0;
     const sc = this.scene;
     if (this.s.ranged) {
-      this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`;
+      this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
       sc.spawnEnemyArrow(this, this.aim, this.s.dmg * sc.difficulty.dmg * this.affixDmg(), this.s.shot);
       return;
     }
     if (!z) return; // its marker was already cleared mid-windup (interrupted): the swing lands on nothing
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
     else if (this.kind === 'golem') { const k = `golem_slam_${this.view || 'down'}`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); }
-    else { this.anim = ''; this.sprite.play(`${this.tex}_attack_${this.view}`); this.anim = `${this.tex}_attack_${this.view}`; audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
+    else { this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack'); audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
     if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     if (this.s.drain) for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.addPoison?.(this.s.dmg * 0.5, 3);
     const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
@@ -2806,8 +2817,7 @@ export class Golem extends Enemy {
 //  3. the curse fog closes in: everything faster and more often
 export class Murk extends Enemy {
   constructor(scene, x, y, opts = {}) {
-    super(scene, 'murk', x, y, opts);
-    this.sprite.setOrigin(0.5, 60 / 64);
+    super(scene, 'murk', x, y, opts); // (modelled in three views: she turns, her toad's middle on her spot)
     this.shadow.setAlpha(0.28);
     this.boss = true;
     this.phase = 1;
@@ -2821,14 +2831,13 @@ export class Murk extends Enemy {
     this.grabT = 7; this.summonT = 12; this.waveT = 2; this.fogR = 0;
     this.leapT = 5; this.spitT = 3; this.surfaceT = 3;
     this.puddles = [];
-    this.sprite.play('murk_idle');
+    this.sprite.play('murk_idle_down');
   }
 
   play(anim) {
-    const key = `murk_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}`;
+    const key = `murk_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}_${this.view || 'down'}`;
     if (this.anim !== key) { this.anim = key; this.sprite.play(key); }
   }
-  face() {}
   knock(dx, dy, p) { super.knock(dx, dy, p * 0.1); }
   stun(t) { super.stun(t * 0.3); }
   setTaunt(by, t) { super.setTaunt(by, t * 0.5); }
