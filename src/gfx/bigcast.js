@@ -1136,9 +1136,9 @@ export const VULK = {
     '.....rrrrrr.....',
   ]),
   torso: rows('vulk torso', [
-    '......rRRRRRRRRRRRRr......',
-    '...rRAARBBBBBBBBBBRRRrr...',
-    '.rRAAARRhBBBBBBBBhRRRRrrr.',
+    '........rRRRRRRRRr........',
+    '.....rRARBBBBBBBBRRrr.....',
+    '..rRAARRhBBBBBBBBhRRRrrr..',
     'rRAAARRRhHHHHHHHHhRRRRrrrr',
     'rRAARRRRhHHHHHHHHhRRRrrrrr',
     'rRARRRRRhHHHhHHHHhRRRrrrr.',
@@ -1172,8 +1172,8 @@ export const VULK = {
     '.....rrrrrrr......',
   ]),
   torsoSide: rows('vulk side torso', [
-    '...rRRRRRRRRr.......',
-    '.rRAARRRRRRRRRr.....',
+    '.....rRRRRRRr.......',
+    '..rRAARRRRRRRr......',
     'rRAARRRRRRRRRBBr....',
     'rRARRRRRRRRRRBBhh...',
     'rRARRRRRRRRRRBhHHh..',
@@ -1192,9 +1192,9 @@ export const VULK = {
   // from behind: the apron's straps crossed on his back and tied at the belt
   headBack: rows('vulk back head', ['..rRRRRRRRRRrr..', '.rRAARRRRRRRrrr.', 'rRAARRRRRRRRRrrr', 'rRARRRRRRRRRRrrr', 'rRARRRRRRRRRrrrr', 'rRRRRRRRRRRRrrrr', '.rRRRRRRRRRrrrr.', '.rrRRRRRRRRrrrr.', '..rrrRRRRRrrrr..', '....rrrrrrrr....']),
   torsoBack: rows('vulk back torso', [
-    '......rRRRRRRRRRRRRr......',
-    '...rRAARRRRRRRRRRRRRRrr...',
-    '.rRAAARRhRRRRRRRRhRRRRrrr.',
+    '........rRRRRRRRRr........',
+    '.....rRAARRRRRRRRRRrr.....',
+    '..rRAARRhRRRRRRRRhRRRrrr..',
     'rRAAARRRRhRRRRRRhRRRRRrrrr',
     'rRAARRRRRRhRRRRhRRRRRrrrrr',
     'rRARRRRRRRRhRRhRRRRRRrrrr.',
@@ -1234,10 +1234,10 @@ function vulkFront({ bob = 0, step = 0, hand = null, ang = null, reach = 26, bac
   grid(ctx, VULK.legL, M, 27, 42 - (step > 0 ? 1 : 0)); grid(ctx, VULK.legR, M, 38, 42 - (step < 0 ? 1 : 0));
   grid(ctx, VULK.torso, M, 23, 28 + by);
   const hd = hand ? [hand[0], hand[1] + by] : [20, 42 + by - step];
-  vulkArm(ctx, [47, 31 + by], grip ? [grip[0], grip[1] + by] : [52, 42 + by + step], M); // the off arm
+  vulkArm(ctx, [46, 33 + by], grip ? [grip[0], grip[1] + by] : [52, 42 + by + step], M); // the off arm
   grid(ctx, VULK.head, M, 28, 17 + by); grid(ctx, VULK.crown, M, 28, 13 + by);
   vulkAxe(ctx, hd, ang ?? -1.75, { reach, back, side });
-  vulkArm(ctx, [24, 31 + by], hd, M);
+  vulkArm(ctx, [25, 33 + by], hd, M);
   outline(c, 'ink');
   c.portraitAt = [28, 15];
   return c;
@@ -1247,14 +1247,14 @@ function vulkSide({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back
   const far = { ...M, A: 'lava', R: 'lavaD', r: 'lavaD' };
   limb(ctx, [27, 41 + by], [16, 49], 3.4, 2.4, SCALES); limb(ctx, [16, 49], [6, 53 - step], 2.4, 0.8, SCALES); // the tail, sweeping down behind him to the ground
   grid(ctx, VULK.legSide, far, 29 - st, 42 - (step < 0 ? 1 : 0)); // the far leg, in shadow
-  if (!grip) vulkArm(ctx, [36 + lunge, 31 + by], [38 + lunge - step, 42 + by], far, ['lava', 'lavaD', 'lavaD']); // the far arm
+  if (!grip) vulkArm(ctx, [36 + lunge, 33 + by], [38 + lunge - step, 42 + by], far, ['lava', 'lavaD', 'lavaD']); // the far arm
   grid(ctx, VULK.legSide, M, 32 + st, 42 - (step > 0 ? 1 : 0));
   grid(ctx, VULK.torsoSide, M, 24 + lunge, 28 + by);
   grid(ctx, VULK.headSide, M, 31 + lunge, 18 + by); grid(ctx, VULK.crownSide, M, 32 + lunge, 14 + by);
   const hd = hand ? [hand[0] + lunge, hand[1] + by] : [41, 40 + by];
   vulkAxe(ctx, hd, ang ?? -2.4, hand ? { reach, back, side } : { reach: 24, back: 0.25, side: -1 }); // carried on his shoulder, the head behind him
-  if (grip) vulkArm(ctx, [36 + lunge, 31 + by], [grip[0] + lunge, grip[1] + by], far, ['lava', 'lavaD', 'lavaD']);
-  vulkArm(ctx, [33 + lunge, 31 + by], hd, M);
+  if (grip) vulkArm(ctx, [36 + lunge, 33 + by], [grip[0] + lunge, grip[1] + by], far, ['lava', 'lavaD', 'lavaD']);
+  vulkArm(ctx, [33 + lunge, 33 + by], hd, M);
   outline(c, 'ink');
   return c;
 }
@@ -1266,8 +1266,8 @@ function vulkBack({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back
   grid(ctx, VULK.legL, heel, 27, 42 - (step < 0 ? 1 : 0)); grid(ctx, VULK.legR, heel, 38, 42 - (step > 0 ? 1 : 0));
   grid(ctx, VULK.torsoBack, M, 23, 28 + by);
   limb(ctx, [36, 39 + by], [39, 49], 3.6, 2.8, SCALES); limb(ctx, [39, 49], [50, 55 + step], 2.8, 0.8, SCALES); // the tail, down to the ground and curling out to one side
-  vulkArm(ctx, [24, 31 + by], [20, 42 + by + step], M);
-  vulkArm(ctx, [47, 31 + by], hd, M);
+  vulkArm(ctx, [25, 33 + by], [20, 42 + by + step], M);
+  vulkArm(ctx, [46, 33 + by], hd, M);
   grid(ctx, VULK.headBack, M, 28, 18 + by); grid(ctx, VULK.crown, { ...M, F: 'steel', f: 'steelD' }, 28, 14 + by);
   for (let y = 20; y <= 38; y += 3) { if (y > 26 && y < 29) continue; px(ctx, 35, y + by, 'lavaL'); px(ctx, 36, y + by, 'lavaD'); px(ctx, 35, y + 1 + by, 'lavaD', 2, 1); } // the ridge of raised scales from the back of his head down his spine
   outline(c, 'ink');
