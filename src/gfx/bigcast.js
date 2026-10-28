@@ -760,3 +760,111 @@ const MALB_CAST = [{ hand: [38, 37], ang: -1.57, glow: 1, reach: 18 }, { hand: [
 const byView = (fns) => (view, pose) => fns[view](pose);
 export const buildSnagtooth = (views = VIEWS) => cycle(byView({ down: snagFront, side: snagSide, up: snagBack }), { down: SNAGF_THRUST, side: SNAGS_THRUST, up: SNAGB_THRUST }, { bob: 1, crouch: 1, eye: 'white' }, views);
 export const buildMalgrim = (views = VIEWS) => cycle(byView({ down: malFront, side: malSide, up: malBack }), { down: MALF_BOLT, side: MALS_BOLT, up: MALB_BOLT }, { bob: 1, crouch: 1, eye: 'white', ang: -1.75 }, views, { down: MALF_CAST, side: MALS_CAST, up: MALB_CAST });
+
+// --------------------------------------------------------------------- Isolde
+// Isolde the Rimeguard: a knight, human-sized (the user, 2026-10-28) and on a
+// man's proportions, not the heroes' chibi ones, with the rime in her: a
+// closed great helm crowned with jagged ice, cold eyes burning in the visor
+// slit, frosted steel plate with ice growing out of the pauldrons, one
+// gauntlet gone to claws of ice, a blue tabard with Frosthelm's white tree, a
+// frozen, tattered cape, a kite shield and the rime lance. 64x64, feet on y 48.
+const ISO_MAP = { // darker steel plate (pale plate read as a ghost, and hid the ice growing out of it), a dark blue tabard and cape
+  A: 'steelL', a: 'steel', s: 'steelD', S: 'slate', F: 'blueD', E: 'ink', Y: 'iceXL',
+  t: 'blue', T: 'blueD', W: 'white', I: 'iceL', i: 'ice', j: 'iceD', o: 'wood', O: 'woodD', h: 'leatherD',
+};
+export const ISOF = {
+  helm: rows('iso helm', ['..saaaas..', '.aAAAAaas.', 'saAAAaaasS', 'FEYEEEEYEF', 'saAaEEaasS', 'saaaEEassS', '.saassasS.', '..SSSSSS..']),
+  torso: rows('iso torso', ['.AAs....aSS.', 'AAAassssaaSS', '.aaastTTsaS.', '..aastWTsS..', '..aasWWWsS..', '..aastWTsS..', '..aastTTsS..', '..FFFtTTFF..', '..aastTTsS..', '..as.tTT.S..']),
+  legL: rows('iso leg L', ['.aAs', '.aAs', '.aAs', '.FsF', '.aAs', '.aAs', 'aAss', 'aasS']),
+  legR: rows('iso leg R', ['asS.', 'asS.', 'asS.', 'FSF.', 'asS.', 'asS.', 'assS', 'asSS']),
+  shield: rows('iso shield', ['aAAAAs', 'AIWIiS', 'AWWWiS', 'AIWIiS', 'AIWijS', '.AWjS.', '.AijS.', '..jS..', '..S...']),
+  gauntlet: rows('iso gauntlet', ['aS', 'SS']),
+  claws: rows('iso claws', ['IA.', 'AIA', 'I.I']), // the rime's gauntlet: fingers of ice
+  helmSide: rows('iso side helm', ['..saaas..', '.aAAAaas.', 'saAAAaasS', 'saAAaFEYE', 'saAaaaasS', 'saaaaassS', '.sasssSS.', '..SSSSS..']),
+  torsoSide: rows('iso side torso', ['.Aas...', 'AAasS..', 'aaasStT', 'aaasStT', 'aaasStT', 'aaasStT', 'aaasStT', 'FFFFFtT', '.aasStT', '.as.StT']),
+  legSide: rows('iso side leg', ['.aAs.', '.aAs.', '.aAs.', '.FsF.', '.aAs.', '.aAs.', '.aAss', '.asSS']),
+  shieldEdge: rows('iso shield edge', ['aS', 'IS', 'IS', 'IS', 'jS', 'jS', 'jS', '.S']),
+  helmBack: rows('iso back helm', ['..saaaas..', '.aAAAsaas.', 'saAAAsaasS', 'saAAasaasS', 'saAaasaasS', 'saaaasassS', '.saassasS.', '..SSSSSS..']),
+  shieldBack: rows('iso shield back', ['aaaaaS', 'aohhoS', 'aoooOS', 'aohhoS', 'aoooOS', '.aooS.', '.aooS.', '..aS..', '..S...']),
+};
+const PLATE = ['steelL', 'steel', 'slate'];
+const ICE_CROWN = [[1, 2, 3], [3, 0, 5], [6, 2, 3]]; // [dx, dy, height]: shards of ice grown up out of the helm, uneven
+function iceCrown(ctx, x, y) { for (const [dx, dy, h] of ICE_CROWN) { px(ctx, x + dx, y + dy, 'iceXL', 1, h); if (h > 2) px(ctx, x + dx + 1, y + dy + 1, 'iceL', 1, h - 1); } }
+function iceShards(ctx, x, y, dir) { px(ctx, x, y, 'iceXL', 1, 2); px(ctx, x + dir, y - 2, 'iceXL', 1, 3); px(ctx, x + dir * 2, y - 1, 'iceL', 1, 2); } // ice grown out of a pauldron
+// the cape, frozen stiff and torn: a ragged hem with icicles hanging off it
+function isoCape(ctx, cx, y0, n, hw0, grow, dark = false) {
+  for (let i = 0; i < n; i++) {
+    const hw = hw0 + i * grow, y = y0 + i;
+    for (let x = Math.round(cx - hw); x < Math.round(cx + hw); x++) {
+      if (i === n - 1 && x % 3 === 0) continue; // torn
+      px(ctx, x, y, i === n - 1 ? 'iceL' : dark || x >= cx - 4 ? 'blueD' : 'blue');
+    }
+  }
+  for (let x = Math.round(cx - hw0 - (n - 1) * grow) + 1; x < cx + hw0 + (n - 1) * grow; x += 4) px(ctx, x, y0 + n, 'iceXL', 1, 2); // icicles
+}
+
+// the rime lance: a long steel shaft, a flared guard over her hand, a leaf of ice for its head
+function isoLance(g, [hx, hy], ang, reach = 30, back = 0.3) {
+  const c = Math.cos(ang), s = Math.sin(ang), nx = -s, ny = c, lit = nx * L2[0] + ny * L2[1] > 0 ? 1 : -1;
+  const at = (t, o = 0) => [Math.round(hx + c * t + nx * o - 0.5), Math.round(hy + s * t + ny * o - 0.5)];
+  for (let t = -reach * back; t <= reach * (1 - back); t += 0.5) { const [X, Y] = at(t); px(g, X, Y, 'steelL'); const [X2, Y2] = at(t, -lit); px(g, X2, Y2, 'steelD'); }
+  for (const o of [-2, -1, 0, 1, 2]) { const [X, Y] = at(-1.5, o); px(g, X, Y, Math.abs(o) === 2 ? 'steelD' : 'steel'); } // the vamplate, guarding her hand
+  const W = [1, 1.5, 2, 1.5, 1, 0.5], t0 = reach * (1 - back);
+  W.forEach((w, i) => { for (let o = -w; o <= w + 0.01; o += 0.5) { const [X, Y] = at(t0 + 1 + i, o); px(g, X, Y, i === W.length - 1 ? 'white' : Math.sign(o) === lit ? 'iceXL' : 'iceL'); } }); // the leaf of ice
+}
+
+function isoFront({ bob = 0, step = 0, hand = null, ang = null, reach = 30, crouch = 0, eye = null, guard = 0 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = eye ? { ...ISO_MAP, Y: eye } : ISO_MAP, by = bob + crouch;
+  isoCape(ctx, 32, 33 + by, 13, 5, 0.25); // the cape, behind her
+  grid(ctx, ISOF.legL, M, 28, 41 - (step > 0 ? 1 : 0)); grid(ctx, ISOF.legR, M, 32, 41 - (step < 0 ? 1 : 0));
+  grid(ctx, ISOF.torso, M, 26, 31 + by);
+  const hd = hand ? [hand[0], hand[1] + by] : [25, 39 + by], sh = [38 - (guard ? 1 : 0), (guard ? 35 : 38) + by + (guard ? 0 : step)];
+  limb(ctx, [36, 33 + by], sh, 1.3, 1.1, PLATE); // the shield arm
+  grid(ctx, ISOF.helm, M, 27, 23 + by); iceCrown(ctx, 28, 19 + by);
+  iceShards(ctx, 27, 30 + by, -1); iceShards(ctx, 37, 30 + by, 1);
+  for (let k = 0; k < 6; k++) px(ctx, 29 - (k > 3 ? 1 : 0), 30 + by + k, k % 2 ? 'mist' : 'bone', 1, 1); // her pale braid, out from under the helm and over her shoulder
+  grid(ctx, ISOF.shield, M, sh[0] - 1, sh[1] - 4);
+  isoLance(ctx, hd, ang ?? -1.57, reach);
+  limb(ctx, [27, 33 + by], hd, 1.3, 1.1, PLATE); grid(ctx, ISOF.claws, M, hd[0] - 1, hd[1]); // the lance hand: the gauntlet gone to claws of ice
+  outline(c, 'ink');
+  c.portraitAt = [24, 18];
+  return c;
+}
+function isoSide({ bob = 0, step = 0, hand = null, ang = null, reach = 30, crouch = 0, eye = null, lunge = 0 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = eye ? { ...ISO_MAP, Y: eye } : ISO_MAP, by = bob + crouch, st = step * 2;
+  for (let i = 0; i < 13; i++) { const w = 2 + Math.round(i * 0.3), y = 33 + by + i; for (let x = 30 - w + lunge; x <= 30 + lunge; x++) if (!(i === 12 && x % 3 === 0)) px(ctx, x, y, i === 12 ? 'iceL' : 'blueD'); } // the cape, frozen stiff behind her
+  for (const x of [26, 29]) px(ctx, x + lunge, 46 + by, 'iceXL', 1, 2); // icicles off its hem
+  grid(ctx, ISOF.legSide, { ...M, a: 'steel', A: 'steelL', s: 'steelD' }, 29 - st, 41 - (step < 0 ? 1 : 0)); // the far leg, in shadow
+  grid(ctx, ISOF.shieldEdge, M, 36 + lunge, 33 + by); // the shield, on her far arm, out ahead
+  grid(ctx, ISOF.legSide, M, 30 + st, 41 - (step > 0 ? 1 : 0));
+  grid(ctx, ISOF.torsoSide, M, 29 + lunge, 31 + by);
+  for (let k = 0; k < 7; k++) px(ctx, 29 + lunge, 30 + by + k, k % 2 ? 'mist' : 'bone'); // the braid, down her back
+  grid(ctx, ISOF.helmSide, M, 28 + lunge, 23 + by); iceCrown(ctx, 28 + lunge, 19 + by);
+  iceShards(ctx, 31 + lunge, 30 + by, -1);
+  const hd = hand ? [hand[0] + lunge, hand[1] + by] : [36, 39 + by];
+  isoLance(ctx, hd, ang ?? -1.3, reach);
+  limb(ctx, [32 + lunge, 33 + by], hd, 1.3, 1.1, PLATE); grid(ctx, ISOF.claws, M, hd[0] - 1, hd[1]);
+  outline(c, 'ink');
+  return c;
+}
+function isoBack({ bob = 0, step = 0, hand = null, ang = null, reach = 30, crouch = 0, guard = 0 } = {}) {
+  const W = 64, H = 64, [c, ctx] = frame(W, H), M = ISO_MAP, by = bob + crouch;
+  const hd = hand ? [hand[0], hand[1] + by] : [39, 39 + by];
+  isoLance(ctx, hd, ang ?? -1.57, reach); // facing away, the lance is beyond her
+  grid(ctx, ISOF.legL, M, 28, 41 - (step < 0 ? 1 : 0)); grid(ctx, ISOF.legR, M, 32, 41 - (step > 0 ? 1 : 0));
+  isoCape(ctx, 32, 31 + by, 15, 5, 0.25); // the cape, all down her back
+  px(ctx, 32, 35 + by, 'white', 1, 6); px(ctx, 30, 37 + by, 'white', 5, 1); px(ctx, 31, 40 + by, 'white', 3, 1); // the white tree on it
+  for (let k = 0; k < 7; k++) px(ctx, 32, 30 + by + k, k % 2 ? 'mist' : 'bone'); // the braid, down her back
+  limb(ctx, [37, 33 + by], hd, 1.3, 1.1, PLATE); grid(ctx, ISOF.claws, M, hd[0] - 1, hd[1]);
+  const sh = [25 + (guard ? 1 : 0), (guard ? 35 : 38) + by + (guard ? 0 : step)];
+  limb(ctx, [27, 33 + by], sh, 1.3, 1.1, PLATE);
+  grid(ctx, ISOF.shieldBack, M, sh[0] - 4, sh[1] - 4); // the back of the shield, on her left arm
+  grid(ctx, ISOF.helmBack, M, 27, 23 + by); iceCrown(ctx, 28, 19 + by);
+  iceShards(ctx, 27, 30 + by, -1); iceShards(ctx, 37, 30 + by, 1);
+  outline(c, 'ink');
+  return c;
+}
+const ISOF_LANCE = [{ hand: [25, 35], ang: -1.25, reach: 28, crouch: 1, guard: 1 }, { hand: [27, 40], ang: 2.0, reach: 16, guard: 1 }, { hand: [26, 39], ang: 2.2, reach: 20 }];
+const ISOS_LANCE = [{ hand: [33, 36], ang: -2.0, reach: 28, crouch: 1 }, { hand: [37, 38], ang: 0, reach: 26, lunge: 2 }, { hand: [35, 39], ang: -0.7, reach: 28 }];
+const ISOB_LANCE = [{ hand: [40, 41], ang: -1.57, reach: 26, crouch: 1, guard: 1 }, { hand: [39, 33], ang: -1.6, reach: 22, guard: 1 }, { hand: [39, 37], ang: -1.57, reach: 24 }];
+export const buildIsolde = (views = VIEWS) => cycle(byView({ down: isoFront, side: isoSide, up: isoBack }), { down: ISOF_LANCE, side: ISOS_LANCE, up: ISOB_LANCE }, { bob: 1, crouch: 1, eye: 'white', guard: 1 }, views);

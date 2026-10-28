@@ -13,8 +13,8 @@ import { buildIcons } from '../gfx/icons.js';
 import { itemIcon } from '../gfx/gear.js';
 import items from '../data/items.json';
 import { packFrames, registerPuppet, registerBigPuppet } from './bake.js';
-import { buildGutcrusher, buildHuntsman, buildVulk, buildIsolde, buildMab, buildMurk, buildDrake, mergeViews } from '../gfx/bosses.js';
-import { buildSnagtooth, buildMalgrim } from '../gfx/bigcast.js'; // drawn the cast's way (hand-authored grids), the first two redone from the modelled pass
+import { buildGutcrusher, buildHuntsman, buildVulk, buildMab, buildMurk, buildDrake, mergeViews } from '../gfx/bosses.js';
+import { buildSnagtooth, buildMalgrim, buildIsolde } from '../gfx/bigcast.js'; // drawn the cast's way (hand-authored grids), the first two redone from the modelled pass
 
 // a hand-built boss (gfx/bosses.js) as loader tasks: one view a task, then registered (each view is ~20 ms)
 const bigBoss = (key, build) => {
