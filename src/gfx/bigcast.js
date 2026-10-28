@@ -1105,3 +1105,176 @@ function huntBack({ bob = 0, step = 0, draw = 0, release = false, crouch = 0, bo
 }
 const HUNTF_SHOT = [{ draw: 1, bowUp: 1, crouch: 1 }, { release: true, bowUp: 1 }, { draw: 0.3 }];
 export const buildHuntsman = (views = VIEWS) => cycle(byView({ down: huntFront, side: huntSide, up: huntBack }), { down: HUNTF_SHOT, side: HUNTF_SHOT, up: HUNTF_SHOT }, { bob: 1, crouch: 1, eye: 'white' }, views);
+
+// ------------------------------------------------------------ Forgemaster Vulk
+// The salamander smith of the Forge of Ash, as big as he was: a hulk of the
+// Salamander Warriors' rust-red scales (their lizard head, blunt, the eyes
+// set to the sides) under a crown of forged iron spikes with a molten stone
+// in it, a scowl, fangs over a pale jaw, a pale throat, a smith's leather
+// apron strapped over his chest, iron bracers, clawed feet, a thick tail
+// behind, and a great bearded forge-axe whose edge still glows from the fire.
+// 72x72, feet on y 54.
+const VULK_MAP = {
+  A: 'lavaL', R: 'lava', r: 'lavaD', q: 'ashD', B: 'sand', b: 'dirtL',
+  H: 'leather', h: 'leatherD', I: 'steelL', i: 'steel', k: 'steelD', F: 'fireL', f: 'fire', Y: 'goldL', E: 'ink', w: 'bone',
+};
+export const VULK = {
+  crown: rows('vulk crown', ['.......II.......', '..I....Ii....I..', '..Ii..IiiI..Ii..', '.kIi.kIiiik.Iik.', 'kIiiiiiFFiiiiiik', 'kkkkkkfFFfkkkkkk']),
+  head: rows('vulk head', [
+    '..rRRRRRRRRRrr..',
+    '.rRAARRRRRRRrrr.',
+    'rRAqRRRRRRRRqRrr',
+    'rRARqqRRRRqqRRrr',
+    'rRAYEYRRRRYEYRrr',
+    'rRRYYRRRRRRYYrrr',
+    '.rRRRRRRRRRRrrr.',
+    '.rRRRrRRRRrRRrr.',
+    '.rRRRRRRRRRRrrr.',
+    '.rwqqqqqqqqqqwr.',
+    '..rBwBBBBBBwBr..',
+    '...rrBBBBBBrr...',
+    '.....rrrrrr.....',
+  ]),
+  torso: rows('vulk torso', [
+    '......rRRRRRRRRRRRRr......',
+    '...rRAARBBBBBBBBBBRRRrr...',
+    '.rRAAARRhBBBBBBBBhRRRRrrr.',
+    'rRAAARRRhHHHHHHHHhRRRRrrrr',
+    'rRAARRRRhHHHHHHHHhRRRrrrrr',
+    'rRARRRRRhHHHhHHHHhRRRrrrr.',
+    '.rRRRRRRhHHHHHHHHhRRrrrrr.',
+    '.rRRRRRRhHHHHHHHHhRrrrrr..',
+    '..rRRhhhhhhiIihhhhhhRrrr..',
+    '..rRRRhHHHHHHHHHHHHhRrrr..',
+    '...rRRhHHHHHHHHHHHHhrrr...',
+    '....rrhHHHHHHHHHHHHhrr....',
+    '......hHHHHHHHHHHHHh......',
+    '......hHHhHHHHHHhHHh......',
+    '......hhhh.hhhhh.hhh......',
+  ]),
+  legL: rows('vulk leg L', ['ARRRRr.', 'ARRRRr.', 'ARRRrr.', 'ARRRRr.', '.ARRRr.', '.ARRRr.', '.ARRrr.', '.ARRRr.', '.ARRRr.', 'ARRRRRr', 'ARRRRRr', 'wrrwrrw']),
+  legR: rows('vulk leg R', ['.RRRRrr', '.RRRRrr', '.RRRrrr', '.RRRRrr', '.RRRrr.', '.RRRrr.', '.RRrrr.', '.RRRrr.', '.RRRrr.', 'RRRRRrr', 'RRRRRrr', 'wrrwrrw']),
+  fist: rows('vulk fist', ['.ARr.', 'ARRRr', 'RRRrr', '.w.w.']),
+  // from the side (facing right): the long snout, the back hunched and lit, the apron on his front
+  crownSide: rows('vulk side crown', ['......II......', '..I...Ii...I..', '..Ii.IiiI..Ii.', '.kIi.kIiik.Iik', 'kIiiiiiiiiFFik', 'kkkkkkkkkfFFfk']),
+  headSide: rows('vulk side head', [
+    '..rRRRRRRRr.......',
+    '.rRAARRRRRRr......',
+    'rRAARRRRRqRRrr....',
+    'rRARRRRRRRqqRRrr..',
+    'rRRRRRRRRRYEYRRRr.',
+    'rRRRRRRRRRRRRRRRRr',
+    'rRRRRRRRRRRRRRRrRr',
+    '.rRRRRRRqqqqqqqqqr',
+    '.rBBRRRRRwRRwRRwr.',
+    '..rBBBBBBBBBBBBr..',
+    '...rrBBBBBBBrrr...',
+    '.....rrrrrrr......',
+  ]),
+  torsoSide: rows('vulk side torso', [
+    '...rRRRRRRRRr.......',
+    '.rRAARRRRRRRRRr.....',
+    'rRAARRRRRRRRRBBr....',
+    'rRARRRRRRRRRRBBhh...',
+    'rRARRRRRRRRRRBhHHh..',
+    'rRRRRRRRRRRRRBhHHh..',
+    'rRRRRRRRRRRRRBhHHh..',
+    '.rRRRRRRRRRRRBhHHh..',
+    '.rrhhhhhhhhhhhhiIh..',
+    '..rRRRRRRRRRRRhHHHh.',
+    '..rRRRRRRRRRRhHHHHh.',
+    '...rrRRRRRRRhHHHHh..',
+    '.....rrrrrrrhHHHHh..',
+    '............hHhHHh..',
+    '............hh.hhh..',
+  ]),
+  legSide: rows('vulk side leg', ['.ARRRr..', '.ARRRr..', '.ARRrr..', '.ARRRr..', '..ARRr..', '..ARRr..', '..ARrr..', '..ARRr..', '..ARRRr.', '.ARRRRRr', '.ARRRRRr', '.rrrrwrw']),
+  // from behind: the apron's straps crossed on his back and tied at the belt
+  headBack: rows('vulk back head', ['..rRRRRRRRRRrr..', '.rRAARRRRRRRrrr.', 'rRAARRRRRRRRRrrr', 'rRARRRRRRRRRRrrr', 'rRARRRRRRRRRrrrr', 'rRRRRRRRRRRRrrrr', '.rRRRRRRRRRrrrr.', '.rrRRRRRRRRrrrr.', '..rrrRRRRRrrrr..', '....rrrrrrrr....']),
+  torsoBack: rows('vulk back torso', [
+    '......rRRRRRRRRRRRRr......',
+    '...rRAARRRRRRRRRRRRRRrr...',
+    '.rRAAARRhRRRRRRRRhRRRRrrr.',
+    'rRAAARRRRhRRRRRRhRRRRRrrrr',
+    'rRAARRRRRRhRRRRhRRRRRrrrrr',
+    'rRARRRRRRRRhRRhRRRRRRrrrr.',
+    '.rRRRRRRRRRRhhRRRRRRrrrrr.',
+    '.rRRRRRRRRRhRRhRRRRRrrrr..',
+    '..rRRhhhhhhhhhhhhhhhhrrr..',
+    '..rRRRRRRRRRhhRRRRRRRrrr..',
+    '...rRRRRRRRRRRRRRRRRrrr...',
+    '....rrRRRRRRRRRRRRRrrr....',
+    '.....rrRRRRRRRRRRRRrr.....',
+    '......rrrrrrrrrrrrrr......',
+  ]),
+};
+const SCALES = ['lavaL', 'lava', 'lavaD'];
+const BRACERS = [[0.6, 0.85, ['steelL', 'steel', 'steelD']]]; // iron bracers on his forearms
+// an arm on its own layer, edged in his dark scale (not ink) where it crosses his body
+function vulkArm(ctx, [sx, sy], hd, M, tones = SCALES) {
+  layerSoft(ctx, 72, 72, 'lavaD', [[sx, sy]], (g) => { limb(g, [sx, sy], hd, 3.6, 2.8, tones, BRACERS); grid(g, VULK.fist, M, hd[0] - 2, hd[1] - 1); });
+}
+// the forge-axe: an iron-shod haft through his fist, a broad bearded head on
+// one side (`side`: which way the edge faces), its edge glowing from the forge
+const BEARD = [4, 5, 5, 6, 5, 5, 6, 7, 8, 8]; // how far the blade reaches from the haft, from the top of the head down: the beard hangs and flares
+function vulkAxe(g, [hx, hy], ang, { reach = 26, back = 0.3, side = -1 } = {}) {
+  const c = Math.cos(ang), s = Math.sin(ang), lit = -s * L2[0] + c * L2[1] > 0 ? 1 : -1;
+  const at = (t, o = 0) => [Math.round(hx + c * t - s * o - 0.5), Math.round(hy + s * t + c * o - 0.5)];
+  const top = reach * (1 - back);
+  for (let t = -reach * back; t <= top + 1; t += 0.5) { const [X, Y] = at(t); px(g, X, Y, t < -reach * back + 2 ? 'steel' : Math.round(t) % 7 === 3 ? 'woodL' : 'wood'); const [X2, Y2] = at(t, -lit); px(g, X2, Y2, 'woodD'); }
+  for (let k = 0; k < BEARD.length; k += 0.5) {
+    const w = BEARD[Math.floor(k)], t = top - k;
+    for (let o = 1; o <= w; o += 0.5) { const [X, Y] = at(t, o * side); px(g, X, Y, o > w - 1 ? (k > 7 ? 'lavaXL' : 'lavaL') : k < 1 ? 'steelL' : o < 2 ? 'steelD' : 'steel'); } // iron, the edge alone glowing
+    if (k >= 1 && k < 5) { const [X, Y] = at(t, -1.5 * side); px(g, X, Y, 'steelD'); } // the poll behind the haft
+  }
+}
+function vulkFront({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...VULK_MAP, Y: eye } : VULK_MAP, by = bob + crouch;
+  limb(ctx, [42, 47], [51, 51 - step], 3.2, 2.2, SCALES); limb(ctx, [51, 51 - step], [59, 52], 2.2, 0.8, SCALES); // the tail, behind, out to his left
+  grid(ctx, VULK.legL, M, 27, 42 - (step > 0 ? 1 : 0)); grid(ctx, VULK.legR, M, 38, 42 - (step < 0 ? 1 : 0));
+  grid(ctx, VULK.torso, M, 23, 28 + by);
+  const hd = hand ? [hand[0], hand[1] + by] : [20, 42 + by - step];
+  vulkArm(ctx, [47, 31 + by], grip ? [grip[0], grip[1] + by] : [52, 42 + by + step], M); // the off arm
+  grid(ctx, VULK.head, M, 28, 17 + by); grid(ctx, VULK.crown, M, 28, 13 + by);
+  vulkAxe(ctx, hd, ang ?? -1.75, { reach, back, side });
+  vulkArm(ctx, [24, 31 + by], hd, M);
+  outline(c, 'ink');
+  c.portraitAt = [28, 15];
+  return c;
+}
+function vulkSide({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null, lunge = 0 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...VULK_MAP, Y: eye } : VULK_MAP, by = bob + crouch, st = step * 2;
+  const far = { ...M, A: 'lava', R: 'lavaD', r: 'lavaD' };
+  limb(ctx, [27, 41 + by], [16, 49], 3.4, 2.4, SCALES); limb(ctx, [16, 49], [6, 53 - step], 2.4, 0.8, SCALES); // the tail, sweeping down behind him to the ground
+  grid(ctx, VULK.legSide, far, 29 - st, 42 - (step < 0 ? 1 : 0)); // the far leg, in shadow
+  if (!grip) vulkArm(ctx, [36 + lunge, 31 + by], [38 + lunge - step, 42 + by], far, ['lava', 'lavaD', 'lavaD']); // the far arm
+  grid(ctx, VULK.legSide, M, 32 + st, 42 - (step > 0 ? 1 : 0));
+  grid(ctx, VULK.torsoSide, M, 24 + lunge, 28 + by);
+  grid(ctx, VULK.headSide, M, 31 + lunge, 18 + by); grid(ctx, VULK.crownSide, M, 32 + lunge, 14 + by);
+  const hd = hand ? [hand[0] + lunge, hand[1] + by] : [41, 40 + by];
+  vulkAxe(ctx, hd, ang ?? -2.4, hand ? { reach, back, side } : { reach: 24, back: 0.25, side: -1 }); // carried on his shoulder, the head behind him
+  if (grip) vulkArm(ctx, [36 + lunge, 31 + by], [grip[0] + lunge, grip[1] + by], far, ['lava', 'lavaD', 'lavaD']);
+  vulkArm(ctx, [33 + lunge, 31 + by], hd, M);
+  outline(c, 'ink');
+  return c;
+}
+function vulkBack({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = 1, crouch = 0 } = {}) {
+  const W = 72, H = 72, [c, ctx] = frame(W, H), M = VULK_MAP, by = bob + crouch;
+  const hd = hand ? [hand[0], hand[1] + by] : [52, 42 + by - step];
+  vulkAxe(ctx, hd, ang ?? -1.4, { reach, back, side }); // facing away, the axe is beyond him
+  const heel = { ...M, w: 'lavaD' };
+  grid(ctx, VULK.legL, heel, 27, 42 - (step < 0 ? 1 : 0)); grid(ctx, VULK.legR, heel, 38, 42 - (step > 0 ? 1 : 0));
+  grid(ctx, VULK.torsoBack, M, 23, 28 + by);
+  limb(ctx, [36, 39 + by], [39, 49], 3.6, 2.8, SCALES); limb(ctx, [39, 49], [50, 55 + step], 2.8, 0.8, SCALES); // the tail, down to the ground and curling out to one side
+  vulkArm(ctx, [24, 31 + by], [20, 42 + by + step], M);
+  vulkArm(ctx, [47, 31 + by], hd, M);
+  grid(ctx, VULK.headBack, M, 28, 18 + by); grid(ctx, VULK.crown, { ...M, F: 'steel', f: 'steelD' }, 28, 14 + by);
+  for (let y = 20; y <= 38; y += 3) { if (y > 26 && y < 29) continue; px(ctx, 35, y + by, 'lavaL'); px(ctx, 36, y + by, 'lavaD'); px(ctx, 35, y + 1 + by, 'lavaD', 2, 1); } // the ridge of raised scales from the back of his head down his spine
+  outline(c, 'ink');
+  return c;
+}
+// the chop: raised over his head in both hands, brought down on the ground before him, and lifted again
+const VULKF_CHOP = [{ hand: [26, 28], ang: -1.25, reach: 26, back: 0.3, side: -1, grip: [31, 31], crouch: 1 }, { hand: [33, 46], ang: 1.57, reach: 16, back: 0.2, side: 1, grip: [39, 44] }, { hand: [28, 44], ang: 2.0, reach: 20, back: 0.3, side: 1, grip: [36, 42] }];
+const VULKS_CHOP = [{ hand: [33, 28], ang: -2.2, reach: 26, back: 0.3, side: -1, grip: [36, 30], crouch: 1 }, { hand: [43, 40], ang: 0.8, reach: 20, back: 0.25, side: -1, grip: [40, 38], lunge: 2 }, { hand: [41, 41], ang: 0.4, reach: 22, back: 0.3, side: -1, grip: [38, 40] }];
+const VULKB_CHOP = [{ hand: [48, 30], ang: -1.6, reach: 24, back: 0.3, side: 1, crouch: 1 }, { hand: [46, 32], ang: -1.65, reach: 16, back: 0.2, side: 1 }, { hand: [50, 38], ang: -1.5, reach: 22, back: 0.3, side: 1 }];
+export const buildVulk = (views = VIEWS) => cycle(byView({ down: vulkFront, side: vulkSide, up: vulkBack }), { down: VULKF_CHOP, side: VULKS_CHOP, up: VULKB_CHOP }, { bob: 1, crouch: 1, eye: 'white' }, views);
