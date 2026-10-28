@@ -868,3 +868,135 @@ const ISOF_LANCE = [{ hand: [25, 35], ang: -1.25, reach: 28, crouch: 1, guard: 1
 const ISOS_LANCE = [{ hand: [33, 36], ang: -2.0, reach: 28, crouch: 1 }, { hand: [37, 38], ang: 0, reach: 26, lunge: 2 }, { hand: [35, 39], ang: -0.7, reach: 28 }];
 const ISOB_LANCE = [{ hand: [40, 41], ang: -1.57, reach: 26, crouch: 1, guard: 1 }, { hand: [39, 33], ang: -1.6, reach: 22, guard: 1 }, { hand: [39, 37], ang: -1.57, reach: 24 }];
 export const buildIsolde = (views = VIEWS) => cycle(byView({ down: isoFront, side: isoSide, up: isoBack }), { down: ISOF_LANCE, side: ISOS_LANCE, up: ISOB_LANCE }, { bob: 1, crouch: 1, eye: 'white', guard: 1 }, views);
+
+// ----------------------------------------------------------------- Gutcrusher
+// The pit champion: a goblin, on the goblin's proportions like Snagtooth but
+// bigger again (about 1.25x him). A horned iron helm with cheek guards, two
+// tusks, a scowl, a bare green chest crossed by a leather harness, a chain
+// over one shoulder, a spiked iron pauldron and gauntlet on the off side, a
+// loincloth, iron-capped boots, and a great spiked maul. 80x64, feet on y 48.
+const GUT_MAP = { ...SNAGF_MAP, I: 'steelL', i: 'steel', k: 'steelD' };
+export const GUT = {
+  head: rows('gut head', [
+    '.......kkkkk.......',
+    '.....kiIIiiiik.....',
+    '....kiIIiiiiiik....',
+    '....kIiiiiiiiik....',
+    'LXLLkkkkkkkkkkkgggd',
+    '.LLGkiGdGGGdGikgg..',
+    '...GkGGddGddGGkG...',
+    '...GkGYGGGGYGGkg...',
+    '...gkGGGLgGGGGkg...',
+    '...gGwGGGGGGwGgg...',
+    '...gGwEEEEEEwGgg...',
+    '....gEgggggggEg....',
+    '.....ggggggggg.....',
+  ]),
+  torso: rows('gut torso', ['.LLGGGGGGGGGGg.', 'LLGGGhGGGhGGGgg', 'LGGGGGhGhGGGGgg', 'LGGLGGGhGGGGGgg', 'GGGGGGhGhGGGGgg', '.GGGGhGGGhGGGg.', '.gGGGGGGGGGGgg.', '.hhhhhhbbhhhhh.', '.tTTTTtTTtTTTt.', '..tTt.tTt.tTt..']),
+  legL: rows('gut leg L', ['ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'hHhhh.', 'hHhhhh', 'kkhhhh']),
+  legR: rows('gut leg R', ['.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.hhhhh', 'hHhhhh', 'hhhhkk']),
+  headSide: rows('gut side head', [
+    '.....kkkkk........',
+    '...kkiIIiik.......',
+    '..kiIIiiiiiik.....',
+    '..kIiiiiiiiiik....',
+    'LLLkkkkkkkkkkkk...',
+    '.XLLGkiGGGGdGGGg..',
+    '...gGkiGGGGGddGG..',
+    '...gGkiGGGGGGYGGG.',
+    '...gGGkGGGGGGGGLLg',
+    '...ggGGGGGGGGwEEg.',
+    '....gGGGGGGGGwgEg.',
+    '.....gggggggggg...',
+  ]),
+  torsoSide: rows('gut side torso', ['.LGGGGGg..', 'LLGGGGGGgg', 'LGGGhGGGgg', 'LGGGGhGGgg', 'GGGGGGhGgg', 'GGGGGGGhgg', '.gGGGGGGg.', '.hhhhhhhb.', '.tTTTTTTt.', '..tTt.tTt.']),
+  legSide: rows('gut side leg', ['.ooO..', '.ooO..', '.ooO..', '.ooO..', '.ooO..', '.ooO..', '.ooO..', '.hHhh.', '.hHhhh', '.hhhkk']),
+  headBack: rows('gut back head', [
+    '.......kkkkk.......',
+    '.....kiIIiiiik.....',
+    '....kiIIiiiiiik....',
+    '....kIiiiiiiiik....',
+    'LXLLkiiiiiiiiikgggd',
+    '.LLGkiiiiiiiiikgg..',
+    '...GkkiiiiiiikkG...',
+    '...GGkkkkkkkkkGg...',
+    '...gGGGGGGGGGGGg...',
+    '....gGGGGGGGGGg....',
+    '.....ggggggggg.....',
+  ]),
+  torsoBack: rows('gut back torso', ['.LLGGGGGGGGGGg.', 'LLGhGGGGGGGhGgg', 'LGGGhGGGGGhGGgg', 'LGGGGhGgGhGGGgg', 'GGGGGGhghGGGGgg', '.GGGGGGgGGGGGg.', '.gGGGGGgGGGGgg.', '.hhhhhhhhhhhhh.', '.tTTTTtTTtTTTt.', '..tTt.tTt.tTt..']),
+  legBackL: rows('gut back leg L', ['ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'ooooO.', 'hhhhh.', 'hhhhhh', '.hhhh.']),
+  legBackR: rows('gut back leg R', ['.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.oooOO', '.hhhhh', 'hhhhhh', '.hhhh.']),
+  pauldron: rows('gut pauldron', ['.I..I.', 'kiIiik', 'kiiiik', '.kkkk.']),
+  gauntlet: rows('gut gauntlet', ['IiI', 'iik', 'kkk']),
+  fist: rows('gut fist', ['LGg', 'GGg', 'ggd']),
+};
+// the horns of his helm, curving up and out from its sides
+const HORN = rows('gut horn', ['B.....', 'Bb....', 'bb....', '.bbn..', '..bnnn', '...nnn']); // thick at the helm, curving out and up to a pale tip
+const HORN_MAP = { B: 'white', b: 'bone', n: 'dirt' };
+function gutHorns(ctx, x0, x1, y) {
+  grid(ctx, HORN, HORN_MAP, x0 - 5, y - 4);
+  grid(ctx, HORN, HORN_MAP, x1, y - 4, true);
+}
+// the chain over his shoulder
+function gutChain(ctx, [ax, ay], [bx, by]) {
+  const n = Math.max(Math.abs(bx - ax), Math.abs(by - ay));
+  for (let k = 0; k <= n; k++) px(ctx, Math.round(ax + (bx - ax) * k / n), Math.round(ay + (by - ay) * k / n), k % 2 ? 'steelD' : 'steelL');
+}
+// the maul: a wooden haft through his fist, a block of iron at its head with spikes
+function gutMaul(g, [hx, hy], ang, reach = 22, back = 0.45) {
+  const c = Math.cos(ang), s = Math.sin(ang), nx = -s, ny = c, lit = nx * L2[0] + ny * L2[1] > 0 ? 1 : -1;
+  const at = (t, o = 0) => [Math.round(hx + c * t + nx * o - 0.5), Math.round(hy + s * t + ny * o - 0.5)];
+  for (let t = -reach * back; t <= reach * (1 - back); t += 0.5) { const [X, Y] = at(t); px(g, X, Y, Math.round(t) % 6 === 2 ? 'woodL' : 'wood'); const [X2, Y2] = at(t, -lit); px(g, X2, Y2, 'woodD'); }
+  const [cx, cy] = at(reach * (1 - back) + 2);
+  for (let y = -2; y <= 2; y++) for (let x = -3; x <= 3; x++) px(g, cx + x, cy + y, x === -3 || y === -2 ? 'steelL' : x === 3 || y === 2 ? 'steelD' : 'steel');
+  for (const [x, y] of [[-4, 0], [4, 0], [0, -3], [-2, -3], [2, -3]]) px(g, cx + x, cy + y, 'white'); // spikes
+}
+function gutFront({ bob = 0, step = 0, hand = null, ang = null, reach = 22, back = 0.45, crouch = 0, eye = null } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = eye ? { ...GUT_MAP, Y: eye } : GUT_MAP, by = bob + crouch;
+  grid(ctx, GUT.legL, M, 26, 39 - (step > 0 ? 1 : 0)); grid(ctx, GUT.legR, M, 33, 39 - (step < 0 ? 1 : 0));
+  grid(ctx, GUT.torso, M, 25, 30 + by);
+  gutChain(ctx, [37, 30 + by], [27, 37 + by]); // the chain, from his left shoulder across his chest
+  const hd = hand ? [hand[0], hand[1] + by] : [22, 38 + by];
+  limb(ctx, [40, 32 + by], [42, 38 + by + step], 1.9, 1.6, SKIN); grid(ctx, GUT.gauntlet, M, 41, 38 + by + step); // the off arm, the spiked gauntlet
+  grid(ctx, GUT.head, M, 23, 17 + by); gutHorns(ctx, 26, 37, 18 + by);
+  grid(ctx, GUT.pauldron, M, 38, 29 + by);
+  gutMaul(ctx, hd, ang ?? -1.57, reach, back);
+  limb(ctx, [24, 32 + by], hd, 1.9, 1.6, SKIN); grid(ctx, GUT.fist, M, hd[0] - 1, hd[1]);
+  outline(c, 'ink');
+  return c;
+}
+function gutSide({ bob = 0, step = 0, hand = null, ang = null, reach = 22, back = 0.45, crouch = 0, eye = null, lunge = 0 } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = eye ? { ...GUT_MAP, Y: eye } : GUT_MAP, by = bob + crouch, st = step * 2;
+  const far = { ...M, o: 'leafD', O: 'leafD', h: 'leatherD', H: 'leatherD' };
+  grid(ctx, GUT.legSide, far, 28 - st, 39 - (step < 0 ? 1 : 0));
+  limb(ctx, [35 + lunge, 32 + by], [36 + lunge - step, 38 + by], 1.8, 1.5, ['grass', 'grassD', 'leafD']); grid(ctx, GUT.gauntlet, { ...M, I: 'steel', i: 'steelD', k: 'slate' }, 35 + lunge - step, 38 + by); // the far arm, the gauntlet
+  grid(ctx, GUT.legSide, M, 30 + st, 39 - (step > 0 ? 1 : 0));
+  grid(ctx, GUT.torsoSide, M, 28 + lunge, 30 + by);
+  grid(ctx, GUT.headSide, M, 24 + lunge, 17 + by);
+  grid(ctx, HORN, HORN_MAP, 22 + lunge, 14 + by); // a horn, swept back
+  const hd = hand ? [hand[0] + lunge, hand[1] + by] : [34, 38 + by];
+  gutMaul(ctx, hd, ang ?? 1.2, hand ? reach : 18, hand ? back : 0.3); // held low, its head on the ground ahead of him (upright, it hid his face)
+  limb(ctx, [32 + lunge, 32 + by], hd, 1.9, 1.6, SKIN); grid(ctx, GUT.fist, M, hd[0] - 1, hd[1]);
+  outline(c, 'ink');
+  return c;
+}
+function gutBack({ bob = 0, step = 0, hand = null, ang = null, reach = 22, back = 0.45, crouch = 0 } = {}) {
+  const W = 80, H = 64, [c, ctx] = frame(W, H, 8), M = GUT_MAP, by = bob + crouch;
+  const hd = hand ? [hand[0], hand[1] + by] : [42, 38 + by];
+  gutMaul(ctx, hd, ang ?? -1.57, reach, back); // facing away, the maul is beyond him
+  grid(ctx, GUT.legBackL, M, 26, 39 - (step < 0 ? 1 : 0)); grid(ctx, GUT.legBackR, M, 33, 39 - (step > 0 ? 1 : 0));
+  grid(ctx, GUT.torsoBack, M, 25, 30 + by);
+  gutChain(ctx, [27, 30 + by], [37, 37 + by]); // the chain, over his left shoulder and down his back
+  limb(ctx, [24, 32 + by], [22, 38 + by - step], 1.9, 1.6, SKIN); grid(ctx, GUT.gauntlet, M, 21, 38 + by - step);
+  limb(ctx, [40, 32 + by], hd, 1.9, 1.6, SKIN); grid(ctx, GUT.fist, M, hd[0] - 1, hd[1]);
+  grid(ctx, GUT.headBack, M, 23, 18 + by); gutHorns(ctx, 26, 37, 19 + by);
+  grid(ctx, GUT.pauldron, M, 20, 29 + by);
+  outline(c, 'ink');
+  return c;
+}
+// the smash: raised high, brought down on the ground in front, and up again
+const GUTF_SMASH = [{ hand: [24, 28], ang: -1.4, reach: 20, back: 0.3, crouch: 1 }, { hand: [28, 41], ang: 1.57, reach: 10, back: 0.2 }, { hand: [26, 40], ang: 1.9, reach: 14, back: 0.3 }];
+const GUTS_SMASH = [{ hand: [30, 30], ang: -2.4, reach: 20, back: 0.3, crouch: 1 }, { hand: [39, 40], ang: 0.9, reach: 16, back: 0.3, lunge: 2 }, { hand: [37, 40], ang: 0.3, reach: 18, back: 0.3 }];
+const GUTB_SMASH = [{ hand: [40, 40], ang: -1.57, reach: 18, back: 0.3, crouch: 1 }, { hand: [40, 30], ang: -1.6, reach: 14, back: 0.3 }, { hand: [41, 35], ang: -1.57, reach: 18, back: 0.4 }];
+export const buildGutcrusher = (views = VIEWS) => cycle(byView({ down: gutFront, side: gutSide, up: gutBack }), { down: GUTF_SMASH, side: GUTS_SMASH, up: GUTB_SMASH }, { bob: 1, crouch: 1, eye: 'white' }, views);
