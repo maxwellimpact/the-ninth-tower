@@ -164,7 +164,7 @@ export class Game extends Phaser.Scene {
     useMap(st.map || null); // Aldermere, or a test map (src/data/maps): W and QDATA below then mean its content
     st.stats ??= { kills: 0, levelUps: [] };
     this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
-    this.travelling = false; this.colosseum = null;
+    this.travelling = false; this.colosseum = null; this.crowdKills = 0;
     this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
@@ -1112,7 +1112,11 @@ export class Game extends Phaser.Scene {
       const x = px(s.x), y = px(s.y);
       const e = this.lazy(x, y, () => [this.add.image(x, y + 4, 'sign').setOrigin(0.5, 1).setDepth(y)]);
       this.nav.block(s.x, s.y);
-      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => e.objs?.[0], interact: () => this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text }))) });
+      const read = () => { // (the Colosseum's board of champions has a card of its own)
+        if (s.board && this.colosseum) { this.scene.pause(); this.events.emit('board', this.colosseum.board(), () => this.scene.resume()); return; }
+        this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text })));
+      };
+      this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => e.objs?.[0], interact: read });
     }
     for (const c of W.chests) {
       const x = px(c.x), y = px(c.y);
@@ -1806,6 +1810,8 @@ export class Game extends Phaser.Scene {
       if (src.buffs?.primal) amount *= 1.5;
       if (src.buffs?.might) amount *= src.buffs.might.mul; // Wolfskull Helm's Howl
       if (src.hasPerk('cufflink')) amount *= 1.25; // Malgrim's Cufflink
+      if (src.hasPerk('arenacrown')) amount *= 1.08; // Crown of the Colosseum
+      if (src.hasPerk('laurel')) { let n = 0; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - src.x, e.y - src.y) < 64 && ++n >= 3) break; if (n >= 3) amount *= 1.12; } // Laurel of the Sands: three or more foes close
       if (src.hasTrait('slayer') && (target.elite || target.boss)) amount *= 1.15;
       if (src.hasPerk('huntertooth') && (target.elite || target.named || target.bounty)) amount *= 1.15; // Hunter's Tooth
       if (target.s?.hexed) { const ws = src.hasPerk('wardcrown') ? 0.3 : src.hasPerk('wardprism') ? 0.2 : src.hasPerk('wardshard') ? 0.1 : 0; amount *= 1 + ws; } // Ward Shard / Prism / Crown
@@ -2430,7 +2436,15 @@ export class Game extends Phaser.Scene {
   }
 
   // ============================================================== events
-  onEnemyKilled(e) {
+  onEnemyKilled(e, src) {
+    // Gladiator's Torc: the one who finished it heals; Crown of the Colosseum:
+    // every tenth foe the party fells, the crowd's cheer heals everyone
+    if (src?.team === 'party' && src.hasPerk?.('torc') && src.alive && !src.downed) { src.heal(src.maxHp * 0.04); this.fx.burst('heal', src.x, src.y - 10, 3); }
+    if (this.party.some((p) => !p.downed && p.hasPerk('arenacrown')) && ++this.crowdKills % 10 === 0) {
+      for (const p of this.party) if (p.alive && !p.downed) { p.heal(p.maxHp * 0.08); this.fx.burst('heal', p.x, p.y - 10, 6); }
+      this.floatText(this.leader.x, this.leader.y - 40, 'THE CROWD CHEERS!', 'fontGold');
+      audio.sfx('heal');
+    }
     // Crown of Rime: a frozen foe shatters, chilling everything near it
     if (e.status?.freeze && !e.rimeBurst) {
       const crown = this.party.find((p) => !p.downed && p.hasPerk('rimecrown'));

@@ -133,7 +133,7 @@ export const TESTS = {
     const S = await mainSave();
     const main = localStorage.getItem(S.SAVE_KEY), key = S.ownSaveKey('trial');
     const st = (await import('/src/scenes/Title.js')).ownStart('trial'); // what the title builds on a first visit
-    const sc = await boot({ state: st });
+    const sc = await boot({ state: st, saves: true });
     await step(60);
     sc.state.gold = 77;
     sc.autosave('test');
@@ -155,7 +155,7 @@ export const TESTS = {
     const S = await mainSave();
     const main = localStorage.getItem(S.SAVE_KEY), key = S.ownSaveKey('vast40d');
     const st = (await import('/src/scenes/Title.js')).ownStart('vast40d');
-    const sc = await boot({ state: st });
+    const sc = await boot({ state: st, saves: true });
     await step(60);
     const t0 = performance.now();
     sc.autosave('test');
@@ -197,7 +197,7 @@ export const TESTS = {
     const { mapDef } = await import('/src/world/content.js');
     const d = mapDef('colosseum');
     save.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
-    let sc = await boot({ state: save });
+    let sc = await boot({ state: save, saves: true });
     const there = {
       'in the Colosseum': sc.state.map === 'colosseum' && !!sc.colosseum,
       'none of Aldermere\'s flags there': !sc.flags.chest_plateau && !sc.flags.ward_marsh,
@@ -248,7 +248,7 @@ export const TESTS = {
     const { mapDef } = await import('/src/world/content.js');
     const d = mapDef('colosseum');
     save.pos = { x: (d.at[0] + d.start[0]) * 16 + 8, y: (d.at[1] + d.start[1]) * 16 + 8 };
-    const sc = await boot({ state: save });
+    const sc = await boot({ state: save, saves: true });
     for (const h of sc.party) { h.maxHp *= 20; h.hp = h.maxHp; }
     const C = sc.colosseum;
     await waitFor(() => C.wave === 1 && C.foes.length);
@@ -263,14 +263,46 @@ export const TESTS = {
     for (const h of sc.party) { h.hp = 0; h.downed = true; }
     sc.wipe();
     const restarted = await waitFor(() => C.wave === 6 && C.foes.length && !sc.busy, 900);
-    const w6 = C.foes.map((e) => e.level);
+    const w6 = C.foes.map((e) => e.level), keptGold = sc.state.gold === gold;
+    // the foes come for the party from the gates, however far
+    const gap = () => C.foes.filter((e) => e.alive).reduce((a, e) => a + Math.hypot(e.x - sc.leader.x, e.y - sc.leader.y), 0) / Math.max(1, C.foes.filter((e) => e.alive).length);
+    const hunting = C.foes.length && C.foes.every((e) => e.hunt && e.engaged), far = gap();
+    await step(120);
+    const nearer = gap() < far - 60;
+    const { ROSTER, THEMES, MILESTONES } = await import('/src/game/colosseum.js');
+    const E = (await import('/src/data/enemies.json')).default;
+    const mobile = ROSTER.every(([, ks]) => ks.every((k) => E[k]?.speed > 0)) && THEMES.every(([, ks]) => ks.every((k) => E[k]?.speed > 0));
+    // a themed wave: wave 8 is fire, and its warlocks cast fire
+    for (const e of sc.enemies) if (e.alive) { e.alive = false; e.destroy(); }
+    C.next?.remove(); C.next = null; C.wave = 7; C.spawnWave();
+    const fire = THEMES[0][1], w8 = C.foes.map((e) => e.kind);
+    const themed = C.theme(8)?.[0] === 'A FIRE WAVE' && w8.every((k) => fire.includes(k)) && C.foes.filter((e) => e.kind === 'warlock').every((e) => e.atkEl === 'fire') && !C.theme(9);
+    // wave 10 cleared, the first time: the Laurel, once; and the board keeps the run
+    for (const e of C.foes) { e.alive = false; e.destroy(); }
+    C.wave = 10; C.check();
+    const laurel = (sc.flags.arenaPrizes || []).includes(10) && sc.children.list.some((o) => o.texture?.key === 'lootU');
+    C.next?.remove(); C.next = null; C.foes = [{ alive: false }]; C.check();
+    const once = sc.flags.arenaPrizes.filter((n) => n === 10).length === 1;
+    const B = C.board();
+    // the sign by the gate opens the board's card
+    const sign = sc.interactables.find((o) => o.kind === 'sign');
+    let shown = null; sc.events.once('board', (b) => { shown = b; });
+    sign?.interact(sc.leader, sign); sc.scene.resume();
     return {
+      'the sign by the gate shows the board': shown?.runs?.length === B.runs.length,
+      'the foes hunt the party from the gates': hunting,
+      'and close in on it': nearer,
+      'nothing rooted to one spot on the roster or the themes': mobile,
+      'wave 8 is a fire wave: its foes, its warlocks casting fire': themed,
+      'clearing wave 10 the first time throws the Laurel': laurel && Object.keys(MILESTONES).length === 3,
+      'only the first time': once,
+      'the board lists the run, best first, and the Laurel as won': B.runs[0]?.w === 10 && B.runs[0].current && B.prizes.find((q) => q.wave === 10)?.won && !B.prizes.find((q) => q.wave === 20)?.won,
       'wave 1 at level 1': w1.length >= 2 && w1.every((l) => l === 1),
       'the party cleared it': cleared,
       'wave 2 at level 2': w2.every((l) => l === 2) && w2.length >= w1.length,
       'the best run is kept in the Colosseum\'s world': disk.worlds?.colosseum?.flags?.arenaBest >= 1 && !disk.flags.arenaBest,
       'the party\'s XP saved to the main game': disk.heroes.brann.xp > 0 || disk.heroes.brann.level > 8,
-      'falling costs no gold': sc.state.gold === gold,
+      'falling costs no gold': keptGold,
       'with a best of 12, the next run starts at wave 6, level 6': restarted && w6.every((l) => l === 6 || l === 8), // (elites sit 2 up)
       'Aldermere untouched on disk': disk.flags.chest_plateau && disk.flags.ward_marsh,
     };

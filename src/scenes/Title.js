@@ -6,7 +6,7 @@ const STARTERS = ['brann', 'pip', 'sable', 'wren'];
 const HEROES = ALL_HEROES.filter((h) => STARTERS.includes(h.id));
 import { HERO_STATS, SKILLS } from '../game/units.js';
 import { audio } from '../audio/synth.js';
-import { newState, loadState, clearSave, newSkillState, skillDef, ownSaveKey, switchWorld } from '../game/state.js';
+import { newState, loadState, clearSave, newSkillState, skillDef, ownSaveKey, switchWorld, worldOf } from '../game/state.js';
 import { cloudStatus } from '../game/cloudsave.js';
 import { dungeonStart } from '../game/dungeon.js';
 import { mapDef, saveMode, ownMapIds } from '../world/content.js';
@@ -199,7 +199,8 @@ export class Title extends Phaser.Scene {
     }));
     // the Colosseum (part of the main game: this party, its gains kept) and the Vast (never saved), side by side
     const rw = Math.min(250, W - 16), hw = (rw - 6) / 2;
-    objs.push(...this.button(W / 2 - hw / 2 - 3, 144, hw, 'THE COLOSSEUM', 'ENDLESS WAVES', () => this.enterShared('colosseum')));
+    const best = worldOf(save, 'colosseum')?.flags?.arenaBest;
+    objs.push(...this.button(W / 2 - hw / 2 - 3, 144, hw, 'THE COLOSSEUM', best ? `ENDLESS WAVES - BEST ${best}` : 'ENDLESS WAVES', () => this.enterShared('colosseum')));
     objs.push(...this.button(W / 2 + hw / 2 + 3, 144, hw, 'THE VAST', '40X WORLD - OWN SAVE', () => this.startDemo('vast')));
     // maps with saves of their own: a corner button to their list
     const own = ownMapIds().filter((id) => loadState(ownSaveKey(id)));

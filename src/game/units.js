@@ -1735,13 +1735,13 @@ export class Enemy extends Unit {
     this.t += dt * this.slow;
 
     if (this.target && (this.target.downed || !this.target.alive)) {
-      this.target = sc.nearestHero(this, s.aggro * 1.5);
+      this.target = sc.nearestHero(this, this.hunt ? Infinity : s.aggro * 1.5); // a hunter (the Colosseum's) goes for whoever's left, however far
       if (!this.target) { this.state = 'return'; this.engaged = false; }
     }
 
     switch (this.state) {
       case 'idle': {
-        const h = this.notice(s.aggro);
+        const h = this.hunt ? sc.nearestHero(this, Infinity) : this.notice(s.aggro);
         if (h) { this.aggroOn(h); break; }
         this.wanderT -= dt;
         if (this.wanderT <= 0) {
@@ -1764,6 +1764,7 @@ export class Enemy extends Unit {
         const lost = d > s.aggro * 1.4 && !(d < s.aggro * 2.2 && this.scene.nav.lineClear(this.x, this.y, t.x, t.y, 1));
         this.loseT = lost ? (this.loseT || 0) + dt : 0;
         const leash = this.noLeash ? Infinity : this.scene.areaRect?.().interior ? 360 : 200;
+        const rush = this.hunt && d > 140 ? 1.6 : 1; // a hunter hurries across the sand while it's still far off
         if (!this.boss && !this.noLeash && (Math.hypot(this.x - this.spawn.x, this.y - this.spawn.y) > leash || this.loseT > 2.5)) { this.state = 'return'; this.engaged = false; this.target = null; this.loseT = 0; this.homeT = 0; this.clearZone(); break; }
         if (s.ranged) {
           // archers keep their distance and need a clear shot: back off along
@@ -1778,7 +1779,7 @@ export class Enemy extends Unit {
             if (this.takeToken(t)) this.beginWindup(t); else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); } // wait for a turn to shoot
             break;
           }
-          this.stepTo(t, dt, 1);
+          this.stepTo(t, dt, rush);
           break;
         }
         if (s.ai === 'tongue' && (this.tongueCd || 0) <= 0 && d > 34 && d < s.reach && this.onScreen() && this.takeToken(t)) { this.beginTongue(t); break; }
@@ -1792,7 +1793,7 @@ export class Enemy extends Unit {
         if (free && d <= s.reach + t.r && this.takeToken(t)) { this.beginWindup(t); break; }
         const slot = this.boss ? t : this.surroundSlot(t, free ? s.reach + t.r - 3 : s.reach + t.r + 18);
         this.waiting = !free; // holding outside reach for a turn (not stuck)
-        if (Math.hypot(slot.x - this.x, slot.y - this.y) > 3) this.stepTo(slot, dt, free ? 1 : 0.6);
+        if (Math.hypot(slot.x - this.x, slot.y - this.y) > 3) this.stepTo(slot, dt, (free ? 1 : 0.6) * rush);
         else { this.waiting = true; this.face(t.x - this.x, t.y - this.y); this.play('idle'); this.keepApart(dt); }
         break;
       }
@@ -1872,7 +1873,7 @@ export class Enemy extends Unit {
         this.stepTo(this.spawn, dt, 1);
         // heading home: ignore the party for a couple of seconds so it doesn't ping-pong
         this.homeT = (this.homeT || 0) + dt;
-        const h = this.homeT > 2 && this.notice(s.aggro * 0.6);
+        const h = this.hunt ? sc.nearestHero(this, Infinity) : this.homeT > 2 && this.notice(s.aggro * 0.6);
         if (h) { this.homeT = 0; this.aggroOn(h); }
         break;
       }

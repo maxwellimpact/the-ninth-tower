@@ -1030,6 +1030,42 @@
   "perk": "wanderer",
   "desc": "+8% MOVE SPEED. +10 HP. FOR SOMEONE WHO HAS CLIMBED EVERY TOWER."
  },
+ "laurel_sands": {
+  "name": "LAUREL OF THE SANDS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@3",
+  "stats": {
+   "atk": 3
+  },
+  "perk": "laurel",
+  "desc": "+12% DAMAGE WHILE THREE OR MORE FOES ARE CLOSE. +3 ATK. THE COLOSSEUM'S CROWD THREW IT FOR CLEARING WAVE 10. THEY LOVE A HERO IN TROUBLE."
+ },
+ "gladiator_torc": {
+  "name": "GLADIATOR'S TORC",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@5",
+  "stats": {
+   "hp": 20
+  },
+  "perk": "torc",
+  "desc": "EVERY FOE YOU FINISH HEALS YOU 4% OF YOUR MAX HP. +20 HP. FOR CLEARING WAVE 20 OF THE COLOSSEUM."
+ },
+ "colosseum_crown": {
+  "name": "CROWN OF THE COLOSSEUM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@6",
+  "stats": {
+   "atk": 6
+  },
+  "perk": "arenacrown",
+  "desc": "+8% DAMAGE. EVERY TENTH FOE THE PARTY FELLS, THE CROWD'S CHEER HEALS EVERYONE 8%. +6 ATK. FOR CLEARING WAVE 30."
+ },
  "phial_second_wind": {
   "name": "PHIAL OF SECOND WIND",
   "hero": null,

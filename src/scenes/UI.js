@@ -128,7 +128,7 @@ export class UI extends Phaser.Scene {
     // scene restarts (travelling to another world) and relaunches the HUD, and
     // listeners left behind would show every banner twice
     const subs = [
-      ['banner', this.showBanner], ['dialogue', this.openDialog], ['loot', this.showLoot], ['keyItem', this.showKeyItem], ['lore', this.showLore], ['partyChanged', this.buildPortraits],
+      ['banner', this.showBanner], ['dialogue', this.openDialog], ['loot', this.showLoot], ['keyItem', this.showKeyItem], ['lore', this.showLore], ['board', this.showBoard], ['partyChanged', this.buildPortraits],
       ['boss', (b) => { this.boss = b; this.bossName.setVisible(!!b).setText(b ? b.bossName || b.s?.name || 'BOSS' : ''); }],
       ['saved', () => { this.toast.setText('SAVED').setAlpha(1); this.tweens.killTweensOf(this.toast); this.tweens.add({ targets: this.toast, alpha: 0, delay: 900, duration: 500 }); }],
       ['loading', (on) => this.loadTxt.setVisible(on)],
@@ -405,6 +405,54 @@ export class UI extends Phaser.Scene {
     const zone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(81).setInteractive();
     let ready = false;
     this.time.delayedCall(800, () => { ready = true; this.tweens.add({ targets: tap, alpha: 1, duration: 300 }); });
+    const close = () => {
+      if (!ready) return;
+      ready = false;
+      this.tapUI?.();
+      zone.destroy();
+      this.input.keyboard?.off('keydown', close);
+      this.tweens.add({ targets: box, alpha: 0, duration: 200, onComplete: () => { box.destroy(true); onClose?.(); } });
+    };
+    zone.on('pointerdown', close);
+    this.input.keyboard?.on('keydown', close);
+  }
+
+  // The Colosseum's board of champions: a card like a lore page, with the five
+  // best runs in columns (rank, wave, the party, the day) and the crowd's
+  // prizes under them, won or still to win. The game pauses while it's read.
+  showBoard({ runs, prizes, more }, onClose) {
+    const W = this.W, H = this.H;
+    const w = Math.min(272, W - 16), x = Math.round((W - w) / 2);
+    const h = 38 + Math.max(1, runs.length) * 9 + 20 + prizes.length * 9 + 22, y = Math.max(4, Math.round((H - h) / 2) - 6);
+    const box = this.add.container(0, 0).setDepth(80);
+    const dim = this.add.rectangle(0, 0, W, H, 0x0a0710, 0.6).setOrigin(0);
+    const g = this.add.graphics();
+    panel(g, x, y, w, h, 0x2a2238, C.gold);
+    const t = (tx, ty, font, str, tint) => { const o = this.add.bitmapText(tx, ty, font, str); if (tint) o.setTint(tint); box.add(o); return o; };
+    box.add([dim, g]);
+    t(x + 8, y + 6, 'fontGold', 'THE BOARD OF CHAMPIONS');
+    const cRank = x + 8, cWave = x + 20, cParty = x + 50, cDay = x + w - 8;
+    let ry = y + 20;
+    t(cRank, ry, 'fontPlain', '#', 0x9d93b3); t(cWave, ry, 'fontPlain', 'WAVE', 0x9d93b3); t(cParty, ry, 'fontPlain', 'PARTY', 0x9d93b3); t(cDay, ry, 'fontPlain', 'DAY', 0x9d93b3).setOrigin(1, 0);
+    ry += 11;
+    if (!runs.length) { t(cRank, ry, 'font', 'NO NAMES YET. CLEAR A WAVE AND YOURS GOES UP.'); ry += 9; }
+    runs.forEach((r, i) => {
+      t(cRank, ry, 'font', `${i + 1}`); t(cWave, ry, i ? 'font' : 'fontGold', `${r.w}`);
+      t(cParty, ry, 'font', fitString(r.party, cDay - cParty - 30)); t(cDay, ry, 'fontPlain', r.day, 0x9d93b3).setOrigin(1, 0);
+      if (r.current) g.fillStyle(C.gold, 0.12).fillRect(x + 4, ry - 2, w - 8, 9); // this run
+      ry += 9;
+    });
+    ry += 6;
+    g.fillStyle(C.slate, 1).fillRect(x + 8, ry - 3, w - 16, 1);
+    t(cRank, ry + 1, 'fontPlain', "THE CROWD'S PRIZES", 0x9d93b3); ry += 12;
+    for (const p of prizes) { t(cRank, ry, p.won ? 'fontPlain' : 'font', `WAVE ${p.wave}`, p.won ? 0x9d93b3 : 0); t(cParty, ry, p.won ? 'fontPlain' : 'fontGold', p.name, p.won ? 0x9d93b3 : 0); t(cDay, ry, 'fontPlain', p.won ? 'WON' : '', 0x9cff7a).setOrigin(1, 0); ry += 9; }
+    t(cRank, ry + 1, 'fontPlain', more, 0x9d93b3);
+    const tap = t(x + w - 8, y + h - 11, 'fontPlain', 'TAP TO CONTINUE', 0x9d93b3).setAlpha(0);
+    box.setAlpha(0);
+    this.tweens.add({ targets: box, alpha: 1, duration: 250 });
+    const zone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(81).setInteractive();
+    let ready = false;
+    this.time.delayedCall(500, () => { ready = true; this.tweens.add({ targets: tap, alpha: 1, duration: 300 }); });
     const close = () => {
       if (!ready) return;
       ready = false;

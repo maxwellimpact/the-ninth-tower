@@ -179,6 +179,9 @@ Each is forged from **Starmetal** (C6) plus a **personal relic** won from that h
 | **Wanderer's Charm** | +8% move speed | Cartographer, all 6 lookouts climbed |
 | **Hourglass Charm** | −12% skill cooldowns | C: Forgemaster's apprentice quest |
 | **Malgrim's Cufflink** | +25% damage, −25% max HP (cursed: it can't be sold) | B: Tower floor 7 |
+| **Laurel of the Sands** | +12% damage while three or more foes are close (4 tiles); +3 ATK | The Colosseum: first clear of wave 10 |
+| **Gladiator's Torc** | Every foe you finish heals you 4% of your max HP; +20 HP | The Colosseum: first clear of wave 20 |
+| **Crown of the Colosseum** | +8% damage; every tenth foe the party fells, the crowd's cheer heals everyone 8%; +6 ATK | The Colosseum: first clear of wave 30 |
 
 ---
 

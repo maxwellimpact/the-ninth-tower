@@ -1,7 +1,7 @@
 {
  "name": "THE COLOSSEUM",
  "sub": "ENDLESS WAVES - FIGHT UNTIL YOU FALL",
- "note": "A shared map of the main game (save: shared): the main save's party fights wave after wave until it falls (game/colosseum.js). What the party gains here (XP, gold, gear) is the main save's; the best run is the Colosseum's own. Opened from the title screen. Stamped in the Vale.",
+ "note": "A shared map of the main game (save: shared): the main save's party fights wave after wave until it falls (game/colosseum.js). What the party gains here (XP, gold, gear) is the main save's; the best run is the Colosseum's own. Opened from the title screen. Stamped in the Vale. The sign by the gate is the board of champions (the five best runs and the crowd's prizes).",
  "save": "shared",
  "at": [
   40,
@@ -98,6 +98,16 @@
     "toMap": null,
     "stairs": true,
     "label": "TO ALDERMERE"
+   }
+  ],
+  "signs": [
+   {
+    "x": 17,
+    "y": 23,
+    "board": true,
+    "lines": [
+     "THE BOARD OF CHAMPIONS."
+    ]
    }
   ]
  }
