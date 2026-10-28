@@ -1,5 +1,5 @@
 // Non-humanoid creatures and NPCs, drawn procedurally or from small grids.
-import { makeCanvas, grid, px, outline, bayer, hash } from './pixel.js';
+import { makeCanvas, grid, px, outline, bayer, hash, vnoise } from './pixel.js';
 
 // Shaded ellipse "blob" body, lit from the top-left, with ordered dithering
 // between tones. Basis for slimes, bushes, canopies.
@@ -172,7 +172,7 @@ function golemFrame(view, { fl, fr, bob = 0, eye = 'curseL', crouch = 0, rune = 
   return c;
 }
 
-export function buildGolem() {
+export function buildGolem(vs = ['down', 'side', 'up']) { // (only the views asked for: a loader builds one at a time)
   const rest = { fl: { x: 13, y: 46 }, fr: { x: 51, y: 46 } };
   const front = (F) => ({
     idle: [F({ ...rest }), F({ ...rest, bob: 1, fl: { x: 13, y: 47 }, fr: { x: 51, y: 47 } })],
@@ -199,15 +199,16 @@ export function buildGolem() {
   // side (facing right): fl the far fist, fr the near; the arms swing against the legs
   const S = (o) => golemFrame('side', o);
   const hang = { fl: { x: 27, y: 46 }, fr: { x: 37, y: 48 } };
-  const side = {
+  const side = () => ({
     idle: [S({ ...hang }), S({ fl: { x: 28, y: 47 }, fr: { x: 36, y: 48 }, bob: 1 })],
     walk: [0, 1, 2, 3].map((st) => S({ step: st, bob: -(st % 2), fl: { x: 27 + [0, -3, 0, 3][st], y: 46 }, fr: { x: 37 + [0, 3, 0, -3][st], y: 48 } })),
     windup: [S({ fl: { x: 31, y: 12 }, fr: { x: 35, y: 13 }, eye: 'white', bob: -1 }), S({ fl: { x: 31, y: 9 }, fr: { x: 35, y: 10 }, eye: 'white', bob: -2, rune: 'white' })],
     slam: [S({ fl: { x: 43, y: 56 }, fr: { x: 47, y: 57 }, crouch: 3, rune: 'white' }), S({ fl: { x: 42, y: 56 }, fr: { x: 46, y: 57 }, crouch: 2 })],
     throw: [S({ fl: { x: 28, y: 46 }, fr: { x: 22, y: 14 }, eye: 'white' }), S({ fl: { x: 28, y: 46 }, fr: { x: 46, y: 30 }, bob: 1 })],
     hurt: [S({ ...hang, eye: 'white' })],
-  };
-  return { down: front((o) => golemFrame('down', o)), side, up: front((o) => golemFrame('up', o)) };
+  });
+  const all = { down: () => front((o) => golemFrame('down', o)), side, up: () => front((o) => golemFrame('up', o)) };
+  return Object.fromEntries(vs.map((v) => [v, all[v]()]));
 }
 
 // Thrown boulder.
@@ -438,55 +439,120 @@ export function buildCroaker() {
 }
 
 // ------------------------------------------------------------- Old Snapjaw
-function snapjawFrame(step = 0, open = 0, flipped = false) {
-  const [c, ctx] = makeCanvas(48, 40);
-  if (flipped) {
-    shadedBlob(ctx, 24, 22, 17, 10, ['mud', 'sand', 'sand', 'bone']);
-    for (let i = 0; i < 4; i++) px(ctx, 12 + i * 7 + (step ? 1 : 0), 10, 'mossD', 3, 4);
-  } else {
-    shadedBlob(ctx, 24, 20, 17, 11, ['leafD', 'mossD', 'moss', 'mossL']);
-    for (let y = 13; y < 28; y += 5) for (let x = 12; x < 38; x += 7) px(ctx, x + ((y / 5) % 2) * 3, y, 'leafD', 4, 1);
-    shadedBlob(ctx, 24, 32, 6, 4, ['mossD', 'moss', 'mossL', 'mossXL']);
-    px(ctx, 21, 31, 'goldL'); px(ctx, 26, 31, 'goldL');
-    if (open) { px(ctx, 20, 34, 'redD', 8, 2); px(ctx, 20, 34, 'white', 8, 1); }
-    px(ctx, 6 + (step ? 1 : 0), 26, 'mossD', 5, 5); px(ctx, 37 - (step ? 1 : 0), 26, 'mossD', 5, 5);
+// A giant snapping turtle, as a key object: a high domed shell of raised
+// plates (a row of keeled, spiked plates down the spine, plates either side,
+// small ones round the seamed rim), each plate a little dome of its own with
+// growth rings, weed and moss on the old shell; a big head with a hooked
+// beak, clawed legs, a spiked tail. 48x40 frames, feet on y=36, in three
+// views (down: head toward you; side: facing right; up: tail toward you),
+// and flipped on its back (the pale belly plates up, legs waving).
+const SHELL = ['ink', 'leafD', 'mossD', 'moss', 'mossL', 'mossXL'];
+const TURTLE_SKIN = ['mudD', 'mossD', 'moss', 'mossL'];
+// the shell seen from above (rx, ry: its outline); the head end is down (+1) or up (-1)
+function turtleShell(ctx, cx, cy, rx, ry, headEnd) {
+  const plate = (nx, ny) => { // which plate, and its centre, at a point of the shell
+    const d = Math.hypot(nx, ny);
+    if (d > 0.8) { const k = Math.floor(((Math.atan2(ny, nx) + Math.PI) / (Math.PI * 2)) * 18); const a = ((k + 0.5) / 18) * Math.PI * 2 - Math.PI; return [`m${k}`, Math.cos(a) * 0.9, Math.sin(a) * 0.9, 0.14]; }
+    if (Math.abs(nx) < 0.27) { const r = Math.max(0, Math.min(3, Math.floor((ny + 0.8) / 0.4))); return [`v${r}`, 0, -0.6 + r * 0.4, 0.22]; }
+    const sd = nx < 0 ? -1 : 1, r = Math.max(0, Math.min(2, Math.floor((ny + 0.75) / 0.5)));
+    return [`c${sd}${r}`, sd * 0.52, -0.5 + r * 0.5, 0.26];
+  };
+  const id = new Map();
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry;
+    if (nx * nx + ny * ny <= 1) id.set(x * 1000 + y, plate(nx, ny));
   }
+  for (const [k, [pid, pcx, pcy, pr]] of id) {
+    const x = Math.floor(k / 1000), y = k % 1000, nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry, d = Math.hypot(nx, ny);
+    let l = 0.6 - nx * 0.28 - ny * 0.4 - d * d * 0.3; // the dome, lit on its upper left
+    const px0 = nx - pcx, py0 = ny - pcy, pd = Math.hypot(px0, py0) / pr; // its own plate: a little dome
+    l += (-px0 - py0 * 1.2) * 0.28 * (pr > 0.15 ? 1 : 0.5);
+    if (Math.abs(pd - 0.62) < 0.06 && pr > 0.15) l -= 0.07; // a growth ring
+    const nb = [id.get((x + 1) * 1000 + y), id.get((x - 1) * 1000 + y), id.get(x * 1000 + y + 1), id.get(x * 1000 + y - 1)];
+    if (nb.some((n) => n && n[0] !== pid)) l -= 0.2; // the seams between plates
+    if (pid[0] === 'v' && Math.abs(nx) < 0.04 && !nb.some((n) => n && n[0] !== pid)) l += 0.12; // the keel down the spine plates, catching the light
+    if (vnoise(x / 3, y / 3, 61) > 0.8 && ny < 0.3) { px(ctx, x, y, hash(x, y, 62) < 0.4 ? 'grassL' : 'grass'); continue; } // moss on the old shell
+    px(ctx, x, y, SHELL[Math.max(0, Math.min(SHELL.length - 1, Math.floor(l * SHELL.length + (bayer(x, y) - 0.5) * 0.25)))]);
+  }
+  for (let r = 0; r < 4; r++) { const sy = Math.round(cy + (-0.6 + r * 0.4) * ry * headEnd * -1); px(ctx, cx, sy - 1, 'mist'); px(ctx, cx, sy, 'mossXL'); } // a spike on each spine plate
+  for (let i = 0; i < 5; i++) { const x = Math.round(cx - rx * 0.6 + hash(i, 1, 63) * rx * 1.2), y = Math.round(cy + ry * (0.6 + hash(i, 2, 63) * 0.3)); px(ctx, x, y, 'reed', 1, 2 + (i % 2)); } // weed trailing off the rim
+}
+// a clawed leg: a scaly stump with pale claws
+function turtleLeg(ctx, x, y, w, h, far = false) {
+  shadedBlob(ctx, x, y, w, h, far ? ['mudD', 'mudD', 'mossD', 'moss'] : TURTLE_SKIN);
+  for (let k = -1; k <= 1; k++) px(ctx, Math.round(x) + k * 2, Math.round(y + h) - 1, 'bone');
+  px(ctx, Math.round(x - w * 0.4), Math.round(y - h * 0.2), 'mudD');
+}
+// the head, from the front: broad and flat, a hooked beak, gold eyes, the jaw open to snap
+function turtleHeadFront(ctx, x, y, open) {
+  shadedBlob(ctx, x, y, 6.5, 5, TURTLE_SKIN);
+  px(ctx, x - 4, y - 2, 'goldL'); px(ctx, x + 3, y - 2, 'goldL'); px(ctx, x - 4, y - 1, 'ink'); px(ctx, x + 3, y - 1, 'ink'); // eyes set wide
+  px(ctx, x - 1, y + 1, 'bone', 2, 3); px(ctx, x - 1, y + 4, 'mist', 2, 1); // the hooked beak
+  if (open) { px(ctx, x - 4, y + 3, 'redD', 9, open + 1); px(ctx, x - 4, y + 3, 'bone', 3, 1); px(ctx, x + 2, y + 3, 'bone', 3, 1); }
+  else px(ctx, x - 4, y + 3, 'ink', 3, 1), px(ctx, x + 2, y + 3, 'ink', 3, 1);
+  for (const k of [-5, 5]) px(ctx, x + k, y + 1, 'mudD'); // knobbly skin at the jaw hinge
+}
+function snapjawFrame(view, { step = 0, open = 0 } = {}) {
+  const [c, ctx] = makeCanvas(48, 40);
+  const st = step ? 1 : 0;
+  if (view === 'side') { // facing right: the shell's high dome in profile, the head out front
+    turtleLeg(ctx, 15 - st, 33, 3.5, 3, true); turtleLeg(ctx, 31 + st, 33, 3.5, 3, true); // far legs
+    for (let i = 0; i < 5; i++) px(ctx, 4 - i, 28 + (i >> 1), i % 2 ? 'mossD' : 'mudD', 2, 2); // the spiked tail
+    for (let x = 5; x < 41; x++) { // the dome: the plates' rows bending over it, the rim along the bottom
+      const u = (x - 23) / 18, top = Math.round(29 - Math.sqrt(Math.max(0, 1 - u * u)) * 17);
+      for (let y = top; y < 30; y++) {
+        const v = (y - top) / Math.max(1, 30 - top), row = Math.floor((x - 5 + (y < 18 ? 3 : 0)) / 7);
+        let l = 0.62 - u * 0.22 - v * 0.35 + ((x - 5) % 7 < 1 || (y > 25 && y < 27) ? -0.28 : 0) + (y === top ? 0.2 : 0);
+        if (y < top + 2 && row % 2 === 0) l += 0.1; // the spine plates' keels along the top
+        if (vnoise(x / 3, y / 3, 64) > 0.74 && v < 0.5) { px(ctx, x, y, 'grass'); continue; }
+        px(ctx, x, y, SHELL[Math.max(0, Math.min(5, Math.floor(l * 6 + (bayer(x, y) - 0.5) * 0.25)))]);
+      }
+    }
+    for (let i = 0; i < 4; i++) { const x = 12 + i * 7, u = (x - 23) / 18; px(ctx, x, Math.round(29 - Math.sqrt(1 - u * u) * 17) - 1, 'mist'); } // the spikes along the spine
+    px(ctx, 5, 30, 'mossD', 36, 2); px(ctx, 7, 31, 'sand', 32, 1); // the rim and a line of pale belly under it
+    turtleLeg(ctx, 13 + st, 34, 4, 3); turtleLeg(ctx, 33 - st, 34, 4, 3); // near legs
+    shadedBlob(ctx, 41, 28, 3.5, 3, TURTLE_SKIN); // the neck
+    shadedBlob(ctx, 44, 26, 4.5, 4, TURTLE_SKIN); // the head: a heavy wedge
+    px(ctx, 44, 24, 'goldL'); px(ctx, 45, 24, 'ink');
+    px(ctx, 47, 26, 'bone', 1, 3); px(ctx, 46, 28 + open, 'mist', 2, 1); // the hook of the beak
+    if (open) px(ctx, 43, 28, 'redD', 4, open);
+    outline(c, 'ink');
+    return c;
+  }
+  const up = view === 'up';
+  if (up) { turtleHeadFront(ctx, 24, 6, 0); px(ctx, 19, 3, 'mossD', 10, 3); } // the head, beyond the shell (only its top shows)
+  else for (let i = 0; i < 5; i++) px(ctx, 23 + (i % 2), 6 - i, i % 2 ? 'mossD' : 'mudD', 2, 2); // the spiked tail, beyond
+  // legs: the near pair stepping, the far pair peeking past the shell
+  const nearY = up ? 13 : 27, farY = up ? 27 : 13;
+  turtleLeg(ctx, 10 - st, farY, 3.5, 3, true); turtleLeg(ctx, 38 + st, farY, 3.5, 3, true);
+  turtleLeg(ctx, 8 + st, nearY, 4.5, 4); turtleLeg(ctx, 40 - st, nearY, 4.5, 4);
+  turtleShell(ctx, 24, 20, 17, 12, up ? -1 : 1);
+  if (up) for (let i = 0; i < 6; i++) px(ctx, 23 + (i % 2), 31 + i, i % 2 ? 'mossD' : 'mudD', 2, 2); // the tail toward you, spikes along it
+  else turtleHeadFront(ctx, 24, 32, open);
   outline(c, 'ink');
   return c;
 }
-export function buildSnapjaw() {
-  return { idle: [snapjawFrame(0), snapjawFrame(0)], walk: [snapjawFrame(0), snapjawFrame(1)], windup: [snapjawFrame(0, 1), snapjawFrame(1, 1)], attack: [snapjawFrame(0, 2), snapjawFrame(1, 0)], hurt: [snapjawFrame(0)], flipped: [snapjawFrame(0, 0, true), snapjawFrame(1, 0, true)] };
+// on its back: the pale belly plates up, the legs waving
+function snapjawFlipped(step = 0) {
+  const [c, ctx] = makeCanvas(48, 40);
+  for (const [x, y] of [[9, 14], [39, 14], [11, 28], [37, 28]]) turtleLeg(ctx, x + (step ? (x < 24 ? -1 : 1) : 0), y - (step ? 2 : 0), 3.5, 3);
+  shadedBlob(ctx, 24, 22, 17, 10, ['mud', 'dirtL', 'sand', 'bone']);
+  for (let y = 14; y < 31; y += 4) px(ctx, 12, y, 'dirt', 25, 1); // the belly's plates, in rows
+  px(ctx, 24, 13, 'dirt', 1, 18);
+  px(ctx, 7, 22, 'mossD', 3, 2); // the shell's rim showing at the edge
+  outline(c, 'ink');
+  return c;
+}
+export function buildSnapjaw(vs = ['down', 'side', 'up']) {
+  const flipped = [snapjawFlipped(0), snapjawFlipped(1)];
+  const views = {};
+  for (const v of vs) {
+    const F = (o) => snapjawFrame(v, o);
+    views[v] = { idle: [F({}), F({})], walk: [F({}), F({ step: 1 })], windup: [F({ open: 1 }), F({ step: 1, open: 1 })], attack: [F({ open: 2 }), F({ step: 1 })], hurt: [F({})], flipped };
+  }
+  return views;
 }
 
-// ------------------------------------------------------------ Mother Murk
-// A bog hag riding a vast toad. 64x64 frames, feet on y=60.
-function murkFrame({ puff = 0, open = 0, raise = 0 } = {}) {
-  const [c, ctx] = makeCanvas(64, 64);
-  shadedBlob(ctx, 32, 46 - puff, 24 + puff, 14 + puff * 0.6, ['mossD', 'moss', 'mossL', 'mossXL']);
-  shadedBlob(ctx, 32, 54, 15, 6, ['mud', 'sand', 'sand', 'bone']);
-  for (const ex of [18, 46]) { shadedBlob(ctx, ex, 34 - puff, 5, 5, ['mossD', 'moss', 'mossL', 'mossXL']); px(ctx, ex - 2, 33 - puff, 'redL', 3, 3); px(ctx, ex - 1, 34 - puff, 'ink'); }
-  if (open) { px(ctx, 18, 48, 'redD', 28, 3 + open); for (let x = 19; x < 45; x += 3) px(ctx, x, 48, 'white'); }
-  else px(ctx, 18, 48, 'mossD', 28, 1);
-  // the hag: hunched in a shawl on the toad's back
-  shadedBlob(ctx, 32, 24, 8, 9, ['purpD', 'hexD', 'purp', 'curseL']);
-  shadedBlob(ctx, 32, 14, 5, 5, ['mossD', 'grassD', 'moss', 'mossL']);
-  px(ctx, 30, 13, 'goldL'); px(ctx, 34, 13, 'goldL');
-  px(ctx, 27, 8, 'night', 11, 2); px(ctx, 29, 4, 'night', 7, 4); px(ctx, 31, 1, 'night', 3, 3);
-  const ay = 22 - raise * 6;
-  px(ctx, 22, ay, 'moss', 3, 6); px(ctx, 40, ay, 'moss', 3, 6);
-  if (raise) { px(ctx, 21, ay - 2, 'curseL', 5, 2); px(ctx, 39, ay - 2, 'curseL', 5, 2); }
-  outline(c, 'ink');
-  return c;
-}
-export function buildMurk() {
-  return {
-    idle: [murkFrame(), murkFrame({ puff: 1 })],
-    walk: [murkFrame(), murkFrame({ puff: 1 })],
-    windup: [murkFrame({ puff: 2, raise: 1 }), murkFrame({ puff: 3, raise: 1 })],
-    slam: [murkFrame({ open: 3 }), murkFrame({ open: 1 })],
-    hurt: [murkFrame()],
-  };
-}
 
 // ================================================================ Gloamwood
 // Drawn the way the Vale and Mistfen creatures are: chunky grids with a
@@ -606,44 +672,6 @@ export function buildSpider(size = 1) {
     windup: [f({ rear: 1, open: true }), f({ rear: 2, open: true })],
     attack: [f({ step: 1, open: true }), f({ step: 0 })],
     hurt: [f({ step: 0 })],
-  };
-}
-// Queen Mab: the spider queen. Long jointed legs reach well past a swollen,
-// shaded abdomen marked with a pale skull; a big head crowned with bone
-// spines, a cluster of red eyes and long white fangs (56x48 frames).
-function mabFrame({ step = 0, rear = 0, open = false }) {
-  const [c, ctx] = makeCanvas(56, 48);
-  const cx = 28, cy = 30 - rear;
-  // legs: 4 per side, thick, each with a raised knee; alternating sets lift
-  const seg = (ax, ay, bx, by, col) => { const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)))); for (let k = 0; k <= n; k++) px(ctx, Math.round(ax + (bx - ax) * k / n) - 1, Math.round(ay + (by - ay) * k / n) - 1, col, 2, 2); };
-  for (let i = 0; i < 4; i++) for (const side of [-1, 1]) {
-    const lift = ((i + step + (side > 0 ? 1 : 0)) % 2) * 2;
-    const ax = cx + side * 6, ay = cy - 6 + i * 3;
-    const kx = cx + side * (14 + i * 2), ky = cy - 16 + i * 5 - lift;
-    const fx = cx + side * (20 + i * 2), fy = cy - 2 + i * 6 - lift;
-    seg(ax, ay, kx, ky, 'night'); seg(kx, ky, fx, fy, 'night');
-    px(ctx, kx - 1, ky - 1, 'purp', 2, 1); // a glint on each knee
-  }
-  // abdomen
-  shadedBlob(ctx, cx, cy + 4, 11, 9, ['night', 'purpD', 'purp', 'purpL']);
-  const skull = ['.SSSS.', 'SkSSkS', 'SSSSSS', '.S.S..'];
-  grid(ctx, skull, { S: 'bone', k: 'night' }, cx - 3, cy + 2);
-  // head
-  shadedBlob(ctx, cx, cy - 8, 6.5, 5, ['night', 'purpD', 'purp', 'purpL']);
-  for (const [x, y] of [[-5, -15], [-2, -16], [2, -16], [5, -15], [0, -17]]) px(ctx, cx + x, cy + y, 'bone', 1, 3); // crown of spines
-  for (const [x, y] of [[-3, -10], [2, -10], [-1, -11], [0, -11], [-4, -8], [3, -8]]) px(ctx, cx + x, cy + y, 'redL', 1, 1);
-  const fy = cy - 4 + (open ? 1 : 0);
-  px(ctx, cx - 3, fy, 'white', 1, open ? 4 : 3); px(ctx, cx + 2, fy, 'white', 1, open ? 4 : 3);
-  outline(c, 'ink');
-  return c;
-}
-export function buildMab() {
-  return {
-    idle: [mabFrame({}), mabFrame({ rear: 1 })],
-    walk: [mabFrame({ step: 0 }), mabFrame({ step: 1 }), mabFrame({ step: 0 }), mabFrame({ step: 1 })],
-    windup: [mabFrame({ rear: 1, open: true }), mabFrame({ rear: 2, open: true })],
-    attack: [mabFrame({ step: 1, open: true }), mabFrame({})],
-    hurt: [mabFrame({})],
   };
 }
 export function eggSac() {
@@ -860,66 +888,6 @@ export function buildBeetle() {
   };
 }
 
-// --------------------------------------------------------------- Cinder Drake
-// A young dragon in profile: a long arched neck lifting a horned, snouted
-// head, a big wing folded along its back (spread to take off), a spined
-// ridge, a tail tapering to an ember, and a throat that glows before it
-// breathes (64x52 frames, feet near y=48).
-const DRAKE = ['lavaD', 'redD', 'red', 'redL'];
-function drakeFrame({ step = 0, wings = 0, breath = 0, lift = 0 }) {
-  const [c, ctx] = makeCanvas(64, 52);
-  const y = -lift;
-  const dot = (x, yy, col, w = 1, h = 1) => px(ctx, Math.round(x), Math.round(yy + y), col, w, h);
-  // far wing (spread) behind everything
-  if (wings) {
-    for (let i = 0; i < 18; i++) { const top = 22 - i * 0.9; dot(26 - i * 0.4, top, 'redD', 2, 8 + i * 0.5); }
-    for (let i = 0; i < 18; i += 5) dot(26 - i * 0.4, 22 - i * 0.9, 'basaltD', 1, 12);
-  }
-  // tail: tapering from the hip to an ember tip
-  for (let i = 0; i < 14; i++) { const w = Math.max(1, 4 - Math.floor(i / 4)); dot(16 - i, 36 + i * 0.35 + Math.sin(i / 3) * 1, i > 11 ? 'lavaL' : 'redD', 2, w); }
-  dot(2, 41, 'lavaXL', 2, 2);
-  // legs (back and front), stepping
-  const lg = step % 2 ? [0, 2] : [2, 0];
-  shadedBlob(ctx, 22, 44 + y - lg[0], 3.5, 4.5, DRAKE); dot(19, 47 - lg[0], 'bone', 1, 1); dot(23, 47 - lg[0], 'bone', 1, 1);
-  shadedBlob(ctx, 38, 44 + y - lg[1], 3, 4.5, DRAKE); dot(36, 47 - lg[1], 'bone', 1, 1); dot(39, 47 - lg[1], 'bone', 1, 1);
-  // body
-  shadedBlob(ctx, 30, 35 + y, 13, 8, DRAKE);
-  shadedBlob(ctx, 32, 39 + y, 9, 3.5, ['lavaD', 'lava', 'lavaL', 'lavaL']); // pale-ember belly plates
-  for (let i = 0; i < 4; i++) dot(26 + i * 3, 38, 'lavaD', 1, 3);
-  // neck: an arch from the shoulder up to the head
-  for (let i = 0; i < 9; i++) shadedBlob(ctx, 40 + i * 1.3, 30 + y - i * 1.4, 3.6 - i * 0.12, 3.2, DRAKE);
-  // head with a long snout, horns and a brow
-  shadedBlob(ctx, 52, 16 + y, 5, 4, DRAKE);
-  shadedBlob(ctx, 57, 18 + y, 4, 2.5, DRAKE); // snout
-  dot(49, 9, 'bone', 1, 4); dot(50, 8, 'bone'); dot(53, 10, 'bone', 1, 3); // horns
-  dot(52, 14, 'ink', 2, 2); dot(53, 14, 'goldL');
-  dot(60, 17, 'ink'); // nostril
-  if (breath) { dot(55, 20, 'lavaXL', 6, 2); dot(61, 19, 'lavaXL', 2, 1); for (let i = 0; i < 5; i++) dot(43 + i * 1.3, 33 - i * 1.4, 'lavaL', 2, 2); } // glowing throat
-  else dot(55, 20, 'redD', 6, 1);
-  // back ridge spines
-  for (let i = 0; i < 6; i++) dot(20 + i * 4, 27 - (i % 2), 'basaltD', 2, 3);
-  // near wing: folded along the back, or spread
-  if (wings) {
-    for (let i = 0; i < 20; i++) { const top = 20 - i * 0.8; dot(30 + i * 0.5, top, 'red', 2, 9 + i * 0.4); }
-    for (let i = 0; i < 20; i += 5) dot(30 + i * 0.5, 20 - i * 0.8, 'redD', 1, 13);
-    dot(30, 19, 'basaltD', 12, 1);
-  } else {
-    for (let i = 0; i < 14; i++) dot(18 + i, 26 + Math.abs(i - 9) * 0.5, i % 4 ? 'redD' : 'basaltD', 1, 5 - Math.floor(Math.abs(i - 7) / 3));
-    dot(18, 26, 'basaltD', 15, 1);
-  }
-  outline(c, 'ink');
-  return c;
-}
-export function buildDrake() {
-  return {
-    idle: [drakeFrame({}), drakeFrame({ step: 1 })],
-    walk: [drakeFrame({ step: 0 }), drakeFrame({ step: 1 })],
-    windup: [drakeFrame({ breath: 1 }), drakeFrame({ breath: 1, step: 1 })],
-    attack: [drakeFrame({ breath: 1 }), drakeFrame({})],
-    fly: [drakeFrame({ wings: 1, lift: 5 }), drakeFrame({ wings: 1, lift: 7 })],
-    hurt: [drakeFrame({})],
-  };
-}
 
 // ================================================================== Gizmo's gadgets
 // Turret: a brass tripod with a stubby barrel and a glowing sight (two frames:
@@ -1089,40 +1057,124 @@ export function buildRaider() {
 }
 
 // ----------------------------------------------------------- Avalanche Troll
-// A hulking hunched troll: blue-grey hide, a mantle of white fur over the
-// shoulders, a small head with tusks sunk between them, long arms ending in
-// huge fists. Pounds the ground with both (56x56, feet near y=47).
-function trollFrame({ fl = 0, fr = 0, bob = 0, raise = 0, eye = 'goldL' }) {
+// A hulking hunched troll: blue-grey hide, a shaggy mantle of white fur over
+// the shoulders with icicles in its fringe, a small head with big tusks sunk
+// between them, long arms ending in huge frost-crusted fists. Pounds the
+// ground with both. 56x56, feet on y=47, in three views (as Keep Defense's
+// troll: the same build turned, from the same heights - feet 47, gut 32,
+// shoulders 21, head 18).
+const TROLL_BELLY = ['frost', 'frostL', 'snowD', 'snow'];
+// the fur mantle: a pelt with a shaggy hanging fringe (icicles in it) and a tufted top
+function trollPelt(ctx, cx, cy, rx, ry, seed, fringe = 4) {
+  shadedBlob(ctx, cx, cy, rx, ry, SNOWFUR);
+  for (let x = Math.ceil(cx - rx + 1); x <= Math.floor(cx + rx - 1); x++) {
+    const u = (x + 0.5 - cx) / rx, bottom = Math.round(cy + Math.sqrt(Math.max(0, 1 - u * u)) * ry);
+    const clump = Math.floor((x + seed) / 3), len = 1 + Math.floor(hash(clump, seed, 21) * fringe) - ((x + seed) % 3 === 2 ? 1 : 0); // hanging in clumps, not a comb
+    px(ctx, x, bottom, hash(clump, seed, 27) < 0.3 ? 'snowD' : 'snow', 1, Math.max(1, len)); px(ctx, x, bottom + Math.max(1, len) - 1, u > 0.2 ? 'frost' : 'snowD'); // each clump's tip in shadow
+    if (hash(x, seed, 26) < 0.14) { px(ctx, x, bottom + len, 'iceL', 1, 2); px(ctx, x, bottom + len + 2, 'iceXL'); } // an icicle
+    const top = Math.round(cy - Math.sqrt(Math.max(0, 1 - u * u)) * ry);
+    if (hash(x, seed, 23) < 0.4) px(ctx, x, top - 1, u < 0.2 ? 'snowXL' : 'snow'); // tufts along the top
+  }
+  for (let i = 0; i < rx * 2.2; i++) { // shaggy strokes: lit on the left, shadowed on the right
+    const x = Math.round(cx - rx + 2 + hash(i, seed, 24) * (rx * 2 - 4)), y = Math.round(cy - ry * 0.4 + hash(i, seed, 25) * ry);
+    px(ctx, x, y, x < cx - 2 ? 'snowXL' : x > cx + 3 ? 'frost' : 'snowD', 1, 2);
+  }
+}
+// hide: a shaded blob with a lit rim on its upper left and old scars and warts
+function trollHide(ctx, cx, cy, rx, ry, seed, tones = FROSTSKIN, spots = 3) {
+  shadedBlob(ctx, cx, cy, rx, ry, tones);
+  for (let i = 0; i < spots; i++) { const a = hash(i, seed, 31) * Math.PI * 2, r = Math.sqrt(hash(i, seed, 32)) * 0.7; px(ctx, Math.round(cx + Math.cos(a) * rx * r), Math.round(cy + Math.sin(a) * ry * r), tones[0]); }
+}
+// a fist: knuckles across it, frost crusted on top, claws at the front
+function trollFist(ctx, fx, fy, side = false, tones = FROSTSKIN) {
+  trollHide(ctx, fx, fy, 6, 5.5, Math.round(fx * 7 + fy), tones, 1);
+  if (side) { px(ctx, fx + 2, fy - 2, 'frostD', 1, 4); px(ctx, fx + 5, fy + 1, 'bone', 2, 1); px(ctx, fx + 5, fy + 3, 'bone', 2, 1); }
+  else { px(ctx, fx - 4, fy + 2, 'frostD', 8, 1); for (const k of [-3, 0, 3]) px(ctx, fx + k - 1, fy + 4, 'bone', 2, 1); } // knuckles, claws
+  for (const k of [-3, -1, 1, 3]) if (!side || k < 2) px(ctx, fx + k, fy - 5 + (k & 1), k < 0 ? 'snowXL' : 'snowL'); // frost on the back of the hand
+}
+function trollFace(ctx, x, y, eye) { // facing you
+  px(ctx, x - 4, y - 3, 'frostL', 4, 1); px(ctx, x, y - 3, 'frost', 4, 1); // a heavy brow, lit at its left
+  px(ctx, x - 4, y - 2, 'frostD', 3, 2); px(ctx, x + 1, y - 2, 'frostD', 3, 2); // deep-set sockets
+  px(ctx, x - 3, y - 1, eye); px(ctx, x + 2, y - 1, eye); // small mean eyes
+  px(ctx, x - 1, y - 1, 'frostL', 2, 2); px(ctx, x - 1, y + 1, 'frostD', 2, 1); // a broad flat nose
+  px(ctx, x - 3, y + 3, 'ink', 7, 1); px(ctx, x - 2, y + 4, 'frostD', 5, 1); // the wide mouth and heavy jaw
+  for (const tx of [x - 4, x + 3]) { px(ctx, tx, y + 1, 'white', 2, 1); px(ctx, tx, y + 2, 'bone', 2, 2); } // tusks up out of the jaw
+}
+function trollDown({ fl = 0, fr = 0, bob = 0, raise = 0, eye = 'goldL', ll = 0, lr = 0 }, up = false) {
   const [c, ctx] = makeCanvas(56, 56);
   const y = bob;
-  shadedBlob(ctx, 21, 44, 5, 4, FROSTSKIN); shadedBlob(ctx, 35, 44, 5, 4, FROSTSKIN); // legs
-  px(ctx, 17, 47, 'frostD', 9, 1); px(ctx, 31, 47, 'frostD', 9, 1);
-  // arms: from the shoulders down to fists (raised for the pound)
-  for (const [sx, d, f] of [[13, -1, fl], [43, 1, fr]]) {
-    const fy = 38 + y + f - raise * 18, fx = sx + d * (4 + raise * 2);
-    for (let k = 0; k <= 6; k++) shadedBlob(ctx, sx + (fx - sx) * k / 6, 22 + y + (fy - 22 - y) * k / 6, 3.5, 3.5, FROSTSKIN);
-    shadedBlob(ctx, fx, fy, 6, 5.5, FROSTSKIN);
-    px(ctx, fx - 4, fy + 2, 'frostD', 8, 1);
-  }
-  shadedBlob(ctx, 28, 32 + y, 13, 11, FROSTSKIN); // gut and chest
-  shadedBlob(ctx, 28, 36 + y, 7, 5, ['frost', 'frostL', 'snowD', 'snow']); // pale belly
-  shadedBlob(ctx, 28, 21 + y, 16, 7, SNOWFUR); // the fur mantle
-  for (let i = 0; i < 14; i++) px(ctx, 14 + i * 2.1, 26 + y + (i % 3), i % 2 ? 'snow' : 'frost', 1, 2); // mantle fringe
-  shadedBlob(ctx, 28, 18 + y, 5.5, 5, FROSTSKIN); // head, sunk low
-  px(ctx, 25, 17 + y, 'ink', 6, 2); px(ctx, 25, 17 + y, eye, 2, 1); px(ctx, 29, 17 + y, eye, 2, 1);
-  px(ctx, 24, 21 + y, 'bone', 1, 3); px(ctx, 32, 21 + y, 'bone', 1, 3); // tusks
-  for (const [x, yy] of [[18, 15], [38, 15], [28, 12]]) { px(ctx, x, yy + y, 'iceXL', 1, 3); px(ctx, x, yy + y - 1, 'iceL'); } // icicles in the fur
+  trollHide(ctx, 21, 43 - ll, 5, 4.5, 1); trollHide(ctx, 35, 43 - lr, 5, 4.5, 2); // legs
+  px(ctx, 17, 47 - ll, 'frostD', 9, 1); px(ctx, 31, 47 - lr, 'frostD', 9, 1);
+  if (!up) for (const fx of [18, 22, 32, 36]) px(ctx, fx, 47 - (fx < 28 ? ll : lr), 'bone'); // toenails
+  const arms = [[13, -1, fl], [43, 1, fr]];
+  const arm = ([sx, d, f]) => {
+    const fy = 38 + y + f - raise * 24, fx = sx + d * (4 - raise * 7); // raised for the pound: up over the head
+    for (let k = 0; k <= 6; k++) trollHide(ctx, sx + (fx - sx) * k / 6, 22 + y + (fy - 22 - y) * k / 6, 3.5, 3.5, 3 + k, FROSTSKIN, 0);
+    trollFist(ctx, fx, fy, false);
+  };
+  if (up) arms.forEach(arm); // facing away, the arms are beyond the body
+  trollHide(ctx, 28, 32 + y, 13, 11, 4, up ? ['frostD', 'frostD', 'frost', 'frostL'] : FROSTSKIN, 5); // gut and chest (or the broad back)
+  if (up) for (let i = 0; i < 5; i++) px(ctx, 27 + (i % 2), 30 + y + i * 2, 'frostD'); // the spine's knobs
+  else { trollHide(ctx, 28, 36 + y, 7, 5, 5, TROLL_BELLY, 0); px(ctx, 25, 37 + y, 'frost', 6, 1); } // the pale belly and its fold
+  trollPelt(ctx, 28, 21 + y, 16.5, 6, up ? 3 : 5, 5); // the mantle across the shoulders
+  trollHide(ctx, 28, (up ? 16 : 18) + y, up ? 5.5 : 6.5, up ? 4.5 : 5.5, 6, up ? ['frostD', 'frost', 'frost', 'frostL'] : FROSTSKIN, 0); // the head, sunk low
+  if (up) { px(ctx, 21, 14 + y, 'frost', 2, 3); px(ctx, 33, 14 + y, 'frost', 2, 3); } // ears
+  else trollFace(ctx, 28, 18 + y, eye);
+  for (const [x, yy] of [[18, 15], [38, 15], [28, 12]]) { px(ctx, x, yy + y, 'iceXL', 1, 3); px(ctx, x, yy + y - 1, 'iceL'); } // icicles frozen into the fur
+  if (!up) arms.forEach(arm); // facing you, the arms swing in front
   outline(c, 'ink');
   return c;
 }
-export function buildTroll() {
-  return {
-    idle: [trollFrame({}), trollFrame({ bob: 1 })],
-    walk: [trollFrame({ fl: -2 }), trollFrame({ fr: -2, bob: 1 }), trollFrame({ fl: 2 }), trollFrame({ fr: 2, bob: 1 })],
-    windup: [trollFrame({ raise: 1, bob: -1 }), trollFrame({ raise: 1, bob: -2 })],
-    attack: [trollFrame({ fl: 6, fr: 6, bob: 2 }), trollFrame({})],
-    hurt: [trollFrame({ eye: 'white' })],
+// facing right: the same build turned - upright, the gut out front, the
+// mantle across the shoulders, the head sunk low and forward
+function trollSide({ fl = 0, bob = 0, raise = 0, eye = 'goldL', step = 0 }) {
+  const [c, ctx] = makeCanvas(56, 56);
+  const y = bob, legs = [[0, 0], [2, -2], [0, 0], [-2, 2]][step % 4];
+  const FAR = ['frostD', 'frostD', 'frost', 'frostL'];
+  const fax = 25 - fl + raise * 4, fay = 39 + y - raise * 24; // the far arm and leg, behind
+  for (let k = 0; k <= 6; k++) shadedBlob(ctx, 27 + (fax - 27) * k / 6, 24 + y + (fay - 24 - y) * k / 6, 3, 3, FAR);
+  trollFist(ctx, fax, fay, true, FAR);
+  shadedBlob(ctx, 25 + legs[0], 43, 4.5, 4.5, FAR); px(ctx, 22 + legs[0], 47, 'frostD', 8, 1);
+  trollHide(ctx, 27, 31 + y, 11, 11, 4, FROSTSKIN, 4); // an upright barrel of a body
+  trollHide(ctx, 33, 35 + y, 7, 7, 5, TROLL_BELLY, 0); // the gut pushed out front
+  trollHide(ctx, 31 + legs[1], 43, 5, 4.5, 2); px(ctx, 28 + legs[1], 47, 'frostD', 9, 1); px(ctx, 35 + legs[1], 47, 'bone'); // the near leg
+  trollPelt(ctx, 28, 21 + y, 11.5, 5, 7, 4);
+  const hx = 37, hy = 19 + y; // the head, sunk low in front of the shoulders
+  trollHide(ctx, hx, hy, 5.5, 5, 6, FROSTSKIN, 0);
+  px(ctx, hx - 1, hy - 3, 'frostD', 6, 1); px(ctx, hx - 1, hy - 4, 'frostL', 3, 1); // the heavy brow
+  px(ctx, hx + 1, hy - 2, 'ink', 3, 2); px(ctx, hx + 2, hy - 2, eye, 2, 1);
+  px(ctx, hx + 5, hy, 'frostD', 1, 2); // the nose
+  px(ctx, hx + 4, hy + 1, 'bone', 1, 4); px(ctx, hx + 4, hy + 1, 'white'); // a tusk
+  px(ctx, hx - 4, hy - 3, 'frost', 2, 3); px(ctx, hx - 4, hy - 3, 'frostD'); // the ear
+  px(ctx, hx + 1, hy + 3, 'frostD', 4, 1); // the jaw
+  for (const [x, yy] of [[22, 15], [32, 14]]) { px(ctx, x, yy + y, 'iceXL', 1, 3); px(ctx, x, yy + y - 1, 'iceL'); }
+  const ax = 31 + fl + raise * 2, ay = 40 + y - raise * 26, ARM = FROSTSKIN; // the near arm, hanging from the shoulder (up over the head for the pound)
+  for (let k = 0; k <= 6; k++) { const x = 27 + (ax - 27) * k / 6, yy = 24 + y + (ay - 24 - y) * k / 6; px(ctx, Math.round(x - 4.5), Math.round(yy), 'frostD', 1, 2); shadedBlob(ctx, x, yy, 3.5, 3.5, ARM); }
+  trollFist(ctx, ax, ay, true, ARM);
+  outline(c, 'ink');
+  return c;
+}
+export function buildTroll(vs = ['down', 'side', 'up']) {
+  const D = (o) => trollDown(o), U = (o) => trollDown(o, true);
+  const front = (F) => ({
+    idle: [F({}), F({ bob: 1 })],
+    walk: [F({ fl: -2, ll: 2 }), F({ fr: -2, bob: 1 }), F({ fl: 2, lr: 2 }), F({ fr: 2, bob: 1 })],
+    windup: [F({ raise: 1, bob: -1 }), F({ raise: 1, bob: -2 })],
+    attack: [F({ fl: 6, fr: 6, bob: 2 }), F({})],
+    hurt: [F({ eye: 'white' })],
+  });
+  const all = {
+    down: () => front(D),
+    side: () => ({
+      idle: [trollSide({}), trollSide({ bob: 1 })],
+      walk: [0, 1, 2, 3].map((st) => trollSide({ step: st, fl: [-2, 0, 2, 0][st], bob: st % 2 })),
+      windup: [trollSide({ raise: 1, bob: -1 }), trollSide({ raise: 1, bob: -2 })],
+      attack: [trollSide({ fl: 5, bob: 2 }), trollSide({})],
+      hurt: [trollSide({ eye: 'white' })],
+    }),
+    up: () => front(U),
   };
+  return Object.fromEntries(vs.map((v) => [v, all[v]()]));
 }
 
 // ================================================================ the Basin
