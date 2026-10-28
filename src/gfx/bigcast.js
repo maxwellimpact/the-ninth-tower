@@ -1278,3 +1278,89 @@ const VULKF_CHOP = [{ hand: [26, 28], ang: -1.25, reach: 26, back: 0.3, side: -1
 const VULKS_CHOP = [{ hand: [33, 28], ang: -2.2, reach: 26, back: 0.3, side: -1, grip: [36, 30], crouch: 1 }, { hand: [43, 40], ang: 0.8, reach: 20, back: 0.25, side: -1, grip: [40, 38], lunge: 2 }, { hand: [41, 41], ang: 0.4, reach: 22, back: 0.3, side: -1, grip: [38, 40] }];
 const VULKB_CHOP = [{ hand: [48, 30], ang: -1.6, reach: 24, back: 0.3, side: 1, crouch: 1 }, { hand: [46, 32], ang: -1.65, reach: 16, back: 0.2, side: 1 }, { hand: [50, 38], ang: -1.5, reach: 22, back: 0.3, side: 1 }];
 export const buildVulk = (views = VIEWS) => cycle(byView({ down: vulkFront, side: vulkSide, up: vulkBack }), { down: VULKF_CHOP, side: VULKS_CHOP, up: VULKB_CHOP }, { bob: 1, crouch: 1, eye: 'white' }, views);
+
+// ----------------------------------------------------------------- Queen Mab
+// The Gloom Spiders' queen, as big as she was: their purple chitin, a round
+// abdomen marked with a pale skull, a body and head crowned with bone spines,
+// a cluster of red eyes, long white fangs, and eight long jointed legs, each
+// knee catching a glint of violet. 96x72, feet on y 54; a creature's frames
+// ({ view: { anim: [canvas] } }) for assets.js creatureViews.
+// a body part as a flat-shaded oval (light, mid, dark by which way it faces the light), with a highlight
+function blob(ctx, cx, cy, rx, ry, [lit, mid, dark], hi = null) {
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry, d = nx * nx + ny * ny;
+    if (d > 1) continue;
+    const l = nx * L2[0] + ny * L2[1];
+    let col = l > 0.5 ? lit : l < -0.35 || d > 0.85 && l < 0.1 ? dark : mid; // a lit cap, not a split down the middle
+    if (hi && Math.hypot(nx + 0.4, ny + 0.5) < 0.22) col = hi;
+    px(ctx, x, y, col);
+  }
+}
+const MAB_MAP = { b: 'bone', W: 'white', n: 'night', E: 'redL' };
+const MAB_SKULL = rows('mab skull', ['..bbb..', '.Wbbbb.', 'bnnbnnb', 'bbbbbbb', '.bbnbb.', '.b.b.b.']);
+const CHIT = ['purpL', 'purp', 'purpD'];
+const MAB_LEG = ['purp', 'purpD', 'night'];
+// a leg: up from the hip to a high knee, then down to the foot; a glint on the knee
+function mabLeg(ctx, hip, knee, foot, far = false) {
+  const T = far ? ['purpD', 'night', 'night'] : MAB_LEG;
+  limb(ctx, hip, knee, 1.5, 1.1, T); limb(ctx, knee, foot, 1.1, 0.5, T);
+  if (!far) px(ctx, Math.round(knee[0] - 0.5), Math.round(knee[1] - 1.5), 'purpL');
+}
+// the crown of bone spines on her head, tallest in the middle
+function mabCrown(ctx, x, y, w = 3) { [3, 5, 3].forEach((h, i) => { const X = Math.round(x + (i - 1) * w); px(ctx, X, y - h, 'bone', 2, h); px(ctx, X, y - h, 'white', 1, h - 1); px(ctx, X + 1, y - h, 'mist'); }); } // three thick spines, the middle one tallest
+function mabFangs(ctx, x, y, open) { for (const dx of [-2, 2]) { const o = open ? Math.sign(dx) : 0; px(ctx, x + dx + o, y, 'white', 1, open ? 4 : 3); px(ctx, x + dx + o, y + (open ? 3 : 2), 'bone'); } }
+// the legs from above, splayed round her like a spider's: each pair at its
+// own angle from her body (the front pair reaching ahead, the rear pair back),
+// the knee raised high, the foot out on the ground (the ground foreshortened
+// to 0.6 of its depth seen from above); `away` turns the layout round for the back view
+const MAB_ANG = [40, 12, -15, -42].map((d) => d * Math.PI / 180);
+function mabLegsTop(ctx, cx, cy, { step = 0, rear = 0, lunge = 0, away = false } = {}) {
+  MAB_ANG.forEach((a0, i) => { for (const sx of [-1, 1]) {
+    const lifted = step && (i + (sx > 0 ? 1 : 0) + step) % 2, a = a0 + (step ? (lifted ? 0.07 : -0.07) : 0), lift = lifted ? 3 : 0;
+    const up = i === 0 ? rear * 8 : 0, fwd = i === 0 ? lunge : 0, dy = away ? -1 : 1;
+    const at = (R, z) => [cx + sx * R * Math.cos(a), cy + dy * (R * 0.6 * Math.sin(a) + fwd) - z];
+    mabLeg(ctx, at(6, 0), at(16 - up * 0.4, 10 + up + lift), at(26 - up, lift + up * 1.4));
+  } });
+}
+function mabFront({ step = 0, rear = 0, open = false, lunge = 0, eye = null } = {}) {
+  const [c, ctx] = frame(96, 72), cx = 48, r = Math.round(rear * 2), M = eye ? { ...MAB_MAP, E: eye } : MAB_MAP;
+  blob(ctx, cx, 32 - r, 13, 10, CHIT, 'purpL'); grid(ctx, MAB_SKULL, MAB_MAP, cx - 3.5, 28 - r); // the abdomen behind, its skull
+  mabLegsTop(ctx, cx, 43 - r, { step, rear, lunge });
+  blob(ctx, cx, 43 - r + lunge * 0.5, 8, 6, CHIT, 'purpL'); // her body
+  const hy = 49 - r + lunge;
+  blob(ctx, cx, hy, 6, 4.5, CHIT);
+  mabCrown(ctx, cx - 1, hy - 3);
+  grid(ctx, rows('mab eyes', ['E.WE.WE.E', '..EE.EE..']), M, cx - 4.5, hy - 1); // two great eyes catching the light, two small beside them
+  mabFangs(ctx, cx - 0.5, hy + 3, open);
+  outline(c, 'ink');
+  return c;
+}
+function mabBack({ step = 0, rear = 0, open = false, lunge = 0 } = {}) {
+  const [c, ctx] = frame(96, 72), cx = 48, r = Math.round(rear * 2);
+  mabLegsTop(ctx, cx, 43 - r, { step, rear, lunge, away: true }); // the front pair now reach away
+  const hy = 37 - r - lunge;
+  blob(ctx, cx, hy, 5.5, 4, CHIT); mabCrown(ctx, cx - 1, hy - 2); // her head, beyond
+  blob(ctx, cx, 43 - r - lunge * 0.5, 8, 6, CHIT, 'purpL');
+  blob(ctx, cx, 50, 13, 9, CHIT, 'purpL'); grid(ctx, [...MAB_SKULL].reverse(), MAB_MAP, cx - 3.5, 46); // the abdomen, nearest, its skull seen the other way up
+  if (open) { px(ctx, cx - 3, hy + 3, 'white'); px(ctx, cx + 2, hy + 3, 'white'); }
+  outline(c, 'ink');
+  return c;
+}
+function mabSide({ step = 0, rear = 0, open = false, lunge = 0, eye = null } = {}) {
+  const [c, ctx] = frame(96, 72), r = Math.round(rear * 2), M = eye ? { ...MAB_MAP, E: eye } : MAB_MAP;
+  const KX = [68, 60, 47, 38], FX = [80, 69, 40, 24], KY = [32, 30, 30, 32]; // knees high, feet spread fore and aft
+  const leg = (i, far) => { const lift = step && (i + (far ? 1 : 0) + step) % 2 ? 3 : 0, up = i === 0 ? rear * 9 : 0, o = far ? -3 : 0;
+    mabLeg(ctx, [56 - i * 2 + lunge, 44 - r], [KX[i] + o + lunge * (i === 0 ? 1 : 0), KY[i] - up - lift + o], [FX[i] + o + (i === 0 ? lunge * 2 : 0), 54 - up * 1.4 - lift + (far ? -2 : 0)], far); };
+  for (let i = 3; i >= 0; i--) leg(i, true); // the far legs, behind her, in shadow
+  blob(ctx, 35, 39 - r, 14, 10, CHIT, 'purpL'); grid(ctx, MAB_SKULL, MAB_MAP, 31, 31 - r); // the abdomen, the skull on its back
+  blob(ctx, 53 + lunge * 0.5, 43 - r, 8, 6, CHIT, 'purpL');
+  const hx = 61 + lunge, hy = 44 - r;
+  blob(ctx, hx, hy, 5, 4.5, CHIT); mabCrown(ctx, hx - 2, hy - 3, 2.5);
+  grid(ctx, rows('mab side eyes', ['WE.', 'EE.', '.EE']), M, hx + 2, hy - 2);
+  for (const dx of [0, 2]) px(ctx, hx + 3 + dx + (open ? dx / 2 : 0), hy + 3, 'white', 1, open ? 4 : 3); // the fangs
+  for (let i = 3; i >= 0; i--) leg(i, false);
+  outline(c, 'ink');
+  return c;
+}
+const MAB_POSES = { idle: [{}, { rear: 0.5 }], walk: [{ step: 1 }, { step: 2 }, { step: 1 }, { step: 2 }], windup: [{ rear: 1, open: true }, { rear: 1.5, open: true }], attack: [{ lunge: 3, open: true }, {}], hurt: [{ eye: 'white' }] };
+export const buildMab = (views = VIEWS) => { const out = {}; const fn = { down: mabFront, side: mabSide, up: mabBack }; for (const v of views) { out[v] = {}; for (const [a, ps] of Object.entries(MAB_POSES)) out[v][a] = ps.map((p) => fn[v](p)); } return out; };
