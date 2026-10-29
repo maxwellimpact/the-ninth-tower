@@ -73,15 +73,21 @@ export class Title extends Phaser.Scene {
     // Dungeon Lab that used to sit here still opens via #dungeon or ?demo=boss.)
     // a framed button in the corner (the save menu adds a full-size one too),
     // kept clear of a landscape notch / rounded corner
-    const lab = this.add.bitmapText(W - 34, 38, 'fontGold', 'THE VAST').setOrigin(1, 0).setDepth(1);
-    const bx = lab.x - lab.width - 8, bw = lab.width + 16;
-    const lg = this.add.graphics();
-    const drawLab = (hot) => lg.clear().fillStyle(0x1a1423).fillRect(bx - 1, 31, bw + 2, 22).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(bx, 32, bw, 20).fillStyle(0x2b2140).fillRect(bx + 1, 33, bw - 2, 18);
-    drawLab(false);
-    const lz = this.add.zone(bx, 31, bw, 22).setOrigin(0).setInteractive({ useHandCursor: true });
-    lz.on('pointerover', () => drawLab(true)); lz.on('pointerout', () => drawLab(false));
-    lz.on('pointerdown', () => this.startDemo('vast'));
-    this.labLink = [lab, lg, lz];
+    // and the Proving Field beside it: any foe or boss to fight, alone on a small field (never saved)
+    this.labLink = [];
+    let right = W - 34;
+    for (const [label, go] of [['THE VAST', () => this.startDemo('vast')], ['PROVING FIELD', () => this.startDemo('map', 'battlefield')]]) {
+      const t = this.add.bitmapText(right, 38, 'fontGold', label).setOrigin(1, 0).setDepth(1);
+      const bx = t.x - t.width - 8, bw = t.width + 16;
+      const lg = this.add.graphics();
+      const draw = (hot) => lg.clear().fillStyle(0x1a1423).fillRect(bx - 1, 31, bw + 2, 22).fillStyle(hot ? 0xf2c14e : 0x45405e).fillRect(bx, 32, bw, 20).fillStyle(0x2b2140).fillRect(bx + 1, 33, bw - 2, 18);
+      draw(false);
+      const lz = this.add.zone(bx, 31, bw, 22).setOrigin(0).setInteractive({ useHandCursor: true });
+      lz.on('pointerover', () => draw(true)); lz.on('pointerout', () => draw(false));
+      lz.on('pointerdown', go);
+      this.labLink.push(t, lg, lz);
+      right = bx - 6;
+    }
     this.showLabLink(!save); // the save menu has its own full-size button
     if (location.hash === '#dungeon') this.time.delayedCall(300, () => this.enterLab());
   }
@@ -197,11 +203,13 @@ export class Title extends Phaser.Scene {
       this.showLabLink(true);
       this.heroSelect();
     }));
-    // the Colosseum (part of the main game: this party, its gains kept) and the Vast (never saved), side by side
-    const rw = Math.min(250, W - 16), hw = (rw - 6) / 2;
+    // the Colosseum (part of the main game: this party, its gains kept), the
+    // Proving Field (any foe to fight, never saved) and the Vast, side by side
+    const rw = Math.min(342, W - 16), hw = (rw - 12) / 3;
     const best = worldOf(save, 'colosseum')?.flags?.arenaBest;
-    objs.push(...this.button(W / 2 - hw / 2 - 3, 144, hw, 'THE COLOSSEUM', best ? `ENDLESS WAVES - BEST ${best}` : 'ENDLESS WAVES', () => this.enterShared('colosseum')));
-    objs.push(...this.button(W / 2 + hw / 2 + 3, 144, hw, 'THE VAST', '40X WORLD - OWN SAVE', () => this.startDemo('vast')));
+    objs.push(...this.button(W / 2 - hw - 6, 144, hw, 'THE COLOSSEUM', best ? `ENDLESS WAVES - BEST ${best}` : 'ENDLESS WAVES', () => this.enterShared('colosseum')));
+    objs.push(...this.button(W / 2, 144, hw, 'PROVING FIELD', 'FIGHT ANY FOE - NO SAVE', () => this.startDemo('map', 'battlefield')));
+    objs.push(...this.button(W / 2 + hw + 6, 144, hw, 'THE VAST', '40X WORLD - OWN SAVE', () => this.startDemo('vast')));
     // maps with saves of their own: a corner button to their list
     const own = ownMapIds().filter((id) => loadState(ownSaveKey(id)));
     if (own.length) objs.push(...this.button(Math.max(50, W / 2 - bw / 2 - 52), 31, 92, 'SAVED MAPS', `${own.length} MAP${own.length > 1 ? 'S' : ''}`, () => { for (const o of objs) o.destroy(); this.mapsMenu(save); }));
