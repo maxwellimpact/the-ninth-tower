@@ -19,6 +19,7 @@ import { fitString } from './textfit.js';
 import HERO_LIST from '../data/heroes.json';
 import { newSkillState } from '../game/state.js';
 import { Colosseum } from '../game/colosseum.js';
+import { Battlefield } from '../game/battlefield.js';
 import { saveState, switchWorld, ownSaveKey, HOME, gainItems, learnDiscipline, respecHero, respecCost, switchCost, heroInfo, setStatMods, addMats, addPotions, CRAFT, xpFor, xpToNext, regionBand, OUTER_REGIONS, itemName, gemName } from '../game/state.js';
 import { audio } from '../audio/synth.js';
 import { music, themeFor } from '../audio/music.js';
@@ -164,7 +165,7 @@ export class Game extends Phaser.Scene {
     useMap(st.map || null); // Aldermere, or a test map (src/data/maps): W and QDATA below then mean its content
     st.stats ??= { kills: 0, levelUps: [] };
     this.events.off('postupdate', this.cullOffscreen, this); this.events.on('postupdate', this.cullOffscreen, this); // see cullOffscreen
-    this.travelling = false; this.colosseum = null; this.crowdKills = 0;
+    this.travelling = false; this.colosseum = null; this.battlefield = null; this.crowdKills = 0;
     this.barkObj = null; this.hpBars = null; this.arenaGate = null; this.golem = null; this.eliteRings = null; this.harvestBar = null; // fresh on every (re)start
     st.gems ??= {}; st.sockets ??= {};
     for (const hs of Object.values(st.heroes)) { hs.equip.trinket1 ??= null; hs.equip.trinket2 ??= null; }
@@ -294,6 +295,7 @@ export class Game extends Phaser.Scene {
       if (!st.lab && !st.demo && !MAP) this.time.delayedCall(2200, () => this.bark(this.leader, BARKS.start[this.leader.def.id])); // the lab has its own hints, and the opening lines are about Aldermere
       if (st.demo) this.startDemo(st.demo);
       if (MAP?.arena) { this.colosseum = new Colosseum(this, MAP.arena, MAP.at); this.colosseum.start(); } // the Colosseum's waves
+      if (MAP?.battlefield) this.battlefield = new Battlefield(this, MAP.battlefield, MAP.at); // the Proving Field's muster board
     });
 
     window.__game = this.game;
@@ -1114,6 +1116,7 @@ export class Game extends Phaser.Scene {
       this.nav.block(s.x, s.y);
       const read = () => { // (the Colosseum's board of champions has a card of its own)
         if (s.board && this.colosseum) { this.scene.pause(); this.events.emit('board', this.colosseum.board(), () => this.scene.resume()); return; }
+        if (s.muster && this.battlefield) { this.battlefield.menu(); return; } // the Proving Field's: a list of foes to fight
         this.events.emit('dialogue', this.quests.linesOf(s).map((text) => ({ who: 'SIGN', text })));
       };
       this.addInteractable({ x, y, reach: 22, h: 16, kind: 'sign', vis: () => e.objs?.[0], interact: read });
@@ -2503,6 +2506,7 @@ export class Game extends Phaser.Scene {
 
   onBossKilled(b) {
     const B = b.bossDef || this.bossDefs()[0];
+    if (B.sentAway) { this.golem = null; this.events.emit('boss', null); this.sealArena(false); return; } // cleared off the Proving Field from its board: gone, unbeaten
     this.flags[B.flag] = true;
     if (b.level >= 10) { const sm = b.isShadow ? 1 : 2; addMats(this.state, { starmetal: sm }); this.time.delayedCall(1800, () => this.floatText(b.x, b.y - 50, `+${sm} STARMETAL`, 'fontGold')); } // Starmetal from the lieutenants (C6)
     audio.sfx('shatter'); audio.sfx('roar');

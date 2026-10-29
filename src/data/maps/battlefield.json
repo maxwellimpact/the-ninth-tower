@@ -1,0 +1,72 @@
+{
+ "name": "THE PROVING FIELD",
+ "sub": "A TEST MAP: PICK A FOE AT THE MUSTER BOARD. NOTHING HERE IS SAVED",
+ "note": "A small walled meadow for fighting any foe on its own (game/battlefield.js): tap the muster board by the path for a list of every foe and boss, the party's level and CLEAR THE FIELD; the campfire heals. Foes appear at `battlefield.spot`, and bosses fight inside `battlefield.arena` (x0, y0, x1, y1). Stamped at `at` (Highmeadow: its grass, music and level band). Coordinates below are the map's own (0,0 = top-left).",
+ "at": [
+  98,
+  20
+ ],
+ "start": [
+  6,
+  13
+ ],
+ "rows": [
+  "TbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTb",
+  "bTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbT",
+  "Tb....................................Tb",
+  "bT......o......t..............f.......bT",
+  "Tb.f..................................Tb",
+  "bT..................................o.bT",
+  "Tb....................................Tb",
+  "bT........t...........................bT",
+  "Tb....................................Tb",
+  "bT....................................bT",
+  "Tb....................................Tb",
+  "bT.F..................................bT",
+  "Tb...................................fTb",
+  "bT====@======.........................bT",
+  "Tb....................................Tb",
+  "bT....................................bT",
+  "Tb.o..................................Tb",
+  "bT....................................bT",
+  "Tb........f...........................Tb",
+  "bT....................................bT",
+  "Tb..t...............................t.Tb",
+  "bT....................................bT",
+  "Tb.......f............o........f......Tb",
+  "bT....................................bT",
+  "TbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTb",
+  "bTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbTbT"
+ ],
+ "battlefield": {
+  "spot": [
+   25,
+   13
+  ],
+  "arena": [
+   13,
+   3,
+   37,
+   22
+  ]
+ },
+ "content": {
+  "campfires": [
+   {
+    "x": 3,
+    "y": 11,
+    "name": "THE PROVING FIELD"
+   }
+  ],
+  "signs": [
+   {
+    "x": 8,
+    "y": 12,
+    "muster": true,
+    "lines": [
+     "THE MUSTER BOARD. PICK A FOE TO FIGHT."
+    ]
+   }
+  ]
+ }
+}
