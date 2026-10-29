@@ -1226,6 +1226,16 @@ export function freezeHero(h, t = 1.2) {
 }
 
 const COWARDS = new Set(['goblin', 'rats', 'hexling']); // small fry that can break and run
+// the Cinder Drake's moves (Enemy.aiDrake): its rotation, the breath's timing
+// (s: the throat glows for `charge`, the fire pours until `pour` and its marks
+// fade over `fade`; `sweep`: radians either side of its aim; `reach`: px)
+// and the flight's (s, and its height in px)
+const DRAKE_ROTATION = ['breath', 'fly'];
+const DRAKE_GAP = 2.5; // s after one big move ends before the next (it walks and bites between)
+const DRAKE_BREATH = { charge: 0.9, pour: 1.85, fade: 0.5, sweep: 0.48, reach: 96 }; // sweep: radians either side of its aim; reach: px
+// the jet's bands, outside in: [colour, width (of the whole), how far down the jet (0-1)]: a red rim, orange, gold, a white-hot core by the jaws
+const DRAKE_FIRE_BANDS = [[0xc0394b, 1, 1], [0xff7b2e, 0.72, 0.96], [0xffd04a, 0.45, 0.78], [0xfff0a0, 0.2, 0.45]];
+const DRAKE_FLIGHT = { crouch: 0.8, climb: 0.6, glide: 0.9, hover: 0.7, dive: 0.22, height: 46 };
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
 const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'snagtooth', pitchamp: 'pitchamp', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann', malgrim: 'malgrim' };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror', 'malgrim']);
@@ -1320,6 +1330,7 @@ export class Enemy extends Unit {
 
   play(anim) {
     const key = this.animKey(anim);
+    if (this.s.paced) this.sprite.anims.timeScale = anim === 'walk' ? this.pace || 1 : 1; // its walk is timed to its pace: hurrying, its legs go faster (and its feet stay planted)
     if (this.anim !== key) {
       this.anim = key;
       if (this.puppet && anim === 'windup') {
@@ -1333,6 +1344,8 @@ export class Enemy extends Unit {
   stun(t) {
     if (!this.alive || !this.sprite?.active) return; // the hit that stuns can be the one that killed it (a crab would try to flip a gone sprite)
     if (this.s.ai === 'shell') { this.flippedT = 3; this.anim = ''; this.sprite.play(this.animKey('flipped')); this.anim = this.animKey('flipped'); this.clearZone(); this.state = 'chase'; this.scene.floatText(this.x, this.y - 22, 'FLIPPED!', 'fontGold'); return; }
+    if (this.flight) return; // up in the air: nothing stuns it there
+    this.endBreath(); // the fire stops
     this.stunT = Math.max(this.stunT, t); this.state = 'chase'; this.clearZone(); this.scene.floatText(this.x, this.y - 22, 'STUN', 'fontPlain');
   }
 
@@ -1623,7 +1636,7 @@ export class Enemy extends Unit {
     });
   }
 
-  destroy() { this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
+  destroy() { this.endBreath?.(); this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
 
   die(src) {
     this.alive = false;
@@ -1649,6 +1662,8 @@ export class Enemy extends Unit {
   sync(dt) {
     super.sync(dt);
     if (this.s.flying) this.sprite.y = Math.round(this.y) - 8 - Math.sin(Date.now() / 300 + this.id) * 2;
+    if (this.alt) { this.sprite.y -= Math.round(this.alt); this.sprite.setDepth(this.y + this.alt + 20); } // up in the air (the drake's flight): drawn above what's below it, its shadow left on the ground
+    if (this.alt !== this.shadowAlt) { this.shadowAlt = this.alt; this.shadow.setScale(1 - Math.min(0.4, (this.alt || 0) / 115)); }
     if (this.wardRing) this.wardRing.setPosition(Math.round(this.x), Math.round(this.y) - 8).setDepth(this.y + 2);
   }
 
@@ -2002,6 +2017,7 @@ export class Enemy extends Unit {
     this.face(nx, ny);
     const ox = this.x, oy = this.y;
     this.moveBy(nx * sp * dt, ny * sp * dt);
+    this.pace = sp / (this.s.paced || this.s.speed); // (paced: the speed its walk's frames are drawn for)
     this.play('walk');
     // barely moving for a moment while trying to: sidestep and find a new route
     const want = sp * dt, got = Math.hypot(this.x - ox, this.y - oy);
@@ -2377,71 +2393,208 @@ export class Enemy extends Unit {
     for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - x, h.y - y) <= r + h.r) h.damage(dmg, { x, y });
   }
 
-  // Cinder Drake: sweeps fire breath across a marked arc, and takes off to dive
-  // on a marked spot. Bites when you're close.
+  // Cinder Drake: a rotation of its big moves, a few seconds apart - fire
+  // breath, then flight, and round again - with bites in between when
+  // you're close. The breath: its throat glows over a marked fan, then a
+  // stream of fire pours from its jaws and sweeps across the fan, burning each
+  // marked line as the fire reaches it. The flight: it crouches with its
+  // wings up (the tell), springs into the air and climbs, glides over the
+  // spot it has marked, hangs there a moment and dives on it. Up there it's
+  // out of reach, but always in sight, its shadow on the ground below.
   aiDrake(dt) {
-    const sc = this.scene, t = this.target;
-    this.breathT = (this.breathT ?? 4) - dt;
-    this.diveT = (this.diveT ?? 9) - dt;
-    if (this.dive) {
-      const D = this.dive;
-      D.t += dt;
-      if (D.t < 0.5) { this.play('fly'); this.sprite.y -= D.t * 40; return true; }
-      if (D.t < 1.6) { // aloft: out of reach, the shadow slides to the mark
-        this.sprite.setAlpha(0.15); this.invulnT = 1;
-        const p = Math.min(1, (D.t - 0.5) / 1.1);
-        this.x = D.from.x + (D.to.x - D.from.x) * p; this.y = D.from.y + (D.to.y - D.from.y) * p;
-        return true;
+    if (this.flight) return this.drakeFlight(dt);
+    if (this.breath) return this.drakeBreath(dt);
+    const t = this.target;
+    this.moveT = (this.moveT ?? 2.5) - dt;
+    if (!t || this.state !== 'chase' || !this.onScreen() || this.moveT > 0) return false;
+    const n = this.moveN || 0, next = DRAKE_ROTATION[n % DRAKE_ROTATION.length];
+    if (next === 'breath' && Math.hypot(t.x - this.x, t.y - this.y) > 105) {
+      if (this.moveT < -3) this.moveN = n + DRAKE_ROTATION.slice(n % DRAKE_ROTATION.length).indexOf('fly'); // kept out of range a while: it takes wing instead
+      return false; // walk into range first
+    }
+    this.moveN = n + 1; this.moveT = DRAKE_GAP;
+    if (next === 'fly') this.beginFlight(); else this.beginBreath(t);
+    return true;
+  }
+
+  // where its jaws are, as an offset from its feet, in the breathing pose (gfx/bigcast.js drakeSide/drakeFB)
+  drakeMouth() {
+    if (this.view === 'side') return { x: this.flip ? -33 : 33, y: -28 };
+    return this.view === 'up' ? { x: 0, y: -36 } : { x: 0, y: -23 };
+  }
+
+  beginBreath(t) {
+    const sc = this.scene, base = Math.atan2(t.y - this.y, t.x - this.x), dir = Math.random() < 0.5 ? 1 : -1;
+    this.clearZone();
+    this.face(t.x - this.x, t.y - this.y);
+    // the ground it will burn, marked as one fan; the party's AI reads it as
+    // circles along each line of the sweep (sc.dangers, not drawn), each gone
+    // as the fire passes
+    const cols = [];
+    for (let k = 0; k < 5; k++) {
+      const a = base + (k - 2) * DRAKE_BREATH.sweep / 2 * dir, at = DRAKE_BREATH.charge + 0.1 + (k * (DRAKE_BREATH.pour - DRAKE_BREATH.charge)) / 4, zones = []; // just after the jet crosses this line
+      for (const dd of [34, 62, 90]) { const z = { x: this.x + Math.cos(a) * dd, y: this.y + Math.sin(a) * dd * 0.8, r: 14, until: at }; zones.push(z); sc.dangers.push(z); }
+      cols.push({ at, zones, done: false });
+    }
+    this.breath = { t: 0, base, dir, cols, ox: this.x, oy: this.y, hit: new Set(), tongues: [], g: sc.add.graphics(), fan: sc.add.graphics().setDepth(-3), roar: false };
+    this.anim = ''; this.play('charge');
+    sc.floatText(this.x, this.y - 50, 'ITS THROAT GLOWS...', 'fontPlain', 0xffa060);
+  }
+
+  // the breath's aim at time t (it sweeps from one edge of the fan to the other while it pours)
+  breathAim(B, t) {
+    const D = DRAKE_BREATH, k = Phaser.Math.Clamp((t - D.charge) / (D.pour - D.charge), 0, 1);
+    return B.base + (k - 0.5) * D.sweep * 2 * B.dir;
+  }
+
+  drakeBreath(dt) {
+    const sc = this.scene, B = this.breath, D = DRAKE_BREATH;
+    B.t += dt;
+    this.drawBreathFan(B);
+    if (B.t < D.charge) { // drawing breath: sparks curl from its nostrils (effects, over the glowing throat in its frames)
+      this.play('charge');
+      if (Math.random() < dt * 14) { const m = this.drakeMouth(); sc.fx.burst('ember', this.x + m.x * 0.85, this.y + m.y - 3, 1); }
+      return true;
+    }
+    this.play('breathe');
+    if (!B.roar) { B.roar = true; audio.sfx('fireCast', { pitch: 0.5 }); sc.shake(200, 0.004); }
+    const g = B.g.clear().setDepth(this.view === 'up' ? this.y - 1 : 100000 - 30);
+    if (B.t < D.pour) {
+      // the jet: a tapered cone of fire from its jaws straight down to the
+      // ground along its aim, ragged at the edges and flickering, banded from
+      // a white-hot core at the jaws through gold and orange to a red rim
+      const aim = this.breathAim(B, B.t), m = this.drakeMouth(), L = D.reach * Math.min(1, (B.t - D.charge) / 0.12); // it shoots out, then holds its length
+      const M = { x: this.x + m.x, y: this.y + m.y }, E = { x: this.x + Math.cos(aim) * L, y: this.y + Math.sin(aim) * L * 0.8 };
+      const len = Math.hypot(E.x - M.x, E.y - M.y) || 1, ux = (E.x - M.x) / len, uy = (E.y - M.y) / len;
+      for (const [col, wk, reach] of DRAKE_FIRE_BANDS) {
+        const pts = [];
+        for (const side of [1, -1]) for (let i = 0; i <= 12; i++) {
+          const s = ((side > 0 ? i : 12 - i) / 12) * reach;
+          const rag = 0.8 + 0.2 * Math.sin(s * 19 + B.t * 46 + side * 2.3) + 0.12 * Math.sin(s * 37 - B.t * 63 + side);
+          const w = (1.5 + 10 * s) * wk * rag * side;
+          pts.push({ x: Math.round(M.x + (E.x - M.x) * s - uy * w), y: Math.round(M.y + (E.y - M.y) * s + ux * w) });
+        }
+        g.fillStyle(col, 1).fillPoints(pts, true);
       }
-      // the dive
-      this.sprite.setAlpha(1); this.dive = null; this.invulnT = 0;
+      // flame tongues riding the jet: each flies straight on the line it left on
+      for (let i = 0; i < 3; i++) { const s = 0.25 + Math.random() * 0.75, off = (Math.random() - 0.5) * (1.5 + 10 * s) * 1.2; this.drakeTongue(M.x + (E.x - M.x) * s - uy * off, M.y + (E.y - M.y) * s + ux * off, ux, uy, 110 + Math.random() * 40, s); }
+      // whoever the jet touches burns (once a breath): along the ground under it, as wide as it is there
+      if (L >= D.reach) for (const h of sc.party) {
+        if (!h.alive || h.downed || h.invuln > 0 || B.hit.has(h)) continue;
+        const dx = h.x - this.x, dy = (h.y - this.y) / 0.8, along = dx * Math.cos(aim) + dy * Math.sin(aim), across = Math.abs(-dx * Math.sin(aim) + dy * Math.cos(aim));
+        if (along > 10 && along < D.reach + 6 && across < 5 + along * 0.1 + h.r) { B.hit.add(h); h.damage(this.s.dmg * 1.15 * sc.difficulty.dmg, this); h.addBurn(this.s.dmg * 0.12, 3); sc.fx.burst('ember', h.x, h.y - 8, 8); }
+      }
+      if (Math.random() < dt * 16) sc.fx.burst('ember', E.x, E.y - 2, 2); // sparks where it strikes the ground
+    }
+    for (const p of B.tongues) { p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+    B.tongues = B.tongues.filter((p) => p.life < p.dur);
+    for (const p of B.tongues) { // a pointed flame, its round head leading and its tail flickering behind, cooling from gold to red as it goes
+      const f = p.life / p.dur, len = p.len * (1 - f * 0.4), w = p.w * (1 - f * 0.5), wave = Math.sin(p.life * 30 + p.w * 7) * 1.5;
+      const [outer, inner] = f < 0.45 ? [0xff7b2e, 0xfff0a0] : f < 0.8 ? [0xc0394b, 0xffd04a] : [0x7a2238, 0xc0394b];
+      for (const [col, k] of [[outer, 1], [inner, 0.55]]) {
+        const l = len * k, ww = Math.max(1, w * k), P = (a, b) => ({ x: Math.round(p.x + p.ux * a - p.uy * b), y: Math.round(p.y + p.uy * a + p.ux * b) }); // a along its line, b across
+        g.fillStyle(col, f > 0.8 ? 0.75 : 1).fillPoints([P(ww, 0), P(ww * 0.6, ww * 0.8), P(0, ww), P(-l * 0.5, ww * 0.5 + wave * 0.5), P(-l, wave), P(-l * 0.5, -ww * 0.5 + wave * 0.5), P(0, -ww), P(ww * 0.6, -ww * 0.8)], true);
+      }
+    }
+    for (const c of B.cols) if (!c.done && B.t >= c.at) { c.done = true; sc.dangers = sc.dangers.filter((z) => !c.zones.includes(z)); } // the fire is past this line
+    if (B.t >= D.pour + D.fade) { this.endBreath(); this.state = 'recover'; this.t = 0; }
+    return true;
+  }
+
+  // the fan on the ground: its edge marked while the throat glows, filling
+  // out from the jaws as the breath is drawn; then scorched behind the sweep
+  // as the fire crosses it, and fading once the fire is out
+  drawBreathFan(B) {
+    const D = DRAKE_BREATH, g = B.fan.clear(), a0 = B.base - D.sweep * B.dir - 0.1 * B.dir, a1 = B.base + D.sweep * B.dir + 0.1 * B.dir;
+    const fade = B.t > D.pour ? Math.max(0, 1 - (B.t - D.pour) / D.fade) : 1;
+    const wedge = (from, to, r0, r1) => {
+      const pts = [], n = 14;
+      for (let i = 0; i <= n; i++) { const a = from + (to - from) * (i / n); pts.push({ x: B.ox + Math.cos(a) * r1, y: B.oy + Math.sin(a) * r1 * 0.8 }); }
+      for (let i = n; i >= 0; i--) { const a = from + (to - from) * (i / n); pts.push({ x: B.ox + Math.cos(a) * r0, y: B.oy + Math.sin(a) * r0 * 0.8 }); }
+      return pts;
+    };
+    const R = D.reach + 6, r0 = 12, p = Math.min(1, B.t / D.charge);
+    g.fillStyle(0xc0394b, (0.12 + 0.16 * p) * fade).fillPoints(wedge(a0, a1, r0, r0 + (R - r0) * p), true);
+    g.lineStyle(1, 0xec6a5e, 0.9 * fade).strokePoints(wedge(a0, a1, r0, R), true);
+    if (B.t > D.charge) g.fillStyle(0x3a2030, 0.35 * fade).fillPoints(wedge(a0, this.breathAim(B, Math.min(B.t, D.pour)), r0, R), true); // scorched where it has passed
+  }
+
+  // one flame tongue for the breath, flying straight from (x, y) along (ux, uy) at `sp` px/s; `big` 0-1, how far down the jet it starts
+  drakeTongue(x, y, ux, uy, sp, big) {
+    this.breath.tongues.push({ x, y, ux, uy, vx: ux * sp, vy: uy * sp, life: 0, dur: 0.12 + Math.random() * 0.1, len: 5 + big * 8 + Math.random() * 4, w: 1.5 + big * 2.5 });
+  }
+
+  // the breath's marks and fire gone (finished, or cut short: stunned, killed, sent away)
+  endBreath() {
+    const B = this.breath;
+    if (!B) return;
+    for (const c of B.cols) this.scene.dangers = this.scene.dangers.filter((z) => !c.zones.includes(z));
+    B.g.destroy(); B.fan.destroy();
+    this.breath = null;
+  }
+
+  beginFlight() {
+    this.clearZone(); // (never leave an old marker behind)
+    this.flight = { t: 0 };
+    this.anim = ''; this.play('rear');
+    this.scene.floatText(this.x, this.y - 50, 'IT SPREADS ITS WINGS...', 'fontPlain', 0xffa060);
+  }
+
+  drakeFlight(dt) {
+    const sc = this.scene, F = this.flight, T = DRAKE_FLIGHT, H = T.height;
+    F.t += dt;
+    const t = F.t;
+    if (t < T.crouch) { this.play('rear'); this.sprite.anims.timeScale = 1; return true; } // the tell: crouched, wings up
+    if (!F.up) { // it springs into the air
+      F.up = true;
+      audio.sfx('dash', { pitch: 0.6 }); sc.shake(120, 0.004);
+      for (let i = -2; i <= 2; i++) sc.fx.dust(this.x + i * 7, this.y + 2);
+      sc.floatText(this.x, this.y - 50, 'IT TAKES WING!', 'fontPlain', 0xffa060);
+    }
+    this.play('fly');
+    const climbEnd = T.crouch + T.climb, glideEnd = climbEnd + T.glide, hoverEnd = glideEnd + T.hover, diveEnd = hoverEnd + T.dive;
+    if (t < climbEnd) { // climbing, wings beating hard
+      const p = (t - T.crouch) / T.climb;
+      this.alt = H * (1 - (1 - p) * (1 - p)); this.sprite.anims.timeScale = 1.4;
+    } else if (t < hoverEnd) {
+      if (!F.to) { // aloft: it marks where it will come down - on its target as it is now
+        const v = this.target?.alive && !this.target.downed ? this.target : sc.nearestHero(this, Infinity) || this;
+        F.from = { x: this.x, y: this.y }; F.to = { x: v.x, y: v.y };
+        this.zone = { x: F.to.x, y: F.to.y, r: 44, until: diveEnd - t };
+        sc.dangers.push(this.zone);
+        this.zoneGfx = sc.fx.telegraph(F.to.x, F.to.y, 44, diveEnd - t);
+      }
+      if (t < glideEnd) { // gliding over to the mark
+        const p = (t - climbEnd) / T.glide, e = p * p * (3 - 2 * p);
+        this.x = F.from.x + (F.to.x - F.from.x) * e; this.y = F.from.y + (F.to.y - F.from.y) * e;
+        this.face(F.to.x - F.from.x, F.to.y - F.from.y);
+        this.sprite.anims.timeScale = 0.8;
+      } else { // hanging over it a moment, beating to hold its place
+        this.x = F.to.x; this.y = F.to.y;
+        this.sprite.anims.timeScale = 1.6;
+      }
+      this.alt = H + Math.sin(t * 6) * 2;
+    } else if (t < diveEnd) { // the dive
+      const p = (t - hoverEnd) / T.dive;
+      this.alt = H * (1 - p * p); this.sprite.anims.timeScale = 0;
+    } else { // it lands on the mark
+      this.endFlight();
       this.clearZone();
       sc.fx.slam(this.x, this.y, 44); sc.shake(400, 0.012); audio.sfx('bash');
+      for (let i = 0; i < 6; i++) sc.fx.dust(this.x + Math.cos(i) * 20, this.y + Math.sin(i) * 12);
       for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - this.x, h.y - this.y) <= 44 + h.r) { h.damage(this.s.dmg * 1.4 * sc.difficulty.dmg, this); h.knock(h.x - this.x, h.y - this.y, 120); }
       this.state = 'recover'; this.t = 0;
       return true;
     }
-    if (this.breath) {
-      const B = this.breath;
-      B.t += dt;
-      this.play('windup');
-      if (B.t >= 0.8 && !B.done) {
-        B.done = true;
-        audio.sfx('fireCast', { pitch: 0.6 }); sc.shake(250, 0.006);
-        for (const z of B.zones) { sc.fx.burst('ember', z.x, z.y - 4, 10); for (const h of sc.party) if (h.alive && !h.downed && h.invuln <= 0 && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) { h.damage(this.s.dmg * 0.9 * sc.difficulty.dmg, this); h.addBurn(this.s.dmg * 0.1, 3); } }
-      }
-      if (B.t >= 1.1) { for (const g of B.gfx) g.destroy(); sc.dangers = sc.dangers.filter((z) => !B.zones.includes(z)); this.breath = null; this.state = 'recover'; this.t = 0; }
-      return true;
-    }
-    if (!t || this.state !== 'chase' || !this.onScreen()) return false;
-    const d = Math.hypot(t.x - this.x, t.y - this.y);
-    if (this.diveT <= 0 && d > 50) {
-      this.diveT = 10;
-      const to = { x: t.x, y: t.y };
-      this.dive = { t: 0, from: { x: this.x, y: this.y }, to };
-      this.zone = { x: to.x, y: to.y, r: 44, until: 1.6 };
-      sc.dangers.push(this.zone);
-      this.zoneGfx = sc.fx.telegraph(to.x, to.y, 44, 1.6);
-      sc.floatText(this.x, this.y - 50, 'IT TAKES WING!', 'fontPlain', 0xffa060);
-      audio.sfx('dash');
-      return true;
-    }
-    if (this.breathT <= 0 && d < 110) {
-      this.breathT = 6;
-      // a fan of marked circles sweeping out from its jaws toward the target
-      const base = Math.atan2(t.y - this.y, t.x - this.x);
-      this.face(t.x - this.x, t.y - this.y);
-      const zones = [], gfx = [];
-      for (let k = -2; k <= 2; k++) for (const dd of [34, 62, 90]) {
-        const a = base + k * 0.22;
-        const z = { x: this.x + Math.cos(a) * dd, y: this.y + Math.sin(a) * dd * 0.8, r: 13, until: 0.8 };
-        zones.push(z); sc.dangers.push(z); gfx.push(sc.fx.telegraph(z.x, z.y, z.r, 0.8));
-      }
-      this.breath = { t: 0, zones, gfx };
-      sc.floatText(this.x, this.y - 50, 'ITS THROAT GLOWS...', 'fontPlain', 0xffa060);
-      return true;
-    }
-    return false;
+    this.invulnT = this.alt > 12 ? 1 : 0; // up out of reach
+    return true;
+  }
+
+  // back on the ground (landed, or cut short)
+  endFlight() {
+    if (!this.flight) return;
+    this.flight = null; this.alt = 0; this.invulnT = 0;
+    this.sprite.anims.timeScale = 1; this.anim = '';
   }
 
   // A tongue you can see: it whips out from the mouth to the target (~0.12 s),

@@ -892,7 +892,8 @@
  "drake": {
   "name": "CINDER DRAKE",
   "maxHp": 1200,
-  "speed": 38,
+  "speed": 34,
+  "paced": 30,
   "aggro": 140,
   "reach": 34,
   "windup": 0.6,
