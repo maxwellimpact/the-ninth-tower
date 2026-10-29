@@ -1364,3 +1364,117 @@ function mabSide({ step = 0, rear = 0, open = false, lunge = 0, eye = null } = {
 }
 const MAB_POSES = { idle: [{}, { rear: 0.5 }], walk: [{ step: 1 }, { step: 2 }, { step: 1 }, { step: 2 }], windup: [{ rear: 1, open: true }, { rear: 1.5, open: true }], attack: [{ lunge: 3, open: true }, {}], hurt: [{ eye: 'white' }] };
 export const buildMab = (views = VIEWS) => { const out = {}; const fn = { down: mabFront, side: mabSide, up: mabBack }; for (const v of views) { out[v] = {}; for (const [a, ps] of Object.entries(MAB_POSES)) out[v][a] = ps.map((p) => fn[v](p)); } return out; };
+
+// --------------------------------------------------------------- Mother Murk
+// The Mistfen's hag on her toad, as big as she was: a vast Croaker (its moss
+// hide, warts lit on top, the sandy throat that swells, gold eyes up in their
+// bulges with a heavy lid, a mouth from ear to ear) and on its back a Marsh
+// Witchling grown old (the same moss skin, lank black hair, a crooked hat
+// with a bog-green band), hunched in a violet shawl, raising hex-lit hands.
+// 80x72, feet on y 54; a creature's frames for assets.js creatureViews.
+const MURK_MAP = {
+  S: 'mossL', s: 'moss', L: 'mossXL', n: 'mossD', E: 'goldL', m: 'mudD', w: 'bone', h: 'night', H: 'hairBkL',
+  P: 'night', p: 'hexD', K: 'slate', r: 'mud', b: 'bogL',
+  V: 'purp', v: 'purpD', U: 'purpL', D: 'night', d: 'ink', g: 'curseL',
+};
+export const MURK = {
+  head: {
+    down: rows('murk head down', ['hhSLSSSShh', 'hSLSSSSSsh', 'hSnSSSSnsh', 'hSEnSSnEsh', 'hSSSLnSSsh', 'hsSSSLnSsh', 'hsSmmwmssh', 'h.ssSSss.h', 'h..ssss..h']),
+    side: rows('murk head side', ['hhhSLSSS..', 'hhSLSSSSs.', 'hhSSSSSnn.', 'hhSSSSSEn.', 'hhSSSSSSLn', 'hhsSSSSSSn', 'hhsSSSmmw.', 'h.ssSSSs..', 'h...sssS..']),
+    up: rows('murk head up', ['hhHHhhhhhh', 'hHHhhhhhhh', 'hHhhhhhhhh', 'hhhhhhhhhh', 'hhhhhhhhhh', 'hhhhhhhhhh', 'hhhhhhhhhh', 'h.hhhhhh.h', 'h..hhhh..h']),
+  },
+  hat: {
+    down: rows('murk hat down', ['........KPPPp...', '.......KPp..pp..', '.......KPp...p..', '......KPPp......', '......KPPp......', '.....KPPPPp.....', '.....KPrPPp.....', '....KPPPPPPp....', '....bbbbbbbb....', 'KPPPPPPPPPPPPPPp', '.pppppppppppppp.']),
+    side: rows('murk hat side', ['KPPp............', 'K..PPp..........', '....KPp.........', '....KPPp........', '....KPPPp.......', '...KPPPPPp......', '...KPPrPPp......', '..KPPPPPPPp.....', '..bbbbbbbbb.....', 'KPPPPPPPPPPPPp..', '.pppppppppppp...']),
+  },
+  shawl: {
+    down: rows('murk shawl down', ['...vUVVVVVv...', '.vUVVVVVVVVVv.', 'vUVVVVgVVVVVVv', 'vVVVvVVVvVVVVv', 'vVVVDvVvDVVVvv', 'vVVDDDvDDDVVvv', '.vvDDDDDDDvvv.', '.v.dDDDDDd.v..', '...dDDDDDd....']),
+    side: rows('murk shawl side', ['...vUVVVv...', '..vUVVVVVv..', '.vUVVVVVVVv.', '.vVVVVVVVVv.', 'vVVVVVVVVvD.', 'vVVVVVVVvDD.', '.vVVVvvvDDD.', '.v.vv.dDDDd.', '......dDDDd.']),
+    up: rows('murk shawl up', ['...vUVVVVVv...', '.vUVVVVVVVVVv.', 'vUVVVVVVVVVVVv', 'vVVVVVVVVVVVVv', 'vVVVVVVVVVVVvv', '.vVVVVVVVVVvv.', '..vVVVVVVVvv..', '..v.vVVVv.v...', '......vv......']),
+  },
+};
+const TOADT = ['mossL', 'moss', 'mossD'];
+const TOADFAR = ['moss', 'mossD', 'mossD'];
+const BELLY = ['sand', 'dirtL', 'dirt']; // the Croaker's sandy underside, kept below the hide's brightest moss
+const HAGARM = ['purp', 'purpD', 'hexD'];
+const HAGHAND = [[0.6, 1, ['mossXL', 'mossL', 'moss']]];
+const WARTS = [[-0.72, -0.25], [-0.46, -0.55], [-0.22, -0.2], [0.28, -0.5], [0.52, -0.12], [0.78, -0.35], [-0.86, 0.12], [0.86, 0.08], [-0.55, 0.15], [0.4, 0.12], [-0.05, -0.62], [0.12, -0.05]];
+function murkWarts(ctx, cx, cy, rx, ry, skip = () => false) {
+  for (const [nx, ny] of WARTS) { const x = Math.round(cx + nx * rx), y = Math.round(cy + ny * ry); if (skip(x, y)) continue; px(ctx, x, y, nx + ny < 0.2 ? 'mossXL' : 'mossL'); px(ctx, x + 1, y + 1, 'mossD'); } // a bump lit on top, its shadow under
+}
+const MURK_EYE = { n: 'mossD', E: 'goldL', y: 'gold', e: 'ink' };
+function murkEye(ctx, x, y, eye, side = false) { grid(ctx, side ? ['nnn', 'EeE', 'yEy'] : ['nnnn', 'EeeE', 'yEEy'], eye ? { ...MURK_EYE, E: eye, y: eye } : MURK_EYE, x, y); } // a heavy lid over a gold eye, its pupil a slit across
+function murkToes(ctx, x, y, dir = 0) { for (const dx of [-2, 0, 2]) px(ctx, x + dx + dir * (dx + 2) * 0.5, y, 'mossL', 1, 1); }
+// her hex-lit hand
+function hexHand(ctx, x, y) { px(ctx, x - 1, y - 1, 'curse', 3, 3); px(ctx, x, y, 'white'); px(ctx, x - 3, y - 3, 'curseL'); px(ctx, x + 2, y - 4, 'curseL'); px(ctx, x + 3, y, 'curse'); }
+// the hag, hunched on the toad's back: her shawl's top at y, centred on x
+function hagFront(ctx, x, y, raise, back = false) {
+  const R = Math.round(raise * 7);
+  for (const sx of [-1, 1]) { const hand = raise ? [x + sx * 11, y - 3 - R] : [x + sx * 7, y + 10]; limb(ctx, [x + sx * 5, y + 3], hand, 1.6, 1.2, HAGARM, HAGHAND); if (raise) hexHand(ctx, ...hand); }
+  grid(ctx, MURK.shawl[back ? 'up' : 'down'], MURK_MAP, x - 7, y);
+  grid(ctx, MURK.head[back ? 'up' : 'down'], MURK_MAP, x - 5, y - 6);
+  grid(ctx, MURK.hat.down, MURK_MAP, x - 8, y - 15, back);
+}
+function hagSide(ctx, x, y, raise) {
+  grid(ctx, MURK.shawl.side, MURK_MAP, x - 6, y);
+  grid(ctx, MURK.head.side, MURK_MAP, x - 3, y - 6);
+  grid(ctx, MURK.hat.side, MURK_MAP, x - 6, y - 15);
+  const R = Math.round(raise * 7), hand = raise ? [x + 9, y - 3 - R] : [x + 8, y + 8];
+  limb(ctx, [x + 2, y + 3], hand, 1.6, 1.2, HAGARM, HAGHAND); if (raise) hexHand(ctx, ...hand); // her near arm, reaching forward
+}
+// the toad's body: its centre and radii, by how it puffs, rises for the
+// windup and squashes flat in the slam
+function toadBody({ puff = 0, rise = 0, squash = 0 }) { return { by: 39 - rise + squash, rx: 22 + puff + squash * 2, ry: 13 + puff * 0.5 - squash }; }
+function murkFront({ step = 0, puff = 0, open = 0, raise = 0, rise = 0, squash = 0, eye = null } = {}) {
+  const [c, ctx] = frame(80, 72), cx = 40, { by, rx, ry } = toadBody({ puff, rise, squash }), top = by - ry;
+  hagFront(ctx, cx, top - 6, raise); // sitting on its back, behind its head
+  for (const sx of [-1, 1]) { blob(ctx, cx + sx * (20 + squash), by + 5, 8, 7, TOADT); blob(ctx, cx + sx * (28 + squash), 52, 5, 2.5, TOADFAR); } // the folded hind legs and their feet
+  blob(ctx, cx, by, rx, ry, TOADT, 'mossXL');
+  murkWarts(ctx, cx, by, rx, ry, (x, y) => Math.abs(x - cx) < 6 && y < by - 4);
+  for (const sx of [-1, 1]) { const ex = cx + sx * 12; blob(ctx, ex, top + 2, 5, 4.5, TOADT, sx < 0 ? 'mossXL' : null); murkEye(ctx, ex - 2, top + 1, eye); } // the eyes bulging on top
+  blob(ctx, cx, by + 10 + puff * 0.5, 9 + puff * 2, 2.5 + puff, BELLY); // the sandy throat under the jaw, swelling
+  const my = by + 2; // a lit upper lip over a mouth from ear to ear, its corners turned down
+  for (let x = -17; x <= 17; x++) { const y = my + Math.round((x / 17) ** 2 * 3); if (Math.abs(x) < 15) px(ctx, cx + x, y - 1, 'mossL'); px(ctx, cx + x, y, 'ink'); if (open && Math.abs(x) < 15) px(ctx, cx + x, y + 1, 'redD', 1, Math.round(open * 1.6 * (1 - (x / 15) ** 2)) + 1); } // gaping for the slam
+  if (open > 1) px(ctx, cx - 3, my + 3, 'redL', 6, 2); // the tongue
+  for (const sx of [-1, 1]) { const lift = step && (sx > 0) === (step > 0) ? 2 : 0, f = [cx + sx * (21 + squash), 53 - lift]; limb(ctx, [cx + sx * 14, by + 6], f, 3.5, 2.6, TOADT); murkToes(ctx, f[0], 54 - lift); } // the front legs, splayed
+  outline(c, 'ink');
+  return c;
+}
+function murkSide({ step = 0, puff = 0, open = 0, raise = 0, rise = 0, squash = 0, eye = null } = {}) {
+  const [c, ctx] = frame(80, 72), { by, rx, ry } = toadBody({ puff, rise, squash }), bx = 36;
+  const lift = (near) => step && near === step > 0 ? 2 : 0;
+  limb(ctx, [51, by + 4], [57 + squash, 52 - lift(false)], 3, 2.2, TOADFAR); // the far front leg
+  blob(ctx, 22, 52, 7, 2.5, TOADFAR); // the far hind foot
+  hagSide(ctx, 33, by - ry - 6, raise);
+  blob(ctx, bx, by, rx - 2, ry - 0.5, TOADT, 'mossXL');
+  blob(ctx, bx + 16 + squash, by + 1, 9, 8.5, TOADT); // its broad head
+  murkWarts(ctx, bx - 2, by, rx - 4, ry, (x, y) => x > 26 && x < 40 && y < by - 6);
+  blob(ctx, 50, by - 9, 4.5, 4, TOADT, 'mossXL'); murkEye(ctx, 50, by - 10, eye, true);
+  blob(ctx, bx, by + 9, 16, 3.5, BELLY); blob(ctx, 51 + squash, by + 7 + puff * 0.3, 5 + puff * 0.6, 3 + puff * 0.6, BELLY); // the pale belly and the throat
+  for (let x = 0; x <= 15; x++) { const X = 61 + squash - x, Y = by + 2 + Math.round(x * 0.18); px(ctx, X, Y, 'ink'); if (open && x > 1) px(ctx, X, Y + 1, 'redD', 1, Math.round(open * 1.4 * (x < 8 ? x / 8 : 1))); } // the long jaw line, dropping open
+  if (open > 1) px(ctx, 56, by + 5, 'redL', 3, 1);
+  layerSoft(ctx, 80, 72, 'mossD', [[24, by - 3]], (g) => { blob(g, 24, by + 4, 9, 7.5, TOADT, 'mossXL'); }); // the near hind leg, folded
+  limb(ctx, [28, by + 10], [38, 53 - lift(true)], 2.6, 1.8, TOADT); murkToes(ctx, 39, 54 - lift(true), 1); // its long foot, flat forward
+  const f = [56 + squash, 53 - lift(true)]; limb(ctx, [50, by + 6], f, 3.2, 2.5, TOADT); murkToes(ctx, f[0] + 1, 54 - lift(true), 1); // the near front leg
+  outline(c, 'ink');
+  return c;
+}
+function murkBack({ step = 0, puff = 0, raise = 0, rise = 0, squash = 0 } = {}) {
+  const [c, ctx] = frame(80, 72), cx = 40, { by, rx, ry } = toadBody({ puff, rise, squash }), top = by - ry;
+  for (const sx of [-1, 1]) blob(ctx, cx + sx * 12, top + 3, 4.5, 4, TOADT); // its eyes, beyond
+  for (const sx of [-1, 1]) { const lift = step && (sx > 0) === (step > 0) ? 2 : 0; blob(ctx, cx + sx * (21 + squash), 52 - lift, 4, 2, TOADFAR); } // the front feet peeking out
+  blob(ctx, cx, by, rx, ry, TOADT, 'mossXL');
+  murkWarts(ctx, cx, by, rx, ry, (x, y) => Math.abs(x - cx) < 8 && y < by + 2);
+  for (const sx of [-1, 1]) {
+    layerSoft(ctx, 80, 72, 'mossD', [[cx + sx * 12, by]], (g) => blob(g, cx + sx * (17 + squash), by + 7, 9, 6.5, TOADT, sx < 0 ? 'mossXL' : null)); // the hind legs, nearest
+    blob(ctx, cx + sx * (27 + squash), 52, 6, 2.5, TOADT); murkToes(ctx, cx + sx * (29 + squash), 54);
+  }
+  hagFront(ctx, cx, top + 2, raise, true); // on its back, nearer than its head
+  outline(c, 'ink');
+  return c;
+}
+const MURK_POSES = {
+  idle: [{}, { puff: 1 }], walk: [{ step: 1 }, { rise: 1 }, { step: -1 }, { rise: 1 }],
+  windup: [{ puff: 2, raise: 1, rise: 1 }, { puff: 3, raise: 1, rise: 2 }], slam: [{ open: 3, squash: 2 }, { open: 1, squash: 1 }], hurt: [{ eye: 'white' }],
+};
+export const buildMurk = (views = VIEWS) => { const out = {}; const fn = { down: murkFront, side: murkSide, up: murkBack }; for (const v of views) { out[v] = {}; for (const [a, ps] of Object.entries(MURK_POSES)) out[v][a] = ps.map((p) => fn[v](p)); } return out; };
