@@ -1223,25 +1223,47 @@ function bellyPlates(ctx, cx, cy, rx, ry, every = 3, across = false) { // the pl
     if (across ? (y - Math.round(cy)) % every === 0 : (x - Math.round(cx)) % every === 0) px(ctx, x, y, 'lava');
   }
 }
-const drakeLift = ({ bob = 0, spread = 0 }) => bob + (spread ? 4 : 0);
-function drakeSide({ step = 0, bob = 0, spread = 0, flap = 0, breath = 0, lunge = 0, open = 0, eye = null } = {}) {
-  const [c, ctx] = frame(96, 72), y = 40 - drakeLift({ bob, spread }), Y = (v) => v - (40 - y);
-  const lift = (near) => step && near === step > 0 ? 2 : 0, fold = spread ? 1 : 0;
+const drakeLift = ({ bob = 0, spread = 0, ground = 0 }) => bob + (spread && !ground ? 4 : 0);
+// Its walk: a heavy four-legged one in eight frames (ph 0-7), one foot in the
+// air at a time, in a walking lizard's order (near hind, near fore, far hind,
+// far fore). A planted foot slides back evenly under the body as the body goes
+// over it (2px a frame: the walk's frame rate is set to its pace, so the feet
+// don't skate), and the lifted one swings forward low. The body stays level -
+// no bounce; the head dips as a fore foot takes the weight, and the tail sways.
+const GAIT = { nh: 0, nf: 0.25, fh: 0.5, ff: 0.75 };
+function drakeFoot(ph, leg, A = 6) {
+  if (ph == null) return { dx: 0, up: 0 };
+  const p = ((ph + 0.5) / 8 + GAIT[leg]) % 1;
+  if (p < 0.75) return { dx: Math.round(A * (1 - (2 * p) / 0.75)), up: 0 };
+  const s = (p - 0.75) / 0.25;
+  return { dx: Math.round(A * (2 * s - 1)), up: s < 0.5 ? 2 : 1 };
+}
+const drakeNod = (ph) => (ph == null ? 0 : ph % 4 >= 2 ? 1 : 0);
+const drakeSway = (ph) => (ph == null ? 0 : Math.round(Math.sin((ph / 8) * Math.PI * 2)));
+// a leg in two parts, its joint (a hind leg's hock, a foreleg's elbow) set back behind the line from hip to foot
+function drakeLeg(ctx, hip, foot, back, w, tones) {
+  const j = [(hip[0] + foot[0]) / 2 - back, (hip[1] + foot[1]) / 2 + 1];
+  limb(ctx, hip, j, w, w * 0.85, tones); limb(ctx, j, foot, w * 0.85, w * 0.7, tones);
+}
+function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, eye = null } = {}) {
+  const [c, ctx] = frame(96, 72), y = 40 - drakeLift({ bob, spread, ground }), Y = (v) => v - (40 - y);
+  const fold = spread && !ground ? 1 : 0, nod = drakeNod(ph), sw = drakeSway(ph);
+  const [nh, nf, fh, ff] = ['nh', 'nf', 'fh', 'ff'].map((l) => drakeFoot(ph, l));
   if (spread) drakeWing(ctx, [46, Y(31)], [40, Y(8 + flap * 6)], [12, Y(12 + flap * 8)], [[16, Y(22 + flap * 5)], [24, Y(25)], [32, Y(29)]], true); // the far wing, behind
-  const tail = [[32, y], [20, Y(45)], [11, Y(47) + (step ? step : 0)], [5, Y(43) + (step ? step : 0)]];
+  const tail = [[32, y], [20, Y(45)], [11, Y(47) + sw], [5, Y(43) + sw]];
   for (let i = 0; i < 3; i++) limb(ctx, tail[i], tail[i + 1], [5, 3.5, 2.2][i], [3.5, 2.2, 1.2][i], DSC);
   drakeEmber(ctx, 4, tail[3][1] - 1);
-  limb(ctx, [54, Y(44)], fold ? [58, Y(48)] : [57, Y(49)], 2.6, 2.2, DFAR); if (!fold) limb(ctx, [57, Y(49)], [58 - step, 54 - lift(false)], 2.2, 1.8, DFAR); // the far legs
-  limb(ctx, [39, Y(44)], fold ? [36, Y(49)] : [36 + step, 54 - lift(false)], 2.6, 2, DFAR);
+  if (fold) { limb(ctx, [41, Y(44)], [43, Y(49)], 2.6, 2, DFAR); limb(ctx, [54, Y(44)], [58, Y(48)], 2.6, 2.2, DFAR); } // the far legs, tucked up
+  else { drakeLeg(ctx, [41, Y(44)], [39 + fh.dx, 54 - fh.up], 2.5, 2.6, DFAR); drakeLeg(ctx, [54, Y(44)], [57 + ff.dx, 54 - ff.up], 1.5, 2.4, DFAR); } // the far legs
   blob(ctx, 44, y, 15, 9.5, DSC, 'redL');
   blob(ctx, 46, Y(46), 12, 3.5, DBELLY); bellyPlates(ctx, 46, Y(46), 12, 3.5);
   for (const x of [34, 38, 42, 46]) { const top = Math.round(y - 9.5 * Math.sqrt(Math.max(0, 1 - ((x - 44) / 15) ** 2))); px(ctx, x, top - 2, 'bone', 1, 2); px(ctx, x - 1, top - 1, 'mist'); } // the spined ridge
-  const back = breath && !lunge ? 3 : 0, N0 = [54, Y(35)], N1 = [59 + lunge - back, Y(28) + lunge * 0.3], N2 = [63 + lunge * 2 - back * 1.5, Y(21) + lunge - back * 0.5];
+  const back = draw ? 3 : 0, N0 = [54, Y(35)], N1 = [59 + lunge - back, Y(28) + lunge * 0.3 + nod * 0.5], N2 = [63 + lunge * 2 - back * 1.5, Y(21) + lunge - back * 0.5 + nod];
   limb(ctx, N0, N1, 5, 4, DSC); limb(ctx, N1, N2, 4, 3.5, DSC);
   limb(ctx, [N0[0] + 3, N0[1] + 3], [N2[0] + 2.5, N2[1] + 2.5], 1.6, 1.3, DBELLY); // the plates up its throat
   if (breath) for (let t = 0.1; t < 1; t += 0.15) px(ctx, Math.round(N0[0] + 3 + (N2[0] - N0[0]) * t), Math.round(N0[1] + 3 + (N2[1] - N0[1]) * t), t > 0.5 ? 'goldL' : 'fireL'); // the throat glowing
   for (const t of [0.3, 0.65]) { const x = Math.round(N0[0] + (N2[0] - N0[0]) * t - 3), yy = Math.round(N0[1] + (N2[1] - N0[1]) * t - 3); px(ctx, x, yy - 1, 'bone', 1, 2); }
-  const hx = N2[0] + 4, hy = N2[1] - 1;
+  const hx = Math.round(N2[0] + 4), hy = Math.round(N2[1] - 1);
   limb(ctx, [hx - 2, hy - 3], [hx - 10, hy - 7], 1.5, 0.5, DHORN); limb(ctx, [hx + 1, hy - 4], [hx - 5, hy - 9], 1.1, 0.4, DHORN); // horns swept back
   blob(ctx, hx, hy, 6, 4.5, DSC, 'redL'); blob(ctx, hx + 6, hy + 1.5, 4.5, 3, DSC);
   if (open) { blob(ctx, hx + 5, hy + 5 + open, 4.5, 1.8, DSC); poly(ctx, [[hx, hy + 3], [hx + 10, hy + 3], [hx + 9, hy + 4 + open], [hx + 1, hy + 4 + open]], 'redD'); px(ctx, hx + 2, hy + 4, 'fireL', 7, Math.max(1, open - 1)); for (const tx of [hx + 3, hx + 7]) px(ctx, tx, hy + 3, 'white'); }
@@ -1250,9 +1272,14 @@ function drakeSide({ step = 0, bob = 0, spread = 0, flap = 0, breath = 0, lunge 
   px(ctx, hx + 9, hy, breath ? 'fireL' : 'redD'); // the nostril, smoking when it breathes
   if (spread) drakeWing(ctx, [48, Y(32)], [44, Y(10 + flap * 6)], [18, Y(14 + flap * 7)], [[22, Y(24 + flap * 4)], [30, Y(27)], [38, Y(31)]]); // the near wing, up
   else drakeWing(ctx, [50, Y(33)], [38, Y(27)], [24, Y(33)], [[30, Y(37)], [38, Y(38)], [46, Y(38)]]); // folded along its back
-  layerSoft(ctx, 96, 72, 'redD', [[36, Y(36)]], (g) => blob(g, 36, Y(42), 7, 6.5, DSC, 'redL')); // the near haunch
-  const hf = fold ? [40, Y(50)] : [37 - step, 54 - lift(true)]; limb(ctx, [37, Y(47)], hf, 2.8, 2.2, DSC); if (!fold) drakeClaws(ctx, hf[0] + 1, 54 - lift(true), 1);
-  const fk = [59, Y(48)], ff = fold ? [62, Y(47)] : [60 + step, 54 - lift(true)]; limb(ctx, [56, Y(42)], fk, 3, 2.5, DSC); limb(ctx, fk, ff, 2.5, 2, DSC); if (!fold) drakeClaws(ctx, ff[0] + 1, 54 - lift(true), 1);
+  const hs = fold ? 0 : Math.round(nh.dx / 4); // the near haunch rolls with its leg
+  layerSoft(ctx, 96, 72, 'redD', [[36 + hs, Y(36)]], (g) => blob(g, 36 + hs, Y(42), 7, 6.5, DSC, 'redL')); // the near haunch
+  if (fold) { limb(ctx, [37, Y(47)], [40, Y(50)], 2.8, 2.2, DSC); limb(ctx, [56, Y(42)], [59, Y(48)], 3, 2.5, DSC); limb(ctx, [59, Y(48)], [62, Y(47)], 2.5, 2, DSC); } // tucked up to fly
+  else {
+    const a = [36 + nh.dx, 54 - nh.up], b = [60 + nf.dx, 54 - nf.up];
+    drakeLeg(ctx, [37 + hs, Y(46)], a, 3, 3, DSC); drakeClaws(ctx, a[0] + 1, a[1], 1); // the near hind leg, its hock back
+    drakeLeg(ctx, [56, Y(42)], b, 1.5, 3, DSC); drakeClaws(ctx, b[0] + 1, b[1], 1); // the near foreleg, its elbow back
+  }
   outline(c, 'ink');
   return c;
 }
@@ -1263,44 +1290,56 @@ function drakeFace(ctx, cx, hy, { breath, open, eye }) {
   if (open) { px(ctx, cx - 4, hy + 7, 'redD', 9, open + 1); px(ctx, cx - 3, hy + 8, 'fireL', 7, Math.max(1, open - 1)); px(ctx, cx - 3, hy + 7, 'white'); px(ctx, cx + 3, hy + 7, 'white'); }
   else px(ctx, cx - 3, hy + 6, 'redD', 7, 1);
 }
-function drakeFB(back, { step = 0, bob = 0, spread = 0, flap = 0, breath = 0, lunge = 0, open = 0, eye = null } = {}) {
-  const [c, ctx] = frame(96, 72), cx = 48, y = 40 - drakeLift({ bob, spread }), Y = (v) => v - (40 - y), fold = spread ? 1 : 0;
-  const lift = (sx) => step && (sx > 0) === (step > 0) ? 2 : 0;
+function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, eye = null } = {}) {
+  const [c, ctx] = frame(96, 72), cx = 48, y = 40 - drakeLift({ bob, spread, ground }), Y = (v) => v - (40 - y), fold = spread && !ground ? 1 : 0;
+  const nod = drakeNod(ph), tw = drakeSway(ph) * 2;
+  const fore = (sx) => drakeFoot(ph, sx > 0 ? 'nf' : 'ff'), hind = (sx) => drakeFoot(ph, sx > 0 ? 'nh' : 'fh');
   for (const sx of [-1, 1]) {
     const X = (v) => cx + sx * v;
     if (spread) drakeWing(ctx, [X(7), Y(33)], [X(28), Y(12 + flap * 6)], [X(44), Y(25 + flap * 7)], [[X(37), Y(33 + flap * 3)], [X(27), Y(37)], [X(16), Y(39)]]);
     else if (!back) drakeWing(ctx, [X(7), Y(34)], [X(16), Y(21)], [X(19), Y(27)], [[X(17), Y(33)], [X(12), Y(37)]]); // folded, their tops behind its shoulders
   }
   if (back) { // the head and neck beyond
-    const hy = Y(20) - lunge;
+    const hy = Y(20) - lunge + nod;
     for (const sx of [-1, 1]) limb(ctx, [cx + sx * 4, hy - 2], [cx + sx * 9, hy - 9], 1.5, 0.5, DHORN);
     blob(ctx, cx, hy, 6.5, 5, DSC, 'redL'); limb(ctx, [cx, Y(34)], [cx, hy + 2], 5.5, 4.5, DSC);
     for (const yy of [Y(26), Y(30)]) px(ctx, cx, yy, 'bone', 1, 2);
-  } else { const tw = step ? step : 0; limb(ctx, [cx + 6, Y(47)], [cx + 18, Y(51)], 3, 2, DSC); limb(ctx, [cx + 18, Y(51)], [cx + 27, Y(47) + tw], 2, 1, DSC); drakeEmber(ctx, cx + 28, Y(46) + tw); } // the tail, round to one side
-  for (const sx of [-1, 1]) { const hp = [cx + sx * 13, Y(47)]; if (!back) { blob(ctx, hp[0], hp[1], 5.5, 5, DSC); if (!fold) drakeClaws(ctx, cx + sx * 14, 54 - lift(-sx)); } else blob(ctx, cx + sx * 10, Y(50) - (fold ? 2 : lift(sx)), 3, 2.5, DFAR); } // the hind legs; from behind, the front feet peeking out
+  } else { limb(ctx, [cx + 6, Y(47)], [cx + 18, Y(51)], 3, 2, DSC); limb(ctx, [cx + 18, Y(51)], [cx + 27, Y(47) + tw], 2, 1, DSC); drakeEmber(ctx, cx + 28, Y(46) + tw); } // the tail, round to one side
+  // the hind legs (a planted foot comes toward us as it slides back); from behind, the front feet peeking out
+  for (const sx of [-1, 1]) {
+    if (!back) { blob(ctx, cx + sx * 13, Y(47), 5.5, 5, DSC); if (!fold) { const h = hind(sx); drakeClaws(ctx, cx + sx * 14, 54 - h.up + Math.round(h.dx / 4)); } }
+    else { const f = fore(sx); blob(ctx, cx + sx * 10, Y(50) - (fold ? 2 : f.up + Math.round(f.dx / 4)), 3, 2.5, DFAR); }
+  }
   blob(ctx, cx, y, 13, 10.5, DSC, 'redL');
   if (back) {
     for (const sx of [-1, 1]) { const X = (v) => cx + sx * v; if (!spread) { poly(ctx, [[X(3), Y(31)], [X(13), Y(29)], [X(12), Y(44)], [X(4), Y(43)]], 'leatherD'); limb(ctx, [X(4), Y(31)], [X(13), Y(29)], 1.6, 1.1, DSC); seg(ctx, [X(13), Y(29)], [X(5), Y(42)], 'redD'); seg(ctx, [X(13), Y(29)], [X(10), Y(44)], 'redD'); } } // folded along its back
     for (let yy = Y(30); yy <= Y(48); yy += 3) { px(ctx, cx, yy, 'bone'); px(ctx, cx, yy + 1, 'mist'); } // the spined ridge
     for (const sx of [-1, 1]) layerSoft(ctx, 96, 72, 'redD', [[cx + sx * 8, Y(42)]], (g) => blob(g, cx + sx * 11, Y(48), 5, 4.5, DSC, sx < 0 ? 'redL' : null)); // the haunches, nearest
-    for (const sx of [-1, 1]) if (!fold) { blob(ctx, cx + sx * 13, 52 - lift(sx), 3.5, 2, DSC); }
-    const tw = step ? step : 0; limb(ctx, [cx, Y(48)], [cx + 2, 58], 4, 3, DSC); limb(ctx, [cx + 2, 58], [cx + 9 + tw, 63], 3, 1.8, DSC); limb(ctx, [cx + 9 + tw, 63], [cx + 15 + tw, 60], 1.8, 1, DSC); drakeEmber(ctx, cx + 16 + tw, 59); // the tail, toward us
+    for (const sx of [-1, 1]) if (!fold) { const h = hind(sx); blob(ctx, cx + sx * 13, 52 - h.up - Math.round(h.dx / 4), 3.5, 2, DSC); } // their feet (a planted one comes toward us as it slides back)
+    limb(ctx, [cx, Y(48)], [cx + 2, 58], 4, 3, DSC); limb(ctx, [cx + 2, 58], [cx + 9 + tw, 63], 3, 1.8, DSC); limb(ctx, [cx + 9 + tw, 63], [cx + 15 + tw, 60], 1.8, 1, DSC); drakeEmber(ctx, cx + 16 + tw, 59); // the tail, toward us
     for (const yy of [52, 56]) px(ctx, cx + 1, yy, 'bone');
   } else {
     blob(ctx, cx, Y(43), 7, 8, DBELLY); bellyPlates(ctx, cx, Y(43), 7, 8, 3, true); // the chest plates
-    const back2 = breath && !lunge ? 2 : 0, hy = Y(20) + lunge * 2 - back2;
+    const back2 = draw ? 2 : 0, hy = Y(20) + lunge * 2 - back2 + nod;
     limb(ctx, [cx, Y(34)], [cx, hy + 3], 5.5, 4.5, DSC); limb(ctx, [cx, Y(34)], [cx, hy + 6], 2.5, 2, DBELLY);
     if (breath) for (let yy = hy + 7; yy < Y(34); yy += 2) px(ctx, cx - 1, yy, yy < hy + 12 ? 'goldL' : 'fireL', 2, 1); // the throat glowing
     for (const sx of [-1, 1]) limb(ctx, [cx + sx * 4, hy - 2], [cx + sx * 9, hy - 9], 1.5, 0.5, DHORN);
     blob(ctx, cx, hy, 7.5, 5.5, DSC, 'redL'); px(ctx, cx, hy - 6, 'bone', 1, 2);
     drakeFace(ctx, cx, hy, { breath, open, eye });
-    for (const sx of [-1, 1]) { const f = fold ? [cx + sx * 9, Y(50)] : [cx + sx * 10, 54 - lift(sx)]; limb(ctx, [cx + sx * 8, Y(44)], f, 3.5, 3, DSC); if (!fold) drakeClaws(ctx, f[0], 54 - lift(sx)); } // the front legs
+    for (const sx of [-1, 1]) { const fo = fore(sx), f = fold ? [cx + sx * 9, Y(50)] : [cx + sx * 10, 54 - fo.up + Math.round(fo.dx / 3)]; limb(ctx, [cx + sx * 8, Y(44)], f, 3.5, 3, DSC); if (!fold) drakeClaws(ctx, f[0], f[1]); } // the front legs
   }
   outline(c, 'ink');
   return c;
 }
 const DRAKE_POSES = {
-  idle: [{}, { bob: 1 }], walk: [{ step: 1 }, { bob: 1 }, { step: -1 }, { bob: 1 }],
-  windup: [{ breath: 1 }, { breath: 1, bob: 1 }], attack: [{ breath: 1, lunge: 3, open: 3 }, { open: 1 }], fly: [{ spread: 1 }, { spread: 1, flap: 1 }], hurt: [{ eye: 'white' }],
+  idle: [{}, { bob: 1 }],
+  walk: [0, 1, 2, 3, 4, 5, 6, 7].map((ph) => ({ ph })),
+  windup: [{ draw: 1, open: 1 }, { draw: 1, open: 2 }], // drawing its head back to bite, jaws parting
+  attack: [{ lunge: 3, open: 3 }, { open: 1 }],
+  charge: [{ breath: 1, draw: 1 }, { breath: 1, draw: 1, bob: 1 }], // drawing breath: the throat and nostrils glow
+  breathe: [{ breath: 1, lunge: 2, open: 3 }, { breath: 1, lunge: 2, open: 2 }], // jaws wide, the fire pouring out (Enemy.drakeBreath draws it)
+  rear: [{ spread: 1, ground: 1, bob: -1 }, { spread: 1, ground: 1, flap: 0.5, bob: -1 }], // crouched to spring, wings up
+  fly: [{ spread: 1 }, { spread: 1, flap: 0.5 }, { spread: 1, flap: 1 }, { spread: 1, flap: 0.5 }],
+  hurt: [{ eye: 'white' }],
 };
 export const buildDrake = (views = VIEWS) => { const out = {}; const fn = { down: (p) => drakeFB(false, p), side: drakeSide, up: (p) => drakeFB(true, p) }; for (const v of views) { out[v] = {}; for (const [a, ps] of Object.entries(DRAKE_POSES)) out[v][a] = ps.map((p) => fn[v](p)); } return out; };
