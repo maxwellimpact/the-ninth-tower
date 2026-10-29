@@ -72,12 +72,12 @@ export async function cast(name, kinds, { ground = '#5c7a4f', cols = 6 } = {}) {
   return { w: cv.width, h: cv.height };
 }
 
-// A boss's turnaround: for each builder in gfx/bosses.js (puppet-shaped
+// A boss's turnaround: for each builder in gfx/bigcast.js (puppet-shaped
 // frames), rows of down, side and up through idle, walk, the attack, the cast and hurt,
 // at 3x with Brann for scale; saved as snapshots/art-<name>.png. Returns each
 // builder's build time.
 //   await A.turnaround('gobboss', ['buildSnagtooth', 'buildGutcrusher'])
-export async function turnaround(name, builders, { mod = 'gfx/bosses.js', ground = '#5c7a4f' } = {}) {
+export async function turnaround(name, builders, { mod = 'gfx/bigcast.js', ground = '#5c7a4f' } = {}) {
   const B = await fresh(mod), rows = [], ms = {};
   for (const b of builders) {
     const t0 = performance.now(), f0 = B[b](); ms[b] = Math.round(performance.now() - t0);

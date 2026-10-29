@@ -13,10 +13,9 @@ import { buildIcons } from '../gfx/icons.js';
 import { itemIcon } from '../gfx/gear.js';
 import items from '../data/items.json';
 import { packFrames, registerPuppet, registerBigPuppet } from './bake.js';
-import { mergeViews } from '../gfx/bosses.js';
-import { buildSnagtooth, buildMalgrim, buildIsolde, buildGutcrusher, buildHuntsman, buildVulk, buildMab, buildMurk, buildDrake } from '../gfx/bigcast.js'; // drawn the cast's way (hand-authored grids), the first two redone from the modelled pass
+import { buildSnagtooth, buildMalgrim, buildIsolde, buildGutcrusher, buildHuntsman, buildVulk, buildMab, buildMurk, buildDrake, mergeViews } from '../gfx/bigcast.js'; // the big bosses, drawn the cast's way (hand-authored grids)
 
-// a hand-built boss (gfx/bosses.js) as loader tasks: one view a task, then registered (each view is ~20 ms)
+// a big boss (gfx/bigcast.js) as loader tasks: one view a task, then registered (each view is ~20 ms)
 const bigBoss = (key, build) => {
   const parts = [];
   return [...['down', 'side', 'up'].map((v) => [`${key} ${v}`, () => parts.push(build([v]))]), [`${key} register`, (s) => registerBigPuppet(s, key, mergeViews(parts))]];

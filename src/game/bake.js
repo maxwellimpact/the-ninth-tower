@@ -38,8 +38,8 @@ export function registerPuppet(scene, key, def, recolor = null) {
   return fr;
 }
 
-// A big boss built as a model (gfx/bosses.js): frames already in the puppets'
-// shape, 64x64 with the feet on y=48, registered under the puppets' names
+// A big boss (gfx/bigcast.js): frames already in the puppets' shape, at its
+// own size with the feet on the units' 3/4 line, registered under the puppets' names
 // (`${anim}_${view}_${i}`, animations `${key}_${anim}_${view}`) so the enemy
 // code plays it as it plays a puppet.
 export function registerBigPuppet(scene, key, fr) {
