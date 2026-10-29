@@ -88,5 +88,12 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
      - Anything loaded from a save is held to its limits (HP never above max), so a bad save can't break play.
      - Bars never draw past their frame.
    - **Check:** after a test run, the browser's save is the one from before it (same `savedAt`).
+16. **A tell promises its own move, and the move shows itself.**
+   - **The bug:** the Cinder Drake's bite borrowed its fire breath's wind-up, the glowing throat, so every bite promised fire. The breath itself drew no fire at all: circles filled on the ground, then embers popped. And when it flew it faded almost to nothing. A playtester waited for fire that never came (2026-10-29).
+   - **The rule:**
+     - Each move has its own tell. A pose that warns of one move is never reused for another.
+     - What a move does is drawn as an effect in the world (a jet of fire, a thrown rock), not just as circles on the ground and a hit.
+     - A foe in the air stays in sight: it's drawn up above its shadow, never faded out.
+   - **Check:** on the Proving Field, watch each of a foe's moves through once. Every wind-up leads to the move it warned of, and you can see each move happen.
 
 ---
