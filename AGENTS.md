@@ -80,7 +80,8 @@ the rule, the check) as well as fixing it.
   - `tools/map-test.js`: integration tests on small test maps
     (`src/data/maps`), away from the main map, and the saves: a map's own
     save, travelling to a shared map and back, an old save, the Colosseum. Use a test map to try a new enemy
-    or system in isolation: open one with `?map=<id>`.
+    or system in isolation: open one with `?map=<id>`. `?map=battlefield`
+    (THE PROVING FIELD) fights any foe or boss on its own: tap its muster board.
   - `tools/fight-bench.js` and `tools/evade-bench.js`: combat before and after.
     Launch with `evade-bench.js`'s `start()` from the title screen (it seeds
     the party's gear and freezes levels). It runs on its own test map, `bench`
