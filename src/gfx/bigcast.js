@@ -1245,7 +1245,7 @@ function drakeLeg(ctx, hip, foot, back, w, tones) {
   const j = [(hip[0] + foot[0]) / 2 - back, (hip[1] + foot[1]) / 2 + 1];
   limb(ctx, hip, j, w, w * 0.85, tones); limb(ctx, j, foot, w * 0.85, w * 0.7, tones);
 }
-function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, eye = null } = {}) {
+function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, snap = 0, eye = null } = {}) {
   const [c, ctx] = frame(96, 72), y = 40 - drakeLift({ bob, spread, ground }), Y = (v) => v - (40 - y);
   const fold = spread && !ground ? 1 : 0, nod = drakeNod(ph), sw = drakeSway(ph);
   const [nh, nf, fh, ff] = ['nh', 'nf', 'fh', 'ff'].map((l) => drakeFoot(ph, l));
@@ -1258,7 +1258,7 @@ function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breat
   blob(ctx, 44, y, 15, 9.5, DSC, 'redL');
   blob(ctx, 46, Y(46), 12, 3.5, DBELLY); bellyPlates(ctx, 46, Y(46), 12, 3.5);
   for (const x of [34, 38, 42, 46]) { const top = Math.round(y - 9.5 * Math.sqrt(Math.max(0, 1 - ((x - 44) / 15) ** 2))); px(ctx, x, top - 2, 'bone', 1, 2); px(ctx, x - 1, top - 1, 'mist'); } // the spined ridge
-  const back = draw ? 3 : 0, N0 = [54, Y(35)], N1 = [59 + lunge - back, Y(28) + lunge * 0.3 + nod * 0.5], N2 = [63 + lunge * 2 - back * 1.5, Y(21) + lunge - back * 0.5 + nod];
+  const back = draw * 3, N0 = [54, Y(35)], N1 = [59 + lunge - back, Y(28) + lunge * 0.3 + nod * 0.5 - draw], N2 = [63 + lunge * 2 - back * 1.5, Y(21) + lunge - back * 0.5 + nod]; // draw: its head reared up and back to bite; lunge: thrust out at the ground
   limb(ctx, N0, N1, 5, 4, DSC); limb(ctx, N1, N2, 4, 3.5, DSC);
   limb(ctx, [N0[0] + 3, N0[1] + 3], [N2[0] + 2.5, N2[1] + 2.5], 1.6, 1.3, DBELLY); // the plates up its throat
   if (breath) for (let t = 0.1; t < 1; t += 0.15) px(ctx, Math.round(N0[0] + 3 + (N2[0] - N0[0]) * t), Math.round(N0[1] + 3 + (N2[1] - N0[1]) * t), t > 0.5 ? 'goldL' : 'fireL'); // the throat glowing
@@ -1266,8 +1266,8 @@ function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breat
   const hx = Math.round(N2[0] + 4), hy = Math.round(N2[1] - 1);
   limb(ctx, [hx - 2, hy - 3], [hx - 10, hy - 7], 1.5, 0.5, DHORN); limb(ctx, [hx + 1, hy - 4], [hx - 5, hy - 9], 1.1, 0.4, DHORN); // horns swept back
   blob(ctx, hx, hy, 6, 4.5, DSC, 'redL'); blob(ctx, hx + 6, hy + 1.5, 4.5, 3, DSC);
-  if (open) { blob(ctx, hx + 5, hy + 5 + open, 4.5, 1.8, DSC); poly(ctx, [[hx, hy + 3], [hx + 10, hy + 3], [hx + 9, hy + 4 + open], [hx + 1, hy + 4 + open]], 'redD'); px(ctx, hx + 2, hy + 4, 'fireL', 7, Math.max(1, open - 1)); for (const tx of [hx + 3, hx + 7]) px(ctx, tx, hy + 3, 'white'); }
-  else px(ctx, hx, hy + 3, 'redD', 10, 1);
+  if (open) { blob(ctx, hx + 5, hy + 5 + open, 4.5, 1.8, DSC); poly(ctx, [[hx, hy + 3], [hx + 10, hy + 3], [hx + 9, hy + 4 + open], [hx + 1, hy + 4 + open]], 'redD'); px(ctx, hx + 2, hy + 4, breath ? 'fireL' : 'leatherD', 7, Math.max(1, open - 1)); for (const tx of [hx + 3, hx + 7]) px(ctx, tx, hy + 3, 'white'); if (!breath) for (const tx of [hx + 5, hx + 9]) px(ctx, tx, hy + 3 + open, 'white'); } // only fire glows in the breath's jaws; the bite's gape is dark, fanged top and bottom
+  else { px(ctx, hx, hy + 3, 'redD', 10, 1); if (snap) for (let tx = hx + 1; tx < hx + 10; tx += 2) px(ctx, tx, hy + 2 + ((tx - hx) % 4 ? 0 : 2), 'white'); } // snapped shut: its fangs meshed over the jaw line
   px(ctx, hx, hy - 2, 'leatherD', 3, 1); px(ctx, hx + 1, hy - 1, eye || 'goldL', 2, 1); // a scowling brow over its eye
   px(ctx, hx + 9, hy, breath ? 'fireL' : 'redD'); // the nostril, smoking when it breathes
   if (spread) drakeWing(ctx, [48, Y(32)], [44, Y(10 + flap * 6)], [18, Y(14 + flap * 7)], [[22, Y(24 + flap * 4)], [30, Y(27)], [38, Y(31)]]); // the near wing, up
@@ -1284,13 +1284,13 @@ function drakeSide({ ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breat
   return c;
 }
 // the front and back views share the body; `back` turns it round
-function drakeFace(ctx, cx, hy, { breath, open, eye }) {
+function drakeFace(ctx, cx, hy, { breath, open, snap, eye }) {
   blob(ctx, cx, hy + 4, 5, 3.2, DSC, 'redL'); // the snout
   for (const sx of [-1, 1]) { px(ctx, cx + sx * 4 - (sx < 0 ? 1 : 0), hy - 1, eye || 'goldL', 2, 2); px(ctx, cx + sx * 3 - (sx < 0 ? 1 : 0), hy - 2, 'leatherD', 2, 1); px(ctx, cx + sx * 2 - (sx < 0 ? 0 : 1), hy + 4, breath ? 'fireL' : 'redD'); } // eyes under scowling brows, nostrils
-  if (open) { px(ctx, cx - 4, hy + 7, 'redD', 9, open + 1); px(ctx, cx - 3, hy + 8, 'fireL', 7, Math.max(1, open - 1)); px(ctx, cx - 3, hy + 7, 'white'); px(ctx, cx + 3, hy + 7, 'white'); }
-  else px(ctx, cx - 3, hy + 6, 'redD', 7, 1);
+  if (open) { px(ctx, cx - 4, hy + 7, 'redD', 9, open + 1); px(ctx, cx - 3, hy + 8, breath ? 'fireL' : 'leatherD', 7, Math.max(1, open - 1)); px(ctx, cx - 3, hy + 7, 'white'); px(ctx, cx + 3, hy + 7, 'white'); if (!breath) { px(ctx, cx - 1, hy + 7 + open, 'white'); px(ctx, cx + 1, hy + 7 + open, 'white'); } }
+  else { px(ctx, cx - 3, hy + 6, 'redD', 7, 1); if (snap) for (let tx = cx - 3; tx <= cx + 3; tx += 2) px(ctx, tx, hy + ((tx - cx + 3) % 4 ? 5 : 7), 'white'); }
 }
-function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, eye = null } = {}) {
+function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, breath = 0, draw = 0, lunge = 0, open = 0, snap = 0, eye = null } = {}) {
   const [c, ctx] = frame(96, 72), cx = 48, y = 40 - drakeLift({ bob, spread, ground }), Y = (v) => v - (40 - y), fold = spread && !ground ? 1 : 0;
   const nod = drakeNod(ph), tw = drakeSway(ph) * 2;
   const fore = (sx) => drakeFoot(ph, sx > 0 ? 'nf' : 'ff'), hind = (sx) => drakeFoot(ph, sx > 0 ? 'nh' : 'fh');
@@ -1300,7 +1300,7 @@ function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, b
     else if (!back) drakeWing(ctx, [X(7), Y(34)], [X(16), Y(21)], [X(19), Y(27)], [[X(17), Y(33)], [X(12), Y(37)]]); // folded, their tops behind its shoulders
   }
   if (back) { // the head and neck beyond
-    const hy = Y(20) - lunge + nod;
+    const hy = Y(20) - lunge + draw + nod;
     for (const sx of [-1, 1]) limb(ctx, [cx + sx * 4, hy - 2], [cx + sx * 9, hy - 9], 1.5, 0.5, DHORN);
     blob(ctx, cx, hy, 6.5, 5, DSC, 'redL'); limb(ctx, [cx, Y(34)], [cx, hy + 2], 5.5, 4.5, DSC);
     for (const yy of [Y(26), Y(30)]) px(ctx, cx, yy, 'bone', 1, 2);
@@ -1320,12 +1320,12 @@ function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, b
     for (const yy of [52, 56]) px(ctx, cx + 1, yy, 'bone');
   } else {
     blob(ctx, cx, Y(43), 7, 8, DBELLY); bellyPlates(ctx, cx, Y(43), 7, 8, 3, true); // the chest plates
-    const back2 = draw ? 2 : 0, hy = Y(20) + lunge * 2 - back2 + nod;
+    const back2 = draw * 2, hy = Y(20) + lunge * 2 - back2 + nod;
     limb(ctx, [cx, Y(34)], [cx, hy + 3], 5.5, 4.5, DSC); limb(ctx, [cx, Y(34)], [cx, hy + 6], 2.5, 2, DBELLY);
     if (breath) for (let yy = hy + 7; yy < Y(34); yy += 2) px(ctx, cx - 1, yy, yy < hy + 12 ? 'goldL' : 'fireL', 2, 1); // the throat glowing
     for (const sx of [-1, 1]) limb(ctx, [cx + sx * 4, hy - 2], [cx + sx * 9, hy - 9], 1.5, 0.5, DHORN);
     blob(ctx, cx, hy, 7.5, 5.5, DSC, 'redL'); px(ctx, cx, hy - 6, 'bone', 1, 2);
-    drakeFace(ctx, cx, hy, { breath, open, eye });
+    drakeFace(ctx, cx, hy, { breath, open, snap, eye });
     for (const sx of [-1, 1]) { const fo = fore(sx), f = fold ? [cx + sx * 9, Y(50)] : [cx + sx * 10, 54 - fo.up + Math.round(fo.dx / 3)]; limb(ctx, [cx + sx * 8, Y(44)], f, 3.5, 3, DSC); if (!fold) drakeClaws(ctx, f[0], f[1]); } // the front legs
   }
   outline(c, 'ink');
@@ -1334,8 +1334,8 @@ function drakeFB(back, { ph = null, bob = 0, spread = 0, ground = 0, flap = 0, b
 const DRAKE_POSES = {
   idle: [{}, { bob: 1 }],
   walk: [0, 1, 2, 3, 4, 5, 6, 7].map((ph) => ({ ph })),
-  windup: [{ draw: 1, open: 1 }, { draw: 1, open: 2 }], // drawing its head back to bite, jaws parting
-  attack: [{ lunge: 3, open: 3 }, { open: 1 }],
+  windup: [{ draw: 1, open: 1 }, { draw: 2, open: 2 }, { draw: 3, open: 3 }], // rearing its head up and back to bite, jaws gaping (held on the last)
+  attack: [{ lunge: 6, open: 4 }, { lunge: 6, snap: 1 }, { lunge: 4, snap: 1 }, { lunge: 1 }], // thrust down at the mark, jaws snapped shut, drawn back (Enemy.drakeBite draws the snap in the world)
   charge: [{ breath: 1, draw: 1 }, { breath: 1, draw: 1, bob: 1 }], // drawing breath: the throat and nostrils glow
   breathe: [{ breath: 1, lunge: 2, open: 3 }, { breath: 1, lunge: 2, open: 2 }], // jaws wide, the fire pouring out (Enemy.drakeBreath draws it)
   rear: [{ spread: 1, ground: 1, bob: -1 }, { spread: 1, ground: 1, flap: 0.5, bob: -1 }], // crouched to spring, wings up
