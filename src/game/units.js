@@ -1662,6 +1662,7 @@ export class Enemy extends Unit {
   sync(dt) {
     super.sync(dt);
     if (this.s.flying) this.sprite.y = Math.round(this.y) - 8 - Math.sin(Date.now() / 300 + this.id) * 2;
+    if (this.lunge) { this.sprite.x += Math.round(this.lunge.dx * this.lunge.p); this.sprite.y += Math.round(this.lunge.dy * this.lunge.p); } // the drake's bite: its body thrown at the mark
     if (this.alt) { this.sprite.y -= Math.round(this.alt); this.sprite.setDepth(this.y + this.alt + 20); } // up in the air (the drake's flight): drawn above what's below it, its shadow left on the ground
     if (this.alt !== this.shadowAlt) { this.shadowAlt = this.alt; this.shadow.setScale(1 - Math.min(0.4, (this.alt || 0) / 115)); }
     if (this.wardRing) this.wardRing.setPosition(Math.round(this.x), Math.round(this.y) - 8).setDepth(this.y + 2);
@@ -2422,6 +2423,35 @@ export class Enemy extends Unit {
     return this.view === 'up' ? { x: 0, y: -36 } : { x: 0, y: -23 };
   }
 
+  // the bite, drawn in the world: its body thrown a few px at the mark, and a
+  // pair of jaws - fangs on dark gums - snapping shut where its head lands
+  drakeBite(z) {
+    const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y), L = { dx: nx * 8, dy: ny * 6, p: 0 };
+    const m = this.view === 'side' ? { x: this.flip ? -35 : 35, y: -16 } : this.view === 'up' ? { x: 0, y: -42 } : { x: 0, y: -4 }; // its jaws at full lunge (the attack pose)
+    this.lunge = L;
+    sc.tweens.add({ targets: L, p: 1, duration: 70, yoyo: true, hold: 120, ease: 'Quad.easeOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } });
+    const g = sc.add.graphics().setDepth(100000 - 40), x = this.x + m.x + L.dx, y = this.y + m.y + L.dy, W = 11, st = { gap: 9, a: 1 };
+    const jaw = (dir, gap) => { // dir -1: the upper jaw (fangs down), 1: the lower (fangs up)
+      const base = (u) => [x + u * W, y + dir * (gap + 3 - 3 * u * u)]; // the gum line, curving round at the corners
+      const pts = []; for (let u = -1; u <= 1.001; u += 0.25) { const [px, py] = base(u); pts.push({ x: px, y: py }); }
+      g.lineStyle(5, 0x16121f, st.a).strokePoints(pts); g.lineStyle(3, 0x7a1f2b, st.a).strokePoints(pts);
+      const n = dir < 0 ? 6 : 5;
+      for (let i = 0; i < n; i++) {
+        const u = dir < 0 ? -0.8 + (i * 1.6) / 5 : -0.64 + (i * 1.28) / 4, [bx, by] = base(u), len = dir < 0 && (i === 0 || i === n - 1) ? 6 : 4; // the lower fangs sit between the upper; long canines at the corners
+        const tri = [bx - 1.5, by, bx + 1.5, by, bx, by - dir * len];
+        g.fillStyle(0x16121f, st.a).fillTriangle(tri[0] - 1, tri[1], tri[2] + 1, tri[3], tri[4], tri[5] - dir);
+        g.fillStyle(0xfff4e0, st.a).fillTriangle(...tri);
+      }
+    };
+    const draw = () => { if (!g.active) return; g.clear(); jaw(-1, st.gap); jaw(1, st.gap); };
+    draw();
+    sc.tweens.add({ targets: st, gap: 0, duration: 80, ease: 'Quad.easeIn', onUpdate: draw, onComplete: () => {
+      if (!g.active) return;
+      audio.sfx('bash'); sc.fx.burst('ember', x, y, 8);
+      sc.tweens.add({ targets: st, a: 0, delay: 140, duration: 220, onUpdate: draw, onComplete: () => g.destroy() });
+    } });
+  }
+
   beginBreath(t) {
     const sc = this.scene, base = Math.atan2(t.y - this.y, t.x - this.x), dir = Math.random() < 0.5 ? 1 : -1;
     this.clearZone();
@@ -2861,6 +2891,7 @@ export class Enemy extends Unit {
     if (this.kind === 'hexling' || this.kind === 'mire') { const k = `${ENEMY_TEX[this.kind]}_attack`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); audio.sfx('squish'); }
     else if (this.kind === 'golem') { const k = `golem_slam_${this.view || 'down'}`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); }
     else { this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack'); audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
+    if (this.kind === 'drake') this.drakeBite(z);
     if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     if (this.s.drain) for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.addPoison?.(this.s.dmg * 0.5, 3);
     const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
@@ -2869,6 +2900,7 @@ export class Enemy extends Unit {
       if (Math.hypot(h.x - z.x, h.y - z.y) > z.r + h.r) continue;
       if (!this.boss && sc.tryEvade(h, this)) continue; // a hero can dodge an ordinary foe's swing
       h.damage(dmg, this); if (this.s.chill) chillHero(h);
+      if (this.kind === 'drake' && !z.bit) { z.bit = true; sc.floatText(z.x, z.y - 30, 'CHOMP!', 'fontPlain', 0xffa060); sc.shake(90, 0.004); }
     }
     for (const a of sc.allies || []) if (a.alive && Math.hypot(a.x - z.x, a.y - z.y) <= z.r + a.r) a.damage(dmg, this);
   }
