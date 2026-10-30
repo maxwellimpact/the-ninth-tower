@@ -6,7 +6,7 @@ import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DR
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import * as PORTAL from '../gfx/portal.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, buildSpider, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, buildSpider, buildSpiderling, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -174,10 +174,10 @@ export const GROUPS = {
       registerPuppet(s, 'shade', SHADE);
       creature(s, 'rootling', buildRootling(), { idle: 2, walk: 2, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'spider', buildSpider(1), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'spiderling', buildSpider(0.6), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creature(s, 'spiderling', buildSpiderling(), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'hound', buildHound(), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'banshee', BANSHEE, ghostRecolor);
-      s.textures.addCanvas('eggsac', eggSac());
+      s.textures.addCanvas('eggsac', eggSac()); s.textures.addCanvas('eggsac1', eggSac(1)); s.textures.addCanvas('eggsacTorn', eggSac(2)); // whole, about to hatch, the husk left behind
     }],
     ['gloomtrees', (s) => { for (let k = 0; k < 6; k++) s.textures.addCanvas(`gloomtree${k}`, P.gloomTree(k)); }],
     ['undergrowth', (s) => {

@@ -674,11 +674,57 @@ export function buildSpider(size = 1) {
     hurt: [f({ step: 0 })],
   };
 }
-export function eggSac() {
-  const [c, ctx] = makeCanvas(16, 16);
-  shadedBlob(ctx, 8, 9, 5, 5.5, ['mist', 'web', 'bone', 'white']);
-  px(ctx, 6, 8, 'purpL'); px(ctx, 9, 10, 'purpL'); px(ctx, 7, 11, 'purp');
+// Spiderlings: drawn at their own size, not the spider shrunk (shrinking lost
+// the legs and left a purple dot). A red-eyed head over a round abdomen with a
+// pale mark, and eight thin legs, each bent at the knee, that step in two
+// sets of four (alternating, as a real spider walks).
+const LING_LEGS = [ // [hip dy, knee dx, knee dy, foot dx, foot dy] for the right side; the left mirrors them
+  [-1, 2, -2, 4, -4], [0, 3, -1, 4, 0], [0, 3, 1, 4, 3], [1, 2, 2, 3, 4],
+];
+function lingFrame({ step = 0, rear = 0, open = false }) {
+  const [c, ctx] = makeCanvas(32, 32);
+  const cx = 16, cy = 22 - rear;
+  const line = (x0, y0, x1, y1) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) px(ctx, Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 'night'); };
+  for (const side of [1, -1]) LING_LEGS.forEach(([hy, kx, ky, fx, fy], i) => {
+    // the sets: right 1 and 3 with left 2 and 4, then the others; a lifted foot reaches on and its knee rises
+    const up = step && ((i % 2 === 0) === (side > 0)) === (step === 1);
+    const hx = cx + side, hY = cy + 1 + hy;
+    const kX = hx + side * kx, kY = hY + ky - (up ? 1 : 0), fX = hx + side * fx, fY = 23 + hy + fy - (up ? 1 : 0); // (feet stay planted as the body rears)
+    line(hx, hY, kX, kY); line(kX, kY, fX, fY);
+  });
+  grid(ctx, ['.PPP.', 'PpLpP', 'PLpCP', 'PpCpP', '.PPP.'], SPIDER, cx - 2, cy);
+  grid(ctx, open ? ['PPP', 'EpE', 'W.W'] : ['PPP', 'EpE', '.W.'], SPIDER, cx - 1, cy - 3);
   outline(c, 'ink');
+  return c;
+}
+export function buildSpiderling() {
+  return {
+    idle: [lingFrame({}), lingFrame({ rear: 1 })],
+    walk: [lingFrame({ step: 1 }), lingFrame({}), lingFrame({ step: 2 }), lingFrame({})],
+    windup: [lingFrame({ rear: 1, open: true }), lingFrame({ rear: 2, open: true })],
+    attack: [lingFrame({ step: 1, open: true }), lingFrame({})],
+    hurt: [lingFrame({})],
+  };
+}
+
+// Egg sac: a silk-wrapped bundle tied down by guy lines, the eggs showing as
+// pale bumps through the wrapping. Stage 1, about to hatch: swollen, the
+// silk stretched thin over dark shapes that stir; stage 2, the torn husk left
+// behind, open at the top.
+const SAC = { W: 'web', m: 'mist', b: 'bone', w: 'white', e: 'purpL', p: 'purp', d: 'purpD', E: 'redL', n: 'night' };
+export function eggSac(stage = 0) {
+  const [c, ctx] = makeCanvas(16, 16);
+  const rows = [
+    ['......bb........', '.....bwWb.......', '....bwWeWm......', '...bWWeWWem.....', '...bWeWWeWm.....', '..bWWWeWWWem....', '..bWeWWWeWWm....', '..mWWeWWWeWm....', '...mWWWeWWm.....', '....mmWWmm......'],
+    ['.....bb.........', '....bwWWb.......', '...bWpWWpWm.....', '..bWpdpWdpWm....', '..bWWpWWpEWm....', '.bWpdpWpdpWWm...', '.bWWpEWWpWWWm...', '.mWpdpWpdpWm....', '..mWWpWWpWm.....', '...mmWWWmm......'],
+    ['................', '................', '...b.....b......', '..bWb...bWm.....', '..bWnb.bnWm.....', '.bWnnnnnnnWm....', '.bWnnnnnnnWm....', '.mWWnnnnnWWm....', '..mWWWWWWWm.....', '...mmWWWmm......'],
+  ][stage];
+  grid(ctx, rows, SAC, 2, 4);
+  outline(c, 'ink');
+  // guy lines to the ground (after the outline, so they stay one pixel)
+  const g = [[2, 13], [1, 14], [12, 13], [13, 14], [7, 2], [7, 3]];
+  if (stage < 2) for (const [x, y] of g) px(ctx, x, y, 'web');
+  else for (const [x, y] of g.slice(0, 4)) px(ctx, x, y, 'web');
   return c;
 }
 
