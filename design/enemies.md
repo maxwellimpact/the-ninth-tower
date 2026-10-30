@@ -70,7 +70,7 @@ Each rule was added one at a time and checked before and after with the fight be
 | **Salamander Warrior** | 2.0 | 1.4 | Shield and spear; lunges | Frost / Fire | Salamander scale |
 | **Basalt Brute** | 3.0 | 1.6 | Rock armour (−80% damage) until Storm, a Bomb or the Gauntlets crack it | Storm / Fire | Silver ore |
 | **Fire Beetle** | 0.5 | 2.0 | Rushes in and explodes; kill it at range | Frost / Fire | Brimstone |
-| *Mini-boss:* **Cinder Drake** | 12 | 2.0 | Young dragon that walks heavily on four legs. Its moves come in turn: fire breath (its throat glows over a fan marked on the ground, then a jet of fire sweeps across it), then flight (it crouches with wings up, climbs in sight, hangs over a marked spot and dives). Bites between | Frost / Fire | Gnasher |
+| *Mini-boss:* **Cinder Drake** | 12 | 2.0 | Young dragon that walks heavily on four legs. Its moves come in turn: fire breath (its throat glows over a fan marked on the ground, then a jet of fire sweeps across it), then flight (it crouches with wings up, climbs in sight, hangs over a marked spot and dives). Bites between: it rears its head up and back with its jaws gaping (dark, fanged, no fire), then lunges and a pair of jaws snaps shut where its head lands ("CHOMP!") | Frost / Fire | Gnasher |
 
 ### Frosthelm (frozen highlands; cold soft-gate; cliffs)
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
