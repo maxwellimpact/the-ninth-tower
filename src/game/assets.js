@@ -270,7 +270,7 @@ const BOSSES = {
   snapjaw: creatureBoss('snapjaw', buildSnapjaw, { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1, flipped: 5 }, ['idle', 'walk', 'windup', 'flipped']),
   murk: creatureBoss('murk', buildMurk, { idle: 2.5, walk: 4, windup: 5, slam: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
   mab: creatureBoss('mab', buildMab, { idle: 2, walk: 9, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
-  drake: creatureBoss('drake', buildDrake, { idle: 2, walk: 15, windup: 6, attack: 12, charge: 6, breathe: 10, rear: 5, fly: 10, hurt: 1 }, ['idle', 'walk', 'charge', 'breathe', 'rear', 'fly']), // the bite's windup holds its reared head // walk: 15 frames a second keeps its planted feet still at 30px/s (2px a frame); faster, its walk speeds up to match (enemies.json paced)
+  drake: creatureBoss('drake', buildDrake, { idle: 2, walk: 15, windup: 6, attack: 10, charge: 6, breathe: 10, rear: 5, fly: 10, hurt: 1 }, ['idle', 'walk', 'charge', 'breathe', 'rear', 'fly']), // the bite's windup holds its reared head // walk: 15 frames a second keeps its planted feet still at 30px/s (2px a frame); faster, its walk speeds up to match (enemies.json paced)
   troll: creatureBoss('troll', buildTroll, { idle: 2, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']),
   snagtooth: bigBoss('snagtooth', buildSnagtooth),
   pitchamp: bigBoss('pitchamp', buildGutcrusher),

@@ -1330,6 +1330,7 @@ export class Enemy extends Unit {
 
   play(anim) {
     const key = this.animKey(anim);
+    if (anim === 'recover' && this.kind === 'drake' && this.anim === this.animKey('attack') && this.sprite.anims.isPlaying) return; // its bite plays through before it settles (recover is otherwise idle at once)
     if (this.s.paced) this.sprite.anims.timeScale = anim === 'walk' ? this.pace || 1 : 1; // its walk is timed to its pace: hurrying, its legs go faster (and its feet stay planted)
     if (this.anim !== key) {
       this.anim = key;
@@ -2423,32 +2424,20 @@ export class Enemy extends Unit {
     return this.view === 'up' ? { x: 0, y: -36 } : { x: 0, y: -23 };
   }
 
-  // the bite, drawn in the world: its body thrown a few px at the mark, and a
-  // pair of jaws - fangs on dark gums - snapping shut where its head lands
+  // the bite, shown on the drake itself: its body thrown hard at the mark
+  // (an ember-tinted trail where it was), its own jaws snapping shut as it
+  // lands (the attack pose), a thud and dust under its snout, then it pulls back
   drakeBite(z) {
-    const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y), L = { dx: nx * 8, dy: ny * 6, p: 0 };
+    const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y), L = { dx: nx * 14, dy: ny * 10, p: 0 };
     const m = this.view === 'side' ? { x: this.flip ? -35 : 35, y: -16 } : this.view === 'up' ? { x: 0, y: -42 } : { x: 0, y: -4 }; // its jaws at full lunge (the attack pose)
     this.lunge = L;
-    sc.tweens.add({ targets: L, p: 1, duration: 70, yoyo: true, hold: 120, ease: 'Quad.easeOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } });
-    const g = sc.add.graphics().setDepth(100000 - 40), x = this.x + m.x + L.dx, y = this.y + m.y + L.dy, W = 11, st = { gap: 9, a: 1 };
-    const jaw = (dir, gap) => { // dir -1: the upper jaw (fangs down), 1: the lower (fangs up)
-      const base = (u) => [x + u * W, y + dir * (gap + 3 - 3 * u * u)]; // the gum line, curving round at the corners
-      const pts = []; for (let u = -1; u <= 1.001; u += 0.25) { const [px, py] = base(u); pts.push({ x: px, y: py }); }
-      g.lineStyle(5, 0x16121f, st.a).strokePoints(pts); g.lineStyle(3, 0x7a1f2b, st.a).strokePoints(pts);
-      const n = dir < 0 ? 6 : 5;
-      for (let i = 0; i < n; i++) {
-        const u = dir < 0 ? -0.8 + (i * 1.6) / 5 : -0.64 + (i * 1.28) / 4, [bx, by] = base(u), len = dir < 0 && (i === 0 || i === n - 1) ? 6 : 4; // the lower fangs sit between the upper; long canines at the corners
-        const tri = [bx - 1.5, by, bx + 1.5, by, bx, by - dir * len];
-        g.fillStyle(0x16121f, st.a).fillTriangle(tri[0] - 1, tri[1], tri[2] + 1, tri[3], tri[4], tri[5] - dir);
-        g.fillStyle(0xfff4e0, st.a).fillTriangle(...tri);
-      }
-    };
-    const draw = () => { if (!g.active) return; g.clear(); jaw(-1, st.gap); jaw(1, st.gap); };
-    draw();
-    sc.tweens.add({ targets: st, gap: 0, duration: 80, ease: 'Quad.easeIn', onUpdate: draw, onComplete: () => {
-      if (!g.active) return;
-      audio.sfx('bash'); sc.fx.burst('ember', x, y, 8);
-      sc.tweens.add({ targets: st, a: 0, delay: 140, duration: 220, onUpdate: draw, onComplete: () => g.destroy() });
+    const sx = this.sprite.x, sy = this.sprite.y;
+    for (const k of [0, 0.45]) sc.fx.ghost(this, { x: sx + L.dx * k, y: sy + L.dy * k, tint: 0xc0394b, alpha: 0.4 - k * 0.3, dur: 200 });
+    sc.tweens.add({ targets: L, p: 1, duration: 70, ease: 'Quad.easeIn', onComplete: () => {
+      if (!this.alive) return;
+      const x = this.x + m.x + L.dx, y = this.y + L.dy; // under its snout, on the ground
+      audio.sfx('bash'); sc.fx.dust(x, y); sc.fx.burst('ember', x, y + m.y, 4);
+      sc.tweens.add({ targets: L, p: 0, delay: 160, duration: 260, ease: 'Sine.easeInOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } });
     } });
   }
 
