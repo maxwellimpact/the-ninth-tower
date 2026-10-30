@@ -1679,12 +1679,11 @@ export class Enemy extends Unit {
       // armour pile: if nobody smashes it in time, the Hollow Guard stands back up
       this.reformT = (this.reformT ?? (this.s.hatch?.t || 5)) - dt;
       this.sprite.setAngle(this.reformT < 1.5 ? Math.sin(this.reformT * 40) * 4 : 0);
+      if (this.s.hatch && this.reformT < 1.5 && this.sprite.texture.key === 'eggsac') this.sprite.setTexture('eggsac1'); // swollen, the young stirring inside
       if (this.reformT <= 0) {
         this.alive = false; this.destroy();
-        if (this.s.hatch) { // an egg sac: spiderlings spill out
-          for (let i = 0; i < this.s.hatch.n; i++) this.scene.spawnEnemy(this.s.hatch.kind, this.x + (i - 0.5) * 10, this.y + 4, true);
-          this.scene.fx.burst('spark', this.x, this.y - 4, 8); audio.sfx('squish');
-        } else {
+        if (this.s.hatch) this.hatch();
+        else {
           const g = this.scene.spawnEnemy('hollow', this.x, this.y, true);
           g.hp = Math.round(g.maxHp * 0.5); g.reassembled = true;
           this.scene.floatText(this.x, this.y - 30, 'IT REASSEMBLED!', 'fontPlain', 0xd9b8ff);
@@ -2180,7 +2179,7 @@ export class Enemy extends Unit {
         const a = Math.random() * Math.PI * 2;
         const x = this.x + Math.cos(a) * 26, y = this.y + Math.sin(a) * 18;
         if (sc.nav.solidAtPx(x, y)) continue;
-        sc.spawnEnemy('eggsac', x, y, true);
+        sc.spawnEnemy('eggsac', x, y, true, false, this.level);
       }
       sc.floatText(this.x, this.y - 44, 'SHE LAYS EGGS!', 'fontPlain', 0xd9b8ff);
       audio.sfx('squish', { pitch: 0.7 });
@@ -2628,6 +2627,126 @@ export class Enemy extends Unit {
       } });
   }
 
+  // An egg sac splits: the torn husk stays a moment, and the spiderlings
+  // scramble out in a spread, each a quick hop away from the sac, then run
+  // for the nearest hero. They come at the sac's level (Mab's).
+  hatch() {
+    const sc = this.scene, { kind, n } = this.s.hatch;
+    const husk = sc.add.image(this.x, this.y, 'eggsacTorn').setOrigin(this.sprite.originX, this.sprite.originY).setDepth(this.y - 1);
+    sc.tweens.add({ targets: husk, alpha: 0, delay: 2500, duration: 600, onComplete: () => husk.destroy() });
+    sc.fx.burst('spark', this.x, this.y - 6, 6); audio.sfx('squish', { pitch: 1.2 });
+    const a0 = Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const e = sc.spawnEnemy(kind, this.x, this.y, false, false, this.level);
+      const a = a0 + (i / n) * Math.PI * 2, tx = this.x + Math.cos(a) * 14, ty = this.y + Math.sin(a) * 9;
+      const go = sc.nav.solidAtPx(tx, ty) ? { x: this.x, y: this.y + 4 } : { x: tx, y: ty };
+      e.aggroOn(sc.nearestHero(e, Infinity) || sc.leader, false);
+      e.state = 'recover'; e.t = -0.25; // out before it acts
+      sc.tweens.add({ targets: e, x: go.x, y: go.y, duration: 220, ease: 'Quad.easeOut' });
+    }
+  }
+
+  // Queen Mab's web line. The tell: she rears with her fangs apart, a ball of
+  // silk swelling between them, and a faint dotted line runs to her mark,
+  // which a ring of silk closes on. Then she spits it: a silk ball flies out
+  // trailing its line (~0.18s). A hero it reaches is wrapped in a web and
+  // reeled in to her fangs for a bite; one who dodged or ran leaves the ball
+  // to splat on the ground as a web that fades.
+  mabFangs() {
+    if (this.view === 'side') return { x: this.x + (this.flip ? -15 : 15), y: this.y - 12 };
+    return this.view === 'up' ? { x: this.x, y: this.y - 16 } : { x: this.x, y: this.y - 7 };
+  }
+
+  beginWebAim(t, g, st) {
+    const sc = this.scene;
+    const draw = () => {
+      if (!g.active) return;
+      g.clear();
+      const m = this.mabFangs(), p = st.p;
+      if (t.alive) { // a dotted line to the mark, filling in as she draws
+        const dx = t.x - m.x, dy = t.y - 8 - m.y, L = Math.hypot(dx, dy), n = Math.floor(L / 5);
+        for (let i = 1; i < n * p; i++) { const x = Math.round(m.x + (dx * i) / n), y = Math.round(m.y + (dy * i) / n); g.fillStyle(0x2b2140, 0.5).fillRect(x, y + 1, 2, 1).fillStyle(0xe8e4f0, 0.5 + p * 0.45).fillRect(x, y, 2, 1); }
+        const R = 13 - p * 6; // a ring of silk closing on the mark, eight strands meeting it
+        g.lineStyle(2, 0x2b2140, 0.4).strokeCircle(t.x, t.y - 7, R);
+        g.lineStyle(1, 0xe8e4f0, 0.5 + p * 0.5).strokeCircle(t.x, t.y - 8, R);
+        for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + p; g.lineBetween(t.x + Math.cos(a) * R, t.y - 8 + Math.sin(a) * R, t.x + Math.cos(a) * (R + 3), t.y - 8 + Math.sin(a) * (R + 3)); }
+      }
+      g.fillStyle(0x45405e, 1).fillCircle(m.x, m.y + 1, 1 + p * 2.2).fillStyle(0xe8e4f0, 1).fillCircle(m.x, m.y, 1 + p * 2); // the silk ball between her fangs
+    };
+    draw();
+    sc.tweens.add({ targets: st, p: 1, duration: 800, onUpdate: draw });
+    g.setDepth(100000 - 41);
+    this.zoneGfx = g;
+    sc.floatText(this.x, this.y - 44, 'SHE SPINS A LINE...', 'fontPlain', 0xe8e4f0);
+    audio.sfx('hexCharge', { pitch: 1.4 });
+  }
+
+  webPull() {
+    const sc = this.scene, t = this.tongueTarget;
+    this.clearZone();
+    this.state = 'recover'; this.t = -0.4; this.tongueCd = 4; // (she holds still while she reels)
+    this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
+    audio.sfx('zip', { pitch: 0.8 });
+    const g = sc.add.graphics().setDepth(100000 - 40), m0 = this.mabFangs();
+    const dodged = () => !t?.alive || t.downed || t.invuln > 0 || Math.hypot(t.x - this.x, t.y - this.y) > this.s.pullRange + 20;
+    const aim = { x: t.x, y: t.y - 8 };
+    const line = (x, y, sag) => { // the silk line, sagging a little as it flies and taut once it holds
+      const m = this.alive ? this.mabFangs() : m0, pts = [];
+      for (let i = 0; i <= 10; i++) { const k = i / 10; pts.push(new Phaser.Math.Vector2(m.x + (x - m.x) * k, m.y + (y - m.y) * k + Math.sin(k * Math.PI) * sag)); }
+      g.lineStyle(2, 0x2b2140, 0.5).strokePoints(pts.map((v) => ({ x: v.x, y: v.y + 1 })));
+      g.lineStyle(1, 0xe8e4f0, 1).strokePoints(pts);
+    };
+    const fly = { k: 0 };
+    sc.tweens.add({ targets: fly, k: 1, duration: 180, ease: 'Quad.easeOut',
+      onUpdate: () => {
+        if (!g.active) return;
+        const m = this.alive ? this.mabFangs() : m0, x = m.x + (aim.x - m.x) * fly.k, y = m.y + (aim.y - m.y) * fly.k;
+        g.clear(); line(x, y, 5 * fly.k);
+        g.fillStyle(0x45405e, 1).fillCircle(x, y + 1, 3).fillStyle(0xe8e4f0, 1).fillCircle(x, y, 2.5);
+      },
+      onComplete: () => {
+        if (!this.alive || dodged()) { // it splats where they stood
+          g.destroy();
+          this.webMark(aim.x, aim.y + 8, 9, 1.4);
+          sc.floatText(aim.x, aim.y - 24, 'MISS', 'fontPlain');
+          return;
+        }
+        audio.sfx('squish', { pitch: 1.3 }); t.flash?.(80, 0xe8e4f0);
+        sc.floatText(t.x, t.y - 34, 'WEBBED!', 'fontPlain', 0xe8e4f0);
+        const wrap = this.webMark(t.x, t.y - 8, 8, 0, t); // wrapped: the web goes with them
+        const [nx, ny] = norm(this.x - t.x, this.y - t.y), tx = this.x - nx * 18, ty = this.y - ny * 18;
+        sc.tweens.add({ targets: t, x: tx, y: ty, duration: 340, ease: 'Quad.easeIn',
+          onUpdate: () => { if (g.active) { g.clear(); line(t.x, t.y - 8, 0); } },
+          onComplete: () => {
+            g.destroy();
+            if (this.alive && !t.downed) {
+              this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
+              t.damage(this.s.dmg * sc.difficulty.dmg, this);
+              audio.sfx('stab');
+            }
+            sc.tweens.add({ targets: wrap, alpha: 0, delay: 250, duration: 400, onComplete: () => wrap.destroy() });
+          } });
+      } });
+  }
+
+  // a web drawn at (x, y): eight uneven spokes and two rings strung between
+  // them. With `on` it follows that hero; with `fade` it lies on the ground
+  // that many seconds and fades. Returns the graphics.
+  webMark(x, y, R, fade = 0, on = null) {
+    const sc = this.scene, g = sc.add.graphics();
+    const sp = Array.from({ length: 8 }, (_, k) => { const a = (k / 8) * Math.PI * 2 + Math.random() * 0.3; return [Math.cos(a), Math.sin(a) * (on ? 1 : 0.6), 0.8 + Math.random() * 0.25]; });
+    const ring = (f) => sp.map(([c, s2, l]) => ({ x: c * R * l * f, y: s2 * R * l * f }));
+    for (const [col, a, oy] of [[0x2b2140, 0.45, 1], [0xe8e4f0, 0.95, 0]]) {
+      g.lineStyle(1, col, a);
+      for (const [c, s2, l] of sp) g.lineBetween(0, oy, c * R * l, s2 * R * l + oy);
+      for (const f of [0.45, 0.85]) g.strokePoints(ring(f).map((p) => ({ x: p.x, y: p.y + oy })), true);
+    }
+    g.setPosition(x, y).setDepth(on ? 100000 - 39 : -3);
+    if (on) { const follow = () => { if (!g.active) { sc.events.off('postupdate', follow); return; } g.setPosition(on.x, on.y - 8); }; sc.events.on('postupdate', follow); }
+    if (fade) sc.tweens.add({ targets: g, alpha: 0, delay: fade * 1000, duration: 500, onComplete: () => g.destroy() });
+    return g;
+  }
+
   // Croaker: a tongue that drags you in for a bite.
   beginTongue(t) {
     this.clearZone(); // never leave an old warning marker behind
@@ -2637,6 +2756,7 @@ export class Enemy extends Unit {
     this.face(t.x - this.x, t.y - this.y);
     const g = this.scene.add.graphics().setDepth(-2);
     const st = { p: 0 };
+    if (this.s.ai === 'mab') { this.beginWebAim(t, g, st); return; }
     const draw = () => { if (!t.alive || !g.active) return; g.clear().lineStyle(2, 0xe86a8a, 0.3 + st.p * 0.6).lineBetween(this.x, this.y - 6, t.x, t.y - 6).fillStyle(0xe86a8a, 0.3 + st.p * 0.5).fillCircle(t.x, t.y - 6, 3 + st.p * 3); }; // aim line + a closing mark on the target
     draw();
     this.scene.tweens.add({ targets: st, p: 1, duration: 800, onUpdate: draw });
@@ -2645,6 +2765,7 @@ export class Enemy extends Unit {
   }
 
   tongue() {
+    if (this.s.ai === 'mab') { this.webPull(); return; }
     const sc = this.scene, t = this.tongueTarget;
     this.clearZone();
     this.state = 'recover'; this.t = 0; this.tongueCd = 4;
