@@ -328,7 +328,9 @@ export class UI extends Phaser.Scene {
   bannerLeft() { return Math.max(0, (this.bannerEnd || 0) - this.time.now); }
 
   // Pause (button by the volume, or P): the world and music stop under a card;
-  // a tap anywhere carries on. Not while another card or menu already holds the game.
+  // a tap anywhere else carries on. Not while another card or menu already holds the game.
+  // TITLE SCREEN asks once more (a second tap) before it leaves, and says
+  // whether the game was saved: a demo or a test map never is.
   togglePause() {
     const gs = this.g.scene;
     if (this.pauseCard) {
@@ -339,15 +341,34 @@ export class UI extends Phaser.Scene {
     }
     if (gs.isPaused() || this.dialogOpen || this.g.busy) return;
     gs.pause(); audio.ctx?.suspend();
-    const W = this.W, H = this.H, w = 150, h = 44, x = Math.round((W - w) / 2), y = Math.round((H - h) / 2) - 10;
+    const W = this.W, H = this.H, w = 170, h = 70, x = Math.round((W - w) / 2), y = Math.round((H - h) / 2) - 10;
     const g = this.add.graphics();
     g.fillStyle(0x0a0710, 0.6).fillRect(-2, -2, W + 4, H + 4);
     panel(g, x, y, w, h, C.night, C.gold);
-    const t1 = this.add.bitmapText(Math.round(W / 2), y + 9, 'fontGold', 'PAUSED').setOrigin(0.5, 0).setScale(2);
-    const t2 = this.add.bitmapText(Math.round(W / 2), y + h - 12, 'fontPlain', 'TAP ANYWHERE TO RESUME').setOrigin(0.5, 0).setTint(0x9d93b3);
-    this.pauseCard = this.add.container(0, 0, [g, t1, t2]).setDepth(85);
+    const t1 = this.add.bitmapText(Math.round(W / 2), y + 8, 'fontGold', 'PAUSED').setOrigin(0.5, 0).setScale(2);
+    const t2 = this.add.bitmapText(Math.round(W / 2), y + h - 11, 'fontPlain', 'TAP ANYWHERE TO RESUME').setOrigin(0.5, 0).setTint(0x9d93b3);
+    const bw = 72, bh = 15, by = y + 30, objs = [g, t1, t2], zones = [];
+    const btn = (bx, label, hot, fn) => {
+      const bg = this.add.graphics();
+      const t = this.add.bitmapText(bx + bw / 2, by + 5, hot ? 'fontGold' : 'font', label).setOrigin(0.5, 0);
+      const draw = (warn) => { bg.clear(); panel(bg, bx, by, bw, bh, warn ? 0x4a1f2a : hot ? 0x2f5d3a : 0x2b2140, warn ? 0xec6a5e : hot ? 0x8cff8c : 0x9b7bd6); };
+      draw(false);
+      const z = this.add.zone(bx, by - 1, bw, bh + 2).setOrigin(0).setDepth(87).setInteractive({ useHandCursor: true }).on('pointerdown', (p, lx, ly, ev) => { ev?.stopPropagation?.(); this.tapUI?.(); fn(t, draw); });
+      objs.push(bg, t); zones.push(z);
+    };
+    btn(x + 10, 'RESUME', true, () => this.togglePause());
+    btn(x + w - 10 - bw, 'TITLE SCREEN', false, (t, draw) => {
+      if (!this.pauseSure) { this.pauseSure = true; t.setText('TAP TO LEAVE'); draw(true); t2.setText(this.g.savesHere() ? 'YOUR GAME IS SAVED FIRST' : 'THIS PLAY ISN\'T SAVED').setTint(this.g.savesHere() ? 0x8cff8c : 0xec6a5e); return; }
+      this.pauseCard.destroy(true); this.pauseCard = null;
+      this.pauseZone.destroy(); this.pauseZone = null;
+      audio.ctx?.resume();
+      this.g.toTitle();
+    });
+    this.pauseSure = false;
+    this.pauseCard = this.add.container(0, 0, objs).setDepth(85);
     this.pauseZone = this.add.zone(0, 0, 4000, 4000).setOrigin(0).setDepth(86).setInteractive();
     this.pauseZone.on('pointerdown', () => { this.tapUI?.(); this.togglePause(); });
+    this.pauseZone.on('destroy', () => { for (const z of zones) z.destroy(); });
   }
 
   // Key item card: the game is paused behind it until it's tapped away.

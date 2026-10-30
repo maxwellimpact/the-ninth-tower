@@ -2343,8 +2343,11 @@ export class Game extends Phaser.Scene {
     this.bark(h, text); // (waits for the title)
   }
 
+  // the dungeon lab, the deep-link demos and test maps never touch a save
+  savesHere() { return !(this.state.lab || this.state.demo || (MAP && (MAP.save || 'none') === 'none')); }
+
   autosave(reason) {
-    if (this.state.lab || this.state.demo || (MAP && (MAP.save || 'none') === 'none')) return; // the dungeon lab, the deep-link demos and test maps never touch a save
+    if (!this.savesHere()) return;
     const L = this.leader;
     this.state.explored = this.minimap.serialize();
     this.state.exploredW = MAP_W; // so a later, wider map still reads it right
@@ -2356,6 +2359,18 @@ export class Game extends Phaser.Scene {
     for (const h of this.party) h.hs.hp = h.hp;
     this.state.respawn = Object.fromEntries((this.groups || []).filter((g) => g.cleared && !g.active && !(g.once && this.state.cleared[g.id])).map((g) => [g.id, Math.max(0, Math.round(g.deadT))]));
     if (saveState(this.state, MAP?.save === 'own' ? ownSaveKey(MAP.id) : undefined)) this.events.emit('saved', reason); // a map with a save of its own keeps it apart from the main one
+  }
+
+  // Back to the title (the pause card's TITLE SCREEN): saved first where this
+  // map saves, the music stopped, and this scene and its HUD shut down.
+  toTitle() {
+    if (this.travelling) return;
+    this.travelling = this.busy = true;
+    this.scene.resume();
+    this.autosave('title');
+    music.stop();
+    this.scene.stop('UI');
+    this.scene.start('Title');
   }
 
   // Travel to another world of the main game (a shared map, or back to

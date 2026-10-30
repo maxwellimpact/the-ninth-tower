@@ -31,6 +31,7 @@ export class Title extends Phaser.Scene {
   constructor() { super('Title'); }
 
   create() {
+    this.leaving = false; // (back from the game's pause card, the same scene starts again)
     // a deep link (?demo=combat | boss | explore), e.g. for the developer
     // guide's embeds: straight into a ready-made sandbox that never saves
     // ?map=<id> opens a test map from src/data/maps the same way (no waves)
