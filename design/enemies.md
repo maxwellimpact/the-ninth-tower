@@ -60,7 +60,7 @@ Each rule was added one at a time and checked before and after with the fight be
 | **Gloom Spider** | 1.1 | 1.1 | Webs that root you; climbs walls | Fire / Venom | Silkthread |
 | **Spectral Hound** | 0.8 | 0.9 | Packs of 3–4 that flank | Light / Frost | — |
 | **Wailing Banshee** | 1.2 | 0.8 | Scream interrupts your casts and staggers; break line of sight | Light / Shadow | Crystal |
-| *Mini-boss:* **Queen Mab** (bounty) | 9 | 1.6 | Spider queen; lays egg sacs and pulls with webs | Fire / Venom | Silk ×5 (makes Nightsilk Coat) |
+| *Mini-boss:* **Queen Mab** (bounty) | 9 | 1.6 | Spider queen. Lays egg sacs that swell, split and let out spiderlings (small spiders at her level that run at the nearest hero) unless smashed first. Spits a silk line at a hero who keeps away: a silk ball swells at her fangs and a ring closes on the mark, then the ball flies, wraps them in a web and she reels them in for a bite; a dodge leaves it to splat as a web on the ground | Fire / Venom | Silk ×5 (makes Nightsilk Coat) |
 
 ### Cinderreach (volcanic badlands; heat soft-gate)
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
