@@ -89,11 +89,12 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
      - Bars never draw past their frame.
    - **Check:** after a test run, the browser's save is the one from before it (same `savedAt`).
 16. **A tell promises its own move, and the move shows itself.**
-   - **The bug:** the Cinder Drake's bite borrowed its fire breath's wind-up, the glowing throat, so every bite promised fire. The breath itself drew no fire at all: circles filled on the ground, then embers popped. And when it flew it faded almost to nothing. A playtester waited for fire that never came (2026-10-29).
+   - **The bug:** the Cinder Drake's bite borrowed its fire breath's wind-up, the glowing throat, so every bite promised fire. The breath itself drew no fire at all: circles filled on the ground, then embers popped. And when it flew it faded almost to nothing. A playtester waited for fire that never came (2026-10-29). Then its bite still didn't look like an attack: the moment a foe strikes it goes into recover, which played idle at once, so every creature's attack showed one frame at most (2026-10-30).
    - **The rule:**
      - Each move has its own tell. A pose that warns of one move is never reused for another.
      - What a move does is drawn as an effect in the world (a jet of fire, a thrown rock), not just as circles on the ground and a hit.
      - A foe in the air stays in sight: it's drawn up above its shadow, never faded out.
-   - **Check:** on the Proving Field, watch each of a foe's moves through once. Every wind-up leads to the move it warned of, and you can see each move happen.
+     - A foe's attack animation plays through to its last frame. Nothing that follows the strike (recover, idle) cuts it short.
+   - **Check:** on the Proving Field, watch each of a foe's moves through once. Every wind-up leads to the move it warned of, and you can see each move happen. A frame log of each foe's fight shows every attack animation reaching its last frame.
 
 ---
