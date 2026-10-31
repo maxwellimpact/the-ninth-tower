@@ -934,7 +934,20 @@ function vulkAxe(g, [hx, hy], ang, { reach = 26, back = 0.3, side = -1 } = {}) {
     if (k >= 1 && k < 5) { const [X, Y] = at(t, -1.5 * side); px(g, X, Y, 'steelD'); } // the poll behind the haft
   }
 }
-function vulkFront({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null } = {}) {
+// the chop's swipe: the arc the axe head traces from where it was raised (`from`, a pose) to where it
+// lands, about his shoulder, drawn over him after the outline as a light streak led by a white-hot
+// edge (the forge glowing in the blade), thin where it starts and thick at the leading edge
+function axeTip(p, by, dx = 0) { const top = (p.reach ?? 26) * (1 - (p.back ?? 0.3)); return [p.hand[0] + dx + Math.cos(p.ang) * top, p.hand[1] + by + Math.sin(p.ang) * top]; }
+function vulkSwipe(ctx, [px0, py0], from, to) {
+  const a0 = Math.atan2(from[1] - py0, from[0] - px0); let d = Math.atan2(to[1] - py0, to[0] - px0) - a0;
+  while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+  const r0 = Math.hypot(from[0] - px0, from[1] - py0), r1 = Math.hypot(to[0] - px0, to[1] - py0), n = Math.ceil(Math.abs(d) * Math.max(r0, r1) * 1.4);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, a = a0 + d * t, r = r0 + (r1 - r0) * t, thick = Math.round(1 + 5 * t);
+    for (let k = 0; k < thick; k++) px(ctx, Math.round(px0 + Math.cos(a) * (r - k)), Math.round(py0 + Math.sin(a) * (r - k)), k === 0 ? (t > 0.3 ? 'white' : 'lavaXL') : t > 0.6 ? 'lavaXL' : t > 0.3 ? 'lavaL' : 'lava');
+  }
+}
+function vulkFront({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null, swipe = null } = {}) {
   const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...VULK_MAP, Y: eye } : VULK_MAP, by = bob + crouch;
   limb(ctx, [42, 47], [51, 51 - step], 3.2, 2.2, SCALES); limb(ctx, [51, 51 - step], [59, 52], 2.2, 0.8, SCALES); // the tail, behind, out to his left
   grid(ctx, VULK.legL, M, 27, 42 - (step > 0 ? 1 : 0)); grid(ctx, VULK.legR, M, 38, 42 - (step < 0 ? 1 : 0));
@@ -945,10 +958,11 @@ function vulkFront({ bob = 0, step = 0, hand = null, ang = null, reach = 26, bac
   vulkAxe(ctx, hd, ang ?? -1.75, { reach, back, side });
   vulkArm(ctx, [25, 33 + by], hd, M);
   outline(c, 'ink');
+  if (swipe) vulkSwipe(ctx, [25, 33 + by], axeTip(swipe, swipe.crouch ?? 0), axeTip({ hand, ang, reach, back }, by));
   c.portraitAt = [28, 15];
   return c;
 }
-function vulkSide({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null, lunge = 0 } = {}) {
+function vulkSide({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = -1, grip = null, crouch = 0, eye = null, lunge = 0, swipe = null } = {}) {
   const W = 72, H = 72, [c, ctx] = frame(W, H), M = eye ? { ...VULK_MAP, Y: eye } : VULK_MAP, by = bob + crouch, st = step * 2;
   const far = { ...M, A: 'lava', R: 'lavaD', r: 'lavaD' };
   limb(ctx, [27, 41 + by], [16, 49], 3.4, 2.4, SCALES); limb(ctx, [16, 49], [6, 53 - step], 2.4, 0.8, SCALES); // the tail, sweeping down behind him to the ground
@@ -962,9 +976,10 @@ function vulkSide({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back
   if (grip) vulkArm(ctx, [36 + lunge, 33 + by], [grip[0] + lunge, grip[1] + by], far, ['lava', 'lavaD', 'lavaD']);
   vulkArm(ctx, [33 + lunge, 33 + by], hd, M);
   outline(c, 'ink');
+  if (swipe) vulkSwipe(ctx, [33 + lunge, 33 + by], axeTip(swipe, swipe.crouch ?? 0, swipe.lunge ?? 0), axeTip({ hand, ang, reach, back }, by, lunge));
   return c;
 }
-function vulkBack({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = 1, crouch = 0 } = {}) {
+function vulkBack({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back = 0.3, side = 1, crouch = 0, swipe = null } = {}) {
   const W = 72, H = 72, [c, ctx] = frame(W, H), M = VULK_MAP, by = bob + crouch;
   const hd = hand ? [hand[0], hand[1] + by] : [52, 42 + by - step];
   vulkAxe(ctx, hd, ang ?? -1.4, { reach, back, side }); // facing away, the axe is beyond him
@@ -977,12 +992,14 @@ function vulkBack({ bob = 0, step = 0, hand = null, ang = null, reach = 26, back
   grid(ctx, VULK.headBack, M, 28, 18 + by); grid(ctx, VULK.crown, { ...M, F: 'steel', f: 'steelD' }, 28, 14 + by);
   for (let y = 20; y <= 38; y += 3) { if (y > 26 && y < 29) continue; px(ctx, 35, y + by, 'lavaL'); px(ctx, 36, y + by, 'lavaD'); px(ctx, 35, y + 1 + by, 'lavaD', 2, 1); } // the ridge of raised scales from the back of his head down his spine
   outline(c, 'ink');
+  if (swipe) vulkSwipe(ctx, [46, 33 + by], axeTip(swipe, swipe.crouch ?? 0), axeTip({ hand, ang, reach, back }, by));
   return c;
 }
 // the chop: raised over his head in both hands, brought down on the ground before him, and lifted again
 const VULKF_CHOP = [{ hand: [26, 28], ang: -1.25, reach: 26, back: 0.3, side: -1, grip: [31, 31], crouch: 1 }, { hand: [33, 46], ang: 1.57, reach: 16, back: 0.2, side: 1, grip: [39, 44] }, { hand: [28, 44], ang: 2.0, reach: 20, back: 0.3, side: 1, grip: [36, 42] }];
 const VULKS_CHOP = [{ hand: [33, 28], ang: -2.2, reach: 26, back: 0.3, side: -1, grip: [36, 30], crouch: 1 }, { hand: [43, 40], ang: 0.8, reach: 20, back: 0.25, side: -1, grip: [40, 38], lunge: 2 }, { hand: [41, 41], ang: 0.4, reach: 22, back: 0.3, side: -1, grip: [38, 40] }];
 const VULKB_CHOP = [{ hand: [48, 30], ang: -1.6, reach: 24, back: 0.3, side: 1, crouch: 1 }, { hand: [46, 32], ang: -1.65, reach: 16, back: 0.2, side: 1 }, { hand: [50, 38], ang: -1.5, reach: 22, back: 0.3, side: 1 }];
+for (const chop of [VULKF_CHOP, VULKS_CHOP, VULKB_CHOP]) chop[1].swipe = chop[0]; // the strike traces the swipe from the raised axe
 export const buildVulk = (views = VIEWS) => cycle(byView({ down: vulkFront, side: vulkSide, up: vulkBack }), { down: VULKF_CHOP, side: VULKS_CHOP, up: VULKB_CHOP }, { bob: 1, crouch: 1, eye: 'white' }, views);
 
 // ----------------------------------------------------------------- Queen Mab

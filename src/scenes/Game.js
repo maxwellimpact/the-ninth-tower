@@ -949,6 +949,7 @@ export class Game extends Phaser.Scene {
     else if (kind === 'frogcurse') { s = this.add.sprite(from.x, from.y - 8, 'sparkCurse').setScale(3).setTint(0x8cff8c).setDepth(TOP - 21); sp = 120; audio.sfx('hexCharge', { pitch: 1.4 }); }
     else if (kind === 'snowball') { s = this.add.circle(from.x, from.y - 14, 4, 0xf4f8ff).setStrokeStyle(1, 0x7d8bb4).setDepth(TOP - 21); sp = 150; audio.sfx('swing', { pitch: 0.6 }); }
     else if (kind === 'shard') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0xb8e8ff).setScale(1.2); sp = 190; audio.sfx('frost', { pitch: 1.4 }); }
+    else if (kind === 'mirror') { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)).setTint(0xe7a6ff).setScale(1.4); sp = 230; audio.sfx('block', { pitch: 1.4 }); } // a spell turned back by the Hex Sentinel's face
     else { s = this.add.image(from.x, from.y - 8, 'arrow').setDepth(TOP - 21).setRotation(Math.atan2(ny, nx)); audio.sfx('swing', { pitch: 1.6 }); }
     (this.enemyShots ??= []).push({ s, x: from.x, y: from.y - 8, vx: nx * sp, vy: ny * sp, dmg, life: kind === 'orb' || kind === 'web' ? 1.8 : 1.1, from, kind });
   }
@@ -989,7 +990,7 @@ export class Game extends Phaser.Scene {
         const [fx, fy] = hit.facingVec(), [sx, sy] = norm(-p.vx, -p.vy);
         if (fx * sx + fy * sy > 0.35) { audio.sfx('block'); this.fx.burst('spark', p.x, p.y, 6); this.floatText(hit.x, hit.y - 28, 'BLOCK', 'fontPlain'); p.dead = true; p.s.destroy(); continue; }
       }
-      if (hit && !p.from?.boss && (!p.kind || p.kind === 'arrow') && this.tryEvade(hit, p.from)) { p.dead = true; p.s.destroy(); continue; } // a hero dodges a plain arrow
+      if (hit && !p.from?.boss && (!p.kind || p.kind === 'arrow' || p.kind === 'mirror') && this.tryEvade(hit, p.from)) { p.dead = true; p.s.destroy(); continue; } // a hero dodges a plain arrow (or a reflected spell)
       if (hit) {
         hit.damage(p.dmg, p.from);
         if (p.kind === 'ember') hit.addBurn?.(p.dmg * 0.12, 3);
@@ -1853,9 +1854,10 @@ export class Game extends Phaser.Scene {
     if (hero && spell && target.s?.reflect && target.view && !(target.stunT > 0) && !target.status?.shock) {
       const f = target.view === 'side' ? [target.flip ? -1 : 1, 0] : [0, target.view === 'down' ? 1 : -1];
       const [dx, dy] = norm(src.x - target.x, src.y - target.y);
-      if (f[0] * dx + f[1] * dy > 0.3) {
-        src.damage(amount * 0.5, target);
-        this.fx.burst('curse', target.x, target.y - 12, 8); audio.sfx('block', { pitch: 1.4 });
+      if (f[0] * dx + f[1] * dy > 0.3) { // its face flashes and the spell flies back at the caster, a hex-lit shard for half its harm
+        this.spawnEnemyArrow(target, src, amount * 0.5, 'mirror');
+        target.sprite.setTintFill(0xe7a6ff); this.time.delayedCall(140, () => target.alive && target.restoreTint?.());
+        this.fx.burst('curse', target.x, target.y - 12, 8);
         if (!target.reflectMsgT || this.time.now > target.reflectMsgT) { target.reflectMsgT = this.time.now + 1800; this.floatText(target.x, target.y - 36, 'REFLECTED - GET BEHIND IT', 'fontPlain', 0xd9b8ff); }
         return;
       }
