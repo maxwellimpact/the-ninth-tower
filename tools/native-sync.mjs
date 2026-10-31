@@ -45,4 +45,14 @@ for (const t of Object.values(art.textures)) t.file = t.file.slice(5);
 writeFileSync(resolve(OUT, 'art.json'), JSON.stringify(art));
 for (const f of readdirSync(resolve(ROOT, 'src/data'))) if (f.endsWith('.json')) copyFileSync(resolve(ROOT, 'src/data', f), resolve(OUT, 'data', f));
 for (const f of readdirSync(resolve(ROOT, 'src/data/maps'))) copyFileSync(resolve(ROOT, 'src/data/maps', f), resolve(OUT, 'data/maps', f));
+// JS keeps an object's keys in the order written, and the game leans on it
+// (a hero's starting skills, lists in the menu); Swift's dictionaries don't.
+// So every object's key order goes along: "<file>:<path>" -> keys.
+const order = {};
+const walk = (v, path) => {
+  if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+  else if (v && typeof v === 'object') { const ks = Object.keys(v); if (ks.length > 1) order[path] = ks; for (const k of ks) walk(v[k], path ? `${path}.${k}` : k); }
+};
+for (const f of readdirSync(resolve(ROOT, 'src/data'))) if (f.endsWith('.json')) walk(JSON.parse(readFileSync(resolve(ROOT, 'src/data', f), 'utf8')), `${f.slice(0, -5)}:`);
+writeFileSync(resolve(OUT, 'data/_order.json'), JSON.stringify(order));
 console.log(`${n.img} textures, ${n.sfx} sounds, ${n.chunks} terrain images -> ${OUT}`);

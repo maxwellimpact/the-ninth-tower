@@ -49,6 +49,16 @@ export async function art() {
   const sc = await game();
   const A = await import('/src/game/assets.js');
   for (const g of Object.keys(A.GROUPS)) await A.loadGroup(sc, g); // (waits on any group already loading in the background)
+  // every item icon (gear is generated, so the web draws icons on demand):
+  // the fixed items, and every generated look at every tier
+  const IT = await import('/src/game/itemtex.js');
+  const items = (await import('/src/data/items.json')).default;
+  const G = (await import('/src/data/gear.json')).default;
+  for (const id of Object.keys(items)) IT.itemTex(sc, id);
+  for (let tier = 1; tier <= G.tiers.length; tier++) {
+    for (const [hero, slots] of Object.entries(G.families)) for (const [slot, f] of Object.entries(slots)) f.looks.forEach((_, look) => IT.itemTex(sc, `g.${hero}.${slot}.${tier}.fine.${look}.-.-#nx`));
+    for (const ring of Object.keys(G.rings)) IT.itemTex(sc, `g.any.trinket.${tier}.fine.${ring}.-.-#nx`);
+  }
   const anims = {};
   for (const a of Object.values(sc.anims.anims.entries)) {
     if (!a.frames.length) continue;
@@ -68,7 +78,9 @@ export async function art() {
   }
   const fonts = { chars: (await import('/src/gfx/font.js')).FONT_CHARS };
   const sounds = await renderSounds();
-  await putJSON('nx_art.json', { textures, anims, fonts, sounds });
+  const P = await import('/src/gfx/palette.js');
+  const palette = Object.fromEntries(Object.keys(P.PAL).map((k) => [k, P.hex(k)]));
+  await putJSON('nx_art.json', { textures, anims, fonts, sounds, palette });
   return { textures: n, anims: Object.keys(anims).length, sounds: sounds.length };
 }
 
@@ -150,10 +162,28 @@ export async function world(mapId = null) {
     await put(`nx_w_${id}_curse_${w.def.id}.png`, w.canvas.toDataURL('image/png'));
     curses.push({ id: w.def.id, region: w.region });
   }
+  // the Ward Stones' vines: each painted live and withered (with its stretch
+  // under water, if any), and the path the motes run along
+  const P = await import('/src/gfx/props.js');
+  const putTex = async (key) => { if (!sc.textures.exists(key)) return null; const file = `nx_w_${id}_${safe(key)}.png`; await put(file, toCanvas(sc.textures.get(key).getSourceImage()).toDataURL('image/png')); return file; };
+  const vines = [];
+  for (const v of sc.vines || []) {
+    const key = `vine_${v.ward.def.id}_${v.i}`;
+    const live = await putTex(key), liveWet = await putTex(`${key}_wet`);
+    const dv = { ...v, dead: true, img: null };
+    sc.paintVine(dv);
+    const dead = await putTex(`${key}_dead`), deadWet = await putTex(`${key}_dead_wet`);
+    vines.push({ ward: v.ward.def.id, i: v.i, n: v.n, source: !!v.source, box: v.box, len: v.len, pods: v.pods, sigil: v.sigil || null,
+      pts: v.pts.map((q) => [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10, Math.round(q.d * 10) / 10]), live, liveWet, dead, deadWet });
+  }
+  // each building's doorway and chimney (gfx/props.js), and the Colosseum's seats
+  const buildings = {};
+  for (const b of C.W.buildings || []) if (!buildings[b.kind]) { let door = null; try { door = P.doorOf(b.kind); } catch (e) { /* landmarks without a door */ } buildings[b.kind] = { door, chimney: P.chimneyOf(b.kind) || null }; }
+  const colosseum = (C.W.buildings || []).some((b) => b.kind === 'colosseum') ? { ...P.COLOSSEUM, seats: (P.COLOSSEUM.seats ??= P.colosseumArt().seats) } : null;
   const def = {
     id, w: W, h: H, owW: M.OW_W, rect: [tx0, ty0, tx1, ty1],
     tiles: btoa(bin), props: sc.world.props, biome: rect ? null : biome, biomeIds,
-    chunks, curses,
+    chunks, curses, vines, buildings, colosseum,
     areas: M.AREAS, landmarks: M.LANDMARKS, tower: M.TOWER, barrierR: M.BARRIER_R, towerDoor: M.TOWER_DOOR, highfold: M.HIGHFOLD, lavaRiver: M.LAVA_RIVER,
     T: M.T, solid: [...M.SOLID], soft: [...M.SOFT],
   };
