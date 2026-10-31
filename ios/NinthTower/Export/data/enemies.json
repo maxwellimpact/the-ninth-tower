@@ -1,0 +1,1250 @@
+{
+ "hexling": {
+  "name": "HEXLING",
+  "maxHp": 70,
+  "speed": 38,
+  "aggro": 90,
+  "reach": 20,
+  "windup": 0.6,
+  "recover": 0.8,
+  "dmg": 16,
+  "xp": 8,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 6,
+  "zone": "self",
+  "zr": 22,
+  "drops": {
+   "gel": 0.4
+  },
+  "weak": "fire",
+  "hexed": true
+ },
+ "goblin": {
+  "name": "HEX GOBLIN",
+  "maxHp": 100,
+  "speed": 44,
+  "aggro": 110,
+  "reach": 24,
+  "windup": 0.42,
+  "recover": 0.65,
+  "dmg": 20,
+  "xp": 12,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 15,
+  "drops": {
+   "scrap": 0.5
+  },
+  "weak": "venom",
+  "hexed": true
+ },
+ "archer": {
+  "name": "GOBLIN ARCHER",
+  "maxHp": 62,
+  "speed": 40,
+  "aggro": 120,
+  "reach": 80,
+  "windup": 0.75,
+  "recover": 1.1,
+  "dmg": 15,
+  "xp": 12,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 55,
+  "drops": {
+   "scrap": 0.5
+  },
+  "weak": "venom",
+  "hexed": true
+ },
+ "knight": {
+  "name": "HEX KNIGHT",
+  "maxHp": 260,
+  "speed": 30,
+  "aggro": 110,
+  "reach": 26,
+  "windup": 0.75,
+  "recover": 0.95,
+  "dmg": 34,
+  "xp": 30,
+  "gold": [
+   5,
+   9
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 22,
+  "drops": {
+   "ore": 0.5,
+   "scrap": 0.6
+  },
+  "weak": "fire",
+  "hexed": true
+ },
+ "mire": {
+  "name": "MIRE SLIME",
+  "maxHp": 95,
+  "speed": 32,
+  "aggro": 90,
+  "reach": 20,
+  "windup": 0.65,
+  "recover": 1.0,
+  "dmg": 19,
+  "xp": 11,
+  "gold": [
+   1,
+   4
+  ],
+  "r": 6,
+  "zone": "self",
+  "zr": 24,
+  "biome": "marsh",
+  "drops": {
+   "gel": 0.6,
+   "herb": 0.2
+  },
+  "weak": "frost"
+ },
+ "golem": {
+  "name": "HEX GOLEM",
+  "maxHp": 1400,
+  "speed": 32,
+  "aggro": 140,
+  "reach": 34,
+  "windup": 0.9,
+  "recover": 1.2,
+  "dmg": 30,
+  "xp": 150,
+  "gold": [
+   30,
+   40
+  ],
+  "r": 14,
+  "zone": "self",
+  "zr": 38,
+  "boss": true,
+  "drops": {
+   "ore": 1,
+   "crystal": 1
+  },
+  "weak": "frost",
+  "hexed": true
+ },
+ "rats": {
+  "name": "RAT SWARM",
+  "maxHp": 45,
+  "speed": 62,
+  "aggro": 100,
+  "reach": 16,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 7,
+  "xp": 5,
+  "gold": [
+   0,
+   1
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 18,
+  "weak": "fire",
+  "drops": {}
+ },
+ "hollow": {
+  "name": "HOLLOW GUARD",
+  "maxHp": 180,
+  "speed": 30,
+  "aggro": 100,
+  "reach": 24,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 26,
+  "xp": 20,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 18,
+  "weak": "light",
+  "resist": "venom",
+  "drops": {
+   "ore": 0.5
+  },
+  "reassemble": true
+ },
+ "hollowpile": {
+  "name": "ARMOUR PILE",
+  "maxHp": 40,
+  "speed": 0,
+  "aggro": 0,
+  "reach": 0,
+  "windup": 9,
+  "recover": 9,
+  "dmg": 0,
+  "xp": 2,
+  "gold": [
+   0,
+   0
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 0,
+  "inert": true,
+  "drops": {}
+ },
+ "boar": {
+  "name": "THORNBACK BOAR",
+  "maxHp": 140,
+  "speed": 40,
+  "aggro": 110,
+  "reach": 20,
+  "windup": 0.8,
+  "recover": 1.0,
+  "dmg": 24,
+  "xp": 14,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 7,
+  "zone": "front",
+  "zr": 16,
+  "weak": "fire",
+  "ai": "charge",
+  "drops": {
+   "herb": 0.3
+  }
+ },
+ "crab": {
+  "name": "POND CRAB",
+  "maxHp": 90,
+  "speed": 30,
+  "aggro": 80,
+  "reach": 18,
+  "windup": 0.55,
+  "recover": 0.8,
+  "dmg": 16,
+  "xp": 10,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 14,
+  "weak": "storm",
+  "resist": "frost",
+  "ai": "shell",
+  "drops": {
+   "pearl": 0.15,
+   "gel": 0.3
+  }
+ },
+ "wisp": {
+  "name": "HEX WISP",
+  "maxHp": 50,
+  "speed": 46,
+  "aggro": 115,
+  "reach": 78,
+  "windup": 0.8,
+  "recover": 1.2,
+  "dmg": 12,
+  "xp": 11,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 56,
+  "flying": true,
+  "shot": "orb",
+  "weak": "light",
+  "hexed": true,
+  "drops": {
+   "crystal": 0.2
+  }
+ },
+ "warlock": {
+  "name": "HEX WARLOCK",
+  "maxHp": 80,
+  "speed": 34,
+  "aggro": 110,
+  "reach": 75,
+  "windup": 0.9,
+  "recover": 1.1,
+  "dmg": 18,
+  "xp": 18,
+  "gold": [
+   3,
+   6
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 50,
+  "shot": "bolt",
+  "ai": "warlock",
+  "weak": "storm",
+  "hexed": true,
+  "drops": {
+   "crystal": 0.3
+  },
+  "gem": 0.15,
+  "element": "region"
+ },
+ "snagtooth": {
+  "name": "SNAGTOOTH",
+  "maxHp": 700,
+  "speed": 44,
+  "aggro": 110,
+  "reach": 24,
+  "windup": 0.5,
+  "recover": 0.65,
+  "dmg": 30,
+  "xp": 120,
+  "gold": [
+   25,
+   35
+  ],
+  "r": 8,
+  "zone": "front",
+  "zr": 22,
+  "drops": {
+   "scrap": 1,
+   "ore": 1
+  },
+  "weak": "venom",
+  "hexed": true,
+  "named": true
+ },
+ "drowned": {
+  "name": "DROWNED",
+  "maxHp": 130,
+  "speed": 28,
+  "aggro": 90,
+  "reach": 22,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 22,
+  "xp": 13,
+  "gold": [
+   1,
+   4
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 16,
+  "weak": "light",
+  "resist": "frost",
+  "undead": true,
+  "rise": true,
+  "drops": {
+   "pearl": 0.1,
+   "scrap": 0.3
+  }
+ },
+ "witchling": {
+  "name": "MARSH WITCHLING",
+  "maxHp": 80,
+  "speed": 36,
+  "aggro": 110,
+  "reach": 75,
+  "windup": 0.85,
+  "recover": 1.1,
+  "dmg": 15,
+  "xp": 14,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 50,
+  "shot": "orb",
+  "ai": "blink",
+  "weak": "light",
+  "resist": "shadow",
+  "gem": 0.15,
+  "drops": {
+   "bogmoss": 0.4
+  },
+  "element": "venom"
+ },
+ "leeches": {
+  "name": "LEECH SWARM",
+  "maxHp": 55,
+  "speed": 50,
+  "aggro": 90,
+  "reach": 16,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 8,
+  "xp": 7,
+  "gold": [
+   0,
+   1
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 16,
+  "weak": "fire",
+  "resist": "venom",
+  "drain": true,
+  "drops": {}
+ },
+ "lurker": {
+  "name": "BOG LURKER",
+  "maxHp": 150,
+  "speed": 30,
+  "aggro": 46,
+  "reach": 24,
+  "windup": 0.45,
+  "recover": 1.0,
+  "dmg": 28,
+  "xp": 16,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 7,
+  "zone": "self",
+  "zr": 22,
+  "weak": "storm",
+  "resist": "venom",
+  "ai": "lurk",
+  "drops": {
+   "pearl": 0.3
+  }
+ },
+ "croaker": {
+  "name": "CROAKER",
+  "maxHp": 220,
+  "speed": 28,
+  "aggro": 100,
+  "reach": 70,
+  "windup": 0.8,
+  "recover": 1.2,
+  "dmg": 20,
+  "xp": 20,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 16,
+  "weak": "frost",
+  "ai": "tongue",
+  "drops": {
+   "gel": 0.5
+  }
+ },
+ "snapjaw": {
+  "name": "OLD SNAPJAW",
+  "maxHp": 1100,
+  "speed": 22,
+  "aggro": 110,
+  "reach": 28,
+  "windup": 0.8,
+  "recover": 1.0,
+  "dmg": 34,
+  "xp": 160,
+  "gold": [
+   30,
+   45
+  ],
+  "r": 12,
+  "zone": "self",
+  "zr": 30,
+  "weak": "storm",
+  "resist": "frost",
+  "ai": "shell",
+  "named": true,
+  "drops": {
+   "silver": 2,
+   "pearl": 2
+  }
+ },
+ "murk": {
+  "name": "MOTHER MURK",
+  "maxHp": 1900,
+  "speed": 20,
+  "aggro": 160,
+  "reach": 40,
+  "windup": 0.9,
+  "recover": 1.1,
+  "dmg": 30,
+  "xp": 220,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 16,
+  "zone": "self",
+  "zr": 40,
+  "boss": true,
+  "weak": "frost",
+  "resist": "venom",
+  "drops": {
+   "pearl": 2,
+   "crystal": 1
+  },
+  "element": "venom"
+ },
+ "pitchamp": {
+  "name": "GUTCRUSHER",
+  "maxHp": 900,
+  "speed": 42,
+  "aggro": 120,
+  "reach": 26,
+  "windup": 0.55,
+  "recover": 0.6,
+  "dmg": 34,
+  "xp": 200,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 24,
+  "drops": {
+   "scrap": 2,
+   "ore": 1
+  },
+  "weak": "venom",
+  "hexed": true,
+  "named": true
+ },
+ "shade": {
+  "name": "SHADE",
+  "maxHp": 100,
+  "speed": 46,
+  "aggro": 80,
+  "reach": 22,
+  "windup": 0.42,
+  "recover": 0.7,
+  "dmg": 26,
+  "xp": 16,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 15,
+  "ai": "shade",
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "ghostcap": 0.4
+  },
+  "tint": 7108784
+ },
+ "rootling": {
+  "name": "ROOTLING",
+  "maxHp": 150,
+  "speed": 16,
+  "aggro": 110,
+  "reach": 88,
+  "windup": 0.75,
+  "recover": 1.3,
+  "dmg": 18,
+  "xp": 15,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 6,
+  "ranged": true,
+  "keepAway": 0,
+  "shot": "thorn",
+  "weak": "fire",
+  "resist": "venom",
+  "drops": {
+   "heartwood": 0.35
+  },
+  "paced": 16
+ },
+ "spider": {
+  "name": "GLOOM SPIDER",
+  "maxHp": 110,
+  "speed": 52,
+  "aggro": 110,
+  "reach": 22,
+  "windup": 0.38,
+  "recover": 0.6,
+  "dmg": 20,
+  "xp": 14,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 15,
+  "ai": "web",
+  "weak": "fire",
+  "resist": "venom",
+  "drops": {
+   "silk": 0.35
+  },
+  "element": "venom",
+  "paced": 52
+ },
+ "spiderling": {
+  "name": "SPIDERLING",
+  "maxHp": 30,
+  "speed": 62,
+  "aggro": 130,
+  "reach": 18,
+  "windup": 0.3,
+  "recover": 0.5,
+  "dmg": 8,
+  "xp": 3,
+  "gold": [
+   0,
+   1
+  ],
+  "r": 3,
+  "zone": "front",
+  "zr": 11,
+  "weak": "fire",
+  "resist": "venom",
+  "paced": 62
+ },
+ "hound": {
+  "name": "SPECTRAL HOUND",
+  "maxHp": 75,
+  "speed": 64,
+  "aggro": 120,
+  "reach": 22,
+  "windup": 0.32,
+  "recover": 0.55,
+  "dmg": 16,
+  "xp": 10,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 14,
+  "ai": "pack",
+  "weak": "light",
+  "resist": "frost"
+ },
+ "banshee": {
+  "name": "WAILING BANSHEE",
+  "maxHp": 110,
+  "speed": 32,
+  "aggro": 110,
+  "reach": 72,
+  "windup": 0.9,
+  "recover": 1.2,
+  "dmg": 14,
+  "xp": 18,
+  "gold": [
+   3,
+   6
+  ],
+  "r": 5,
+  "ranged": true,
+  "keepAway": 46,
+  "shot": "orb",
+  "ai": "banshee",
+  "flying": true,
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "crystal": 0.3
+  },
+  "tint": 13626623,
+  "alpha": 0.82,
+  "hover": 7,
+  "element": "shadow"
+ },
+ "mab": {
+  "name": "QUEEN MAB",
+  "maxHp": 900,
+  "speed": 40,
+  "aggro": 120,
+  "reach": 30,
+  "windup": 0.55,
+  "recover": 0.8,
+  "dmg": 30,
+  "xp": 160,
+  "gold": [
+   30,
+   45
+  ],
+  "r": 12,
+  "zone": "front",
+  "zr": 26,
+  "ai": "mab",
+  "weak": "fire",
+  "resist": "venom",
+  "drops": {
+   "silk": 5
+  },
+  "named": true,
+  "pullRange": 150
+ },
+ "eggsac": {
+  "name": "EGG SAC",
+  "maxHp": 40,
+  "speed": 0,
+  "aggro": 0,
+  "reach": 0,
+  "windup": 1,
+  "recover": 1,
+  "dmg": 0,
+  "xp": 2,
+  "gold": [
+   0,
+   0
+  ],
+  "r": 5,
+  "inert": true,
+  "hatch": {
+   "kind": "spiderling",
+   "n": 2,
+   "t": 4.5
+  }
+ },
+ "huntsman": {
+  "name": "PALE HUNTSMAN",
+  "maxHp": 1500,
+  "speed": 44,
+  "aggro": 220,
+  "reach": 112,
+  "windup": 0.65,
+  "recover": 0.75,
+  "dmg": 26,
+  "xp": 240,
+  "gold": [
+   40,
+   55
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 72,
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "silk": 2,
+   "crystal": 1
+  }
+ },
+ "huntecho": {
+  "name": "ECHO OF THE HUNT",
+  "maxHp": 1,
+  "speed": 44,
+  "aggro": 300,
+  "reach": 112,
+  "windup": 0.8,
+  "recover": 1,
+  "dmg": 6,
+  "xp": 0,
+  "gold": [
+   0,
+   0
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 72,
+  "tint": 13623807
+ },
+ "imp": {
+  "name": "EMBER IMP",
+  "maxHp": 70,
+  "speed": 46,
+  "aggro": 115,
+  "reach": 80,
+  "windup": 0.7,
+  "recover": 1.0,
+  "dmg": 17,
+  "xp": 14,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 4,
+  "ranged": true,
+  "keepAway": 50,
+  "shot": "ember",
+  "ai": "blink",
+  "flying": true,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.4
+  },
+  "element": "fire"
+ },
+ "slug": {
+  "name": "MAGMA SLUG",
+  "maxHp": 160,
+  "speed": 22,
+  "aggro": 100,
+  "reach": 24,
+  "windup": 0.6,
+  "recover": 1.0,
+  "dmg": 18,
+  "xp": 15,
+  "gold": [
+   2,
+   4
+  ],
+  "r": 7,
+  "zone": "front",
+  "zr": 17,
+  "ai": "trail",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.45
+  },
+  "element": "fire"
+ },
+ "salamander": {
+  "name": "SALAMANDER WARRIOR",
+  "maxHp": 200,
+  "speed": 40,
+  "aggro": 115,
+  "reach": 26,
+  "windup": 0.5,
+  "recover": 0.75,
+  "dmg": 28,
+  "xp": 20,
+  "gold": [
+   3,
+   6
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 18,
+  "ai": "charge",
+  "guard": true,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 0.4
+  }
+ },
+ "brute": {
+  "name": "BASALT BRUTE",
+  "maxHp": 300,
+  "speed": 24,
+  "aggro": 100,
+  "reach": 30,
+  "windup": 0.85,
+  "recover": 1.1,
+  "dmg": 32,
+  "xp": 28,
+  "gold": [
+   4,
+   8
+  ],
+  "r": 9,
+  "zone": "self",
+  "zr": 30,
+  "ai": "brute",
+  "weak": "storm",
+  "resist": "fire",
+  "drops": {
+   "silver": 0.5
+  }
+ },
+ "beetle": {
+  "name": "FIRE BEETLE",
+  "maxHp": 50,
+  "speed": 66,
+  "aggro": 130,
+  "reach": 20,
+  "windup": 0.6,
+  "recover": 0.6,
+  "dmg": 40,
+  "xp": 10,
+  "gold": [
+   1,
+   3
+  ],
+  "r": 5,
+  "ai": "bomber",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "brimstone": 0.3
+  },
+  "paced": 66
+ },
+ "drake": {
+  "name": "CINDER DRAKE",
+  "maxHp": 1200,
+  "speed": 34,
+  "paced": 30,
+  "aggro": 140,
+  "reach": 34,
+  "windup": 0.6,
+  "recover": 0.85,
+  "dmg": 36,
+  "xp": 220,
+  "gold": [
+   40,
+   60
+  ],
+  "r": 13,
+  "zone": "front",
+  "zr": 30,
+  "ai": "drake",
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 3,
+   "brimstone": 2
+  },
+  "named": true,
+  "element": "fire"
+ },
+ "vulk": {
+  "name": "FORGEMASTER VULK",
+  "maxHp": 2000,
+  "speed": 30,
+  "aggro": 220,
+  "reach": 38,
+  "windup": 0.55,
+  "recover": 0.8,
+  "dmg": 34,
+  "xp": 260,
+  "gold": [
+   45,
+   60
+  ],
+  "r": 10,
+  "zone": "front",
+  "zr": 30,
+  "weak": "frost",
+  "resist": "fire",
+  "drops": {
+   "scale": 3,
+   "silver": 2
+  },
+  "element": "fire"
+ },
+ "frostwolf": {
+  "name": "FROST WOLF",
+  "maxHp": 90,
+  "speed": 62,
+  "aggro": 120,
+  "reach": 22,
+  "windup": 0.34,
+  "recover": 0.55,
+  "dmg": 18,
+  "xp": 12,
+  "gold": [
+   1,
+   4
+  ],
+  "r": 7,
+  "zone": "front",
+  "zr": 16,
+  "ai": "pack",
+  "chill": true,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 0.45
+  },
+  "element": "frost"
+ },
+ "rimehorn": {
+  "name": "RIMEHORN",
+  "maxHp": 260,
+  "speed": 30,
+  "aggro": 125,
+  "reach": 30,
+  "windup": 0.8,
+  "recover": 1.0,
+  "dmg": 26,
+  "xp": 30,
+  "gold": [
+   4,
+   9
+  ],
+  "r": 10,
+  "zone": "front",
+  "zr": 24,
+  "ai": "rimehorn",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 0.6,
+   "rimeglass": 0.4
+  }
+ },
+ "icewraith": {
+  "name": "ICE WRAITH",
+  "maxHp": 100,
+  "speed": 44,
+  "aggro": 115,
+  "reach": 20,
+  "windup": 0.5,
+  "recover": 0.8,
+  "dmg": 24,
+  "xp": 16,
+  "gold": [
+   2,
+   5
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 14,
+  "flying": true,
+  "chill": true,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "rimeglass": 0.4
+  },
+  "alpha": 0.85,
+  "hover": 6,
+  "element": "frost"
+ },
+ "sentinel": {
+  "name": "HEX SENTINEL",
+  "maxHp": 180,
+  "speed": 0,
+  "aggro": 130,
+  "reach": 125,
+  "windup": 0.9,
+  "recover": 1.3,
+  "dmg": 24,
+  "xp": 22,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 0,
+  "shot": "shard",
+  "reflect": true,
+  "anchored": true,
+  "weak": "storm",
+  "resist": "frost",
+  "drops": {
+   "crystal": 0.5,
+   "silver": 0.3
+  },
+  "element": "frost"
+ },
+ "raider": {
+  "name": "SNOW GOBLIN RAIDER",
+  "maxHp": 100,
+  "speed": 40,
+  "aggro": 135,
+  "reach": 20,
+  "windup": 0.4,
+  "recover": 0.6,
+  "dmg": 22,
+  "xp": 15,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 14,
+  "ai": "sled",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "scrap": 0.6
+  }
+ },
+ "troll": {
+  "name": "AVALANCHE TROLL",
+  "maxHp": 1400,
+  "speed": 30,
+  "aggro": 140,
+  "reach": 32,
+  "windup": 0.7,
+  "recover": 0.9,
+  "dmg": 42,
+  "xp": 260,
+  "gold": [
+   45,
+   70
+  ],
+  "r": 14,
+  "zone": "front",
+  "zr": 28,
+  "ai": "troll",
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "pelt": 3,
+   "rimeglass": 2
+  },
+  "named": true
+ },
+ "isolde": {
+  "name": "ISOLDE THE RIMEGUARD",
+  "maxHp": 1900,
+  "speed": 40,
+  "aggro": 220,
+  "reach": 40,
+  "windup": 0.55,
+  "recover": 0.75,
+  "dmg": 32,
+  "xp": 260,
+  "gold": [
+   45,
+   60
+  ],
+  "r": 8,
+  "zone": "front",
+  "zr": 30,
+  "weak": "fire",
+  "resist": "frost",
+  "drops": {
+   "rimeglass": 3,
+   "silver": 2
+  },
+  "element": "frost"
+ },
+ "voidling": {
+  "name": "VOIDLING",
+  "maxHp": 100,
+  "speed": 50,
+  "aggro": 130,
+  "reach": 20,
+  "windup": 0.4,
+  "recover": 0.7,
+  "dmg": 26,
+  "xp": 18,
+  "gold": [
+   3,
+   7
+  ],
+  "r": 5,
+  "zone": "front",
+  "zr": 14,
+  "flying": true,
+  "ai": "voidling",
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "crystal": 0.3
+  }
+ },
+ "gargoyle": {
+  "name": "TOWER GARGOYLE",
+  "maxHp": 250,
+  "speed": 72,
+  "aggro": 150,
+  "reach": 26,
+  "windup": 0.45,
+  "recover": 0.8,
+  "dmg": 32,
+  "xp": 30,
+  "gold": [
+   4,
+   9
+  ],
+  "r": 9,
+  "zone": "front",
+  "zr": 20,
+  "ai": "gargoyle",
+  "weak": "storm",
+  "resist": "venom",
+  "drops": {
+   "starmetal": 0.12
+  }
+ },
+ "chainwarden": {
+  "name": "CHAIN WARDEN",
+  "maxHp": 350,
+  "speed": 30,
+  "aggro": 130,
+  "reach": 34,
+  "windup": 0.7,
+  "recover": 1.0,
+  "dmg": 36,
+  "xp": 36,
+  "gold": [
+   5,
+   10
+  ],
+  "r": 8,
+  "zone": "front",
+  "zr": 26,
+  "ai": "chain",
+  "weak": "light",
+  "resist": "shadow",
+  "drops": {
+   "starmetal": 0.15,
+   "silver": 0.5
+  }
+ },
+ "mirror": {
+  "name": "MALGRIM'S MIRROR",
+  "maxHp": 300,
+  "speed": 55,
+  "aggro": 140,
+  "reach": 22,
+  "windup": 0.5,
+  "recover": 0.7,
+  "dmg": 30,
+  "xp": 40,
+  "gold": [
+   6,
+   12
+  ],
+  "r": 6,
+  "zone": "front",
+  "zr": 16,
+  "ai": "mirror",
+  "weak": "light",
+  "drops": {
+   "crystal": 0.5,
+   "mirrorshard": 1
+  }
+ },
+ "malgrim": {
+  "name": "MALGRIM THE UNKIND",
+  "maxHp": 3200,
+  "speed": 44,
+  "aggro": 260,
+  "reach": 110,
+  "windup": 0.6,
+  "recover": 0.8,
+  "dmg": 34,
+  "xp": 600,
+  "gold": [
+   120,
+   160
+  ],
+  "r": 7,
+  "ranged": true,
+  "keepAway": 70,
+  "shot": "bolt",
+  "weak": "light",
+  "resist": "shadow",
+  "element": "shadow"
+ }
+}

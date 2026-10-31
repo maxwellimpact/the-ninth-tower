@@ -1,0 +1,381 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		12B05D2F8621659D0478C50A /* Enemy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FF6580B1DF875AEAFE9CCB1 /* Enemy.swift */; };
+		12BDD84F79ADAB1385A015A9 /* Hero.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68780235C73B76DA17D8E5E5 /* Hero.swift */; };
+		195E0C0CC77641FC7D69B399 /* Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB58E1C67CE35E83CDC7697A /* Nav.swift */; };
+		21792AC20499E10FF613BF0A /* GameData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85CB21009AED345F0BC3459 /* GameData.swift */; };
+		40D8B3BBC374A77EAF703229 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31090F9CF67782E38D341066 /* App.swift */; };
+		43034FD666D6B35B450C758B /* Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9099C577B8247EA99B1E5F9 /* Assets.swift */; };
+		4D71C588B9E7E384805F1A1B /* HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698059FD3E4E60A7A284BCF3 /* HUD.swift */; };
+		6B8F21FF38B2579A2462EFFD /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F783DDC041F30ABC2664F8 /* Haptics.swift */; };
+		6B9DD8B3E5B6F5753C5BD924 /* Unit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CF54D08E3BEC6915A5E860 /* Unit.swift */; };
+		80181060B566D374DD5B7360 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9200800F3E8525939E09EE95 /* Util.swift */; };
+		99FA2A926691BC268780EA5E /* Export in Resources */ = {isa = PBXBuildFile; fileRef = 8F45F424C79DA2D046D9D250 /* Export */; };
+		CFA33B465632677FE12D9718 /* Skills.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8EEF11A63473F2D9DB82AB /* Skills.swift */; };
+		E0EF75425AA08FC891245A6B /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B25504FF52FBD44FA441A76 /* Audio.swift */; };
+		F15E5BDF703AD6C4F4617F78 /* FX.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACA1E74A7534CD2E714AABD /* FX.swift */; };
+		F56E97372849B487A4C9757E /* BattleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D609C65AA104A811E11C42 /* BattleScene.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1F3DCB65C303092B311F69A9 /* NinthTower.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = NinthTower.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		22D609C65AA104A811E11C42 /* BattleScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleScene.swift; sourceTree = "<group>"; };
+		2FF6580B1DF875AEAFE9CCB1 /* Enemy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enemy.swift; sourceTree = "<group>"; };
+		31090F9CF67782E38D341066 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		3B25504FF52FBD44FA441A76 /* Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
+		68780235C73B76DA17D8E5E5 /* Hero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hero.swift; sourceTree = "<group>"; };
+		698059FD3E4E60A7A284BCF3 /* HUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUD.swift; sourceTree = "<group>"; };
+		8F45F424C79DA2D046D9D250 /* Export */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Export; path = NinthTower/Export; sourceTree = SOURCE_ROOT; };
+		9200800F3E8525939E09EE95 /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
+		A85CB21009AED345F0BC3459 /* GameData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameData.swift; sourceTree = "<group>"; };
+		AACA1E74A7534CD2E714AABD /* FX.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FX.swift; sourceTree = "<group>"; };
+		D9099C577B8247EA99B1E5F9 /* Assets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Assets.swift; sourceTree = "<group>"; };
+		DC39D64FCFE652C9CDD2F1E7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E9F783DDC041F30ABC2664F8 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		EC8EEF11A63473F2D9DB82AB /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
+		F1CF54D08E3BEC6915A5E860 /* Unit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Unit.swift; sourceTree = "<group>"; };
+		FB58E1C67CE35E83CDC7697A /* Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nav.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		3FF19B897B76E69326132530 /* NinthTower */ = {
+			isa = PBXGroup;
+			children = (
+				31090F9CF67782E38D341066 /* App.swift */,
+				8F45F424C79DA2D046D9D250 /* Export */,
+				DC39D64FCFE652C9CDD2F1E7 /* Info.plist */,
+				C317B0176639020ED6AE361C /* Engine */,
+				4CE47B58CBFE7DE7DFF2D667 /* Game */,
+			);
+			path = NinthTower;
+			sourceTree = "<group>";
+		};
+		4CE47B58CBFE7DE7DFF2D667 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				22D609C65AA104A811E11C42 /* BattleScene.swift */,
+				2FF6580B1DF875AEAFE9CCB1 /* Enemy.swift */,
+				AACA1E74A7534CD2E714AABD /* FX.swift */,
+				A85CB21009AED345F0BC3459 /* GameData.swift */,
+				68780235C73B76DA17D8E5E5 /* Hero.swift */,
+				698059FD3E4E60A7A284BCF3 /* HUD.swift */,
+				EC8EEF11A63473F2D9DB82AB /* Skills.swift */,
+				F1CF54D08E3BEC6915A5E860 /* Unit.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		619A9EB4A4612F82F0B3D33E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1F3DCB65C303092B311F69A9 /* NinthTower.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		98E7F1B467BD656D02AF17F7 = {
+			isa = PBXGroup;
+			children = (
+				3FF19B897B76E69326132530 /* NinthTower */,
+				619A9EB4A4612F82F0B3D33E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C317B0176639020ED6AE361C /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				D9099C577B8247EA99B1E5F9 /* Assets.swift */,
+				3B25504FF52FBD44FA441A76 /* Audio.swift */,
+				E9F783DDC041F30ABC2664F8 /* Haptics.swift */,
+				FB58E1C67CE35E83CDC7697A /* Nav.swift */,
+				9200800F3E8525939E09EE95 /* Util.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		84DB4EBF45E4F77D444D5AFE /* NinthTower */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D2FF0D6F8F077B6084BA24CE /* Build configuration list for PBXNativeTarget "NinthTower" */;
+			buildPhases = (
+				D059BA3B9E22E8D7FC2A6364 /* Sources */,
+				B68208ECB1B5497EB83E8930 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NinthTower;
+			packageProductDependencies = (
+			);
+			productName = NinthTower;
+			productReference = 1F3DCB65C303092B311F69A9 /* NinthTower.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D43C315A2E31047537CAA062 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					84DB4EBF45E4F77D444D5AFE = {
+						DevelopmentTeam = 46QX82H573;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = BE7676712139B2CEE3D16365 /* Build configuration list for PBXProject "NinthTower" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 98E7F1B467BD656D02AF17F7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				84DB4EBF45E4F77D444D5AFE /* NinthTower */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B68208ECB1B5497EB83E8930 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				99FA2A926691BC268780EA5E /* Export in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D059BA3B9E22E8D7FC2A6364 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40D8B3BBC374A77EAF703229 /* App.swift in Sources */,
+				43034FD666D6B35B450C758B /* Assets.swift in Sources */,
+				E0EF75425AA08FC891245A6B /* Audio.swift in Sources */,
+				F56E97372849B487A4C9757E /* BattleScene.swift in Sources */,
+				12B05D2F8621659D0478C50A /* Enemy.swift in Sources */,
+				F15E5BDF703AD6C4F4617F78 /* FX.swift in Sources */,
+				21792AC20499E10FF613BF0A /* GameData.swift in Sources */,
+				4D71C588B9E7E384805F1A1B /* HUD.swift in Sources */,
+				6B8F21FF38B2579A2462EFFD /* Haptics.swift in Sources */,
+				12BDD84F79ADAB1385A015A9 /* Hero.swift in Sources */,
+				195E0C0CC77641FC7D69B399 /* Nav.swift in Sources */,
+				CFA33B465632677FE12D9718 /* Skills.swift in Sources */,
+				6B9DD8B3E5B6F5753C5BD924 /* Unit.swift in Sources */,
+				80181060B566D374DD5B7360 /* Util.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2D2ECA81EEECF315A095EBA5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		33DAA162C7B9DAF680781D44 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46QX82H573;
+				INFOPLIST_FILE = NinthTower/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jonathancox.ninthtower;
+				PRODUCT_NAME = NinthTower;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		75476B026A958B368497A3FE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46QX82H573;
+				INFOPLIST_FILE = NinthTower/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jonathancox.ninthtower;
+				PRODUCT_NAME = NinthTower;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B122EBAB6BBCB7A9AA0BEE32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BE7676712139B2CEE3D16365 /* Build configuration list for PBXProject "NinthTower" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B122EBAB6BBCB7A9AA0BEE32 /* Debug */,
+				2D2ECA81EEECF315A095EBA5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D2FF0D6F8F077B6084BA24CE /* Build configuration list for PBXNativeTarget "NinthTower" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33DAA162C7B9DAF680781D44 /* Debug */,
+				75476B026A958B368497A3FE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D43C315A2E31047537CAA062 /* Project object */;
+}

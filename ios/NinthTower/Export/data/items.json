@@ -1,0 +1,1467 @@
+{
+ "iron_helm": {
+  "name": "IRON HELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "common",
+  "look": "helm_iron",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "knight_greathelm": {
+  "name": "KNIGHT GREATHELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "helm_great",
+  "stats": {
+   "def": 5,
+   "hp": 10
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "head"
+  }
+ },
+ "lionheart_helm": {
+  "name": "LIONHEART HELM",
+  "hero": "brann",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "helm_lion",
+  "stats": {
+   "def": 7,
+   "hp": 25,
+   "atk": 2
+  },
+  "desc": "BELOW 40% HP: +25% DEF, AND A ROAR EVERY 3S DRAWS NEARBY FOES. WORN BY THE KING'S CHAMPION. IT ROARS. A LITTLE.",
+  "fx": {
+   "type": "radiant",
+   "at": "head"
+  },
+  "perk": "lionheart"
+ },
+ "guard_plate": {
+  "name": "GUARD PLATE",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "common",
+  "look": "plate_guard",
+  "stats": {
+   "def": 4
+  },
+  "desc": ""
+ },
+ "steel_hauberk": {
+  "name": "STEEL HAUBERK",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "hauberk_steel",
+  "stats": {
+   "def": 8,
+   "hp": 15
+  },
+  "desc": ""
+ },
+ "aegis_of_dawn": {
+  "name": "AEGIS OF DAWN",
+  "hero": "brann",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "aegis_dawn",
+  "stats": {
+   "def": 12,
+   "hp": 40
+  },
+  "desc": "EVERY 5TH HIT BRANN TAKES HEALS THE PARTY 8%. FORGED IN THE FIRST LIGHT OF ALDERMERE.",
+  "fx": {
+   "type": "radiant",
+   "at": "body"
+  },
+  "perk": "aegis"
+ },
+ "iron_sword": {
+  "name": "IRON SWORD",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "sword_iron",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "fine_longsword": {
+  "name": "FINE LONGSWORD",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "sword_long",
+  "stats": {
+   "atk": 5
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "emberbrand": {
+  "name": "EMBERBRAND",
+  "hero": "brann",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "sword_ember",
+  "stats": {
+   "atk": 9,
+   "crit": 0.05
+  },
+  "desc": "FIRE. SHIELD BASH SETS THE GROUND ALIGHT. THE BLADE NEVER QUITE STOPS SMOULDERING.",
+  "fx": {
+   "type": "flame",
+   "at": "weapon"
+  },
+  "element": "fire",
+  "perk": "emberbrand"
+ },
+ "round_shield": {
+  "name": "ROUND SHIELD",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "shield_round",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "kite_shield": {
+  "name": "KITE SHIELD",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "shield_kite",
+  "stats": {
+   "def": 6
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "offhand"
+  }
+ },
+ "bulwark_of_aldermere": {
+  "name": "BULWARK OF ALDERMERE",
+  "hero": "brann",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "shield_bulwark",
+  "stats": {
+   "def": 10,
+   "hp": 20
+  },
+  "desc": "BLOCKS SHOTS FROM THE FRONT WHILE BRANN ISN'T SWINGING. A WALL WITH A HANDLE.",
+  "fx": {
+   "type": "radiant",
+   "at": "offhand"
+  },
+  "perk": "bulwark"
+ },
+ "apprentice_hat": {
+  "name": "APPRENTICE HAT",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "common",
+  "look": "hat_apprentice",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
+ },
+ "stargazer_hat": {
+  "name": "STARGAZER HAT",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "hat_star",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": "",
+  "fx": {
+   "type": "stars",
+   "at": "head"
+  }
+ },
+ "ember_circlet": {
+  "name": "EMBER CIRCLET",
+  "hero": "pip",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "circlet_ember",
+  "stats": {
+   "atk": 6,
+   "crit": 0.08
+  },
+  "desc": "FIRE STATUSES LAST 50% LONGER. +8% CRIT. WARM TO THE TOUCH. WARMER TO THE THOUGHT.",
+  "fx": {
+   "type": "flame",
+   "at": "head"
+  },
+  "perk": "circlet"
+ },
+ "apprentice_robe": {
+  "name": "APPRENTICE ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "common",
+  "look": "robe_apprentice",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "scholar_robe": {
+  "name": "SCHOLAR ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "robe_scholar",
+  "stats": {
+   "def": 4,
+   "hp": 10,
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "phoenix_robe": {
+  "name": "PHOENIX ROBE",
+  "hero": "pip",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "robe_phoenix",
+  "stats": {
+   "def": 6,
+   "hp": 25,
+   "atk": 4
+  },
+  "desc": "ONCE A FIGHT, PIP RISES AGAIN AT 40% HP WHEN DOWNED. THE HEM IS ACTUALLY ON FIRE. DO NOT WASH.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  },
+  "perk": "phoenix"
+ },
+ "oak_staff": {
+  "name": "OAK STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "staff_oak",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "crystal_staff": {
+  "name": "CRYSTAL STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "staff_crystal",
+  "stats": {
+   "atk": 5
+  },
+  "desc": "",
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  },
+  "element": "frost"
+ },
+ "sunspire_staff": {
+  "name": "SUNSPIRE STAFF",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "staff_sunspire",
+  "stats": {
+   "atk": 9
+  },
+  "desc": "FIRE. FIREBALL SPLITS INTO THREE WHERE IT LANDS. CARVED FROM A TOWER THAT IS NOT THE NINTH.",
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  },
+  "element": "fire",
+  "perk": "sunspire"
+ },
+ "worn_tome": {
+  "name": "WORN TOME",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "tome_worn",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
+ },
+ "frost_grimoire": {
+  "name": "FROST GRIMOIRE",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "tome_frost",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": "CHILLS FOES HIT BY PIP'S SPELLS.",
+  "fx": {
+   "type": "frost",
+   "at": "offhand"
+  },
+  "element": "frost"
+ },
+ "orb_of_echoes": {
+  "name": "ORB OF ECHOES",
+  "hero": "pip",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "orb_echo",
+  "stats": {
+   "atk": 5,
+   "crit": 0.05
+  },
+  "desc": "EVERY THIRD SPELL ECHOES AS A SECOND BOLT.",
+  "fx": {
+   "type": "arcane",
+   "at": "orb"
+  },
+  "passive": "echo"
+ },
+ "red_bandana": {
+  "name": "RED BANDANA",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "common",
+  "look": "bandana_red",
+  "stats": {
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "shadow_hood": {
+  "name": "SHADOW HOOD",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "fine",
+  "look": "hood_shadow",
+  "stats": {
+   "def": 3,
+   "crit": 0.04
+  },
+  "desc": ""
+ },
+ "raven_mask": {
+  "name": "RAVEN MASK",
+  "hero": "sable",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "mask_raven",
+  "stats": {
+   "def": 5,
+   "crit": 0.1
+  },
+  "desc": "CRITS FROM BEHIND RESET SHADOW STEP. THE LAST THING MANY GOBLINS SAW. ALSO, BIRDS.",
+  "fx": {
+   "type": "shadow",
+   "at": "head"
+  },
+  "perk": "raven"
+ },
+ "leather_jacket": {
+  "name": "LEATHER JACKET",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "common",
+  "look": "jacket_leather",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "studded_leather": {
+  "name": "STUDDED LEATHER",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "fine",
+  "look": "leather_studded",
+  "stats": {
+   "def": 6,
+   "hp": 10
+  },
+  "desc": ""
+ },
+ "nightsilk_coat": {
+  "name": "NIGHTSILK COAT",
+  "hero": "sable",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "coat_nightsilk",
+  "stats": {
+   "def": 9,
+   "hp": 20,
+   "crit": 0.05
+  },
+  "desc": "DODGING LEAVES A SHADOW THAT DRAWS FOES FOR 2S. WOVEN FROM SHADOWS AND QUESTIONABLE DEALS.",
+  "fx": {
+   "type": "shadow",
+   "at": "body"
+  },
+  "perk": "nightsilk"
+ },
+ "steel_dagger": {
+  "name": "STEEL DAGGER",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "dagger_steel",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "curved_kris": {
+  "name": "CURVED KRIS",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "fine",
+  "look": "dagger_kris",
+  "stats": {
+   "atk": 4,
+   "crit": 0.03
+  },
+  "desc": "",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "wyrmfang": {
+  "name": "WYRMFANG",
+  "hero": "sable",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "dagger_fang",
+  "stats": {
+   "atk": 7,
+   "crit": 0.06
+  },
+  "desc": "VENOM. POISON STACKS TO 7. STILL A LITTLE VENOMOUS. HANDLE WITH CARE.",
+  "fx": {
+   "type": "venom",
+   "at": "weapon"
+  },
+  "element": "venom",
+  "perk": "wyrmfang"
+ },
+ "parrying_dagger": {
+  "name": "PARRYING DAGGER",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "parry_steel",
+  "stats": {
+   "atk": 1,
+   "def": 1
+  },
+  "desc": ""
+ },
+ "hooked_kris": {
+  "name": "HOOKED KRIS",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "fine",
+  "look": "parry_kris",
+  "stats": {
+   "atk": 3,
+   "def": 2
+  },
+  "desc": ""
+ },
+ "wyrmfang_twin": {
+  "name": "WYRMFANG TWIN",
+  "hero": "sable",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "parry_fang",
+  "stats": {
+   "atk": 5,
+   "crit": 0.05
+  },
+  "desc": "VENOM. WITH WYRMFANG: POISON SPREADS WHEN ITS TARGET DIES. THE WYRM WANTS THEM BOTH BACK.",
+  "fx": {
+   "type": "venom",
+   "at": "offhand"
+  },
+  "element": "venom",
+  "perk": "twinfang"
+ },
+ "widows_band": {
+  "name": "WIDOW'S BAND",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@3",
+  "stats": {
+   "hp": 25,
+   "def": 2
+  },
+  "desc": "FORTY YEARS ON ONE HAND. +25 HP, +2 DEF."
+ },
+ "thornring": {
+  "name": "THORNRING",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@2",
+  "stats": {
+   "atk": 3
+  },
+  "trait": "thorns",
+  "desc": "SNAGTOOTH'S KNUCKLE-RING. REFLECTS 10% OF MELEE DAMAGE. +3 ATK."
+ },
+ "ranger_cap": {
+  "name": "RANGER CAP",
+  "hero": "wren",
+  "slot": "head",
+  "rarity": "common",
+  "look": "cap_ranger",
+  "stats": {
+   "def": 1,
+   "crit": 0.01
+  },
+  "desc": ""
+ },
+ "ranger_leathers": {
+  "name": "RANGER LEATHERS",
+  "hero": "wren",
+  "slot": "body",
+  "rarity": "common",
+  "look": "leathers_ranger",
+  "stats": {
+   "def": 3
+  },
+  "desc": ""
+ },
+ "hunting_bow": {
+  "name": "HUNTING BOW",
+  "hero": "wren",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "bow_hunting",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "plain_quiver": {
+  "name": "PLAIN QUIVER",
+  "hero": "wren",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "quiver_basic",
+  "stats": {
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "hide_warhelm": {
+  "name": "HIDE WARHELM",
+  "hero": "kesh",
+  "slot": "head",
+  "rarity": "common",
+  "look": "warhelm_hide",
+  "stats": {
+   "def": 2
+  },
+  "desc": ""
+ },
+ "hide_furs": {
+  "name": "HIDE FURS",
+  "hero": "kesh",
+  "slot": "body",
+  "rarity": "common",
+  "look": "furs_hide",
+  "stats": {
+   "def": 3,
+   "hp": 5
+  },
+  "desc": ""
+ },
+ "hand_axe": {
+  "name": "HAND AXE",
+  "hero": "kesh",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "axe_hand",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "plain_hatchet": {
+  "name": "PLAIN HATCHET",
+  "hero": "kesh",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "hatchet_plain",
+  "stats": {
+   "atk": 1
+  },
+  "desc": ""
+ },
+ "bloodfang_axe": {
+  "name": "BLOODFANG AXE",
+  "hero": "kesh",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "axe_bearded@5",
+  "stats": {
+   "atk": 14,
+   "crit": 0.04
+  },
+  "perk": "bloodfang",
+  "desc": "5% LIFESTEAL. REND STACKS BLEED TWICE AS FAST. STILL WARM FROM THE PIT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "weapon"
+  }
+ },
+ "gnasher": {
+  "name": "GNASHER",
+  "hero": "kesh",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "hatchet_bearded@5",
+  "stats": {
+   "atk": 7,
+   "crit": 0.03
+  },
+  "perk": "gnasher",
+  "element": "fire",
+  "desc": "FIRE. LEAP LEAVES A BURNING CRATER. A DRAKE'S TOOTH, HAFTED.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
+ },
+ "quiver_of_embers": {
+  "name": "QUIVER OF EMBERS",
+  "hero": "wren",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "quiver_fine@5",
+  "stats": {
+   "atk": 4,
+   "crit": 0.04
+  },
+  "perk": "embers",
+  "element": "fire",
+  "desc": "FIRE. EVERY 4TH ARROW BURSTS INTO FLAME. SMELLS OF OLD SMOKESTACK.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
+ },
+ "monk_hood": {
+  "name": "MONK'S HOOD",
+  "hero": "oake",
+  "slot": "head",
+  "rarity": "common",
+  "look": "hood_monk",
+  "stats": {
+   "def": 2,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "plain_habit": {
+  "name": "PLAIN HABIT",
+  "hero": "oake",
+  "slot": "body",
+  "rarity": "common",
+  "look": "habit_monk",
+  "stats": {
+   "def": 3,
+   "hp": 5
+  },
+  "desc": ""
+ },
+ "war_hammer": {
+  "name": "WAR HAMMER",
+  "hero": "oake",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "hammer_war",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "holy_relic": {
+  "name": "HOLY RELIC",
+  "hero": "oake",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "relic_holy",
+  "stats": {
+   "atk": 1,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "brass_goggles": {
+  "name": "BRASS GOGGLES",
+  "hero": "gizmo",
+  "slot": "head",
+  "rarity": "common",
+  "look": "goggles_brass",
+  "stats": {
+   "def": 1,
+   "crit": 0.02
+  },
+  "desc": ""
+ },
+ "work_overalls": {
+  "name": "WORK OVERALLS",
+  "hero": "gizmo",
+  "slot": "body",
+  "rarity": "common",
+  "look": "overalls_work",
+  "stats": {
+   "def": 3,
+   "hp": 4
+  },
+  "desc": ""
+ },
+ "steel_spanner": {
+  "name": "STEEL SPANNER",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "wrench_steel",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "gadget_box": {
+  "name": "GADGET BOX",
+  "hero": "gizmo",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "gadget_box",
+  "stats": {
+   "atk": 1,
+   "hp": 2
+  },
+  "desc": ""
+ },
+ "clockwork_goggles": {
+  "name": "CLOCKWORK GOGGLES",
+  "hero": "gizmo",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "goggles_clockwork",
+  "stats": {
+   "def": 4,
+   "crit": 0.06
+  },
+  "perk": "clockwork",
+  "desc": "HIDDEN CHESTS NEARBY SHOW ON THE MINIMAP. +6% CRIT. GIZMO'S PRIDE AND JOY.",
+  "fx": {
+   "type": "phoenix",
+   "at": "head"
+  }
+ },
+ "mitre_of_good_cheer": {
+  "name": "MITRE OF GOOD CHEER",
+  "hero": "oake",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "mitre_cheer",
+  "stats": {
+   "def": 5,
+   "hp": 18
+  },
+  "perk": "cheer",
+  "desc": "OPTIMISM SHIELDS CAN REACH 30% HP. IT IS VERY HARD TO FROWN IN THIS HAT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "head"
+  }
+ },
+ "vestments_of_the_undimmed": {
+  "name": "VESTMENTS OF THE UNDIMMED",
+  "hero": "oake",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "vestments_undimmed",
+  "stats": {
+   "def": 9,
+   "hp": 26
+  },
+  "perk": "undimmed",
+  "desc": "THE WHOLE PARTY REGENERATES 2% HP EVERY 5 SECONDS. THE STITCHING GLOWS FAINTLY AT NIGHT.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  }
+ },
+ "dawnhammer": {
+  "name": "DAWNHAMMER",
+  "hero": "oake",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "hammer_dawn",
+  "stats": {
+   "atk": 11,
+   "crit": 0.04
+  },
+  "perk": "dawnhammer",
+  "element": "light",
+  "desc": "LIGHT. SMITE LEAPS TO TWO MORE FOES. FORGED FOR A SAINT WHO HATED MORNINGS.",
+  "fx": {
+   "type": "phoenix",
+   "at": "weapon"
+  }
+ },
+ "lantern_of_the_faithful": {
+  "name": "LANTERN OF THE FAITHFUL",
+  "hero": "oake",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "relic_lantern",
+  "stats": {
+   "atk": 4,
+   "hp": 16
+  },
+  "perk": "faithful",
+  "element": "light",
+  "desc": "LIGHT. SANCTUARY WALKS WITH OAKE. THE LAMPLIGHTER'S LAST FLAME, STILL BURNING.",
+  "fx": {
+   "type": "phoenix",
+   "at": "offhand"
+  }
+ },
+ "flameproof_overalls": {
+  "name": "FLAMEPROOF OVERALLS",
+  "hero": "gizmo",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "overalls_flame",
+  "stats": {
+   "def": 12,
+   "hp": 22
+  },
+  "perk": "flameproof",
+  "desc": "IMMUNE TO THE CINDERREACH HEAT AND TO BURNING. SMELLS FAINTLY OF SCORCHED GNOME.",
+  "fx": {
+   "type": "phoenix",
+   "at": "body"
+  }
+ },
+ "turret_mk2": {
+  "name": "TURRET MK. II",
+  "hero": "gizmo",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "gadget_turret2",
+  "stats": {
+   "atk": 5,
+   "hp": 12
+  },
+  "perk": "turret2",
+  "element": "storm",
+  "desc": "STORM. TURRETS FIRE LIGHTNING AND LAST TWICE AS LONG. MK. I IS NOT DISCUSSED.",
+  "fx": {
+   "type": "shadow",
+   "at": "offhand"
+  }
+ },
+ "vampires_kiss": {
+  "name": "VAMPIRE'S KISS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@5",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "kiss",
+  "desc": "HEALS 2% OF THE DAMAGE YOU DEAL. +10 HP. THE HOLLOW'S LAST BITE."
+ },
+ "frog_signet": {
+  "name": "FROG KING'S SIGNET",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@6",
+  "stats": {
+   "hp": 8
+  },
+  "perk": "signet",
+  "desc": "+15% GOLD FROM COINS AND CHESTS. +8 HP. IT'S A LITTLE DAMP."
+ },
+ "echo_bell": {
+  "name": "ECHO BELL",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@6",
+  "stats": {
+   "atk": 2
+  },
+  "perk": "echobell",
+  "desc": "+20% ULTIMATE CHARGE. +2 ATK. IT RINGS, VERY FAINTLY, WHEN YOU'RE READY."
+ },
+ "thunderwrench": {
+  "name": "THUNDERWRENCH",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "wrench_steel@4",
+  "stats": {
+   "atk": 10,
+   "crit": 0.04
+  },
+  "perk": "thunder",
+  "element": "storm",
+  "desc": "STORM. EVERY HIT SHOCKS. IT HUMS IN THE RAIN AND, ALARMINGLY, IN THE BATH."
+ },
+ "ember_heart": {
+  "name": "EMBER HEART",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@3",
+  "stats": {
+   "hp": 12
+  },
+  "perk": "emberheart",
+  "desc": "IMMUNE TO THE CINDERREACH HEAT AND TO BURNING. +12 HP. A COAL THAT NEVER GOES OUT."
+ },
+ "hourglass_charm": {
+  "name": "HOURGLASS CHARM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@4",
+  "stats": {
+   "cdr": 0.12
+  },
+  "desc": "-12% SKILL COOLDOWNS. THE SAND FALLS UP, IF YOU'RE NOT WATCHING."
+ },
+ "ward_shard": {
+  "name": "WARD SHARD",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@5",
+  "stats": {
+   "def": 2
+  },
+  "perk": "wardshard",
+  "desc": "+10% DAMAGE TO HEXED FOES. IT GROWS WITH EVERY WARD STONE THAT FALLS."
+ },
+ "ward_prism": {
+  "name": "WARD PRISM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@4",
+  "stats": {
+   "def": 4
+  },
+  "perk": "wardprism",
+  "desc": "+20% DAMAGE TO HEXED FOES. ONE MORE STONE, AND IT WILL BE A CROWN."
+ },
+ "ward_crown": {
+  "name": "WARD CROWN",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_warding@6",
+  "stats": {
+   "def": 6
+  },
+  "perk": "wardcrown",
+  "desc": "+30% DAMAGE TO HEXED FOES. THREE STONES' WORTH OF BROKEN MAGIC, HUMMING."
+ },
+ "traveler_compass": {
+  "name": "TRAVELER'S COMPASS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@3",
+  "stats": {
+   "def": 2
+  },
+  "perk": "compass",
+  "desc": "EVERY UNOPENED CHEST NEARBY SHOWS ON THE MINIMAP. GIZMO SWEARS IT ONLY POINTS AT TREASURE. MOSTLY."
+ },
+ "wanderers_charm": {
+  "name": "WANDERER'S CHARM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@6",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "wanderer",
+  "desc": "+8% MOVE SPEED. +10 HP. FOR SOMEONE WHO HAS CLIMBED EVERY TOWER."
+ },
+ "laurel_sands": {
+  "name": "LAUREL OF THE SANDS",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@3",
+  "stats": {
+   "atk": 3
+  },
+  "perk": "laurel",
+  "desc": "+12% DAMAGE WHILE THREE OR MORE FOES ARE CLOSE. +3 ATK. THE COLOSSEUM'S CROWD THREW IT FOR CLEARING WAVE 10. THEY LOVE A HERO IN TROUBLE."
+ },
+ "gladiator_torc": {
+  "name": "GLADIATOR'S TORC",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@5",
+  "stats": {
+   "hp": 20
+  },
+  "perk": "torc",
+  "desc": "EVERY FOE YOU FINISH HEALS YOU 4% OF YOUR MAX HP. +20 HP. FOR CLEARING WAVE 20 OF THE COLOSSEUM."
+ },
+ "colosseum_crown": {
+  "name": "CROWN OF THE COLOSSEUM",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@6",
+  "stats": {
+   "atk": 6
+  },
+  "perk": "arenacrown",
+  "desc": "+8% DAMAGE. EVERY TENTH FOE THE PARTY FELLS, THE CROWD'S CHEER HEALS EVERYONE 8%. +6 ATK. FOR CLEARING WAVE 30."
+ },
+ "phial_second_wind": {
+  "name": "PHIAL OF SECOND WIND",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_vigor@2",
+  "stats": {
+   "hp": 15
+  },
+  "perk": "phial",
+  "desc": "POTIONS AND ELIXIRS HEAL 30% MORE. +15 HP. SMELLS LIKE MINT AND A SECOND CHANCE."
+ },
+ "hawkeye_hood": {
+  "name": "HAWKEYE HOOD",
+  "hero": "wren",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "hood_ranger@6",
+  "stats": {
+   "def": 6,
+   "crit": 0.06
+  },
+  "perk": "hawkeye",
+  "desc": "HAWK STRIKE'S MARK MAKES FOES TAKE +20% (NOT 10%). YOU CAN SEE FOR MILES FROM UP HERE."
+ },
+ "wolfskull_helm": {
+  "name": "WOLFSKULL HELM",
+  "hero": "kesh",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "warhelm_hide@6",
+  "stats": {
+   "def": 8,
+   "hp": 14
+  },
+  "perk": "wolfskull",
+  "desc": "HOWL ALSO GIVES THE PARTY +15% DAMAGE FOR 6S. GREYMAW WON'T BE NEEDING IT."
+ },
+ "troll_hide_mantle": {
+  "name": "TROLL-HIDE MANTLE",
+  "hero": "kesh",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "furs_hide@6",
+  "stats": {
+   "def": 14,
+   "hp": 30
+  },
+  "perk": "trollhide",
+  "desc": "BELOW HALF HEALTH, REGENERATES 1% HP A SECOND (NOT WHILE BURNING). IT STILL TWITCHES SOMETIMES."
+ },
+ "frostfur_tassel": {
+  "name": "FROSTFUR TASSEL",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@2",
+  "stats": {
+   "hp": 12
+  },
+  "perk": "frostward",
+  "desc": "IMMUNE TO THE FROSTHELM COLD, AND TO CHILL AND FREEZE. +12 HP. A TRAPPER'S CHARM OF WHITE FOX FUR."
+ },
+ "silver_circlet": {
+  "name": "SILVER CIRCLET",
+  "hero": "mirelle",
+  "slot": "head",
+  "rarity": "common",
+  "look": "circlet_silver",
+  "stats": {
+   "def": 1,
+   "hp": 3
+  },
+  "desc": ""
+ },
+ "frost_gown": {
+  "name": "FROST GOWN",
+  "hero": "mirelle",
+  "slot": "body",
+  "rarity": "common",
+  "look": "gown_frost",
+  "stats": {
+   "def": 3,
+   "hp": 4
+  },
+  "desc": ""
+ },
+ "rime_wand": {
+  "name": "RIME WAND",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "rarity": "common",
+  "look": "wand_rime",
+  "stats": {
+   "atk": 2
+  },
+  "desc": ""
+ },
+ "hand_mirror": {
+  "name": "HAND MIRROR",
+  "hero": "mirelle",
+  "slot": "offhand",
+  "rarity": "common",
+  "look": "mirror_hand",
+  "stats": {
+   "atk": 1,
+   "def": 1
+  },
+  "desc": ""
+ },
+ "glacier_wand": {
+  "name": "GLACIER WAND",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "wand_glacier",
+  "stats": {
+   "atk": 14,
+   "crit": 0.04
+  },
+  "element": "frost",
+  "perk": "glacier",
+  "desc": "FROST. ICE SHARD SPLITS INTO THREE WHEN IT HITS. ISOLDE'S, ONCE. SHE'D WANT YOU TO HAVE IT. PROBABLY.",
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  }
+ },
+ "crown_of_rime": {
+  "name": "CROWN OF RIME",
+  "hero": "mirelle",
+  "slot": "head",
+  "rarity": "unique",
+  "look": "crown_rime",
+  "stats": {
+   "def": 6,
+   "hp": 12
+  },
+  "perk": "rimecrown",
+  "desc": "FROZEN FOES SHATTER WHEN THEY DIE, CHILLING EVERYTHING NEAR THEM. COLD TO THE TOUCH. COLDER TO WEAR."
+ },
+ "penitent_gown": {
+  "name": "PENITENT'S GOWN",
+  "hero": "mirelle",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "gown_penitent",
+  "stats": {
+   "def": 12,
+   "hp": 26
+  },
+  "perk": "penitent",
+  "desc": "WHEN AN ALLY GOES DOWN, THE WHOLE PARTY GETS A FROST SHIELD. WORN BY SOMEONE WHO HAD A LOT TO MAKE UP FOR."
+ },
+ "galeheart_longbow": {
+  "name": "GALEHEART LONGBOW",
+  "hero": "wren",
+  "slot": "weapon",
+  "rarity": "unique",
+  "look": "bow_gale",
+  "stats": {
+   "atk": 15,
+   "crit": 0.05
+  },
+  "element": "storm",
+  "perk": "galeheart",
+  "desc": "STORM. POWER SHOT CHAINS LIGHTNING TO TWO MORE FOES. STRUNG WITH SOMETHING THAT HUMS IN THE WIND.",
+  "fx": {
+   "type": "glint",
+   "at": "weapon"
+  }
+ },
+ "windrunner_leathers": {
+  "name": "WINDRUNNER LEATHERS",
+  "hero": "wren",
+  "slot": "body",
+  "rarity": "unique",
+  "look": "leathers_ranger@6",
+  "stats": {
+   "def": 11,
+   "hp": 18
+  },
+  "perk": "windrunner",
+  "desc": "+10% MOVE SPEED. AFTER A DODGE, THE NEXT SHOT CRITS. FOUND WHERE ONLY THE WIND COULD TAKE YOU."
+ },
+ "oathkeeper": {
+  "name": "OATHKEEPER",
+  "hero": "brann",
+  "slot": "weapon",
+  "look": "sword_long@6",
+  "stats": {
+   "atk": 22,
+   "def": 6,
+   "crit": 0.04
+  },
+  "desc": "BULWARK LASTS TWICE AS LONG, AND WHEN IT ENDS THE SHIELDS BURST AND HEAL 30%. THE OATH OF THE KING'S OWN GUARD, IN STEEL.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "whisper_wane": {
+  "name": "WHISPER & WANE",
+  "hero": "sable",
+  "slot": "weapon",
+  "look": "dagger_kris@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.1
+  },
+  "desc": "THOUSAND CUTS STRIKES UP TO 10 FOES AND STARTS AGAIN IF THE LAST ONE FALLS. TWO BLADES THAT WERE NEVER MEANT TO BE APART.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "skyfall": {
+  "name": "SKYFALL",
+  "hero": "wren",
+  "slot": "weapon",
+  "look": "bow_gale@6",
+  "stats": {
+   "atk": 21,
+   "crit": 0.08
+  },
+  "desc": "STORM OF TALONS LASTS 8S AND ITS HITS STUN. THE STRING SINGS BEFORE IT'S DRAWN.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "first_light": {
+  "name": "HAMMER OF FIRST LIGHT",
+  "hero": "oake",
+  "slot": "weapon",
+  "look": "hammer_dawn@6",
+  "stats": {
+   "atk": 20,
+   "hp": 24
+  },
+  "desc": "DAWNBREAK ALSO BURNS NEARBY FOES WITH HEAVY LIGHT. WARM IN THE HAND, ALWAYS.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "worldsplitter": {
+  "name": "WORLDSPLITTER",
+  "hero": "kesh",
+  "slot": "weapon",
+  "look": "axe_bearded@6",
+  "stats": {
+   "atk": 24,
+   "crit": 0.05
+  },
+  "desc": "PRIMAL FORM LASTS 4S LONGER AND EVERY HIT SLAMS THE GROUND. THE GROUND HAS NOTED THIS AND IS NOT HAPPY.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "heart_of_winter": {
+  "name": "HEART OF WINTER",
+  "hero": "mirelle",
+  "slot": "weapon",
+  "look": "wand_glacier@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.06
+  },
+  "element": "frost",
+  "desc": "FROST. ABSOLUTE ZERO FREEZES BOSSES FOR 3S. THE COLD THAT WAS ALWAYS HERS, GIVEN BACK.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "frost",
+   "at": "weapon"
+  }
+ },
+ "omniwrench": {
+  "name": "OMNIWRENCH",
+  "hero": "gizmo",
+  "slot": "weapon",
+  "look": "wrench_omni@6",
+  "stats": {
+   "atk": 20,
+   "crit": 0.05
+  },
+  "desc": "CLANK LASTS 24S AND FIRES ROCKETS. IT FITS EVERY BOLT EVER MADE AND SEVERAL THAT HAVEN'T BEEN YET.",
+  "rarity": "legendary",
+  "legend": true,
+  "fx": {
+   "type": "sun",
+   "at": "weapon"
+  }
+ },
+ "malgrim_cufflink": {
+  "name": "MALGRIM'S CUFFLINK",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@6",
+  "stats": {},
+  "perk": "cufflink",
+  "cursed": true,
+  "desc": "+25% DAMAGE, -25% MAX HP. CURSED: IT CAN'T BE SOLD. A SILVER HEX, STILL WARM FROM HIS WRIST."
+ },
+ "staff_ninth": {
+  "name": "STAFF OF THE NINTH APPRENTICE",
+  "hero": "pip",
+  "slot": "weapon",
+  "rarity": "legendary",
+  "legend": true,
+  "look": "staff_hex@6",
+  "stats": {
+   "atk": 22,
+   "crit": 0.08
+  },
+  "element": "fire",
+  "perk": "ninthstaff",
+  "desc": "FIRE. METEOR CALLS DOWN THREE METEORS. MALGRIM KEPT IT FOR THE APPRENTICE WHO WOULD ONE DAY OUTGROW HIM. PIP, AS IT TURNS OUT.",
+  "fx": {
+   "type": "arcane",
+   "at": "weapon"
+  }
+ },
+ "gold_fly_amber": {
+  "name": "GOLD FLY IN AMBER",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_luck@6",
+  "stats": {
+   "hp": 10
+  },
+  "perk": "amber",
+  "desc": "UNCOLLECTED GOLDEN FLIES SHOW ON THE MAP. A FLY FROM THE OLD DAYS, CAUGHT IN A BEAD OF HONEY-STONE. THE KING CAN'T STOP LOOKING AT IT."
+ },
+ "hunters_tooth": {
+  "name": "HUNTER'S TOOTH",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_might@5",
+  "stats": {
+   "atk": 4
+  },
+  "perk": "huntertooth",
+  "desc": "+15% DAMAGE AGAINST ELITES AND BOUNTIES. TEN BOUNTIES CLAIMED - THE BOARD'S OWN TROPHY, A TOOTH OFF SOMETHING NOBODY WILL NAME."
+ },
+ "mirror_truths": {
+  "name": "MIRROR OF TRUTHS",
+  "hero": "mirelle",
+  "slot": "offhand",
+  "rarity": "unique",
+  "look": "mirror_truths",
+  "stats": {
+   "atk": 8,
+   "def": 6
+  },
+  "element": "shadow",
+  "perk": "truths",
+  "desc": "SHADOW. TURNS BACK ONE PROJECTILE EVERY 5S. MADE FROM THE SHARDS OF HIS MIRRORS, IT SHOWS ONLY WHAT'S REALLY THERE."
+ },
+ "fletchers_thumb_ring": {
+  "name": "FLETCHER'S THUMB RING",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_precision@5",
+  "stats": {
+   "atk": 3,
+   "crit": 0.06
+  },
+  "desc": "+6% CRIT, +3 ATK. WYNN'S OWN, WORN SMOOTH BY FORTY YEARS OF BOWSTRINGS. A ROUND OF 44 EARNED IT."
+ },
+ "key_brightwater": {
+  "name": "KEY TO BRIGHTWATER",
+  "hero": null,
+  "slot": "trinket",
+  "rarity": "unique",
+  "look": "ring_luck@6",
+  "stats": {
+   "hp": 15
+  },
+  "perk": "brightkey",
+  "desc": "+10% XP AND GOLD FOR THE WHOLE PARTY. +15 HP. A BRASS KEY THE SIZE OF YOUR HAND. IT DOESN'T OPEN ANYTHING. EVERYONE KNOWS WHAT IT MEANS."
+ }
+}
