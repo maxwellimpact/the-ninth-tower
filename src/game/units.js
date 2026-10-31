@@ -1663,7 +1663,7 @@ export class Enemy extends Unit {
   sync(dt) {
     super.sync(dt);
     if (this.s.flying) this.sprite.y = Math.round(this.y) - 8 - Math.sin(Date.now() / 300 + this.id) * 2;
-    if (this.lunge) { this.sprite.x += Math.round(this.lunge.dx * this.lunge.p); this.sprite.y += Math.round(this.lunge.dy * this.lunge.p); } // the drake's bite: its body thrown at the mark
+    if (this.lunge) { const ox = Math.round(this.lunge.dx * this.lunge.p), oy = Math.round(this.lunge.dy * this.lunge.p); this.sprite.x += ox; this.sprite.y += oy; this.shadow.x += ox; this.shadow.y += oy; } // the drake's bite: its body (and its shadow) slid at the one it bites
     if (this.alt) { this.sprite.y -= Math.round(this.alt); this.sprite.setDepth(this.y + this.alt + 20); } // up in the air (the drake's flight): drawn above what's below it, its shadow left on the ground
     if (this.alt !== this.shadowAlt) { this.shadowAlt = this.alt; this.shadow.setScale(1 - Math.min(0.4, (this.alt || 0) / 115)); }
     if (this.wardRing) this.wardRing.setPosition(Math.round(this.x), Math.round(this.y) - 8).setDepth(this.y + 2);
@@ -2428,16 +2428,20 @@ export class Enemy extends Unit {
   // (an ember-tinted trail where it was), its own jaws snapping shut as it
   // lands (the attack pose), a thud and dust under its snout, then it pulls back
   drakeBite(z) {
-    const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y), L = { dx: nx * 14, dy: ny * 10, p: 0 };
+    const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y);
     const m = this.view === 'side' ? { x: this.flip ? -35 : 35, y: -16 } : this.view === 'up' ? { x: 0, y: -42 } : { x: 0, y: -4 }; // its jaws at full lunge (the attack pose)
+    // it slides at whoever it's biting until its jaws are nearly on them (never past): from the front or behind its neck can't reach out, so the body carries it
+    const t = this.target?.alive && !this.target.downed ? this.target : z, gap = (t.x - this.x - m.x) * nx + (t.y - this.y - (this.view === 'up' ? m.y : 0)) * ny;
+    const D = Phaser.Math.Clamp(gap - 8, this.view === 'side' ? 14 : 10, 24), L = { dx: nx * D, dy: ny * D, p: 0 };
     this.lunge = L;
     const sx = this.sprite.x, sy = this.sprite.y;
     for (const k of [0, 0.45]) sc.fx.ghost(this, { x: sx + L.dx * k, y: sy + L.dy * k, tint: 0xc0394b, alpha: 0.4 - k * 0.3, dur: 200 });
-    sc.tweens.add({ targets: L, p: 1, duration: 70, ease: 'Quad.easeIn', onComplete: () => {
+    sc.fx.dust(this.x, this.y); // kicked up as it throws itself forward
+    sc.tweens.add({ targets: L, p: 1, duration: 90, ease: 'Quad.easeIn', onComplete: () => {
       if (!this.alive) return;
       const x = this.x + m.x + L.dx, y = this.y + L.dy; // under its snout, on the ground
       audio.sfx('bash'); sc.fx.dust(x, y); sc.fx.burst('ember', x, y + m.y, 4);
-      sc.tweens.add({ targets: L, p: 0, delay: 160, duration: 260, ease: 'Sine.easeInOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } });
+      sc.tweens.add({ targets: L, p: 0, delay: 200, duration: 320, ease: 'Sine.easeInOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } });
     } });
   }
 
