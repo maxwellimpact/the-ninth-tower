@@ -102,7 +102,11 @@ final class PixelText: SKNode {
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    private var shown: (String, String, UIColor?)?
+
     func set(_ text: String, font: String = "font", tint: UIColor? = nil) {
+        if let s = shown, s.0 == text, s.1 == font, s.2 == tint { return } // unchanged: the HUD sets its text every frame
+        shown = (text, font, tint)
         removeAllChildren()
         let A = Assets.shared, sheet = A.sheet(font)
         let chars = Array(text.uppercased())

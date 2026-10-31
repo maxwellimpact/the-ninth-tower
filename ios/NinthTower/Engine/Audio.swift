@@ -49,10 +49,11 @@ final class Audio {
         if !engine.isRunning { try? engine.start() }
         let (p, v) = voices[next]
         next = (next + 1) % voices.count
-        p.stop()
         v.rate = Float(pitch) * Float.random(in: 0.96...1.04)
         p.volume = vol
-        p.scheduleBuffer(b, at: nil)
-        p.play()
+        // .interrupts cuts off whatever the voice was playing without stop(), which
+        // makes the main thread wait on the audio thread (frame hitches in busy fights)
+        p.scheduleBuffer(b, at: nil, options: .interrupts)
+        if !p.isPlaying { p.play() }
     }
 }

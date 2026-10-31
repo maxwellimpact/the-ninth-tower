@@ -52,6 +52,7 @@ final class BattleScene: SKScene {
     var projectiles: [Projectile] = []
     var shots: [EnemyShot] = []
     private(set) var fx: FX!
+    private var perf: PerfOverlay!
     private var hud: HUD!
     var clock: CGFloat = 0
     private var timers: [(at: CGFloat, fn: () -> Void)] = []
@@ -100,12 +101,16 @@ final class BattleScene: SKScene {
         camPos = CGPoint(x: sx, y: sy)
         hud = HUD(scene: self)
         cam.addChild(hud)
+        perf = PerfOverlay(scene: self)
+        cam.addChild(perf)
         flashNode.size = CGSize(width: size.width + 4, height: size.height + 4); flashNode.alpha = 0; flashNode.zPosition = 900
         cam.addChild(flashNode)
         marker.texture = Assets.shared.tex("ringGold"); marker.size = CGSize(width: 18, height: 18); marker.alpha = 0; marker.zPosition = Z.telegraph
         world.addChild(marker)
         _ = Audio.shared
         Haptics.prepare()
+        // every sheet the battle can draw, loaded now rather than mid-fight (a first load costs 5-15 ms)
+        for k in (Assets.shared.manifest.obj("sheets")).keys { _ = Assets.shared.sheet(k) }
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -141,6 +146,9 @@ final class BattleScene: SKScene {
     func shake(_ t: CGFloat, _ amt: CGFloat) { shakeT = max(shakeT, t); shakeAmt = max(shakeAmt, amt) }
 
     override func update(_ currentTime: TimeInterval) {
+        let t0 = CACurrentMediaTime()
+        defer { perf.noteFrame(cpu: CGFloat(CACurrentMediaTime() - t0)) }
+        if let l = lastTime { perf.noteInterval(CGFloat(currentTime - l)) }
         let real = CGFloat(min(0.05, currentTime - (lastTime ?? currentTime)))
         lastTime = currentTime
         if hitStopT > 0 { hitStopT -= real; hud.update(); return }
@@ -160,6 +168,7 @@ final class BattleScene: SKScene {
         updateWaves(dt)
         updateCamera(real)
         hud.update()
+        perf.update(real)
     }
 
     private func updateCamera(_ dt: CGFloat) {
@@ -500,7 +509,13 @@ final class BattleScene: SKScene {
         wave += 1
         let level = partyLevel - 1 + round * 2
         hud.banner("WAVE \(wave)", sub: def.0)
-        // they come through the far side of the field from the party, and come for you
+        spawnPack(def.1, level: level)
+        Audio.shared.play("aggro")
+        waveActive = true
+    }
+
+    // they come through the far side of the field from the party, and come for you
+    func spawnPack(_ list: [(String, Int)], level: Int) {
         let L = leader ?? party[0]
         let farLeft = L.x > mapW / 2
         var spots: [P] = []
@@ -510,24 +525,28 @@ final class BattleScene: SKScene {
         } }
         spots.shuffle()
         var i = 0
-        for (kind, n) in def.1 { for _ in 0..<n {
+        for (kind, n) in list { for _ in 0..<n {
             let p = spots[i % max(1, spots.count)]; i += 1
             let e = Enemy(scene: self, kind: kind, x: p.x, y: p.y, level: level)
             e.hunt = true
             enemies.append(e)
             fx.puff(p.x, p.y, curse: true)
         } }
-        Audio.shared.play("aggro")
-        waveActive = true
     }
 
     // ---- touch
     private var steer: (touch: UITouch, start: CGPoint, t0: TimeInterval, steering: Bool)?
+    private var twoFingerAt: TimeInterval? // a two-finger tap shows or hides the performance readout
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if (event?.allTouches?.count ?? 0) >= 2 {
+            twoFingerAt = twoFingerAt ?? touches.first?.timestamp
+            if steer != nil { steer = nil; leader?.direct = nil }
+            return
+        }
         for t in touches {
             let p = t.location(in: cam)
-            if hud.press(at: p) { continue }
+            if perf.press(at: p) || hud.press(at: p) { continue }
             if steer == nil { steer = (t, t.location(in: view), t.timestamp, false) }
         }
     }
@@ -543,6 +562,11 @@ final class BattleScene: SKScene {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let t0 = twoFingerAt {
+            let left = (event?.allTouches ?? []).filter { $0.phase != .ended && $0.phase != .cancelled }
+            if left.isEmpty { twoFingerAt = nil; if (touches.first?.timestamp ?? t0) - t0 < 0.4 { perf.toggle() } }
+            return
+        }
         guard let s = steer, touches.contains(s.touch) else { return }
         steer = nil
         guard let L = leader else { return }

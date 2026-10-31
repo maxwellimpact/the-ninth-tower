@@ -18,6 +18,7 @@
 		6B9DD8B3E5B6F5753C5BD924 /* Unit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CF54D08E3BEC6915A5E860 /* Unit.swift */; };
 		80181060B566D374DD5B7360 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9200800F3E8525939E09EE95 /* Util.swift */; };
 		99FA2A926691BC268780EA5E /* Export in Resources */ = {isa = PBXBuildFile; fileRef = 8F45F424C79DA2D046D9D250 /* Export */; };
+		AA4858F45258C12FD740BE60 /* PerfOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB539E9026EBDBC334C4EE11 /* PerfOverlay.swift */; };
 		CFA33B465632677FE12D9718 /* Skills.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8EEF11A63473F2D9DB82AB /* Skills.swift */; };
 		E0EF75425AA08FC891245A6B /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B25504FF52FBD44FA441A76 /* Audio.swift */; };
 		F15E5BDF703AD6C4F4617F78 /* FX.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACA1E74A7534CD2E714AABD /* FX.swift */; };
@@ -41,6 +42,7 @@
 		E9F783DDC041F30ABC2664F8 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		EC8EEF11A63473F2D9DB82AB /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
 		F1CF54D08E3BEC6915A5E860 /* Unit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Unit.swift; sourceTree = "<group>"; };
+		FB539E9026EBDBC334C4EE11 /* PerfOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerfOverlay.swift; sourceTree = "<group>"; };
 		FB58E1C67CE35E83CDC7697A /* Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nav.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -66,6 +68,7 @@
 				A85CB21009AED345F0BC3459 /* GameData.swift */,
 				68780235C73B76DA17D8E5E5 /* Hero.swift */,
 				698059FD3E4E60A7A284BCF3 /* HUD.swift */,
+				FB539E9026EBDBC334C4EE11 /* PerfOverlay.swift */,
 				EC8EEF11A63473F2D9DB82AB /* Skills.swift */,
 				F1CF54D08E3BEC6915A5E860 /* Unit.swift */,
 			);
@@ -182,6 +185,7 @@
 				6B8F21FF38B2579A2462EFFD /* Haptics.swift in Sources */,
 				12BDD84F79ADAB1385A015A9 /* Hero.swift in Sources */,
 				195E0C0CC77641FC7D69B399 /* Nav.swift in Sources */,
+				AA4858F45258C12FD740BE60 /* PerfOverlay.swift in Sources */,
 				CFA33B465632677FE12D9718 /* Skills.swift in Sources */,
 				6B9DD8B3E5B6F5753C5BD924 /* Unit.swift in Sources */,
 				80181060B566D374DD5B7360 /* Util.swift in Sources */,
