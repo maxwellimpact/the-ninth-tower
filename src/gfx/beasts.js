@@ -97,7 +97,7 @@ function tail(ctx, pts, widths, edged = false) {
 const STEPS = ['furD', 'fur', 'furM', 'furL', 'furXL', 'furXXL'];
 const STEP_RGB = STEPS.map(rgb);
 function part(main, W, H, draw, inner = null, seam = false) {
-  const [c, ctx] = makeCanvas(W, H);
+  const [c, ctx] = frameCanvas(W, H);
   draw(ctx);
   const img = ctx.getImageData(0, 0, W, H), d = img.data, src = new Uint8ClampedArray(d);
   const m = main.getImageData(0, 0, W, H).data;
@@ -118,12 +118,26 @@ function part(main, W, H, draw, inner = null, seam = false) {
   const out = ctx.getImageData(0, 0, W, H), o = out.data;
   for (let i = 0; i < W * H; i++) {
     if (src[i * 4 + 3] || !o[i * 4 + 3] || !m[i * 4 + 3]) continue; // only outline pixels over earlier parts
-    if (!(inner === true || (inner && inner(i % W, (i / W) | 0)))) o[i * 4 + 3] = 0;
+    if (!(inner === true || (inner && inner(i % W - PAD_X, ((i / W) | 0) - PAD_T)))) o[i * 4 + 3] = 0;
   }
   ctx.putImageData(out, 0, 0);
-  main.drawImage(c, 0, 0);
+  main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.drawImage(c, 0, 0); main.restore();
 }
 const fillMask = (ctx, W, m, col) => { for (let i = 0; i < m.length; i++) if (m[i]) px(ctx, i % W, (i / W) | 0, col); };
+// a straight line of pixels between two canvas points
+function seg(ctx, [x0, y0], [x1, y1], col) { const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)))); for (let i = 0; i <= n; i++) px(ctx, Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), col); }
+// a bat wing (the gargoyle's), canvas points: [root, wrist, finger tip, scallop, finger tip, scallop, finger
+// tip, ...back to the body]: skin between the fingers cut in scallops, a pale bony arm from the shoulder to
+// the wrist and on to the first tip, the fingers fanning out from the wrist
+function wing(q, W, H, pts, far) {
+  fillMask(q, W, mask(W, H, [pts]), far ? 'furD' : 'fur');
+  const [root, wrist, t1, , t2, , t3] = pts;
+  for (const t of [t2, t3]) seg(q, wrist, t, far ? 'fur' : 'furM');
+  seg(q, root, wrist, far ? 'furM' : 'furXL'); seg(q, wrist, t1, far ? 'furM' : 'furL');
+  px(q, Math.round(wrist[0]), Math.round(wrist[1]) - 1, far ? 'fur' : 'furXXL'); // the claw at the wrist
+}
+// a horn curling back off the skull (canvas points), pale stone, its tip darker
+function horn(q, W, H, pts, far) { fillMask(q, W, mask(W, H, [pts]), far ? 'furM' : 'furL'); const t = pts[Math.floor(pts.length / 2)]; px(q, Math.round(t[0]), Math.round(t[1]), 'fur'); }
 
 // Design coordinates are scaled by WS (each beast sets its own size), with
 // the paws on design y = 36 and the canvas 48 high, so the paws sit at the
@@ -133,7 +147,12 @@ const sp = (pts, dx = 0, dy = 0) => pts.map(([x, y]) => [(x + dx) * WS, (y + dy)
 const se = (cx, cy, rx, ry) => ({ e: [cx * WS, cy * WS, rx * WS, ry * WS] });
 const sw = (w) => w * WS;
 const R = (v) => Math.round(v * WS);
-const size = (w) => [Math.round(w * WS), Math.round(48 * WS)];
+// Every frame has room round the drawing for wing tips, a lunging muzzle and a raised tail: more at the
+// top than the bottom (a third as much), so the paws stay at the sprite's origin (0.75 of its height).
+// The drawing is shifted into it by the canvas transform; anything reading raw pixels undoes the shift.
+const PAD_T = 6, PAD_B = 2, PAD_X = 5;
+const size = (w) => [Math.round(w * WS) + PAD_X * 2, Math.round(48 * WS) + PAD_T + PAD_B];
+function frameCanvas(W, H) { const [c, ctx] = makeCanvas(W, H); ctx.translate(PAD_X, PAD_T); return [c, ctx]; }
 
 // The trot: a two-beat gait, the diagonal pairs (near fore with far hind,
 // far fore with near hind) swinging together. 8 frames; each paw is planted
@@ -165,12 +184,12 @@ const LEGS = 2.5; // how much higher than Keep Defense's wolf the body rides: a 
 // neck, a ruff over the shoulders, a deep chest, short legs that grow out
 // of the shoulder and the haunch; ears laid back (a wolf) or pricked (the
 // hound), the tail bushy (a wolf) or a thin whip (the hound).
-function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false, crouch = 0 }) {
+function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false, crouch = 0, wings = 0, lit = true }) {
   const [W, H] = size(56);
-  const [c, ctx] = makeCanvas(W, H);
+  const [c, ctx] = frameCanvas(W, H);
   const o = (pts, dx = 0, dy = 0) => sp(pts, 4 + dx, 6 + dy); // design space -> canvas
   const oe = (cx, cy, rx, ry) => se(cx + 4, cy + 6, rx, ry);
-  const by = bob + crouch - LEGS, L = lunge, hy = by + (L ? 1 : 0) + crouch, hx = 4 + L; // the body carried high on long legs
+  const by = bob + crouch - (ST.legs ?? LEGS), L = lunge, hy = by + (L ? 1 : 0) + crouch, hx = 4 + L; // the body carried high on long legs
   const nF = stride(step, 0), fH = stride(step, 0), fF = stride(step, 0.5), nH = stride(step, 0.5);
   const S = 6, trot = step >= 0;
   const sway = trot ? [0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5][step] : 0;
@@ -202,6 +221,12 @@ function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false,
   // the hind legs stand under the rump (as on the skeleton: hock and paw under the tail base, the back of
   // the thigh the back end of the animal), the fore legs under the shoulder
   const NF = fore(36 + L, nF), FF = fore(33 + L, fF), NH = hind(12.6, nH), FH = hind(13.6, fH);
+  // the gargoyle's bat wings off the withers: folded along the back, half open as it lopes, spread to pounce
+  const WING = [ // folded, half open, spread: root, wrist, tip, scallop, tip, scallop, tip, back along the body
+    [[33, 9], [30, 1.5], [25.5, -2.5], [24.5, 2.5], [20.5, 2.5], [22.5, 6], [21, 9.5], [25.5, 10.5]], // standing up off the shoulders
+    [[33, 9], [29.5, -2.5], [23, -6], [22.5, 0], [17, -0.5], [19.5, 4], [16.5, 8], [24, 10]],
+    [[33, 9], [31, -3], [26.5, -5], [24, 0], [17.5, -2.5], [19, 3], [12, 3], [22, 9]]][wings]; // (spread wide, kept inside the frame)
+  if (ST.wings) part(ctx, W, H, (q) => wing(q, W, H, o(WING, 1.6, by - 1.2), true)); // the far wing, behind
   part(ctx, W, H, (q) => leg(q, o(FF.pts), sw(4), sw(2.5), true, 1));
   part(ctx, W, H, (q) => {
     furFill(q, W, H, mask(W, H, [o(thigh(FH, -0.5))]), (x, y, t) => (t < 0.3 ? 'furD' : t < 0.75 ? 'fur' : 'furM'), 11);
@@ -210,7 +235,10 @@ function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false,
   const tl = ST.whip
     ? (trot ? [[12, 12 + by], [8.5, 11 + by], [5.5, 12.5 + by], [3 + sway * 0.5, 16 + by]] : [[12, 12 + by], [9, 12.5 + by], [6.5, 15 + by], [5, 19 + by]])
     : (trot ? [[12, 12 + by], [8.5, 13.5 + by], [5.5, 16.5 + by], [4 + sway * 0.5, 21 + by]] : [[12, 12 + by], [9, 14 + by], [7, 18 + by], [6, 23 + by]]);
-  part(ctx, W, H, (q) => tail(q, o(tl), ST.whip ? [3, 3, 2.5, 2, 2, 1.5] : [4, 5, 6, 7, 7, 6, 4]), (x, y) => y > R(16 + by + 6));
+  part(ctx, W, H, (q) => {
+    tail(q, o(tl), ST.spade ? [4, 3.5, 3, 3, 2.5, 2] : ST.whip ? [3, 3, 2.5, 2, 2, 1.5] : [4, 5, 6, 7, 7, 6, 4]);
+    if (ST.spade) { const [ex, ey] = tl[tl.length - 1]; fillMask(q, W, mask(W, H, [o([[ex + 1, ey - 1], [ex - 2.4, ey], [ex - 0.6, ey + 3.6], [ex + 2, ey + 1.4]])]), 'furM'); } // a spade at its tip
+  }, (x, y) => y > R(16 + by + 6));
   // the body: level back, the ruff's hump at the withers, a deep chest, the
   // belly tucked up to the flank
   part(ctx, W, H, (q) => {
@@ -225,8 +253,9 @@ function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false,
     for (let k = 0; k < 6; k++) px(q, R(18 + 4 + k * 3.2), R(17 + 6 + by) - (k % 2), 'furL', 2, 1); // flank highlights
     for (let k = 0; k < 5; k++) px(q, R(19 + 4 + k * 3), R(10.5 + 6 + by) + 1, 'furD', 2, 1); // the dark saddle's edge
   });
-  // ears behind the skull: small and laid back, or pricked up tall; the head over them
-  part(ctx, W, H, (q) => {
+  if (ST.wings) part(ctx, W, H, (q) => wing(q, W, H, o(WING, 0, by), false), true); // the near wing, over the back
+  // ears behind the skull: small and laid back, or pricked up tall (or horns); the head over them
+  if (!ST.horns) part(ctx, W, H, (q) => {
     const ears = ST.pricked
       ? [[[38.4, 14.8], [39, 10], [40.2, 14.4], 'fur'], [[40.2, 15], [41.3, 7], [42.6, 14.8], 'furM']] // tall and narrow, pointed
       : [[[37.5, 15.5], [37.5, 12], [40, 15], 'fur'], [[39.5, 15], [39.5, 10.8], [42.2, 15], 'furM']];
@@ -243,30 +272,35 @@ function beastSide({ step = -1, bob = 0, lunge = 0, open = false, blink = false,
       return t < 0.25 ? 'fur' : t < 0.6 ? 'furM' : 'furL';
     }, 4);
   }, (x, y) => y < R(10 + 6 + hy)); // a line only where the skull meets the ears
+  if (ST.horns) part(ctx, W, H, (q) => { for (const [d, far] of [[1.2, true], [0, false]]) horn(q, W, H, sp([[43 + d, 15.6], [41.8 + d, 12], [40 + d, 9.6], [38.2 + d, 8], [39.6 + d, 10.8], [40.8 + d, 13.2], [41.2 + d, 15.8]].map(([x, y]) => [x + hx, y + hy])), far); }, true); // horns sweeping back off the brow
   // near legs over the body: seamless where they join it
   part(ctx, W, H, (q) => leg(q, o(NF.pts), sw(4.5), sw(3), false, 1), below(21.5), true);
   part(ctx, W, H, (q) => leg(q, o(NH.pts), sw(2.8), sw(3), false, 1), null, true);
   // face: eye under the brow, nose, mouth
   const fy = 6 + hy, ex = R(42 + hx), sn = ST.pricked ? 1.4 : 0;
-  if (blink) px(ctx, ex, R(11 + fy), 'furD', 2, 1); else { px(ctx, ex, R(11 + fy), 'ink', 3, 1); px(ctx, ex, R(11 + fy), ST.eye); }
+  if (blink) px(ctx, ex, R(11 + fy), 'furD', 2, 1); else { px(ctx, ex, R(11 + fy), 'ink', 3, 1); px(ctx, ex, R(11 + fy), lit ? ST.eye : 'furM'); }
   px(ctx, ex - 1, R(11 + fy) - 1, 'furD', 4, 1); // brow
   px(ctx, R(48.5 + sn + hx), R(12 + fy), 'ink', 2, 2); // nose
   if (open) {
     px(ctx, R(43 + hx), R(14 + fy), 'redD', 7, 2); px(ctx, R(44 + hx), R(14 + fy), 'white'); px(ctx, R(47.5 + sn + hx), R(14 + fy), 'white');
     px(ctx, R(42 + hx), R(16 + fy), 'furL', 7, 1);
-  } else px(ctx, R(44 + hx), R(14 + fy), 'ink', 5 + Math.round(sn), 1);
+  } else { px(ctx, R(44 + hx), R(14 + fy), 'ink', 5 + Math.round(sn), 1); if (ST.horns) px(ctx, R(46 + hx), R(14 + fy) + 1, 'white'); } // the gargoyle's fang over its lip
   return c;
 }
 
 // facing you. From above and in front the body is long: the back runs away
 // up the screen to the tail; the broad head is held low at the front, the
 // front legs planted either side of it.
-function beastDown({ step = -1, bob = 0, open = false, blink = false, lunge = 0, crouch = 0 }) {
+function beastDown({ step = -1, bob = 0, open = false, blink = false, lunge = 0, crouch = 0, wings = 0, lit = true }) {
   const [W, H] = size(36), b = bob + crouch, hy = b + (lunge ? 1 : 0) + lunge * 0.6;
-  const [c, ctx] = makeCanvas(W, H);
+  const [c, ctx] = frameCanvas(W, H);
   const g = [stride(step, 0), stride(step, 0.5)];
   const sway = step < 0 ? 0 : [-1, -0.5, 0, 0.5, 1, 0.5, 0, -0.5][step];
   const foreX = [13.8, 22.2];
+  if (ST.wings) for (const s of [-1, 1]) { // the wings rise behind it from the shoulders
+    const T = [[[5, 19], [8, 14], [11.5, 11], [10.5, 14], [11, 16.5], [9.5, 17], [8.5, 20.5], [6, 21]], [[5, 19], [9, 12], [13.5, 8], [12, 12.5], [13, 16], [11, 16.5], [9.5, 20.5], [6.5, 21]], [[5, 19], [10, 10], [16, 4], [14, 9.5], [15.5, 14], [12.5, 14.5], [11, 19.5], [7, 21]]][wings];
+    part(ctx, W, H, (q) => wing(q, W, H, sp(T.map(([x, y]) => [18 + s * x, y + b])), false));
+  }
   part(ctx, W, H, (q) => tail(q, sp(ST.whip ? [[18.5, 10 + b], [19.5 + sway, 6.5 + b], [20.5 + sway * 1.5, 4 + b], [19.5 + sway * 1.5, 2 + b]] : [[18.5, 10 + b], [19.5 + sway, 6 + b], [20.5 + sway * 1.5, 3 + b], [19 + sway * 1.5, 1 + b]]), ST.whip ? [3, 2.5, 2, 1.5] : [4, 4, 4, 3]));
   part(ctx, W, H, (q) => {
     const m = mask(W, H, [se(18, 12 + b, 4.5, 4.5), se(18, 17 + b, 6, 5.5), se(18, 22.5 + b, 8, 4.5),
@@ -285,7 +319,8 @@ function beastDown({ step = -1, bob = 0, open = false, blink = false, lunge = 0,
     part(ctx, W, H, (q) => leg(q, sp([[x, 27 + b - lift], [x + s2 * 0.5, 31 + b - lift * 1.5 - fold], paw]), sw(4), sw(2.5), false), (xx, yy) => yy > R(28.5 + b), true);
   });
   // ears at the corners of the skull (laid back, or pricked up tall), then the head over them
-  part(ctx, W, H, (q) => { for (const s of [-1, 1]) {
+  if (ST.horns) part(ctx, W, H, (q) => { for (const s of [-1, 1]) horn(q, W, H, sp([[18 + s * 3.4, 21], [18 + s * 5.6, 19.8], [18 + s * 7.4, 16], [18 + s * 6.6, 15.2], [18 + s * 4.8, 18.4]].map(([x, y]) => [x, y + hy])), s > 0); }, true);
+  else part(ctx, W, H, (q) => { for (const s of [-1, 1]) {
     const tri = ST.pricked ? [[18 + s * 5.4, 22 + hy], [18 + s * 5.6, 14.6 + hy], [18 + s * 2.6, 20 + hy]] : [[18 + s * 5.5, 22 + hy], [18 + s * 6.2, 18 + hy], [18 + s * 2.5, 20 + hy]];
     fillMask(q, W, mask(W, H, [sp(tri)]), s < 0 ? 'furM' : 'fur'); px(q, R(18 + s * (ST.pricked ? 4.6 : 5)) - (s > 0 ? 1 : 0), R((ST.pricked ? 18 : 20) + hy), 'leatherD', 1, ST.pricked ? 3 : 2);
   } }, true);
@@ -301,7 +336,7 @@ function beastDown({ step = -1, bob = 0, open = false, blink = false, lunge = 0,
     }, 7);
   }, true);
   const ey = R(24 + hy), sn = ST.pricked ? 1 : 0;
-  for (const ex of [R(15), R(20.5)]) { if (blink) px(ctx, ex, ey, 'furD', 2, 1); else { px(ctx, ex, ey, 'ink', 2, 1); px(ctx, ex + (ex < R(18) ? 1 : 0), ey, ST.eye); } }
+  for (const ex of [R(15), R(20.5)]) { if (blink) px(ctx, ex, ey, 'furD', 2, 1); else { px(ctx, ex, ey, 'ink', 2, 1); px(ctx, ex + (ex < R(18) ? 1 : 0), ey, lit ? ST.eye : 'furM'); } }
   px(ctx, R(18) - 2, R(30 + sn + hy), 'ink', 5, 1); px(ctx, R(18) - 1, R(30 + sn + hy) + 1, 'ink', 3, 1); // nose
   if (open) { px(ctx, R(18) - 2, R(32 + sn + hy), 'redD', 5, 2); px(ctx, R(18) - 2, R(32 + sn + hy), 'white'); px(ctx, R(18) + 2, R(32 + sn + hy), 'white'); }
   return c;
@@ -310,14 +345,15 @@ function beastDown({ step = -1, bob = 0, open = false, blink = false, lunge = 0,
 // facing away. The head and ears at the top, broad shoulders with the front
 // paws just showing, the back narrowing to the hips, the hind legs at the
 // bottom corners, the tail hanging between them.
-function beastUp({ step = -1, bob = 0, lunge = 0, crouch = 0 }) {
+function beastUp({ step = -1, bob = 0, lunge = 0, crouch = 0, wings = 0 }) {
   const [W, H] = size(36), b = bob + crouch, hy = b - lunge * 0.5; // (a full lunge would lift the head clear of the shoulders)
-  const [c, ctx] = makeCanvas(W, H);
+  const [c, ctx] = frameCanvas(W, H);
   const fore = [stride(step, 0), stride(step, 0.5)], hind = [stride(step, 0.5), stride(step, 0)];
   const sway = step < 0 ? 0 : [-1, -0.5, 0, 0.5, 1, 0.5, 0, -0.5][step];
   const hindX = [13.5, 22.5];
   [12.5, 23.5].forEach((x, i) => part(ctx, W, H, (q) => leg(q, sp([[x, 15 + b], [x, 22 - fore[i].x * 0.8 - fore[i].lift * 2]]), sw(3), sw(2), true)));
-  part(ctx, W, H, (q) => { for (const s of [-1, 1]) {
+  if (ST.horns) part(ctx, W, H, (q) => { for (const s of [-1, 1]) horn(q, W, H, sp([[18 + s * 2.4, 6], [18 + s * 4.4, 5], [18 + s * 6, 1.2], [18 + s * 5.2, 0.6], [18 + s * 3.6, 3.6]].map(([x, y]) => [x, y + hy])), s > 0); });
+  else part(ctx, W, H, (q) => { for (const s of [-1, 1]) {
     const tri = ST.pricked ? [[18 + s * 3.6, 7 + hy], [18 + s * 3.4, 0.6 + hy], [18 + s * 1.4, 5.5 + hy]] : [[18 + s * 3.8, 7 + hy], [18 + s * 3.4, 2.5 + hy], [18 + s * 1.2, 5.5 + hy]];
     fillMask(q, W, mask(W, H, [sp(tri)]), s < 0 ? 'furM' : 'fur');
   } });
@@ -336,6 +372,10 @@ function beastUp({ step = -1, bob = 0, lunge = 0, crouch = 0 }) {
       return x / WS < 16 ? 'furL' : 'furM';
     }, 9);
   }, (x, y) => y < R(12 + b));
+  if (ST.wings) for (const s of [-1, 1]) { // the wings on its back, toward us
+    const T = [[[3.5, 14], [7, 10], [10.5, 7.5], [9.5, 11], [10, 14], [8.5, 14.5], [7.5, 18.5], [4.5, 19.5]], [[3.5, 14], [8, 9], [13, 5.5], [11.5, 10], [12.5, 14], [10.5, 14.5], [9, 18.5], [5, 19.5]], [[3.5, 14], [9, 7], [15.5, 1.5], [13.5, 7], [15, 12], [12, 12.5], [10.5, 17.5], [6, 19]]][wings];
+    part(ctx, W, H, (q) => wing(q, W, H, sp(T.map(([x, y]) => [18 + s * x, y + b])), false), true);
+  }
   hindX.forEach((x, i) => {
     const s2 = i ? 1 : -1, { x: r, lift, fold } = hind[i];
     part(ctx, W, H, (q) => leg(q, sp([[x, 30 + b - lift], [x + s2 * 0.6, 33 + b - lift * 1.5 - fold * 0.5], [x + s2 * 0.3, 36 - r * 1.2 - lift * 3]]), sw(4.5), sw(3), false), (xx, yy) => yy > R(32 + b), true);
@@ -381,6 +421,10 @@ function ghostLight(c, view) {
 }
 
 const BEASTS = {
+  // the Tower Gargoyle: a grotesque of tower stone prowling on all fours, folded bat wings that half open as
+  // it lopes and spread as it pounces, horns curling back off its skull, a spade-tipped tail, cracks in the
+  // stone; at rest it's a statue, its eyes dark, and they kindle curse-light when it moves
+  gargoyle: { ws: 1.1, legs: 0.8, pricked: false, whip: true, spade: true, horns: true, wings: true, statue: true, cracks: true, eye: 'curseL', tones: { furD: '#25222f', fur: '#3d3950', furM: '#5a566f', furL: '#7d7a94', furXL: '#9f9db4', furXXL: '#c4c2d4' } },
   // Frosthelm's Frost Wolf: grey-blue saddle, frost-pale belly and ruff,
   // so it shows on snow; gold eyes
   frostwolf: { ws: 1.05, pricked: false, whip: false, eye: 'goldL', tones: { furD: '#232a40', fur: '#3a4566', furM: '#5c6a8e', furL: '#8c9abd', furXL: '#b9c6e2', furXXL: '#e6edf8' } },
@@ -390,17 +434,29 @@ const BEASTS = {
   hound: { ws: 0.95, pricked: true, whip: true, eye: 'glowL', ghost: true, tones: { furD: '#1b3a48', fur: '#2a5767', furM: '#3d7584', furL: '#5c9aa3', furXL: '#8fc9c8', furXXL: '#cdf2ec' } },
 };
 
+// weathered stone: a few hairline cracks across it (drawn in the darkest step, before the recolour)
+function cracks(c, seed) {
+  const ctx = c.getContext('2d'), W = c.width, H = c.height, d = ctx.getImageData(0, 0, W, H).data, [ir, ig, ib] = rgb('ink');
+  const coat = (x, y) => { const i = (y * W + x) * 4; return x > 0 && y > 0 && x < W && y < H && d[i + 3] && !(d[i] === ir && d[i + 1] === ig && d[i + 2] === ib); };
+  for (let k = 0; k < 4; k++) {
+    let x = Math.floor(W * (0.3 + hash(k, seed, 51) * 0.4)), y = Math.floor(H * (0.35 + hash(k, seed, 52) * 0.3));
+    for (let i = 0; i < 4; i++) { if (coat(x, y)) px(ctx, x, y, 'furD'); x += hash(i, k + seed, 53) < 0.5 ? 1 : -1; y += 1; }
+  }
+}
+
 export function buildBeast(kind) {
   const B = BEASTS[kind];
   WS = B.ws; ST = B;
   const views = {};
-  const fin = (c, v) => { recolour(c, B.tones); if (B.ghost) ghostLight(c, v); return c; };
+  let seed = 0;
+  const fin = (c, v) => { if (B.cracks) cracks(c, ++seed % 3); recolour(c, B.tones); if (B.ghost) ghostLight(c, v); return c; };
   for (const [v, fn] of [['side', beastSide], ['down', beastDown], ['up', beastUp]]) {
+    const idle = B.statue ? [fn({ lit: false }), fn({ lit: false })] : [fn({}), fn({ bob: 1, blink: true })]; // a gargoyle at rest is a statue: still, its eyes dark
     views[v] = {
-      idle: [fn({}), fn({ bob: 1, blink: true })].map((c) => fin(c, v)),
-      walk: TROT_BOB.map((b, st) => fin(fn({ step: st, bob: b }), v)),
-      windup: [fn({ crouch: 1, open: true }), fn({ crouch: 1, bob: 1, open: true })].map((c) => fin(c, v)), // crouched low, snarling
-      attack: [fn({ lunge: 3, open: true }), fn({ lunge: 1, open: true })].map((c) => fin(c, v)),
+      idle: idle.map((c) => fin(c, v)),
+      walk: TROT_BOB.map((b, st) => fin(fn({ step: st, bob: b, wings: 1 }), v)),
+      windup: [fn({ crouch: 1, open: true, wings: 2 }), fn({ crouch: 1, bob: 1, open: true, wings: 2 })].map((c) => fin(c, v)), // crouched low, snarling (wings spread)
+      attack: [fn({ lunge: 3, open: true, wings: 2 }), fn({ lunge: 1, open: true, wings: 1 })].map((c) => fin(c, v)),
       hurt: [fin(fn({ blink: true, bob: 1 }), v)],
     };
   }

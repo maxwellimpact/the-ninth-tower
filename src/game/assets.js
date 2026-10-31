@@ -6,9 +6,9 @@ import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DR
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import * as PORTAL from '../gfx/portal.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, eggSac, buildImp, buildSlug, buildBrute, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, eggSac, buildBrute, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import { buildBeast } from '../gfx/beasts.js';
-import { buildSpider3, buildSpiderling3, buildBeetle3 } from '../gfx/crawlers.js';
+import { buildSpider3, buildSpiderling3, buildBeetle3, buildImp3, buildSlug3 } from '../gfx/crawlers.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -195,8 +195,8 @@ export const GROUPS = {
   // Cinderreach (Wave 2)
   cinder: [
     ['cinder foes', (s) => {
-      creature(s, 'imp', buildImp(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'slug', buildSlug(), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'imp', buildImp3(), { idle: 8, walk: 10, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk']); // three views; wings beating, flames flickering; the fireball grows in its windup (held)
+      creatureViews(s, 'slug', buildSlug3(), { idle: 2, walk: 6, windup: 5, attack: 8, hurt: 1 }, ['idle', 'walk']); // three views; a bulge rolling along it as it crawls
       creatureViews(s, 'brute', buildBrute(false), { idle: 2.5, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']); // the Golem's little cousin, in three views
       creatureViews(s, 'bruteCracked', buildBrute(true), { idle: 2.5, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creatureViews(s, 'beetle', buildBeetle3(), { idle: 3, walk: 16, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // three views, a tripod gait
@@ -234,7 +234,7 @@ export const GROUPS = {
   basin: [
     ['basin foes', (s) => {
       creature(s, 'voidling', buildVoidling(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'gargoyle', buildGargoyle(), { idle: 1, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'gargoyle', buildBeast('gargoyle'), { idle: 1, walk: 12, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // a stone beast in three views: a statue at rest, it lopes on all fours with its wings half open
       registerPuppet(s, 'chainwarden', WARDEN);
     }],
     ['blight', (s) => {

@@ -653,58 +653,7 @@ export function eggSac(stage = 0) {
 // The Spectral Hound and the Frost Wolf are drawn in gfx/beasts.js (three views).
 
 // ============================================================== Cinderreach
-// ---------------------------------------------------------------- Ember Imp
-// A small horned fire-sprite with a flame for hair and a spark of a tail,
-// hovering (built like the wisp: shaded body, ink outline).
-const IMP = ['lavaD', 'lava', 'lavaL', 'lavaXL'];
-function impFrame({ bob = 0, arms = 0, eye = 'goldL' }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  const y = 14 + bob;
-  for (const [x, h] of [[12, 4], [15, 6], [18, 5], [20, 3]]) px(ctx, x, y - 6 - h, h > 4 ? 'lavaXL' : 'lavaL', 2, h); // flame hair
-  shadedBlob(ctx, 16, y, 5, 4.5, IMP); // head
-  px(ctx, 11, y - 4, 'basaltD', 1, 2); px(ctx, 10, y - 5, 'basaltD'); px(ctx, 21, y - 4, 'basaltD', 1, 2); px(ctx, 22, y - 5, 'basaltD'); // horns
-  px(ctx, 13, y - 1, 'ink', 2, 2); px(ctx, 18, y - 1, 'ink', 2, 2); px(ctx, 14, y - 1, eye); px(ctx, 19, y - 1, eye);
-  px(ctx, 14, y + 2, 'lavaD', 4, 1);
-  shadedBlob(ctx, 16, y + 7, 3.5, 3, IMP); // body
-  for (let i = 0; i < 4; i++) px(ctx, 19 + i, y + 9 + (i % 2) - bob, i === 3 ? 'lavaXL' : 'lava'); // tail
-  const ay = arms === 1 ? y + 2 : arms === 2 ? y + 3 : y + 6;
-  px(ctx, 10, ay, 'lava', 3, 1); px(ctx, 19, ay - (arms === 1 ? 3 : 0), 'lava', 3, 1);
-  if (arms === 1) { px(ctx, 21, y - 3, 'lavaXL', 2, 2); px(ctx, 22, y - 4, 'goldL'); } // a bolt in its palm
-  outline(c, 'ink');
-  return c;
-}
-export function buildImp() {
-  return {
-    idle: [impFrame({ bob: 0 }), impFrame({ bob: 1 })],
-    walk: [impFrame({ bob: 0 }), impFrame({ bob: 1 }), impFrame({ bob: 2 }), impFrame({ bob: 1 })],
-    windup: [impFrame({ arms: 1 }), impFrame({ arms: 1, bob: 1 })],
-    attack: [impFrame({ arms: 2 }), impFrame({})],
-    hurt: [impFrame({ eye: 'white' })],
-  };
-}
-
-// --------------------------------------------------------------- Magma Slug
-// A fat slug of cooling rock, molten in the cracks, glowing spots on its back.
-function slugFrame({ stretch = 0, rear = 0, eye = 'goldL' }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  shadedBlob(ctx, 15 - stretch, 21 - rear, 10 + stretch, 5 + rear * 0.5, ['basaltD', 'basalt', 'basaltL', 'ashXL']);
-  for (const [x, y] of [[9, 19], [14, 17], [19, 19], [12, 22], [17, 22]]) { px(ctx, x - stretch, y - rear, 'lavaL', 2, 1); px(ctx, x - stretch, y + 1 - rear, 'lava', 2, 1); }
-  shadedBlob(ctx, 25, 18 - rear * 2, 3.5, 3.5, ['basaltD', 'basalt', 'basaltL', 'ashXL']); // head
-  px(ctx, 24, 12 - rear * 2, 'basaltL', 1, 4); px(ctx, 27, 12 - rear * 2, 'basaltL', 1, 4); // eye stalks
-  px(ctx, 24, 11 - rear * 2, eye); px(ctx, 27, 11 - rear * 2, eye);
-  px(ctx, 5 - stretch * 2, 25, 'lavaD', 22 + stretch * 2, 1); // a glowing sole
-  outline(c, 'ink');
-  return c;
-}
-export function buildSlug() {
-  return {
-    idle: [slugFrame({}), slugFrame({ stretch: 1 })],
-    walk: [slugFrame({}), slugFrame({ stretch: 1 }), slugFrame({ stretch: 2 }), slugFrame({ stretch: 1 })],
-    windup: [slugFrame({ rear: 2 }), slugFrame({ rear: 3 })],
-    attack: [slugFrame({ stretch: 2 }), slugFrame({})],
-    hurt: [slugFrame({ eye: 'white' })],
-  };
-}
+// The Ember Imp and the Magma Slug are drawn in gfx/crawlers.js (three views).
 
 // -------------------------------------------------------------- Basalt Brute
 // The Golem's little cousin: the same hulk of hewn blocks at two-thirds the
@@ -1104,32 +1053,4 @@ export function buildVoidling() {
   };
 }
 
-// ---------------------------------------------------------- Tower Gargoyle
-// A crouched stone beast with folded bat wings, horns and a snarl, grey and
-// cracked; its eyes kindle when it moves (40x40, feet near y=33).
-const GSTONE = ['slate', 'stone', 'mist', 'bone'];
-function gargoyleFrame({ step = 0, wings = 0, lunge = 0, lit = true }) {
-  const [c, ctx] = makeCanvas(40, 40);
-  const y = -lunge;
-  // wings: folded behind, or half spread to pounce
-  for (const s of [-1, 1]) for (let i = 0; i < 9; i++) px(ctx, 20 + s * (6 + i * (wings ? 1.2 : 0.6)), 12 + y + i * (wings ? 0.4 : 1.2), i % 3 ? 'stone' : 'slate', 2, wings ? 6 - Math.floor(i / 2) : 3);
-  const lg = step % 2 ? [0, 1] : [1, 0];
-  shadedBlob(ctx, 14, 31 - lg[0], 3.5, 3, GSTONE); shadedBlob(ctx, 26, 31 - lg[1], 3.5, 3, GSTONE); // haunches
-  shadedBlob(ctx, 20, 24 + y, 9, 7, GSTONE); // body
-  shadedBlob(ctx, 20 + lunge, 13 + y, 5.5, 5, GSTONE); // head
-  px(ctx, 15 + lunge, 7 + y, 'slate', 2, 3); px(ctx, 24 + lunge, 7 + y, 'slate', 2, 3); // horns
-  px(ctx, 17 + lunge, 12 + y, 'ink', 6, 2); if (lit) { px(ctx, 17 + lunge, 12 + y, 'curseL', 2, 1); px(ctx, 21 + lunge, 12 + y, 'curseL', 2, 1); }
-  px(ctx, 18 + lunge, 16 + y, 'bone', 1, 2); px(ctx, 21 + lunge, 16 + y, 'bone', 1, 2); // fangs
-  for (const [cx, cy] of [[16, 22], [23, 26], [19, 29]]) px(ctx, cx, cy + y, 'slate', 2, 1); // cracks
-  outline(c, 'ink');
-  return c;
-}
-export function buildGargoyle() {
-  return {
-    idle: [gargoyleFrame({ lit: false })],
-    walk: [gargoyleFrame({ step: 0, wings: 1 }), gargoyleFrame({ step: 1, wings: 1 })],
-    windup: [gargoyleFrame({ wings: 1, lunge: 1 }), gargoyleFrame({ wings: 1, lunge: 2 })],
-    attack: [gargoyleFrame({ wings: 1, lunge: 3 }), gargoyleFrame({ wings: 1 })],
-    hurt: [gargoyleFrame({ lit: false })],
-  };
-}
+// The Tower Gargoyle is drawn in gfx/beasts.js (three views).
