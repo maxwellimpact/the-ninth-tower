@@ -627,101 +627,7 @@ export function buildRootling() {
   };
 }
 
-// ------------------------------------------------------------ Gloom Spider
-// Seen from above like the crab: a round shaded abdomen with a pale hourglass,
-// a small head with a cluster of red eyes and white fangs, and eight bent legs
-// two pixels thick that scuttle in alternating sets.
-const SPIDER = { k: 'night', P: 'purpD', p: 'purp', L: 'purpL', C: 'curseL', E: 'redL', W: 'white', h: 'bone' };
-function spiderFrame({ step = 0, rear = 0, open = false }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  const legsA = [
-    'kk..........kk',
-    '.kk........kk.',
-    '..k........k..',
-    'k..k......k..k',
-    '.kk.k....k.kk.',
-    '....k....k....',
-    '.kkk......kkk.',
-    'k............k',
-  ];
-  const legsB = [
-    '.kk........kk.',
-    'k..k......k..k',
-    '...k......k...',
-    '.kk.k....k.kk.',
-    'k...k....k...k',
-    '..kk......kk..',
-    '.k..........k.',
-    'k............k',
-  ];
-  grid(ctx, step % 2 ? legsB : legsA, SPIDER, 9, 13 - rear);
-  const body = [
-    '....PPPP....',
-    '..PppLLppP..',
-    '.PpLLppppPP.',
-    '.PpLpCCppPP.',
-    'PppppCCpppPP',
-    'PpppCppCppPP',
-    '.PppppppppP.',
-    '..PPppppPP..',
-    '....PPPP....',
-  ];
-  grid(ctx, body, SPIDER, 10, 15 - rear);
-  const head = open ? ['..PPPP..', '.PpEEpP.', '.PEppEP.', '..PPPP..', '..W..W..', '.W....W.'] : ['..PPPP..', '.PpEEpP.', '.PEppEP.', '..PPPP..', '..W..W..'];
-  grid(ctx, head, SPIDER, 12, 9 - rear);
-  outline(c, 'ink');
-  return c;
-}
-function shrink(src, f) {
-  // spiderlings: the same drawing at a smaller size, re-outlined
-  const [c, ctx] = makeCanvas(32, 32);
-  ctx.imageSmoothingEnabled = false;
-  const w = Math.round(32 * f);
-  ctx.drawImage(src, 0, 0, 32, 32, Math.round((32 - w) / 2), 32 - w - 4, w, w);
-  return c;
-}
-export function buildSpider(size = 1) {
-  const f = (o) => (size < 1 ? shrink(spiderFrame(o), size) : spiderFrame(o));
-  return {
-    idle: [f({ step: 0 }), f({ step: 0, rear: 1 })],
-    walk: [f({ step: 0 }), f({ step: 1 }), f({ step: 0 }), f({ step: 1 })],
-    windup: [f({ rear: 1, open: true }), f({ rear: 2, open: true })],
-    attack: [f({ step: 1, open: true }), f({ step: 0 })],
-    hurt: [f({ step: 0 })],
-  };
-}
-// Spiderlings: drawn at their own size, not the spider shrunk (shrinking lost
-// the legs and left a purple dot). A red-eyed head over a round abdomen with a
-// pale mark, and eight thin legs, each bent at the knee, that step in two
-// sets of four (alternating, as a real spider walks).
-const LING_LEGS = [ // [hip dy, knee dx, knee dy, foot dx, foot dy] for the right side; the left mirrors them
-  [-1, 2, -2, 4, -4], [0, 3, -1, 4, 0], [0, 3, 1, 4, 3], [1, 2, 2, 3, 4],
-];
-function lingFrame({ step = 0, rear = 0, open = false }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  const cx = 16, cy = 22 - rear;
-  const line = (x0, y0, x1, y1) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) px(ctx, Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 'night'); };
-  for (const side of [1, -1]) LING_LEGS.forEach(([hy, kx, ky, fx, fy], i) => {
-    // the sets: right 1 and 3 with left 2 and 4, then the others; a lifted foot reaches on and its knee rises
-    const up = step && ((i % 2 === 0) === (side > 0)) === (step === 1);
-    const hx = cx + side, hY = cy + 1 + hy;
-    const kX = hx + side * kx, kY = hY + ky - (up ? 1 : 0), fX = hx + side * fx, fY = 23 + hy + fy - (up ? 1 : 0); // (feet stay planted as the body rears)
-    line(hx, hY, kX, kY); line(kX, kY, fX, fY);
-  });
-  grid(ctx, ['.PPP.', 'PpLpP', 'PLpCP', 'PpCpP', '.PPP.'], SPIDER, cx - 2, cy);
-  grid(ctx, open ? ['PPP', 'EpE', 'W.W'] : ['PPP', 'EpE', '.W.'], SPIDER, cx - 1, cy - 3);
-  outline(c, 'ink');
-  return c;
-}
-export function buildSpiderling() {
-  return {
-    idle: [lingFrame({}), lingFrame({ rear: 1 })],
-    walk: [lingFrame({ step: 1 }), lingFrame({}), lingFrame({ step: 2 }), lingFrame({})],
-    windup: [lingFrame({ rear: 1, open: true }), lingFrame({ rear: 2, open: true })],
-    attack: [lingFrame({ step: 1, open: true }), lingFrame({})],
-    hurt: [lingFrame({})],
-  };
-}
+// The Gloom Spider and its spiderlings are drawn in gfx/crawlers.js (three views).
 
 // Egg sac: a silk-wrapped bundle tied down by guy lines, the eggs showing as
 // pale bumps through the wrapping. Stage 1, about to hatch: swollen, the
@@ -813,32 +719,7 @@ export function buildBrute(cracked = false, vs = ['down', 'side', 'up']) {
   return g;
 }
 
-// --------------------------------------------------------------- Fire Beetle
-// Seen from above like the crab: a domed shell striped with glowing seams
-// that swell before it bursts.
-const BEETLE = { R: 'lavaD', r: 'lava', L: 'lavaL', W: 'lavaXL', k: 'basaltD', b: 'basalt', E: 'goldL' };
-function beetleFrame({ step = 0, swell = 0 }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  const legs = step % 2 ? ['k.k......k.k', '.k........k.', 'k.k......k.k'] : ['.k........k.', 'k.k......k.k', '.k........k.'];
-  grid(ctx, legs, BEETLE, 10, 17);
-  const shell = swell
-    ? ['...bbbbbb...', '..bRLWWLRb..', '.bRrLWWLrRb.', '.bRrLWWLrRb.', '.bRrLWWLrRb.', '..bRLWWLRb..', '...bbbbbb...']
-    : ['...bbbbbb...', '..bRrLLrRb..', '.bRrrLLrrRb.', '.bRrrLLrrRb.', '.bRrrLLrrRb.', '..bRrLLrRb..', '...bbbbbb...'];
-  grid(ctx, shell, BEETLE, 10, 14);
-  grid(ctx, ['..kkkk..', '.kEkkEk.', '..kkkk..'], BEETLE, 12, 11);
-  px(ctx, 13, 10, 'basaltD', 1, 2); px(ctx, 18, 10, 'basaltD', 1, 2); // feelers
-  outline(c, 'ink');
-  return c;
-}
-export function buildBeetle() {
-  return {
-    idle: [beetleFrame({}), beetleFrame({ step: 1 })],
-    walk: [beetleFrame({}), beetleFrame({ step: 1 })],
-    windup: [beetleFrame({ swell: 1 }), beetleFrame({ swell: 1, step: 1 })],
-    attack: [beetleFrame({ swell: 1 }), beetleFrame({})],
-    hurt: [beetleFrame({ swell: 1 })],
-  };
-}
+// The Fire Beetle is drawn in gfx/crawlers.js (three views).
 
 
 // ================================================================== Gizmo's gadgets

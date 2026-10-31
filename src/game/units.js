@@ -2011,6 +2011,11 @@ export class Enemy extends Unit {
       this.hop += dt * 7;
       sp *= Math.sin(this.hop) > 0 ? 1.7 : 0.15;
     }
+    if (this.kind === 'spider' || this.kind === 'spiderling') {
+      // it skitters, as a spider runs: quick dashes and dead stops, about as fast overall (its legs keep pace: paced)
+      this.skit = (this.skit ?? Math.random() * 6) + dt * 8;
+      sp *= Math.sin(this.skit) > -0.35 ? 1.5 : 0.1;
+    }
     // spread out from other enemies
     for (const e of this.scene.enemies) {
       if (e === this || !e.alive) continue;

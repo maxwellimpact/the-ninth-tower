@@ -602,7 +602,8 @@
   "drops": {
    "silk": 0.35
   },
-  "element": "venom"
+  "element": "venom",
+  "paced": 52
  },
  "spiderling": {
   "name": "SPIDERLING",
@@ -622,7 +623,8 @@
   "zone": "front",
   "zr": 11,
   "weak": "fire",
-  "resist": "venom"
+  "resist": "venom",
+  "paced": 62
  },
  "hound": {
   "name": "SPECTRAL HOUND",
@@ -887,7 +889,8 @@
   "resist": "fire",
   "drops": {
    "brimstone": 0.3
-  }
+  },
+  "paced": 66
  },
  "drake": {
   "name": "CINDER DRAKE",
