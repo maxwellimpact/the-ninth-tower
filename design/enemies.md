@@ -56,7 +56,7 @@ Each rule was added one at a time and checked before and after with the fight be
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
 |---|---|---|---|---|---|
 | **Shade** | 1.0 | 1.3 | Invisible until close; the Seer's Lens shows it | Light / Shadow | Ghostcap |
-| **Rootling** | 1.5 | 1.0 | Stays rooted and throws thorns; burns easily | Fire / Venom | Heartwood (sells) |
+| **Rootling** | 1.5 | 1.0 | Walks slowly at you on its roots and throws thorns; burns easily. A walking stump in three views: warm bark, ember eyes, a crown of leaves that sways, five roots shuffling forward in two alternating sets, a branch arm cocked back and flung | Fire / Venom | Heartwood (sells) |
 | **Gloom Spider** | 1.1 | 1.1 | Webs that root you; climbs walls. Seen from above in three views (it turns to face where it crawls): a round purple abdomen with the pale hourglass, a red-eyed head with white fangs, eight jointed legs stepping in two alternating sets; it skitters, quick dashes and dead stops, its legs keeping pace; rears up with fangs bared before it bites. Its spiderlings are the same beast small | Fire / Venom | Silkthread |
 | **Spectral Hound** | 0.8 | 0.9 | Packs of 3–4 that flank. A lean hunting hound made of ghost-light: pricked ears, a long muzzle, a thin whip tail fraying into mist, glowing eyes, lit from within along its back; three views, an 8-frame trot (gfx/beasts.js) | Light / Frost | — |
 | **Wailing Banshee** | 1.2 | 0.8 | Scream interrupts your casts and staggers; break line of sight | Light / Shadow | Crystal |
