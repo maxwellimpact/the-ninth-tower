@@ -20,12 +20,12 @@ enum Haptics {
         return true
     }
 
-    static func hit() { if gate(0.07) { light.impactOccurred(intensity: 0.7) } }
-    static func crit() { if gate(0.05) { rigid.impactOccurred() } }
-    static func hurt() { if gate(0.05) { medium.impactOccurred() } }
-    static func dodge() { light.impactOccurred(intensity: 0.5) }
-    static func ult() { heavy.impactOccurred() }
-    static func down() { notice.notificationOccurred(.error) }
-    static func win() { notice.notificationOccurred(.success) }
-    static func tap() { light.impactOccurred(intensity: 0.4) }
+    static func hit() { Probe.time("haptic hit", over: 2) { if gate(0.07) { light.impactOccurred(intensity: 0.7) } } }
+    static func crit() { Probe.time("haptic crit", over: 2) { if gate(0.05) { rigid.impactOccurred() } } }
+    static func hurt() { Probe.time("haptic hurt", over: 2) { if gate(0.05) { medium.impactOccurred() } } }
+    static func dodge() { Probe.time("haptic dodge", over: 2) { light.impactOccurred(intensity: 0.5) } }
+    static func ult() { Probe.time("haptic ult", over: 2) { heavy.impactOccurred() } }
+    static func down() { Probe.time("haptic down", over: 2) { notice.notificationOccurred(.error) } }
+    static func win() { Probe.time("haptic win", over: 2) { notice.notificationOccurred(.success) } }
+    static func tap() { Probe.time("haptic tap", over: 2) { light.impactOccurred(intensity: 0.4) } }
 }

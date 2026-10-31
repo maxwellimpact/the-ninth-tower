@@ -32,3 +32,18 @@ import UIKit
 func hex(_ c: UInt32, _ a: CGFloat = 1) -> UIColor {
     UIColor(red: CGFloat((c >> 16) & 255) / 255, green: CGFloat((c >> 8) & 255) / 255, blue: CGFloat(c & 255) / 255, alpha: a)
 }
+
+// Frame-hitch probe (only with -perfLog): times a piece of work and prints it
+// when it runs long, so a slow frame on the phone names its cause.
+import QuartzCore
+enum Probe {
+    static let on = ProcessInfo.processInfo.arguments.contains("-perfLog")
+    @inline(__always) static func time<T>(_ label: @autoclosure () -> String, over ms: Double = 4, _ work: () -> T) -> T {
+        guard on else { return work() }
+        let t0 = CACurrentMediaTime()
+        let r = work()
+        let dt = (CACurrentMediaTime() - t0) * 1000
+        if dt > ms { print(String(format: "[slow] %.1fms %@", dt, label())) }
+        return r
+    }
+}

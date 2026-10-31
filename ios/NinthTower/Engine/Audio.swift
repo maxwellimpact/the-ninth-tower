@@ -36,6 +36,10 @@ final class Audio {
         }
         engine.mainMixerNode.outputVolume = 0.9
         try? engine.start()
+        // every voice started now, idling on silence: a voice's first play() sets up
+        // its audio processing on the spot (8-22 ms on an iPhone 15 Pro Max), which
+        // stalled the frames of the first burst of fighting
+        for (p, _) in voices { p.play() }
         NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] _ in
             try? self?.engine.start() // the phone took the sound (a call, another app): take it back
         }
@@ -47,6 +51,10 @@ final class Audio {
         if let t = lastAt[name], now - t < 0.03 { return } // the same sound twice in one beat is just louder
         lastAt[name] = now
         if !engine.isRunning { try? engine.start() }
+        Probe.time("sound \(name)", over: 2) { start(b, pitch: pitch, vol: vol) }
+    }
+
+    private func start(_ b: AVAudioPCMBuffer, pitch: CGFloat, vol: Float) {
         let (p, v) = voices[next]
         next = (next + 1) % voices.count
         v.rate = Float(pitch) * Float.random(in: 0.96...1.04)

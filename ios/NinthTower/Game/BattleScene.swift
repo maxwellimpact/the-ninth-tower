@@ -157,17 +157,17 @@ final class BattleScene: SKScene {
         if !timers.isEmpty {
             let due = timers.filter { $0.at <= clock }
             timers.removeAll { $0.at <= clock }
-            due.forEach { $0.fn() }
+            Probe.time("timers") { due.forEach { $0.fn() } }
         }
-        for h in party { h.update(dt) }
-        for e in enemies { e.update(dt) }
+        for h in party { Probe.time("hero \(h.id) action=\(h.action?.type ?? "-")/\(h.action?.id ?? "")") { h.update(dt) } }
+        for e in enemies { let st = e.state; Probe.time("foe \(e.kind) \(st)->\(e.state)") { e.update(dt) } }
         enemies.removeAll { !$0.alive }
-        updateProjectiles(dt)
-        updateShots(dt)
-        fx.update(dt)
-        updateWaves(dt)
+        Probe.time("projectiles \(projectiles.count)") { updateProjectiles(dt) }
+        Probe.time("shots \(shots.count)") { updateShots(dt) }
+        Probe.time("fx") { fx.update(dt) }
+        Probe.time("waves") { updateWaves(dt) }
         updateCamera(real)
-        hud.update()
+        Probe.time("hud") { hud.update() }
         perf.update(real)
     }
 
