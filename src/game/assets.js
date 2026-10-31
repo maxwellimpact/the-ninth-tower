@@ -196,8 +196,8 @@ export const GROUPS = {
     ['cinder foes', (s) => {
       creature(s, 'imp', buildImp(), { idle: 4, walk: 8, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'slug', buildSlug(), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'brute', buildBrute(false), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'bruteCracked', buildBrute(true), { idle: 2, walk: 5, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'brute', buildBrute(false), { idle: 2.5, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']); // the Golem's little cousin, in three views
+      creatureViews(s, 'bruteCracked', buildBrute(true), { idle: 2.5, walk: 5, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'beetle', buildBeetle(), { idle: 4, walk: 12, windup: 10, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'salamander', SALAMANDER, scaleRecolor);
     }],

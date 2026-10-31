@@ -2196,7 +2196,7 @@ export class Enemy extends Unit {
     const sc = this.scene;
     this.cracked = true;
     this.tex = 'bruteCracked'; this.anim = '';
-    this.sprite.setTexture('bruteCracked', 'idle_0');
+    this.sprite.setTexture('bruteCracked', this.viewed ? `${this.view || 'down'}_idle_0` : 'idle_0');
     sc.floatText(this.x, this.y - 36, 'ARMOUR CRACKED!', 'fontGold');
     sc.fx.burst('ember', this.x, this.y - 16, 18); sc.shake(160, 0.006); audio.sfx('bash');
   }
