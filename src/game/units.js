@@ -1238,6 +1238,8 @@ const DRAKE_FIRE_BANDS = [[0xc0394b, 1, 1], [0xff7b2e, 0.72, 0.96], [0xffd04a, 0
 const DRAKE_FLIGHT = { crouch: 0.8, climb: 0.6, glide: 0.9, hover: 0.7, dive: 0.22, height: 46 };
 const TOKEN_STATES = new Set(['windup', 'chargeWindup', 'charging', 'tongueWind', 'throwWind']); // states that hold an attack token
 const ENEMY_TEX = { goblin: 'goblin', hexling: 'hexling', mire: 'mire', golem: 'golem', archer: 'archer', knight: 'knight', rats: 'rats', hollow: 'hollow', hollowpile: 'hollowpile', boar: 'boar', crab: 'crab', wisp: 'wisp', warlock: 'warlock', snagtooth: 'snagtooth', pitchamp: 'pitchamp', drowned: 'drowned', witchling: 'witchling', leeches: 'leeches', lurker: 'lurker', croaker: 'croaker', snapjaw: 'snapjaw', murk: 'murk', shade: 'shade', huntsman: 'huntsman', huntecho: 'huntsman', rootling: 'rootling', spider: 'spider', spiderling: 'spiderling', hound: 'hound', banshee: 'banshee', mab: 'mab', eggsac: 'eggsac', imp: 'imp', slug: 'slug', salamander: 'salamander', brute: 'brute', beetle: 'beetle', drake: 'drake', vulk: 'vulk', frostwolf: 'frostwolf', rimehorn: 'rimehorn', icewraith: 'icewraith', sentinel: 'sentinel', raider: 'raider', troll: 'troll', isolde: 'isolde', voidling: 'voidling', gargoyle: 'gargoyle', chainwarden: 'chainwarden', mirror: 'brann', malgrim: 'malgrim' };
+// the fighters that step into their swing, and how far at most (px); archers, casters and the chain's long reach stand their ground
+const STEP_IN = { goblin: 7, knight: 8, hollow: 7, snagtooth: 8, pitchamp: 8, drowned: 6, shade: 8, salamander: 8, icewraith: 6, mirror: 7, vulk: 10, isolde: 10 };
 const PUPPETS = new Set(['goblin', 'archer', 'knight', 'hollow', 'warlock', 'snagtooth', 'pitchamp', 'drowned', 'witchling', 'shade', 'banshee', 'huntsman', 'huntecho', 'salamander', 'vulk', 'icewraith', 'isolde', 'chainwarden', 'mirror', 'malgrim']);
 
 // Elite affixes (C7): every elite gets one, named on its tag so it's clear
@@ -1330,7 +1332,7 @@ export class Enemy extends Unit {
 
   play(anim) {
     const key = this.animKey(anim);
-    if (anim === 'recover' && !this.puppet && this.anim === this.animKey('attack') && this.sprite.anims.isPlaying) return; // a creature's attack plays through before it settles (recover is otherwise idle at once, cutting it to its first frame)
+    if (anim === 'recover' && this.anim === this.animKey('attack') && this.sprite.anims.isPlaying) return; // its attack plays through before it settles (recover is otherwise idle at once, cutting it to its first frame)
     if (this.s.paced) this.sprite.anims.timeScale = anim === 'walk' ? this.pace || 1 : 1; // its walk is timed to its pace: hurrying, its legs go faster (and its feet stay planted)
     if (this.anim !== key) {
       this.anim = key;
@@ -1663,7 +1665,7 @@ export class Enemy extends Unit {
   sync(dt) {
     super.sync(dt);
     if (this.s.flying) this.sprite.y = Math.round(this.y) - 8 - Math.sin(Date.now() / 300 + this.id) * 2;
-    if (this.lunge) { const ox = Math.round(this.lunge.dx * this.lunge.p), oy = Math.round(this.lunge.dy * this.lunge.p); this.sprite.x += ox; this.sprite.y += oy; this.shadow.x += ox; this.shadow.y += oy; } // the drake's bite: its body (and its shadow) slid at the one it bites
+    if (this.lunge) { const ox = Math.round(this.lunge.dx * this.lunge.p), oy = Math.round(this.lunge.dy * this.lunge.p); this.sprite.x += ox; this.sprite.y += oy; this.shadow.x += ox; this.shadow.y += oy; } // a bite or a swing stepped into (drakeBite, stepIn): its body and shadow carried at the one it hits
     if (this.alt) { this.sprite.y -= Math.round(this.alt); this.sprite.setDepth(this.y + this.alt + 20); } // up in the air (the drake's flight): drawn above what's below it, its shadow left on the ground
     if (this.alt !== this.shadowAlt) { this.shadowAlt = this.alt; this.shadow.setScale(1 - Math.min(0.4, (this.alt || 0) / 115)); }
     if (this.wardRing) this.wardRing.setPosition(Math.round(this.x), Math.round(this.y) - 8).setDepth(this.y + 2);
@@ -2427,6 +2429,16 @@ export class Enemy extends Unit {
   // the bite, shown on the drake itself: its body thrown hard at the mark
   // (an ember-tinted trail where it was), its own jaws snapping shut as it
   // lands (the attack pose), a thud and dust under its snout, then it pulls back
+  // a fighter steps into its swing: its body (and shadow) carried a few px at
+  // whoever it's hitting, never past them, and back (drawn only: it stays where it stood)
+  stepIn(max) {
+    const t = this.target; if (!t?.alive) return;
+    const d = Math.hypot(t.x - this.x, t.y - this.y), D = Phaser.Math.Clamp(d - this.r - (t.r || 6) - 2, 0, max); if (D < 2) return;
+    const L = { dx: (t.x - this.x) / d * D, dy: (t.y - this.y) / d * D, p: 0 }, sc = this.scene;
+    this.lunge = L;
+    sc.tweens.add({ targets: L, p: 1, duration: 60, ease: 'Quad.easeIn', onComplete: () => sc.tweens.add({ targets: L, p: 0, delay: 120, duration: 200, ease: 'Sine.easeInOut', onComplete: () => { if (this.lunge === L) this.lunge = null; } }) });
+  }
+
   drakeBite(z) {
     const sc = this.scene, [nx, ny] = norm(z.x - this.x, z.y - this.y);
     const m = this.view === 'side' ? { x: this.flip ? -35 : 35, y: -16 } : this.view === 'up' ? { x: 0, y: -42 } : { x: 0, y: -4 }; // its jaws at full lunge (the attack pose)
@@ -2885,6 +2897,7 @@ export class Enemy extends Unit {
     else if (this.kind === 'golem') { const k = `golem_slam_${this.view || 'down'}`; this.sprite.play(k); this.anim = k; sc.fx.slam(z.x, z.y, z.r); }
     else { this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack'); audio.sfx('swing', { pitch: this.kind === 'knight' ? 0.5 : 0.7 }); }
     if (this.kind === 'drake') this.drakeBite(z);
+    else if (this.puppet && STEP_IN[this.kind]) this.stepIn(STEP_IN[this.kind]);
     if (sc.inSmoke(this.x, this.y) && Math.random() < 0.5) { sc.floatText(this.x, this.y - 24, 'MISS', 'fontPlain'); return; }
     if (this.s.drain) for (const h of sc.party) if (h.alive && !h.downed && Math.hypot(h.x - z.x, h.y - z.y) <= z.r + h.r) h.addPoison?.(this.s.dmg * 0.5, 3);
     const dmg = this.s.dmg * sc.difficulty.dmg * (this.status?.weaken ? 0.85 : 1) * this.affixDmg();
