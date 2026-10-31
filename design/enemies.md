@@ -65,8 +65,8 @@ Each rule was added one at a time and checked before and after with the fight be
 ### Cinderreach (volcanic badlands; heat soft-gate)
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
 |---|---|---|---|---|---|
-| **Ember Imp** | 0.7 | 1.1 | Blinks around throwing firebolts | Frost / Fire | Brimstone |
-| **Magma Slug** | 1.6 | 0.9 | Leaves a burning trail | Frost / Fire | Brimstone |
+| **Ember Imp** | 0.7 | 1.1 | Blinks around throwing firebolts. A little fire-devil in three views: bat wings that never stop beating, thin tongues of flame for hair flickering on their own beat, horns, a fanged grin, a tail with a flicking spark; it conjures the fireball over its palm, growing, then hurls it | Frost / Fire | Brimstone |
+| **Magma Slug** | 1.6 | 0.9 | Leaves a burning trail. A fat slug of cooling rock on a sole of fire, in three views: a bulge rolls from tail to head as it crawls, glowing cracks along its back pulse, two eye stalks, a glowing mouth from the front; it rears its front half to strike | Frost / Fire | Brimstone |
 | **Salamander Warrior** | 2.0 | 1.4 | Shield and spear; lunges | Frost / Fire | Salamander scale |
 | **Basalt Brute** | 3.0 | 1.6 | Rock armour (−80% damage) until Storm, a Bomb or the Gauntlets crack it. The Hex Golem's little cousin: the same hulk of hewn blocks at two-thirds the size, in black basalt with lava in its seams, glowing fire cracks across its stones and a molten fissure down its chest; cracked, the lava runs hotter and more cracks open. Three views; it smashes with both fists | Storm / Fire | Silver ore |
 | **Fire Beetle** | 0.5 | 2.0 | Rushes in and explodes; kill it at range. Seen from above in three views: a dark crimson carapace split down the middle with lava glowing in the seam, gold eyes and feelers, six legs in a tripod gait; before it bursts its shell swells and the seams run white-hot | Frost / Fire | Brimstone |
@@ -88,7 +88,7 @@ Here every Hex Legion enemy appears as a **Hexborn** version: elite stats and on
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
 |---|---|---|---|---|---|
 | **Voidling** | 1.0 | 1.3 | Teleports next to the weakest party member | Light / Shadow | Void shard |
-| **Tower Gargoyle** | 2.5 | 1.6 | A statue while the leader faces it; moves when you turn away | Storm / Venom | Starmetal |
+| **Tower Gargoyle** | 2.5 | 1.6 | A statue while the leader faces it; moves when you turn away. A grotesque of tower stone on all fours (the beasts' skeleton, gfx/beasts.js), three views: bat wings (a bony arm to a clawed wrist, fingers, scalloped skin) folded at rest, half open as it lopes, spread to pounce; horns sweeping back off its brow, a fang over its lip, a spade-tipped tail, hairline cracks; at rest a statue with its eyes dark, they kindle curse-light when it moves | Storm / Venom | Starmetal |
 | **Chain Warden** | 3.5 | 1.8 | Chains two party members together for 6 s (slowed, +20% damage taken, yanked back if they pull apart), drawn as iron links with shackles and a countdown; break it by tapping it with the hook | Light / Shadow | Starmetal |
 | **Malgrim's Mirror** | = leader | = leader | Copies your current leader, including their gear look | Light / — | Void shard |
 
