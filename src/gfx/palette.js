@@ -137,6 +137,9 @@ export const PAL = {
   frostD: '#3a4566', // cold rock
   frost: '#5c6a8e',
   frostL: '#8c9abd',
+  // the beasts' fur in six steps (gfx/beasts.js draws in these, then recolours
+  // each beast from them; Keep Defense's wolf ramp)
+  furD: '#262229', fur: '#45403f', furM: '#7a6650', furL: '#ab9070', furXL: '#cdbb98', furXXL: '#e9e1cc',
 };
 
 export const hex = (k) => PAL[k] ?? k;

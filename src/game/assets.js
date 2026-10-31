@@ -6,7 +6,8 @@ import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DR
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import * as PORTAL from '../gfx/portal.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, buildSpider, buildSpiderling, eggSac, buildHound, buildImp, buildSlug, buildBrute, buildBeetle, buildWolf, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, buildSpider, buildSpiderling, eggSac, buildImp, buildSlug, buildBrute, buildBeetle, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildGargoyle, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildBeast } from '../gfx/beasts.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -175,7 +176,7 @@ export const GROUPS = {
       creature(s, 'rootling', buildRootling(), { idle: 2, walk: 2, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'spider', buildSpider(1), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'spiderling', buildSpiderling(), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
-      creature(s, 'hound', buildHound(), { idle: 3, walk: 12, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'hound', buildBeast('hound'), { idle: 2, walk: 13, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // three views, an 8-frame trot
       registerPuppet(s, 'banshee', BANSHEE, ghostRecolor);
       s.textures.addCanvas('eggsac', eggSac()); s.textures.addCanvas('eggsac1', eggSac(1)); s.textures.addCanvas('eggsacTorn', eggSac(2)); // whole, about to hatch, the husk left behind
     }],
@@ -212,7 +213,7 @@ export const GROUPS = {
   // Frosthelm (Wave 3)
   frost: [
     ['frost foes', (s) => {
-      creature(s, 'frostwolf', buildWolf(), { idle: 2, walk: 9, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'frostwolf', buildBeast('frostwolf'), { idle: 2, walk: 12, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // three views, an 8-frame trot
       creature(s, 'rimehorn', buildRimehorn(), { idle: 2, walk: 5, windup: 6, attack: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'throw']);
       creatureViews(s, 'sentinel', buildSentinel(), { idle: 2, walk: 2, windup: 6, attack: 6, hurt: 1 }, ['idle', 'walk']); // three views; its wind-up holds the shards before its eye
       creature(s, 'raider', buildRaider(), { idle: 4, walk: 8, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
