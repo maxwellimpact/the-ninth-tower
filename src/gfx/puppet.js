@@ -195,6 +195,25 @@ export const WEAPONS = {
   },
 };
 
+// How far a weapon's tip sits from the hand holding it (along its angle), as each one is drawn above.
+const REACH = { sword: (st) => (st.len || 9) + 2, dagger: (st) => st.len || 6, axe: (st) => (st.len || 8) + 1, hammer: (st) => (st.len || 9) + 1, spear: () => 15, lance: (st) => (st.len || 18) - 2, wrench: (st) => (st.len || 7) + 1 };
+// A swing's smear moved onto the weapon: its leading edge on the blade's tip
+// (the hand holding it whose tip is nearest the drawn arc's end), keeping its
+// sweep and thickness; with no blade to follow it's left as posed.
+function smearAtTip(sm, held) {
+  const end = { x: sm.cx + Math.cos(sm.a1) * sm.r1, y: sm.cy + Math.sin(sm.a1) * sm.r1 };
+  let tip = null, best = Infinity;
+  for (const [h, ang, w] of held) {
+    const reach = w && REACH[w.kind]?.(w.style || {}); if (!reach || ang == null) continue;
+    const t = { x: h.x + Math.cos(ang) * reach, y: h.y + Math.sin(ang) * reach }, d = Math.hypot(t.x - end.x, t.y - end.y);
+    if (d < best) { best = d; tip = t; }
+  }
+  if (!tip) return sm;
+  const r1 = Math.hypot(tip.x - sm.cx, tip.y - sm.cy), a1 = Math.atan2(tip.y - sm.cy, tip.x - sm.cx);
+  if (r1 < 4) return sm;
+  return { ...sm, a1, a0: a1 - (sm.a1 - sm.a0), r1, r0: Math.max(2, r1 - (sm.r1 - sm.r0)) };
+}
+
 // Motion smear: crescent of light pixels along the swing arc.
 function smear(ctx, sm) {
   const { cx, cy, a0, a1, r0, r1 } = sm;
@@ -333,7 +352,7 @@ export function drawPuppet(def, view, pose = {}) {
   }
 
   outline(c, 'ink');
-  if (pose.smear) smear(ctx, pose.smear); // smears are unoutlined light streaks
+  if (pose.smear) smear(ctx, pose.tool ? pose.smear : smearAtTip(pose.smear, [[hR, pose.angR ?? def.idleAng[view], wR], [hL, pose.angL ?? def.idleAngL?.[view], wL]])); // smears are unoutlined light streaks, led by the weapon's tip
   return c;
 }
 
