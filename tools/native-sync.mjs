@@ -17,12 +17,15 @@ const SNAP = resolve(ROOT, 'snapshots');
 const OUT = resolve(process.env.NATIVE_DIR || resolve(ROOT, '../ninth-tower-ios'), 'NinthTower/Export');
 
 rmSync(OUT, { recursive: true, force: true });
-for (const d of ['img', 'sfx', 'world', 'data/maps']) mkdirSync(resolve(OUT, d), { recursive: true });
+for (const d of ['img', 'sfx', 'music', 'world', 'data/maps']) mkdirSync(resolve(OUT, d), { recursive: true });
 const files = readdirSync(SNAP).filter((f) => f.startsWith('nx_'));
 let n = { img: 0, sfx: 0, chunks: 0 };
 for (const f of files) {
   const src = resolve(SNAP, f);
   if (f === 'nx_art.json') copyFileSync(src, resolve(OUT, 'art.json'));
+  else if (f === 'nx_gear.json') copyFileSync(src, resolve(OUT, 'gear.json'));
+  else if (f === 'nx_music.json') copyFileSync(src, resolve(OUT, 'music.json'));
+  else if (f.startsWith('nx_m_')) { execFileSync('afconvert', ['-f', 'm4af', '-d', 'aac', '-b', '96000', src, resolve(OUT, 'music', `${f.slice(5, -4)}.m4a`)]); n.music = (n.music || 0) + 1; }
   else if (f.startsWith('nx_t_')) { copyFileSync(src, resolve(OUT, 'img', f.slice(5))); n.img++; }
   else if (f.startsWith('nx_s_')) {
     const name = f.slice(5, -4);
@@ -55,4 +58,4 @@ const walk = (v, path) => {
 };
 for (const f of readdirSync(resolve(ROOT, 'src/data'))) if (f.endsWith('.json')) walk(JSON.parse(readFileSync(resolve(ROOT, 'src/data', f), 'utf8')), `${f.slice(0, -5)}:`);
 writeFileSync(resolve(OUT, 'data/_order.json'), JSON.stringify(order));
-console.log(`${n.img} textures, ${n.sfx} sounds, ${n.chunks} terrain images -> ${OUT}`);
+console.log(`${n.img} textures, ${n.sfx} sounds, ${n.music || 0} music stems, ${n.chunks} terrain images -> ${OUT}`);

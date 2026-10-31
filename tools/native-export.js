@@ -6,6 +6,7 @@
 //   await X.art()                // every texture, animation, font and sound effect
 //   await X.world()              // Aldermere: tiles, props, terrain chunks, curses
 //   await X.world('colosseum')   // a separate map (src/data/maps), the same way
+//   await X.music()              // every song's layers, one loop each
 // Each writes its files into snapshots/ as nx_* (through the dev server's
 // /__snap); then `node tools/native-sync.mjs` copies them into the native
 // game's Export/ folder beside the game's JSON data.
@@ -106,6 +107,130 @@ async function renderSounds() {
     audio.ctx = saved.ctx; audio.muted = saved.muted; window.__muteTests = saved.tests;
   }
   return names;
+}
+
+// The music: each song's six layers (base / combat / the bard's harp, each
+// freed and cursed) rendered offline through the game's own sequencer and
+// instruments, one loop each. Two loops are rendered and the second kept, so
+// the echoes and reverb of the loop's end ring on into its start, and it
+// loops seamlessly. The native player plays the six together and fades
+// between them as the web's mixer does.
+export async function music({ only = null } = {}) {
+  const { audio } = await import('/src/audio/synth.js');
+  const M = await import('/src/audio/music.js');
+  const REGIONS = ['vale', 'meadow', 'marsh', 'gloam', 'witchroot', 'cinder', 'forge', 'frost', 'cave', 'grotto', 'clawhold', 'spire', 'basin', 'undercroft', 'abbey', 'shop', 'tavern', ...Array.from({ length: 9 }, (_, i) => `tower${i + 1}`)];
+  const slug = (song) => song.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const songs = new Map(), regions = {};
+  for (const r of REGIONS) { const song = M.themeFor(r); regions[r] = slug(song); songs.set(slug(song), song); }
+  const Real = window.AudioContext, saved = { ctx: audio.ctx, muted: audio.muted, tests: window.__muteTests };
+  window.__muteTests = false;
+  const out = {};
+  try {
+    for (const [id, song] of songs) {
+      const loop = song.steps * (60 / song.bpm / 4);
+      out[id] = { bpm: song.bpm, steps: song.steps, loop };
+      if (only && !only.includes(id)) continue;
+      for (const layer of ['base', 'combat', 'bard']) for (const v of ['freed', 'cursed']) {
+        let off = null, now = 0;
+        window.AudioContext = function () { off = new OfflineAudioContext(2, Math.ceil(44100 * (loop * 2 + 0.2)), 44100); return off; };
+        audio.ctx = null; audio.muted = false;
+        audio.init();
+        const real = audio.ctx;
+        // the sequencer reads the clock; offline, it's ours to move
+        audio.ctx = new Proxy(real, { get: (t, k) => (k === 'currentTime' ? now : typeof t[k] === 'function' ? t[k].bind(t) : t[k]) });
+        const p = new M.MusicPlayer();
+        p.state = { variant: v, combat: layer === 'combat' ? 1 : 0, bard: layer === 'bard' };
+        p.start(song, 0.01);
+        clearInterval(p.timer);
+        // only this layer's notes (another's echoes would bleed into the shared reverb)
+        p.byStep = p.byStep.map((list) => list.filter((x) => x.tr.layer === layer && x.v === v));
+        for (const g of Object.values(p.nodes)) { g.gain.cancelScheduledValues(0); g.gain.value = 0; }
+        p.nodes[`${layer}:${v}`].gain.value = 1;
+        p.nextTime = 0;
+        for (now = 0; now < loop * 2; now += 0.1) p.schedule();
+        p.playing = false;
+        audio.ctx = real;
+        const buf = await off.startRendering();
+        await put(`nx_m_${id}_${layer}_${v}.wav`, wavSlice(buf, Math.round(loop * 44100), Math.round(loop * 2 * 44100)));
+      }
+      await step(1);
+    }
+  } finally {
+    window.AudioContext = Real;
+    audio.ctx = saved.ctx; audio.muted = saved.muted; window.__muteTests = saved.tests;
+  }
+  await putJSON('nx_music.json', { regions, songs: out });
+  return { songs: songs.size, stems: songs.size * 6 };
+}
+
+function wavSlice(buf, a, b) {
+  const L = buf.getChannelData(0).subarray(a, b), R = buf.getChannelData(1).subarray(a, b), n = L.length;
+  const d = new DataView(new ArrayBuffer(44 + n * 4));
+  const s = (o, t) => [...t].forEach((ch, i) => d.setUint8(o + i, ch.charCodeAt(0)));
+  s(0, 'RIFF'); d.setUint32(4, 36 + n * 4, true); s(8, 'WAVEfmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 2, true);
+  d.setUint32(24, 44100, true); d.setUint32(28, 44100 * 4, true); d.setUint16(32, 4, true); d.setUint16(34, 16, true); s(36, 'data'); d.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) { d.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true); d.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[i])) * 32767, true); }
+  let bin = ''; const u = new Uint8Array(d.buffer);
+  for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000));
+  return `data:audio/wav;base64,${btoa(bin)}`;
+}
+
+// The paper-doll gear (gfx/gear.js): every hero's bare head and posing rules,
+// with each pose it strikes written out (attack and cast frames per view, as
+// poses.js computes them), and every head, body and weapon look. The native
+// game draws hero sheets from these with its port of gfx/puppet.js.
+export async function gear() {
+  const G = await import('/src/gfx/gear.js');
+  const views = ['down', 'up', 'side'];
+  const base = {};
+  for (const [id, b] of Object.entries(G.BASE)) {
+    base[id] = { headMap: b.headMap, head: b.head, idleAng: b.idleAng, idleAngL: b.idleAngL || null,
+      attack: Object.fromEntries(views.map((v) => [v, b.attack(v)])), cast: Object.fromEntries(views.map((v) => [v, b.cast(v)])) };
+  }
+  const strip = (o) => JSON.parse(JSON.stringify(o, (k, v) => (typeof v === 'function' ? undefined : v)));
+  const offhand = {};
+  for (const [id, o] of Object.entries(G.LOOKS.offhand)) offhand[id] = strip(o);
+  await putJSON('nx_gear.json', { base, head: strip(G.LOOKS.head), body: strip(G.LOOKS.body), weapon: strip(G.LOOKS.weapon), offhand, defaultBody: G.DEFAULT_BODY, defaultWeapon: G.DEFAULT_WEAPON });
+  return { bases: Object.keys(base).length };
+}
+
+// Reference sheets for checking the native composer: each hero in their
+// starting gear with one item swapped in (every item with a look), and in
+// every tier's recolour, drawn by the web's own puppet code (not saved in the
+// game's export; the native game's -geartest compares against them).
+export async function gearRef() {
+  const G = await import('/src/gfx/gear.js');
+  const P = await import('/src/gfx/puppet.js');
+  const H = await import('/src/gfx/heroes.js');
+  const items = (await import('/src/data/items.json')).default;
+  const heroes = (await import('/src/data/heroes.json')).default;
+  const combos = [];
+  for (const h of heroes) {
+    const start = H.looksOf(h.equip);
+    for (const it of Object.values(items)) if (it.hero === h.id && it.look && it.slot !== 'trinket') combos.push({ hero: h.id, equip: { ...start, [it.slot]: it.look } });
+    const firstOff = Object.values(items).find((it) => it.hero === h.id && it.slot === 'offhand')?.look;
+    for (let t = 2; t <= 6; t++) {
+      const e = {};
+      for (const slot of ['head', 'body', 'weapon', 'offhand']) {
+        const l = start[slot] || (slot === 'offhand' ? firstOff : slot === 'body' ? G.DEFAULT_BODY[h.id] : slot === 'weapon' ? G.DEFAULT_WEAPON[h.id] : Object.values(items).find((it) => it.hero === h.id && it.slot === 'head')?.look);
+        e[slot] = l ? `${l}@${t}` : null;
+      }
+      combos.push({ hero: h.id, equip: e });
+    }
+  }
+  const out = [];
+  for (const [n, c] of combos.entries()) {
+    const fr = P.buildPuppetFrames(G.composeHero(c.hero, c.equip));
+    const list = [];
+    for (const [anim, views] of Object.entries(fr)) for (const [v, frames] of Object.entries(views)) frames.forEach((canvas, i) => list.push({ name: `${anim}_${v}_${i}`, canvas }));
+    const cv = document.createElement('canvas'); cv.width = 48 * list.length; cv.height = 48;
+    const ctx = cv.getContext('2d');
+    list.forEach((f, i) => ctx.drawImage(f.canvas, i * 48, 0));
+    await put(`nx_gref_${n}.png`, cv.toDataURL('image/png'));
+    out.push({ ...c, file: `nx_gref_${n}.png`, frames: list.map((f) => f.name) });
+  }
+  await putJSON('nx_gref.json', out);
+  return { combos: out.length };
 }
 
 // 16-bit stereo WAV, trailing silence trimmed
