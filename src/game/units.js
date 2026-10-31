@@ -1330,7 +1330,7 @@ export class Enemy extends Unit {
 
   play(anim) {
     const key = this.animKey(anim);
-    if (anim === 'recover' && this.kind === 'drake' && this.anim === this.animKey('attack') && this.sprite.anims.isPlaying) return; // its bite plays through before it settles (recover is otherwise idle at once)
+    if (anim === 'recover' && !this.puppet && this.anim === this.animKey('attack') && this.sprite.anims.isPlaying) return; // a creature's attack plays through before it settles (recover is otherwise idle at once, cutting it to its first frame)
     if (this.s.paced) this.sprite.anims.timeScale = anim === 'walk' ? this.pace || 1 : 1; // its walk is timed to its pace: hurrying, its legs go faster (and its feet stay planted)
     if (this.anim !== key) {
       this.anim = key;
@@ -2301,7 +2301,7 @@ export class Enemy extends Unit {
     if (this.pound) {
       const P = this.pound;
       P.t += dt;
-      this.play('windup');
+      if (!P.slammed) this.play('windup'); // after the slam its fists stay down (the attack plays through and holds)
       if (P.t >= 0.9 && !P.slammed) {
         P.slammed = true;
         this.anim = ''; this.sprite.play(this.animKey('attack')); this.anim = this.animKey('attack');
@@ -2915,6 +2915,7 @@ export class Golem extends Enemy {
 
   play(anim) {
     const key = `golem_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}_${this.view || 'down'}`; // it turns like the puppets: down, side (mirrored for left), up
+    if (anim === 'recover' && this.anim?.startsWith('golem_slam_') && this.sprite.anims.isPlaying) return; // its slam plays through before it settles
     if (this.anim !== key) { this.anim = key; this.sprite.play(key); }
   }
   knock(dx, dy, p) { super.knock(dx, dy, p * 0.12); }
@@ -3131,6 +3132,7 @@ export class Murk extends Enemy {
 
   play(anim) {
     const key = `murk_${anim === 'recover' ? 'idle' : anim === 'attack' ? 'slam' : anim}_${this.view || 'down'}`;
+    if (anim === 'recover' && this.anim?.startsWith('murk_slam_') && this.sprite.anims.isPlaying) return; // its slam plays through before it settles
     if (this.anim !== key) { this.anim = key; this.sprite.play(key); }
   }
   knock(dx, dy, p) { super.knock(dx, dy, p * 0.1); }
