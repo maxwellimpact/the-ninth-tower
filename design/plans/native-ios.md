@@ -2,7 +2,7 @@
 
 See also: [tech.md](../tech.md) (§13, the two-codebase plan and the prototype), [production.md](../production.md) (milestones 7 and 8).
 
-**Where it stands (2026-10-31):** the prototype in `ios/` plays one battle map with Brann, Pip and Sable against five kinds of foe, holds 120 fps on an iPhone 15 Pro Max with 60 foes on the field, and the user finds it "working really well". It proved the three things the plan rests on: art exported from the web build is pixel-identical, the data files load unchanged, and the combat code ports line for line.
+**Where it stands (2026-10-31):** the prototype (now in the private repository `ninth-tower-ios`) plays one battle map with Brann, Pip and Sable against five kinds of foe, holds 120 fps on an iPhone 15 Pro Max with 60 foes on the field, and the user finds it "working really well". It proved the three things the plan rests on: art exported from the web build is pixel-identical, the data files load unchanged, and the combat code ports line for line.
 
 **What's left, by size.** The web game is about 39,000 lines (not counting data). In the prototype, about 1,600 lines of it were ported, in the parts that matter most. The rest splits three ways:
 
@@ -19,7 +19,7 @@ One piece of art has to be ported, not exported: **the heroes in their gear.** T
 ## How the work runs
 
 - **The web stays the design lab.** Design changes land on the web first, as now, and are proven there.
-- **A port ledger** (`ios/PORT.md`) lists every web module with its state: not started, ported, or out of date. A web change to a ported module marks it out of date, and the decision log row says so. Nothing is designed only in Swift.
+- **A port ledger** (`PORT.md` in the native repository) lists every web module with its state: not started, ported, or out of date. A web change to a ported module marks it out of date, and the decision log row says so. Nothing is designed only in Swift.
 - **Freeze as you go.** A system's design is frozen once it's ported. Changing it after that is fine; it just means porting it again.
 - **Every phase ends playable on the phone,** then goes to TestFlight once the TestFlight pipeline is set up (Phase 0).
 - **Checks against the web, not by eye:**
@@ -123,13 +123,10 @@ One piece of art has to be ported, not exported: **the heroes in their gear.** T
 
 ---
 
-## Decisions the user needs to make (before or during Phase 0)
+## Decisions (made 2026-10-31)
 
-1. **Where the native code lives.**
-   - The Ninth Tower's source is public under the MIT licence, `ios/` included.
-   - A paid app whose source anyone can build and redistribute is legal under MIT, but it may not be what's wanted.
-   - Options: keep it public; or move `ios/` (and maybe the whole game) to a private repository before the port grows. Keep Defense went private for this reason.
-2. **The oldest iPhone supported, and iPad or not.** This sets the speed target and the layout work.
-3. **Whether web saves carry over to the phone.** For example, a save code or file the app can import. That matters only if players will start on the web.
-4. **The web build after launch.** Does it stay public on GitHub Pages as a free version, become a demo, or come down?
-5. **When the design freezes.** Keep polishing on the web while the port runs (porting changed systems again as the ledger shows), or freeze the design first.
+1. **The native code is private:** it moved to its own private repository, `ninth-tower-ios` (it's still in this repository's history up to then). The export tools stay here and write into it.
+2. **iPhone and iPad.** iOS 17 or later; the iPad gets a layout pass.
+3. **No save import from the web** for now: native saves only, in the same format.
+4. **The design is frozen while the port runs:** the web game as it stands is what gets ported.
+5. Still open: the web build after launch.

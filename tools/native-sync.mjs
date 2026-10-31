@@ -11,7 +11,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = resolve(ROOT, 'ios/NinthTower/Export');
+const OUT = resolve(process.env.NATIVE_DIR || resolve(ROOT, '../ninth-tower-ios'), 'NinthTower/Export');
 const ex = JSON.parse(readFileSync(resolve(ROOT, 'snapshots/native-export.json'), 'utf8'));
 
 rmSync(OUT, { recursive: true, force: true });

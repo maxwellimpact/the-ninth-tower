@@ -5,7 +5,7 @@
 //   const X = await import('/tools/native-export.js'); await X.run()
 // It writes snapshots/native-export.json (every image as a PNG data URL, the
 // sounds as WAV data URLs); then `node tools/native-sync.mjs` unpacks it into
-// ios/NinthTower/Export/ beside the game's JSON data.
+// the native game's Export/ folder beside the game's JSON data.
 import { step } from './goto.js';
 import { boot } from './dungeon-walk.js';
 
