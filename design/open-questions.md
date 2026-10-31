@@ -72,6 +72,5 @@ Game speed 0.72 locked; gear looks approved; Golem fair; ultimates distinct; com
 ### Known prototype shortcuts
 - The world is built in code (`map.js`) rather than in Tiled.
 - Difficulty is fixed at Normal; there's no selector in the UI yet.
-- Text uses a 3×5 pixel font; a few glyphs (W/H) are hard to tell apart.
 
 ---
