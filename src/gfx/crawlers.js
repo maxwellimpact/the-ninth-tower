@@ -274,3 +274,60 @@ export function buildSlug3() {
   }
   return v;
 }
+
+// ----------------------------------------------------------------- rootling
+// A walking stump: ridged bark, a shock of leaves for a crown, ember eyes,
+// a branch arm that flings thorns. It walks slowly on its roots - five of
+// them spread round its foot, shuffling forward in two alternating sets,
+// each lifting a little and dragging on - while its crown sways. Three
+// views (36x36).
+const BARK = ['woodD', 'wood', 'woodL', 'dirtL'], CROWN = ['fernD', 'fern', 'fernL', 'grassXL'];
+const ROOTS = [[5.5, 3], [2, -6], [-5, -5], [-6, 3], [1, 6.5]]; // root tips round the foot (u forward, v across)
+function rootling(view, { step = -1, arm = 0, sway = 0, blink = false }) {
+  const W = 36, [c, ctx] = makeCanvas(W, W), P = mapper(view, W / 2, W * 0.75);
+  const side = view === 'side', back = view === 'up', bob = step >= 0 && step % 3 === 1 ? 1 : 0;
+  const roots = ROOTS.map(([u, v], i) => {
+    const g = step < 0 ? { du: 0, lift: 0 } : gait(((step / 6) + (i % 2) * 0.5) % 1, 1.4);
+    return { tip: [u + g.du, v, g.lift * 1.5], base: [u * 0.3, v * 0.3, 2] };
+  });
+  // roots further from us first (higher on the screen), the rest after the trunk
+  const scr = (r) => P(...r.tip)[1], [cx, cy] = P(0, 0, 0);
+  const drawRoot = (r) => { const b = P(...r.base), m = P(r.tip[0] * 0.65, r.tip[1] * 0.65, 1 + r.tip[2]), t = P(...r.tip); line(ctx, b, m, 'wood'); line(ctx, m, t, 'woodD'); px(ctx, Math.round(b[0]), Math.round(b[1]), 'woodL'); };
+  for (const r of roots.filter((r) => scr(r) < cy)) drawRoot(r);
+  const ty = cy - 7 - bob; // the trunk
+  shadedBlob(ctx, cx, ty, side ? 5 : 5.5, 7, BARK);
+  for (const dx of side ? [-2, 1] : [-3, 0, 3]) for (let y = ty - 5; y < ty + 6; y += 2) px(ctx, cx + dx, y + (dx & 1), 'woodD'); // ridges in the bark
+  for (const r of roots.filter((r) => scr(r) >= cy)) drawRoot(r);
+  // the branch arm: hanging, cocked back to throw, flung forward
+  const sx = back ? -1 : 1, ax = cx + (side ? 3 : 5 * sx), ay = ty - 1;
+  const hand = side ? [[ax + 2, ay + 6], [ax - 10, ay - 2], [ax + 7, ay - 1]][arm] : [[ax + 2 * sx, ay + 6], [ax + 3 * sx, ay - 6], [ax + 6 * sx, ay + 1]][arm];
+  const armDraw = () => { line(ctx, [ax, ay], hand, 'wood'); px(ctx, hand[0], hand[1], 'fernL'); px(ctx, hand[0] + (side ? 1 : sx), hand[1] - 1, 'fern'); };
+  if (!side || arm === 1) armDraw();
+  // the crown of leaves, swaying
+  const ky = ty - 9, kx = cx + sway;
+  for (const [x, y, rx, ry] of [[-4, 1, 4, 3.5], [4, 1, 4, 3.5], [0, -2, 5, 4], [-2, -5, 3, 2.5], [3, -5, 3, 2.5]]) shadedBlob(ctx, kx + x, ky + y, rx, ry, CROWN);
+  for (const [x, y] of [[-5, -8], [1, -9], [6, -7]]) { px(ctx, kx + x, ky + y, 'fernL', 1, 2); px(ctx, kx + x, ky + y + 2, 'fern'); }
+  // its face: ember eyes in the bark and a knot of a mouth (none from behind)
+  if (!back) {
+    const eye = blink ? 'woodD' : 'fireL';
+    if (side) { px(ctx, cx + 2, ty - 3, 'ink', 2, 2); px(ctx, cx + 3, ty - 3, eye); px(ctx, cx + 2, ty + 1, 'ink', 3, 1); }
+    else { for (const ex of [cx - 3, cx + 1]) { px(ctx, ex, ty - 3, 'ink', 2, 2); px(ctx, ex + (ex < cx ? 1 : 0), ty - 3, eye); } px(ctx, cx - 2, ty + 1, 'ink', 4, 1); px(ctx, cx - 1, ty + 2, 'ink', 2, 1); }
+  }
+  if (side && arm !== 1) armDraw();
+  outline(c, 'ink');
+  return c;
+}
+export function buildRootling3() {
+  const v = {};
+  for (const view of ['side', 'down', 'up']) {
+    const f = (p) => rootling(view, p);
+    v[view] = {
+      idle: [f({}), f({ sway: 1 })],
+      walk: [0, 1, 2, 3, 4, 5].map((st) => f({ step: st, sway: [0, 1, 1, 0, -1, -1][st] })),
+      windup: [f({ arm: 1 }), f({ arm: 1, sway: -1 })], // cocking its arm back to throw
+      attack: [f({ arm: 2, sway: 1 }), f({})],
+      hurt: [f({ blink: true })],
+    };
+  }
+  return v;
+}

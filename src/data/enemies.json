@@ -557,7 +557,7 @@
  "rootling": {
   "name": "ROOTLING",
   "maxHp": 150,
-  "speed": 0,
+  "speed": 16,
   "aggro": 110,
   "reach": 88,
   "windup": 0.75,
@@ -572,12 +572,12 @@
   "ranged": true,
   "keepAway": 0,
   "shot": "thorn",
-  "rooted": true,
   "weak": "fire",
   "resist": "venom",
   "drops": {
    "heartwood": 0.35
-  }
+  },
+  "paced": 16
  },
  "spider": {
   "name": "GLOOM SPIDER",

@@ -24,8 +24,8 @@ import { audio } from '../audio/synth.js';
 
 const TILE = 16;
 // who comes through the gates, from the wave they first appear in. Only foes
-// that come for you: nothing rooted to one spot (rootlings, sentinels), which
-// would stand at a far gate waiting to be walked to.
+// that come for you: nothing rooted to one spot or too slow to cross the sand
+// (sentinels, rootlings), which would wait at a far gate to be walked to.
 export const ROSTER = [
   [1, ['goblin', 'archer', 'hexling', 'boar', 'rats', 'wisp']],
   [4, ['knight', 'warlock', 'crab', 'witchling', 'croaker', 'shade', 'hound', 'spider']],

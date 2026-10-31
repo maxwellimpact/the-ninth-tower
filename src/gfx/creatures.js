@@ -575,57 +575,7 @@ export function buildSnapjaw(vs = ['down', 'side', 'up']) {
 // lit top-left (a light tone and a highlight), a dark underside, and the ink
 // outline every sprite shares. The Shade and the Banshee are puppets (heroes.js).
 
-// ---------------------------------------------------------------- Rootling
-// A stump that walked a little and then decided to stay: ridged bark, a
-// shock of leaves, ember eyes, a branch arm that flings thorns.
-const ROOT = { b: 'barkD', B: 'bark', L: 'barkL', w: 'woodL', E: 'fireL', e: 'fire', k: 'ink', f: 'fernD', F: 'fern', G: 'fernL', g: 'grassXL' };
-function rootlingFrame({ arm = 0, sway = 0, blink = false }) {
-  const [c, ctx] = makeCanvas(32, 32);
-  const crown = [
-    '....GgG.GG......',
-    '..GGFGGgFGGG....',
-    '.GFFFGFFFFGFG...',
-    'GFFfFFFFFfFFFG..',
-    '.FfffFFfffFFf...',
-    '..ff.fff.ff.....',
-  ];
-  void crown;
-  // a shock of leaves: overlapping shaded clumps, lit from the top-left, with a
-  // few stray leaves sticking up
-  const LEAVES = ['fernD', 'fern', 'fernL', 'grassXL'];
-  for (const [x, y, rx, ry] of [[11, 10, 4, 3.5], [21, 10, 4, 3.5], [16, 7, 5, 4], [13, 4, 3, 2.5], [19, 4, 3, 2.5]]) shadedBlob(ctx, x + sway, y, rx, ry, LEAVES);
-  for (const [x, y] of [[10, 1], [16, 0], [22, 2], [7, 7], [25, 7]]) { px(ctx, x + sway, y, 'fernL', 1, 2); px(ctx, x + sway, y + 2, 'fern'); }
-  const trunk = [
-    '..bBBLLBBb..',
-    '.bBLwLBBLBb.',
-    '.BBLLBBLBBB.',
-    'bBkkBBBkkBBb',
-    'bBkEBBBkEBBb',
-    'bBBBBLBBBBBb',
-    'bBBkkkkkBBBb',
-    'bBBBLBBBLBBb',
-    '.bBBLBBBLBb.',
-    '.bBBBBBBBBb.',
-    'bbBBb..bBBbb',
-    'b.bb....bb.b',
-  ];
-  const t = blink ? trunk.map((r) => r.replace(/E/g, 'k')) : trunk;
-  grid(ctx, t, ROOT, 10, 13);
-  // the branch arm: down at rest, cocked back to throw, flung forward
-  const arms = [['bB', '.bB', '..bB', '...G'], ['...G', '..bG', '.bB.', 'bB..'], ['bBBBG', '.....', '.....', '.....']];
-  grid(ctx, arms[arm], ROOT, 21, arm === 1 ? 10 : 17);
-  outline(c, 'ink');
-  return c;
-}
-export function buildRootling() {
-  return {
-    idle: [rootlingFrame({}), rootlingFrame({ sway: 1 })],
-    walk: [rootlingFrame({}), rootlingFrame({ sway: 1 })],
-    windup: [rootlingFrame({ arm: 1 }), rootlingFrame({ arm: 1, sway: 1 })],
-    attack: [rootlingFrame({ arm: 2 }), rootlingFrame({})],
-    hurt: [rootlingFrame({ blink: true })],
-  };
-}
+// The Rootling is drawn in gfx/crawlers.js (three views, walking on its roots).
 
 // The Gloom Spider and its spiderlings are drawn in gfx/crawlers.js (three views).
 

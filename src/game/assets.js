@@ -6,9 +6,9 @@ import { HEROES, GOBLIN, ARCHER, KNIGHT, MARLA, BRUNO, FOLK, HOLLOW, WARLOCK, DR
 import * as Q from '../gfx/questart.js';
 import * as DG from '../gfx/dungeonart.js';
 import * as PORTAL from '../gfx/portal.js';
-import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, buildRootling, eggSac, buildBrute, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
+import { buildHexling, buildFrogKing, buildGolem, boulder, portraitFrom, MIRE_TONES, buildRats, hollowPile, golemPlate, buildBoar, buildCrab, buildWisp, buildLeeches, buildLurker, buildCroaker, buildSnapjaw, eggSac, buildBrute, buildRimehorn, buildSentinel, buildRaider, buildTroll, buildVoidling, buildTurret, buildBot, buildClank } from '../gfx/creatures.js';
 import { buildBeast } from '../gfx/beasts.js';
-import { buildSpider3, buildSpiderling3, buildBeetle3, buildImp3, buildSlug3 } from '../gfx/crawlers.js';
+import { buildSpider3, buildSpiderling3, buildBeetle3, buildImp3, buildSlug3, buildRootling3 } from '../gfx/crawlers.js';
 import * as P from '../gfx/props.js';
 import { registerFont } from '../gfx/font.js';
 import { buildIcons } from '../gfx/icons.js';
@@ -174,7 +174,7 @@ export const GROUPS = {
   gloam: [
     ['gloam foes', (s) => {
       registerPuppet(s, 'shade', SHADE);
-      creature(s, 'rootling', buildRootling(), { idle: 2, walk: 2, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'rootling', buildRootling3(), { idle: 2, walk: 7, windup: 4, attack: 8, hurt: 1 }, ['idle', 'walk']); // three views, shuffling on its roots
       creatureViews(s, 'spider', buildSpider3(), { idle: 3, walk: 14, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // three views, legs in two alternating sets
       creatureViews(s, 'spiderling', buildSpiderling3(), { idle: 3, walk: 16, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creatureViews(s, 'hound', buildBeast('hound'), { idle: 2, walk: 13, windup: 6, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']); // three views, an 8-frame trot
