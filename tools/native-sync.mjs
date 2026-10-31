@@ -1,40 +1,48 @@
-// Unpacks snapshots/native-export.json (written by tools/native-export.js in
-// the dev page) into ios/NinthTower/Export/, the native prototype's assets:
-//   manifest.json   the map, the cast and every sheet's frames and animations
-//   img/*.png       the sheets, the ground
+// Copies what tools/native-export.js wrote into snapshots/ (nx_*) into the
+// native game's Export/ folder, in its own private repository
+// (../ninth-tower-ios, or NATIVE_DIR):
+//   art.json        every texture's file, frames and data; every animation; the font; the sounds
+//   img/            the textures
+//   world/<id>.json a world's tiles, props, regions and landmarks; world/<id>/ its terrain chunks and curses
 //   sfx/*.m4a       the sound effects (rendered by the web synth)
-//   data/*.json     the game's own data files, copied unchanged
+//   data/           the game's own data files, copied unchanged
 // Usage: node tools/native-sync.mjs
-import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const SNAP = resolve(ROOT, 'snapshots');
 const OUT = resolve(process.env.NATIVE_DIR || resolve(ROOT, '../ninth-tower-ios'), 'NinthTower/Export');
-const ex = JSON.parse(readFileSync(resolve(ROOT, 'snapshots/native-export.json'), 'utf8'));
 
 rmSync(OUT, { recursive: true, force: true });
-for (const d of ['img', 'sfx', 'data']) mkdirSync(resolve(OUT, d), { recursive: true });
-const bytes = (url) => Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
-const safe = (k) => k.replace(/[^\w.-]/g, '_');
-
-const sheets = {};
-for (const [key, s] of Object.entries(ex.sheets)) {
-  const file = `${safe(key)}.png`;
-  writeFileSync(resolve(OUT, 'img', file), bytes(s.image));
-  sheets[key] = { file, frames: s.frames, anims: s.anims };
+for (const d of ['img', 'sfx', 'world', 'data/maps']) mkdirSync(resolve(OUT, d), { recursive: true });
+const files = readdirSync(SNAP).filter((f) => f.startsWith('nx_'));
+let n = { img: 0, sfx: 0, chunks: 0 };
+for (const f of files) {
+  const src = resolve(SNAP, f);
+  if (f === 'nx_art.json') copyFileSync(src, resolve(OUT, 'art.json'));
+  else if (f.startsWith('nx_t_')) { copyFileSync(src, resolve(OUT, 'img', f.slice(5))); n.img++; }
+  else if (f.startsWith('nx_s_')) {
+    const name = f.slice(5, -4);
+    execFileSync('afconvert', ['-f', 'm4af', '-d', 'aac', '-b', '128000', src, resolve(OUT, 'sfx', `${name}.m4a`)]);
+    n.sfx++;
+  } else if (f.startsWith('nx_w_')) {
+    const rest = f.slice(5);
+    if (rest.endsWith('.json')) copyFileSync(src, resolve(OUT, 'world', rest));
+    else { // <id>_<cx>_<cy>.png or <id>_curse_<ward>.png
+      const id = rest.split('_')[0];
+      mkdirSync(resolve(OUT, 'world', id), { recursive: true });
+      copyFileSync(src, resolve(OUT, 'world', id, rest.slice(id.length + 1)));
+      n.chunks++;
+    }
+  }
 }
-writeFileSync(resolve(OUT, 'img', 'ground.png'), bytes(ex.map.ground));
-const sounds = [];
-for (const [name, url] of Object.entries(ex.sounds)) {
-  const wav = resolve(OUT, 'sfx', `${name}.wav`);
-  writeFileSync(wav, bytes(url));
-  execFileSync('afconvert', ['-f', 'm4af', '-d', 'aac', '-b', '128000', wav, resolve(OUT, 'sfx', `${name}.m4a`)]);
-  rmSync(wav);
-  sounds.push(name);
-}
-const map = { ...ex.map, ground: 'ground.png' };
-writeFileSync(resolve(OUT, 'manifest.json'), JSON.stringify({ map, cast: ex.cast, sheets, fontChars: ex.fontChars, sounds }));
-for (const f of ['heroes', 'enemies', 'skills', 'items', 'tuning']) copyFileSync(resolve(ROOT, `src/data/${f}.json`), resolve(OUT, 'data', `${f}.json`));
-console.log(`${Object.keys(sheets).length} sheets, ${map.props.length} props, ${sounds.length} sounds -> ${OUT}`);
+// the art manifest names each texture's file with its nx_t_ prefix: drop it
+const art = JSON.parse(readFileSync(resolve(OUT, 'art.json'), 'utf8'));
+for (const t of Object.values(art.textures)) t.file = t.file.slice(5);
+writeFileSync(resolve(OUT, 'art.json'), JSON.stringify(art));
+for (const f of readdirSync(resolve(ROOT, 'src/data'))) if (f.endsWith('.json')) copyFileSync(resolve(ROOT, 'src/data', f), resolve(OUT, 'data', f));
+for (const f of readdirSync(resolve(ROOT, 'src/data/maps'))) copyFileSync(resolve(ROOT, 'src/data/maps', f), resolve(OUT, 'data/maps', f));
+console.log(`${n.img} textures, ${n.sfx} sounds, ${n.chunks} terrain images -> ${OUT}`);
