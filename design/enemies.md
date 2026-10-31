@@ -68,7 +68,7 @@ Each rule was added one at a time and checked before and after with the fight be
 | **Ember Imp** | 0.7 | 1.1 | Blinks around throwing firebolts | Frost / Fire | Brimstone |
 | **Magma Slug** | 1.6 | 0.9 | Leaves a burning trail | Frost / Fire | Brimstone |
 | **Salamander Warrior** | 2.0 | 1.4 | Shield and spear; lunges | Frost / Fire | Salamander scale |
-| **Basalt Brute** | 3.0 | 1.6 | Rock armour (−80% damage) until Storm, a Bomb or the Gauntlets crack it | Storm / Fire | Silver ore |
+| **Basalt Brute** | 3.0 | 1.6 | Rock armour (−80% damage) until Storm, a Bomb or the Gauntlets crack it. The Hex Golem's little cousin: the same hulk of hewn blocks at two-thirds the size, in black basalt with lava in its seams, glowing fire cracks across its stones and a molten fissure down its chest; cracked, the lava runs hotter and more cracks open. Three views; it smashes with both fists | Storm / Fire | Silver ore |
 | **Fire Beetle** | 0.5 | 2.0 | Rushes in and explodes; kill it at range | Frost / Fire | Brimstone |
 | *Mini-boss:* **Cinder Drake** | 12 | 2.0 | Young dragon that walks heavily on four legs. Its moves come in turn: fire breath (its throat glows over a fan marked on the ground, then a jet of fire sweeps across it), then flight (it crouches with wings up, climbs in sight, hangs over a marked spot and dives). Bites between: it rears its head up and back with its jaws gaping (dark, fanged, no fire), then its neck whips out long and low at the mark, its body sliding after it until its jaws reach the hero (an ember-red trail; from the front, its head comes at you larger, jaws wide and wings flicked up), and its jaws snap shut ("CHOMP!" on a hit) before it pulls back | Frost / Fire | Gnasher |
 
