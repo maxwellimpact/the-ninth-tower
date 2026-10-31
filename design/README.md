@@ -33,7 +33,9 @@ doesn't count.
 
 ## Plans (written, not built)
 
-None right now. A plan goes in `plans/` and is listed here. When a plan is built, fold it into its topic file and delete it from `plans/`.
+- [plans/native-ios.md](plans/native-ios.md): finishing the native iOS game, in phases from the prototype to the App Store, with the decisions it needs (2026-10-31).
+
+A plan goes in `plans/` and is listed here. When a plan is built, fold it into its topic file and delete it from `plans/`.
 
 ## Decisions
 
