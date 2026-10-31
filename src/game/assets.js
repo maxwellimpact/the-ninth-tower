@@ -214,7 +214,7 @@ export const GROUPS = {
     ['frost foes', (s) => {
       creature(s, 'frostwolf', buildWolf(), { idle: 2, walk: 9, windup: 8, attack: 10, hurt: 1 }, ['idle', 'walk', 'windup']);
       creature(s, 'rimehorn', buildRimehorn(), { idle: 2, walk: 5, windup: 6, attack: 8, throw: 6, hurt: 1 }, ['idle', 'walk', 'windup', 'throw']);
-      creature(s, 'sentinel', buildSentinel(), { idle: 2, walk: 2, windup: 8, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
+      creatureViews(s, 'sentinel', buildSentinel(), { idle: 2, walk: 2, windup: 6, attack: 6, hurt: 1 }, ['idle', 'walk']); // three views; its wind-up holds the shards before its eye
       creature(s, 'raider', buildRaider(), { idle: 4, walk: 8, windup: 6, attack: 8, hurt: 1 }, ['idle', 'walk', 'windup']);
       registerPuppet(s, 'icewraith', WRAITH, iceRecolor);
     }],

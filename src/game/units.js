@@ -1887,7 +1887,7 @@ export class Enemy extends Unit {
         if (this.t >= s.recover) {
           this.state = 'chase'; this.t = 0;
           const t = this.target, nav = sc.nav;
-          if (s.ranged && t && Math.random() < 0.5) {
+          if (s.ranged && !s.anchored && t && Math.random() < 0.5) { // (a rooted one stays where it is)
             const want = (s.keepAway + s.reach) / 2, a = Math.atan2(this.y - t.y, this.x - t.x) + (Math.random() < 0.5 ? 0.45 : -0.45);
             const p = { x: t.x + Math.cos(a) * want, y: t.y + Math.sin(a) * want };
             if (!nav.solidAtPx(p.x, p.y) && sc.shotClear(p.x, p.y, t.x, t.y)) { this.repos = p; this.reposT = 0.8; }
@@ -1990,6 +1990,7 @@ export class Enemy extends Unit {
   }
 
   stepTo(p, dt, mul) {
+    if (this.s.anchored) { const t = this.target?.alive ? this.target : p; this.face(t.x - this.x, t.y - this.y); this.play('walk'); return; } // rooted to the spot: it only turns to watch its mark (a path, the crowd or a better spot would turn it away)
     let [nx, ny] = norm(p.x - this.x, p.y - this.y);
     // stuck on a corner or in a crowd: sidestep briefly, then re-route
     if (this.unstickT > 0) { this.unstickT -= dt; this.moveBy(this.unstick[0] * this.s.speed * dt, this.unstick[1] * this.s.speed * dt); this.play('walk'); return; }

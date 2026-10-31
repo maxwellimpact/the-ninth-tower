@@ -1037,33 +1037,102 @@ export function buildRimehorn() {
 }
 
 // --------------------------------------------------------------- Hex Sentinel
-// A tall shard of cursed crystal on a broken plinth, a hex eye burning in its
-// face (the side it reflects spells from). The eye flares before it fires
-// (24x32, base at y=25).
-function sentinelFrame({ glow = 0, eye = 'curseL' }) {
-  const [c, ctx] = makeCanvas(24, 32);
-  shadedBlob(ctx, 12, 25, 8, 3, ['frostD', 'frost', 'frostL', 'mist']); // plinth
-  px(ctx, 5, 25, 'frostD', 14, 2);
-  for (let y = 0; y < 20; y++) {
-    const half = y < 3 ? y : y < 15 ? 4 : 4 - (y - 15) * 0.4;
-    for (let x = Math.round(12 - half); x <= Math.round(11 + half); x++) px(ctx, x, 4 + y, x < 10 ? 'iceXL' : x < 12 ? 'iceL' : x < 14 ? 'ice' : 'iceD');
+// The Hex Sentinel: a cursed ice crystal set up as a watch-turret. A tall
+// six-sided shard, pointed, held in two iron bands, lesser crystals grown off
+// the carved frost-stone drum it stands on; a hex eye in an iron mount on its
+// face (the side it watches from), a hex vein running up through the ice from
+// the rune on the drum to the eye, and two ice shards circling it. Lit from
+// the upper left: the left face brightest, the right darkest. Three views (it
+// turns to face its mark). 32x44, ground at y=34 (origin 0.75).
+const SENT_CX = 16, SENT_TIP = 2, SENT_FOOT = 29;
+// the crystal: faces listed left to right as [width, upper tone, lower tone]
+function sentCrystal(ctx, faces, lift = 0) {
+  const W = faces.reduce((n, f) => n + f[0], 0), top = SENT_TIP - lift;
+  for (let y = top; y <= SENT_FOOT; y++) {
+    const r = y - top, taper = r < 6 ? (r + 1) / 6 : 1, hw = Math.max(1, Math.round((W / 2) * taper));
+    const x0 = SENT_CX - hw, low = r > (SENT_FOOT - top) * 0.55;
+    for (let x = x0; x < SENT_CX + hw; x++) {
+      let u = ((x - x0 + 0.5) / (2 * hw)) * W, f = 0;
+      while (f < faces.length - 1 && u > faces[f][0]) { u -= faces[f][0]; f++; }
+      px(ctx, x, y, low ? faces[f][2] : faces[f][1]);
+    }
+    if (r >= 5 && r < 14) px(ctx, x0 + 1, y, 'white'); // the glint down its lit edge
   }
-  for (let y = 7; y < 22; y += 4) px(ctx, 13, y, 'purpL', 1, 2); // the hex seams in the glass
-  px(ctx, 10, 12, 'hexD', 4, 3); px(ctx, 11, 13, glow ? 'white' : eye, 2, 1);
-  if (glow) { px(ctx, 9, 11, 'curseL', 1, 1); px(ctx, 14, 11, 'curseL', 1, 1); px(ctx, 11, 10, 'curse', 2, 1); }
-  // little shards orbiting the plinth
-  for (const [x, yy] of [[3, 20 - glow], [20, 18 + glow]]) { px(ctx, x, yy, 'iceL', 1, 3); px(ctx, x, yy, 'iceXL'); }
+}
+function sentBand(ctx, y, hw) { px(ctx, SENT_CX - hw - 1, y, 'steel', hw * 2 + 2, 1); px(ctx, SENT_CX - hw - 1, y + 1, 'steelD', hw * 2 + 2, 1); px(ctx, SENT_CX - hw - 1, y, 'steelL'); }
+function sentShard(ctx, x, y, glow) { px(ctx, x, y + 1, 'iceXL', 1, 3); px(ctx, x + 1, y + 1, 'ice', 1, 3); px(ctx, x, y, glow ? 'curseL' : 'iceXL', 2, 1); px(ctx, x, y + 4, 'iceD', 2, 1); }
+function sentDrum(ctx, back, rune) {
+  shadedBlob(ctx, SENT_CX, 31, 11, 4, ['frostD', 'frost', 'frostL', 'snow']); // the drum, its lit top
+  px(ctx, SENT_CX - 11, 31, 'frostD', 22, 3); px(ctx, SENT_CX - 11, 31, 'frost', 7, 3); px(ctx, SENT_CX - 11, 34, 'frostD', 22, 1);
+  for (const x of [SENT_CX - 9, SENT_CX - 3, SENT_CX + 4]) px(ctx, x, 27 + (x % 2), 'snowL', 3, 1); // snow lying on its rim
+  if (back) { px(ctx, SENT_CX + 3, 31, 'slate', 1, 2); px(ctx, SENT_CX + 4, 33, 'slate'); return; } // a crack behind
+  const c = rune ? 'curseL' : 'purp'; // the hex rune carved in its face
+  px(ctx, SENT_CX - 1, 31, c, 2, 1); px(ctx, SENT_CX - 2, 32, c); px(ctx, SENT_CX + 1, 32, c); px(ctx, SENT_CX - 1, 33, c, 2, 1);
+}
+// the hex vein: the curse running up through the ice from the rune to the eye;
+// lit from the bottom as it winds up (0 dim, 1-3 rising, 4 all white)
+function sentVein(ctx, lit, dx = 0, eyeY = 15) {
+  const pts = [[0, 28], [0, 27], [1, 26], [1, 25], [0, 24], [0, 23], [-1, 22], [-1, 21], [0, 20], [0, 19], [0, eyeY + 3]];
+  pts.forEach(([x, y], i) => { const k = (i + 1) / pts.length; px(ctx, SENT_CX + x + dx, y, lit === 4 ? 'white' : lit && k <= lit / 3 ? (k > (lit - 1) / 3 ? 'curseL' : 'curse') : 'purp'); });
+  px(ctx, SENT_CX + 2 + dx, 6, 'purp'); px(ctx, SENT_CX + 1 + dx, 7, 'purp'); // a hairline near its tip
+}
+// a lesser crystal grown off the drum, leaning out in clean steps: [x at its foot, height, lean -1/1]
+function sentSpike(ctx, x, h, lean, flash) {
+  for (let r = 0; r < h; r++) {
+    const y = 30 - r, xx = x + lean * Math.floor(r / 4), tip = h - r; // a straight-sided shard, pointed over its last two rows
+    if (tip === 1) { px(ctx, xx + 1, y, flash ? 'white' : 'iceXL'); continue; }
+    px(ctx, xx, y, flash ? 'white' : 'iceXL'); px(ctx, xx + 1, y, flash ? 'iceXL' : r > h / 2 ? 'iceL' : 'ice');
+    if (tip > 2) px(ctx, xx + 2, y, r > h / 2 ? 'ice' : 'iceD');
+  }
+}
+// the eye: 0 a slit, 1 watching, 2 wide open, 3 flaring
+function sentEye(ctx, open, y = 15) {
+  const rows = open === 0 ? [5] : open === 1 ? [3, 5, 3] : [3, 5, 7, 5, 3], y0 = y - (rows.length >> 1);
+  if (open >= 2) for (const [x, yy] of [[-4, -1], [-4, 1], [4, -1], [4, 1], [-2, -3], [2, -3], [-2, 3], [2, 3]]) px(ctx, SENT_CX + x, y + yy, 'purpL'); // its glow on the ice round it
+  rows.forEach((w, i) => { px(ctx, SENT_CX - (w >> 1) - 1, y0 + i, 'steelD', w + 2, 1); }); // its iron mount, then the socket
+  px(ctx, SENT_CX - 1, y0 - 1, 'steelD', 3, 1); px(ctx, SENT_CX - 1, y0 + rows.length, 'steelD', 3, 1);
+  rows.forEach((w, i) => px(ctx, SENT_CX - (w >> 1), y0 + i, 'hexD', w, 1));
+  if (open === 0) { px(ctx, SENT_CX, y, 'curse'); return; }
+  const r = open >= 2 ? 1 : 0;
+  px(ctx, SENT_CX - r, y - r, open === 3 ? 'curseL' : 'curse', 1 + 2 * r, 1 + 2 * r); px(ctx, SENT_CX, y, open === 3 ? 'white' : 'curseL');
+  if (open >= 2) px(ctx, SENT_CX - 1, y - 1, 'white');
+  if (open === 3) for (const [x, yy] of [[-5, 0], [5, 0], [0, -4], [0, 4], [-3, -3], [3, -3], [-3, 3], [3, 3]]) px(ctx, SENT_CX + x, y + yy, 'curseL'); // flaring out
+}
+function sentinelView(view, { eye = 1, shards = [[-11, 12], [10, 15]], glow = 0, vein = 0, rune = false, lift = 0, flash = false, hurt = false } = {}) {
+  const [c, ctx] = makeCanvas(32, 44), side = view === 'side', back = view === 'up';
+  const faces = side ? [[5, 'iceXL', 'iceL'], [5, 'ice', 'iceD']] : [[3, 'iceXL', 'iceL'], [6, 'iceL', 'ice'], [3, 'ice', 'iceD']];
+  const hw = side ? 5 : 6, shard = (s) => sentShard(ctx, SENT_CX + s[0], s[1], glow);
+  if (side) shards.filter((s) => s[0] < 0).forEach(shard); // the one behind it
+  if (side) sentSpike(ctx, SENT_CX - 8, 12, -1, flash);
+  else { sentSpike(ctx, back ? SENT_CX + 5 : SENT_CX - 8, 13, back ? 1 : -1, flash); sentSpike(ctx, back ? SENT_CX - 8 : SENT_CX + 5, 9, back ? -1 : 1, flash); } // the lesser crystals, behind (mirrored from behind)
+  sentDrum(ctx, back, rune);
+  if (flash) sentCrystal(ctx, side ? [[5, 'white', 'iceXL'], [5, 'iceXL', 'ice']] : [[3, 'white', 'iceXL'], [6, 'iceXL', 'iceL'], [3, 'iceL', 'ice']], lift);
+  else sentCrystal(ctx, faces, lift);
+  if (!back) sentVein(ctx, hurt || flash ? 4 : vein, side ? -1 : 0);
+  sentBand(ctx, 9 - lift, hw - 1); sentBand(ctx, 21 - lift, hw);
+  for (const x of side ? [-2, 2] : [-3, 0, 3]) { px(ctx, SENT_CX + x, 9 - lift, 'purpL'); px(ctx, SENT_CX + x, 21 - lift, 'purpL'); } // its rivets
+  if (back) { px(ctx, SENT_CX - 2, 13 - lift, 'steelD', 4, 5); px(ctx, SENT_CX - 2, 13 - lift, 'steel', 4, 1); px(ctx, SENT_CX - 1, 15 - lift, 'purpL', 2, 1); } // the mount's back plate
+  else if (side) { // the eye's mount stands out from its face
+    const y = 15 - lift, e = hurt ? 'white' : eye >= 2 ? 'curseL' : 'curse';
+    px(ctx, SENT_CX + 5, y - 2, 'steelD', 2, 5); px(ctx, SENT_CX + 7, y - 1, 'steelD', 1, 3); px(ctx, SENT_CX + 7, y, e); if (eye >= 2) px(ctx, SENT_CX + 8, y, eye === 3 ? 'white' : 'curse');
+    if (eye === 3) for (const [x, yy] of [[9, -2], [10, 0], [9, 2]]) px(ctx, SENT_CX + x, y + yy, 'curseL');
+  } else sentEye(ctx, hurt ? 0 : eye, 15 - lift);
+  (side ? shards.filter((s) => s[0] >= 0) : shards).forEach(shard);
   outline(c, 'ink');
+  if (hurt && !back && !side) px(ctx, SENT_CX, 15, 'white');
   return c;
 }
+const SENT_POSES = {
+  idle: [{}, { shards: [[-11, 13], [10, 14]] }],
+  walk: [{}],
+  windup: [{ eye: 1, shards: [[-9, 11], [8, 13]], rune: true, vein: 1 }, { eye: 2, shards: [[-7, 10], [6, 11]], glow: 1, rune: true, vein: 2 }, { eye: 2, shards: [[-4, 9], [3, 9]], glow: 1, rune: true, vein: 3 }], // the rune lights, the curse climbs the vein to its eye, the shards swing round before it (held)
+  attack: [{ eye: 3, shards: [], glow: 1, rune: true, flash: true, lift: 1 }, { eye: 2, shards: [], vein: 2 }, { eye: 1, shards: [[-10, 17], [9, 18]] }], // they fly; its eye flares, the ice flashes; new ones forming low
+  hurt: [{ hurt: true }],
+};
 export function buildSentinel() {
-  return {
-    idle: [sentinelFrame({}), sentinelFrame({ eye: 'curse' })],
-    walk: [sentinelFrame({})],
-    windup: [sentinelFrame({ glow: 1 }), sentinelFrame({ glow: 1, eye: 'white' })],
-    attack: [sentinelFrame({ glow: 1 }), sentinelFrame({})],
-    hurt: [sentinelFrame({ eye: 'white' })],
-  };
+  const out = {};
+  for (const v of ['down', 'side', 'up']) { out[v] = {}; for (const [a, ps] of Object.entries(SENT_POSES)) out[v][a] = ps.map((p) => sentinelView(v, p)); }
+  return out;
 }
 
 // -------------------------------------------------------- Snow Goblin Raider
