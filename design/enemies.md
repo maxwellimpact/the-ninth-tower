@@ -58,7 +58,7 @@ Each rule was added one at a time and checked before and after with the fight be
 | **Shade** | 1.0 | 1.3 | Invisible until close; the Seer's Lens shows it | Light / Shadow | Ghostcap |
 | **Rootling** | 1.5 | 1.0 | Stays rooted and throws thorns; burns easily | Fire / Venom | Heartwood (sells) |
 | **Gloom Spider** | 1.1 | 1.1 | Webs that root you; climbs walls | Fire / Venom | Silkthread |
-| **Spectral Hound** | 0.8 | 0.9 | Packs of 3–4 that flank | Light / Frost | — |
+| **Spectral Hound** | 0.8 | 0.9 | Packs of 3–4 that flank. A lean hunting hound made of ghost-light: pricked ears, a long muzzle, a thin whip tail fraying into mist, glowing eyes, lit from within along its back; three views, an 8-frame trot (gfx/beasts.js) | Light / Frost | — |
 | **Wailing Banshee** | 1.2 | 0.8 | Scream interrupts your casts and staggers; break line of sight | Light / Shadow | Crystal |
 | *Mini-boss:* **Queen Mab** (bounty) | 9 | 1.6 | Spider queen. Lays egg sacs that swell, split and let out spiderlings (small spiders at her level that run at the nearest hero) unless smashed first. Spits a silk line at a hero who keeps away: a silk ball swells at her fangs and a ring closes on the mark, then the ball flies, wraps them in a web and she reels them in for a bite; a dodge leaves it to splat as a web on the ground | Fire / Venom | Silk ×5 (makes Nightsilk Coat) |
 
@@ -75,7 +75,7 @@ Each rule was added one at a time and checked before and after with the fight be
 ### Frosthelm (frozen highlands; cold soft-gate; cliffs)
 | Enemy | HP | DMG | Behaviour | Weak / Resist | Drops |
 |---|---|---|---|---|---|
-| **Frost Wolf** | 0.9 | 1.0 | Packs; bites that Chill | Fire / Frost | Wolf pelt |
+| **Frost Wolf** | 0.9 | 1.0 | Packs; bites that Chill. A grey-blue timber wolf (dark saddle, frost-pale belly and ruff, so it shows on snow), head carried low, bushy tail; built on a dog skeleton, the hind legs standing under the rump; three views, an 8-frame trot (gfx/beasts.js) | Fire / Frost | Wolf pelt |
 | **Rimehorn** | 2.8 | 1.5 | Big beast; throws snowballs that Freeze, then charges | Fire / Frost | Pelt, rimeglass |
 | **Ice Wraith** | 1.0 | 1.2 | Flying; flies through walls | Fire, Light / Frost | Rimeglass |
 | **Hex Sentinel** | 1.8 | 1.2 | Crystal turret, rooted to the spot: a tall cursed ice crystal in iron bands on a carved frost-stone drum, lesser crystals grown off it, a hex eye in an iron mount on its face, two ice shards circling. In three views, it turns to watch its mark. Its tell: the rune on its drum lights, the curse climbs a vein through the ice into its eye, and the shards swing round before it; then the eye flares, the ice flashes and the shards fly. Reflects spells from the front (in the data; not built yet) | Storm / Frost | Crystal, silver ore |
