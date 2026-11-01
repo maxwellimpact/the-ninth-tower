@@ -96,5 +96,9 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
      - A foe in the air stays in sight: it's drawn up above its shadow, never faded out.
      - A foe's attack animation plays through to its last frame. Nothing that follows the strike (recover, idle) cuts it short.
    - **Check:** on the Proving Field, watch each of a foe's moves through once. Every wind-up leads to the move it warned of, and you can see each move happen. A frame log of each foe's fight shows every attack animation reaching its last frame.
+17. **Nothing a foe starts outlives it.**
+   - **The bug:** an Avalanche Troll killed mid ground-pound left its ice-spike circles on the ground for good, and their danger zones kept companions dodging empty ground. A Fire Beetle that lit its fuse during a swing's wind-up left that swing's warning behind. (An earlier form, 2026-10-14: warnings left when a foe died or started a new wind-up.)
+   - **The rule:** every warning, danger zone and falling piece a foe puts out belongs to that foe. Starting a new attack clears the last one's, and dying (or being removed) clears them all, including multi-part attacks held outside `zone` (a pound, a breath).
+   - **Check:** kill each foe and boss mid-attack (the native app's `-smoke afterlife`, or by hand on the Proving Field): a few seconds later no danger zone, warning or piece of the attack is left, and nobody is hurt by it.
 
 ---

@@ -1639,7 +1639,7 @@ export class Enemy extends Unit {
     });
   }
 
-  destroy() { this.endBreath?.(); this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
+  destroy() { this.endBreath?.(); this.endPound(); this.wardRing?.destroy(); this.wardRing = null; this.eliteTag?.destroy(); this.eliteTag = null; this.clearZone(); super.destroy(); }
 
   die(src) {
     this.alive = false;
@@ -2240,6 +2240,7 @@ export class Enemy extends Unit {
     }
     if (t && this.onScreen() && Math.hypot(t.x - this.x, t.y - this.y) < 22) {
       this.fuseT = 0.6;
+      this.clearZone(); // (a swing it was winding up: its warning goes, or it's left behind for good)
       this.zone = { x: this.x, y: this.y, r: 34, until: 0.6 };
       sc.dangers.push(this.zone);
       this.zoneGfx = sc.fx.telegraph(this.x, this.y, 34, 0.6);
@@ -2298,6 +2299,16 @@ export class Enemy extends Unit {
 
   // Avalanche Troll: pounds the ground with both fists, bringing icicles down
   // on marked spots around the party; heals itself unless it's Burning.
+  // A pound cut short (it dies mid-pound): its marks, zones and falling icicles go with it.
+  endPound() {
+    const P = this.pound;
+    if (!P) return;
+    for (const g of P.gfx) g?.destroy?.();
+    for (const s of P.spikes) s.destroy();
+    this.scene.dangers = this.scene.dangers.filter((z) => !P.zones.includes(z));
+    this.pound = null;
+  }
+
   aiTroll(dt) {
     const sc = this.scene, t = this.target;
     if (!this.status?.burn && this.hp < this.maxHp) {
