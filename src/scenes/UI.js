@@ -727,9 +727,10 @@ export class UI extends Phaser.Scene {
       this.trackTitle.setText('THE COLOSSEUM');
       this.trackTxt.setText(`WAVE ${game.colosseum.wave || '-'}  BEST ${game.colosseum.best}`);
     } else {
-      this.trackTitle.setText(tstep ? tq.title(tid) : ''); // no step fraction: next to a kill count ("3/6") a "1/2" read as the count
+      const main = tstep ? null : tq?.mainQuest(); // no errand tracked: the main quest
+      this.trackTitle.setText(tstep ? tq.title(tid) : main?.title || ''); // no step fraction: next to a kill count ("3/6") a "1/2" read as the count
       const steam = (game.state.steamT || 0) > 0 ? `STEAMED: +15% XP ${Math.ceil(game.state.steamT / 60)}M` : ''; // the steam house's soak
-      this.trackTxt.setText([tstep ? tq.stepText(tid) : '', steam].filter(Boolean).join('\n'));
+      this.trackTxt.setText([tstep ? tq.stepText(tid) : main?.text || '', steam].filter(Boolean).join('\n'));
     }
     // the SAVED notice and pickup lines stack under the tracker, however many lines it has right now
     let lootTop = this.trackTxt.text ? this.trackTxt.y + this.trackTxt.height + 9 : this.trackTitle.text ? this.trackTitle.y + 17 : this.mmY + this.MM.h + 9;

@@ -3884,9 +3884,12 @@ export class Game extends Phaser.Scene {
       ? { who: 'KING ALDRIC', portrait: 'king_portrait', voice: { pitch: 140, wave: 'square', duty: 0.25 } }
       : { who: 'KING ALDRIC', portrait: 'portrait_frog', voice: { pitch: 110, wave: 'square', duty: 0.125 } };
     const st = this.state;
+    // the first meeting is where the main quest comes from: flies can wait for the next talk
+    const giving = !this.flags.metKing && !this.quests.brokenWards();
+    this.flags.metKing = true;
     const tiers = W.flyRewards;
     const next = tiers[st.flyRewards];
-    if (next && st.flies.length >= next.n) {
+    if (!giving && next && st.flies.length >= next.n) {
       st.flyRewards++;
       st.gold += next.gold || 0;
       addPotions(st, next.potions || {});
@@ -3902,7 +3905,7 @@ export class Game extends Phaser.Scene {
       this.events.emit('party');
       return;
     }
-    if (st.flies.length > 0 && next) {
+    if (!giving && st.flies.length > 0 && next) {
       this.events.emit('dialogue', [{ ...K, text: `YOU HAVE ${st.flies.length} GOLDEN FLIES. BRING ME ${next.n} AND I SHALL REWARD YOU. THEY HIDE IN THE STRANGEST PLACES...` }]);
       return;
     }
@@ -3929,7 +3932,7 @@ export class Game extends Phaser.Scene {
         { ...K, text: 'A WARD STONE BURNS TO THE EAST. ITS BARRIER DRAWS ON A GUARDIAN BENEATH THE OLD KEEP - STAIRS IN THE RUINS. DEFEAT IT, SMASH THE STONE, AND THE VALE WILL BLOOM AGAIN!' },
         { ...K, text: 'YOU WILL WANT FRIENDS FOR THAT. AND BETTER ARMOUR. AND IF YOU FIND ANY FLIES... NO. FORGET I SAID THAT.' },
       ];
-    this.events.emit('dialogue', lines);
+    this.events.emit('dialogue', lines, giving ? () => { this.events.emit('banner', 'MAIN QUEST', 'BREAK THE WARD STONES'); this.autosave('frog'); } : undefined);
   }
 
   // Ward Shard (C4 charm): the first stone gives a shard; later stones grow it

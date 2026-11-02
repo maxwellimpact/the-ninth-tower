@@ -28,6 +28,9 @@ See also: [regions.md](regions.md), [dungeons-relics.md](dungeons-relics.md), [h
 | **Mirelle** | Frosthelm | *Thaw:* found frozen in Isolde's spire. Freeing her is part of the dungeon, and she joins for the boss |
 | **Gizmo** | Brightwater (2 stones) | *The Water Wheel:* gather parts from any two regions to fix the town's mill |
 
+### The main quest **[BUILT 2026-11-02]**
+THE KING'S QUEST: **find the king**, then **break the five Ward Stones**, then **climb the Ninth Tower**. It's first in the journal, and it's what the HUD line and the map pin follow whenever no errand is tracked. It's read from the world's flags, so it never gates anything (the early Tower attempt stays) and an old save lands on the right step. Meeting the king gives it; breaking a stone first skips that step. The pin is the nearest stone still up, since the outer four come in any order. It's never a trip back to him: his lines already follow the count when you visit.
+
 ### Errands (opt-in mini quests) **[LOCKED 2026-10-14]**
 Small, self-contained jobs from ordinary people. They're never required, but they're the main reason to talk to everyone and to poke into corners of the map.
 
@@ -39,7 +42,7 @@ Small, self-contained jobs from ordinary people. They're never required, but the
 **How they work:**
 - **Accepted, never forced:** you can turn one down and come back later.
 - **The journal** keeps an Errands tab, with an optional map pin for the current step.
-- **One errand can be tracked on the HUD at a time** (a single line under the minimap).
+- **One errand can be tracked on the HUD at a time** (a single line under the minimap), or the main quest.
 - **Short:** most take 3–10 minutes, so one fits in a phone session.
 
 **Errand types** (each region gets 6–8, about 35 in total):

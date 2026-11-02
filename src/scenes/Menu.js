@@ -753,6 +753,21 @@ export class Menu extends Phaser.Scene {
     const x = 8 + ox, w = W - 16;
     let y = 26;
     const act = Qm.active(), done = Object.keys(st.quests).filter((id) => st.quests[id].done);
+    // the main quest: always first, and tracked whenever no errand is
+    const main = Qm.mainQuest();
+    if (main) {
+      const tracked = !st.tracked || !Qm.step(st.tracked), note = Qm.mainNote(), ch = 26 + (note ? 9 : 0);
+      this.t(x, y, 'MAIN QUEST', 'fontGold'); y += 12;
+      panel(g, x, y, w, ch, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
+      this.t(x + 5, y + 4, main.title, tracked ? 'fontGold' : 'font', undefined, w - 64);
+      const tag = tracked ? 'TRACKED' : 'TAP: TRACK';
+      this.t(x + w - 5 - tag.length * 5, y + 4, tag, 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
+      g.fillStyle(tracked ? C.gold : 0xd8d3e0).fillTriangle(x + 7, y + 15, x + 7, y + 21, x + 11, y + 18); // you are here
+      this.t(x + 15, y + 15, main.text, 'font', undefined, w - 20);
+      if (note) this.t(x + 15, y + 25, note, 'fontPlain', 0x9fd8ff, w - 20);
+      this.btn(x, y, w, ch, () => { st.tracked = null; audio.sfx('click'); this.render(); });
+      y += ch + 6;
+    }
     this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
     if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); y += 24; }
     // each errand: what you've done (ticked), where you are now (with how far along

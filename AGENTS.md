@@ -96,6 +96,7 @@ the rule, the check) as well as fixing it.
     at their in-game size beside Brann, and `turnaround()`: a big boss
     (gfx/bigcast.js) in all three views through its animations. Show the user
     before and after.
+  - `tools/main-quest-test.js`: the main quest's steps, pin and HUD, an old save, an errand tracked over it.
   - `tools/leader-test.js`: the idle leader keeps attacking (melee steps in,
     ranged stays put) and never uses a skill or chases far.
   - `tools/staged-test.js`: an errand's waiting ambush isn't set off early.

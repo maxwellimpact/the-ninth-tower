@@ -4,14 +4,14 @@
 // Step types: talk, kill, gather, spawn (fight at a spot), find (interact with
 // something placed in the world), escort (protect a cart), bells (ring in
 // order), defend (keep an NPC alive until the attackers are gone).
-import { W, Q } from '../world/content.js'; // world.json / quests.json, or a test map's own
+import { W, Q, MAP } from '../world/content.js'; // world.json / quests.json, or a test map's own
 import items from '../data/items.json';
 import { RACE_BET } from '../scenes/FrogRace.js';
 import { audio } from '../audio/synth.js';
 import { makeItem, tierForLevel } from './itemgen.js';
 import { addMats, addPotions, CRAFT, gainItems } from './state.js';
 import { makeStage } from './setpiece.js';
-import { biomeAt } from '../world/map.js';
+import { biomeAt, LANDMARKS } from '../world/map.js';
 import ENEMIES from '../data/enemies.json';
 
 const dirTo = (dx, dy) => { const l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
@@ -778,9 +778,45 @@ export class QuestManager {
     return `${verb} ${names.join(', ')}`;
   }
 
+  // The main quest: find the king, break the Ward Stones, climb the Tower. It's read
+  // from the world's own flags, so it never gates anything and an old save lands on
+  // the right step. It's what's tracked whenever no errand is (state.tracked empty).
+  mainQuest() {
+    const sc = this.sc;
+    if (MAP || sc.state.lab || sc.flags.malgrimDefeated) return null; // (Aldermere's: a test map has no king)
+    const title = "THE KING'S QUEST", wards = W.wards, down = this.brokenWards();
+    if (!down && !sc.flags.metKing) return { title, text: 'FIND THE KING' };
+    if (down === wards.length) return { title, text: 'CLIMB THE NINTH TOWER' };
+    return { title, text: `BREAK THE WARD STONES (${down}/${wards.length})`, standing: wards.filter((w) => !sc.flags[w.flag]) };
+  }
+
+  // Where the main quest points (tile coords): the king, the nearest stone still up (the
+  // outer four come in any order), then the Tower's door.
+  mainPin() {
+    const m = this.mainQuest();
+    if (!m) return null;
+    if (m.standing) {
+      const L = this.sc.leader, tx = L ? L.x / TILE : 0, ty = L ? L.y / TILE : 0;
+      const w = [...m.standing].sort((a, b) => Math.hypot(a.x - tx, a.y - ty) - Math.hypot(b.x - tx, b.y - ty))[0];
+      return { x: w.x, y: w.y };
+    }
+    if (m.text === 'FIND THE KING') return { x: LANDMARKS.frog.x, y: LANDMARKS.frog.y };
+    const door = W.warps.find((w) => w.tower === 'door');
+    return door ? { x: door.x, y: door.y } : null;
+  }
+
+  // Under the main quest in the journal: what the king said, then which stones are left.
+  mainNote() {
+    const m = this.mainQuest();
+    if (!m?.standing) return '';
+    if (m.standing.length === W.wards.length) return 'A STAIR IN THE RUINS LEADS DOWN TO ITS GUARDIAN';
+    return `STILL STANDING: ${m.standing.map((w) => W.regions.find((r) => r.id === w.region)?.name || w.region).join(', ')}`;
+  }
+
   // Where the tracked errand wants you to go (tile coords) for map pins.
   pin(id = this.state.tracked) {
-    const s = id && this.step(id);
+    if (!id) return this.mainPin();
+    const s = this.step(id);
     if (!s) return null;
     if (s.type === 'kill' || s.type === 'gather') { // the nearest place to do it, in the area you're in
       const L = this.sc.leader, tx = L.x / TILE, ty = L.y / TILE, a = this.sc.areaRect?.();
