@@ -3927,7 +3927,7 @@ export class Game extends Phaser.Scene {
       : this.flags.wardBroken
       ? [
         { ...K, text: left === 4 ? 'YOU DID IT! LOOK AT THOSE COLOURS! I HAD FORGOTTEN WHAT GREEN LOOKED LIKE. ...OTHER THAN ME.' : 'ANOTHER STONE DOWN! I FELT IT IN MY WEBBED LITTLE TOES.' },
-        { ...K, text: `${left === 1 ? 'ONE MORE WARD STONE HOLDS' : `${['', '', 'TWO', 'THREE', 'FOUR'][left]} MORE WARD STONES HOLD`} THE NINTH TOWER. BRING ${left === 1 ? 'IT' : 'THEM'} DOWN, AND MALGRIM WITH ${left === 1 ? 'IT' : 'THEM'}.` },
+        { ...K, text: `${left === 1 ? 'ONE MORE WARD STONE STILL STANDS' : `${['', '', 'TWO', 'THREE', 'FOUR'][left]} MORE WARD STONES STILL STAND`}. BRING ${left === 1 ? 'IT' : 'THEM'} DOWN.` },
         { ...K, text: 'ALSO, IF YOU SEE ANY FLIES... NO. NO. A KING HAS STANDARDS.' },
       ]
       : [

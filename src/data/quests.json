@@ -2403,7 +2403,7 @@
    "region": "basin",
    "requires": "voidmother",
    "offer": [
-    "BOUNTY: ONE OF MALGRIM'S MIRRORS HAS STARTED WALKING ABOUT ON ITS OWN, NEAR THE TOWER. IT LOOKS LIKE WHOEVER FOUND IT LAST.",
+    "BOUNTY: ONE OF MALGRIM'S MIRRORS HAS STARTED WALKING ABOUT ON ITS OWN, OUT IN THE BASIN. IT LOOKS LIKE WHOEVER FOUND IT LAST.",
     "IT WILL LOOK LIKE YOU. TRY NOT TO TAKE IT PERSONALLY."
    ],
    "accept": "BREAK THE GLASS KING.",
@@ -2413,7 +2413,7 @@
    "steps": [
     {
      "type": "spawn",
-     "text": "FIND THE GLASS KING BY THE TOWER",
+     "text": "FIND THE GLASS KING IN THE BASIN",
      "at": [
       140,
       266
