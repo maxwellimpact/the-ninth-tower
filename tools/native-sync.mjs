@@ -3,9 +3,10 @@
 // (../ninth-tower-ios, or NATIVE_DIR):
 //   art.json        every texture's file, frames and data; every animation; the font; the sounds
 //   img/            the textures
-//   world/<id>.json a world's tiles, props, regions and landmarks; world/<id>/ its curses and vines
-//   ../reference/terrain/<id>/ the web's terrain chunks, outside the app: the app paints its own
-//                   ground, and -terraintest checks it against these pixel for pixel
+//   world/<id>.json a world's tiles, props, regions and landmarks
+//   ../reference/terrain/<id>/, curses/, vines/: the web's terrain chunks, curse overlays and
+//                   painted vines, outside the app: the app paints all three itself and checks
+//                   them against these (-terraintest pixel for pixel; -vinetest pictures to compare)
 //   sfx/*.m4a       the sound effects (rendered by the web synth)
 //   data/           the game's own data files, copied unchanged
 // Usage: node tools/native-sync.mjs
@@ -18,10 +19,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SNAP = resolve(ROOT, 'snapshots');
 const NATIVE = resolve(process.env.NATIVE_DIR || resolve(ROOT, '../ninth-tower-ios'));
 const OUT = resolve(NATIVE, 'NinthTower/Export');
-const REF = resolve(NATIVE, 'reference/terrain');
+const REF = resolve(NATIVE, 'reference/terrain'), VREF = resolve(NATIVE, 'reference/vines'), CREF = resolve(NATIVE, 'reference/curses');
 
 rmSync(OUT, { recursive: true, force: true });
 rmSync(REF, { recursive: true, force: true });
+rmSync(VREF, { recursive: true, force: true });
+rmSync(CREF, { recursive: true, force: true });
 for (const d of ['img', 'sfx', 'music', 'world', 'data/maps']) mkdirSync(resolve(OUT, d), { recursive: true });
 const files = readdirSync(SNAP).filter((f) => f.startsWith('nx_'));
 let n = { img: 0, sfx: 0, chunks: 0 };
@@ -39,11 +42,11 @@ for (const f of files) {
   } else if (f.startsWith('nx_w_')) {
     const rest = f.slice(5);
     if (rest.endsWith('.json')) copyFileSync(src, resolve(OUT, 'world', rest));
-    else { // <id>_<cx>_<cy>.png (a terrain chunk: a reference only), or a curse or vine image
+    else { // <id>_<cx>_<cy>.png, <id>_vine_*.png, <id>_curse_<ward>.png: references only (the app paints them)
       const id = rest.split('_')[0], name = rest.slice(id.length + 1);
-      const dir = /^\d+_\d+\.png$/.test(name) ? resolve(REF, id) : resolve(OUT, 'world', id);
+      const dir = /^\d+_\d+\.png$/.test(name) ? resolve(REF, id) : name.startsWith('vine_') ? VREF : name.startsWith('curse_') ? CREF : resolve(OUT, 'world', id);
       mkdirSync(dir, { recursive: true });
-      copyFileSync(src, resolve(dir, name));
+      copyFileSync(src, resolve(dir, name.startsWith('curse_') ? name.slice(6) : name));
       n.chunks++;
     }
   }
