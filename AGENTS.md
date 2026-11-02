@@ -102,6 +102,7 @@ the rule, the check) as well as fixing it.
   - `tools/perf.js`: CPU time per frame (`profile()`, `engine()`, `tour()`).
     Use it on Aldermere and on the Vast (`?map=vast`, `vast40`, `vast40d`).
     The debug panel's LOAD line and `window.__loadTimes` give load timings.
+  - `node tools/comment-check.mjs`: no code swallowed by an end-of-line comment (never-again rule 18).
   - `node tools/design-check.mjs`: every design file is in `design/README.md`
     and every link in the docs resolves. Run it after touching the design.
   - `tools/door-orbit.js`: how far companions swing round the leader after a door.

@@ -478,6 +478,8 @@ const INST = {
 };
 
 // --------------------------------------------------------------- player
+const CROSSFADE = 0.5; // seconds: the time constant of a song's fade in and the last one's fade out
+
 export class MusicPlayer {
   constructor() {
     this.song = null;
@@ -486,8 +488,6 @@ export class MusicPlayer {
   }
 
   start(song, fadeIn = 0.01) {
-    clearTimeout(this.swapT);
-    this.pending = null;
     const a = audio.init();
     const ctx = a.ctx;
     this.song = song;
@@ -519,21 +519,30 @@ export class MusicPlayer {
     this.timer = setInterval(() => this.schedule(), 25);
   }
 
-  // Crossfade to another region's theme: the current song fades out, then the
-  // new one starts from its top and fades in. Variant and combat state carry over.
+  // Crossfade to another region's theme: the new song starts from its top at once
+  // and fades in while the current one plays on and fades out beneath it. Variant
+  // and combat state carry over.
   setTheme(song) {
     if (!this.playing || !this.nodes) { this.start(song); return; }
-    if (this.pending === song || (!this.pending && this.song === song)) return;
-    clearTimeout(this.swapT);
-    this.pending = song;
-    if (this.song === song) { this.pending = null; this.applyMix(0.5); return; }
-    for (const g of Object.values(this.nodes)) g.gain.setTargetAtTime(0, audio.t, 0.3);
-    this.swapT = setTimeout(() => { if (this.pending === song) this.start(song, 0.6); }, 1100);
+    if (this.song === song) return;
+    this.retire();
+    this.start(song, CROSSFADE);
+  }
+
+  // The current song goes on sequencing on its own gains, fading out, then is let go.
+  retire() {
+    const old = Object.assign(Object.create(MusicPlayer.prototype), this, { state: { ...this.state } });
+    this.nodes = null;
+    clearInterval(this.timer);
+    old.timer = setInterval(() => old.schedule(), 25);
+    for (const g of Object.values(old.nodes)) g.gain.setTargetAtTime(0, audio.t, CROSSFADE);
+    setTimeout(() => {
+      clearInterval(old.timer); old.playing = false;
+      setTimeout(() => { for (const g of Object.values(old.nodes)) g.disconnect(); }, 3000); // (after the last notes' tails)
+    }, CROSSFADE * 7000);
   }
 
   stop() {
-    clearTimeout(this.swapT);
-    this.pending = null;
     this.playing = false;
     clearInterval(this.timer);
     if (this.nodes) for (const g of Object.values(this.nodes)) g.gain.setTargetAtTime(0, audio.t, 0.3);
@@ -567,7 +576,7 @@ export class MusicPlayer {
   }
 
   applyMix(tc = 0.6) {
-    if (!this.nodes || this.pending) return; // mid-crossfade: the next song picks up the state
+    if (!this.nodes) return;
     for (const layer of ['base', 'combat', 'bard']) for (const v of ['freed', 'cursed']) {
       this.nodes[layer + ':' + v].gain.setTargetAtTime(this.targetOf(layer, v), audio.t, tc);
     }

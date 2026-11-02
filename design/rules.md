@@ -100,5 +100,9 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
    - **The bug:** an Avalanche Troll killed mid ground-pound left its ice-spike circles on the ground for good, and their danger zones kept companions dodging empty ground. A Fire Beetle that lit its fuse during a swing's wind-up left that swing's warning behind. (An earlier form, 2026-10-14: warnings left when a foe died or started a new wind-up.)
    - **The rule:** every warning, danger zone and falling piece a foe puts out belongs to that foe. Starting a new attack clears the last one's, and dying (or being removed) clears them all, including multi-part attacks held outside `zone` (a pound, a breath).
    - **Check:** kill each foe and boss mid-attack (the native app's `-smoke afterlife`, or by hand on the Proving Field): a few seconds later no danger zone, warning or piece of the attack is left, and nobody is hurt by it.
+18. **A comment never swallows code.**
+   - **The bug:** a comment added mid-line turned the rest of the line into comment: a coin reaching the party lost its sound, sparkle and HUD update (2026-10-16), and a chain's countdown label stopped updating. Nothing failed, so it went unseen for two weeks, until the user missed the coin's sound in the native port, which had copied the broken line.
+   - **The rule:** an end-of-line comment goes after the last statement on its line. To explain the middle of a line, break the line.
+   - **Check:** `node tools/comment-check.mjs` finds statements inside end-of-line comments.
 
 ---

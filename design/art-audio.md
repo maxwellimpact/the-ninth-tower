@@ -56,7 +56,7 @@ Everything is generated at runtime with WebAudio, as in Lumen. There are **no au
   - **Mistfen:** slow and minor-leaning, with a murky pad.
   - **The Depths** (caves and dungeons): sparse and echoing.
   - **Hearth** (shops and the tavern): a cosy jig.
-  - **Changing themes:** the music crossfades when you cross a region border, after you've been in the new region for about a second.
+  - **Changing themes:** the music crossfades when you cross a region border, after you've been in the new region for about a second. The new song starts from its top at once and blends over the old one for a second or two, with no dip between them.
   - **Future regions** each add one more variation in the same pattern data: Gloamwood (hushed, music-box), Cinderreach (low drones and anvil hits), Frosthelm (glassy bells, a slow waltz).
 
 ### Sound effects

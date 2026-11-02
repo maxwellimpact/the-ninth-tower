@@ -1376,7 +1376,8 @@ export class Game extends Phaser.Scene {
       }
       for (const [x, y] of [[ax, ay], [bx, by]]) g.lineStyle(2, 0x1a1423, 1).strokeEllipse(x, y, 12, 5).lineStyle(1, 0x8593b0, 1).strokeEllipse(x, y - 1, 12, 5); // the shackles
       const [mx, my] = pt(0.5);
-      ch.label.setPosition(Math.round(mx), Math.round(Math.min(a.y, b.y)) - 34) // over their heads.setText(this.state.relics.includes('grapple') ? `CHAINED ${Math.ceil(ch.t)} - TAP TO BREAK` : `CHAINED ${Math.ceil(ch.t)}`);
+      ch.label.setPosition(Math.round(mx), Math.round(Math.min(a.y, b.y)) - 34) // over their heads
+        .setText(this.state.relics.includes('grapple') ? `CHAINED ${Math.ceil(ch.t)} - TAP TO BREAK` : `CHAINED ${Math.ceil(ch.t)}`);
     }
     this.chains = this.chains.filter((c) => !c.dead);
   }
@@ -2635,7 +2636,8 @@ export class Game extends Phaser.Scene {
     this.time.delayedCall(700 + Math.random() * 300, () => {
       const L = this.leader;
       this.tweens.add({ targets: c, x: L.x, y: L.y - 10, duration: 260, ease: 'Quad.easeIn', onComplete: () => {
-        c.destroy(); this.state.gold += (this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1) + (this.party.some((h) => h.hasPerk('signet')) && Math.random() < 0.15 ? 1 : 0) + (this.party.some((h) => h.hasPerk('brightkey')) && Math.random() < 0.1 ? 1 : 0); // Frog King's Signet: +15% audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
+        c.destroy(); this.state.gold += (this.party.some((h) => !h.downed && h.hasTrait('fortune')) && Math.random() < 0.1 ? 2 : 1) + (this.party.some((h) => h.hasPerk('signet')) && Math.random() < 0.15 ? 1 : 0) + (this.party.some((h) => h.hasPerk('brightkey')) && Math.random() < 0.1 ? 1 : 0); // Frog King's Signet: +15%
+        audio.sfx('coin'); this.fx.coinBurst(this.leader.x, this.leader.y); this.events.emit('party');
       } });
     });
   }
