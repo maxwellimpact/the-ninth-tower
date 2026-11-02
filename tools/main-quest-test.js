@@ -12,14 +12,14 @@ export async function run() {
   const { LANDMARKS } = await import('/src/world/map.js');
   const { W: world } = await import('/src/world/content.js');
   const flagsOf = world.wards.map((w) => w.flag);
-  const reset = () => { for (const f of flagsOf) delete sc.flags[f]; delete sc.flags.metKing; delete sc.flags.malgrimDefeated; sc.state.tracked = null; };
+  const reset = () => { for (const f of flagsOf) delete sc.flags[f]; delete sc.flags.metKing; delete sc.flags.malgrimDefeated; delete sc.flags.kingTower; delete sc.flags.towerWarned; delete sc.flags.metFerryman; for (const w of world.wards) { delete sc.flags[w.guardian]; delete sc.flags[w.warden]; } sc.state.tracked = null; };
   reset();
 
   // the first step, wherever the party starts
   let m = q.mainQuest(), p = q.pin();
   check(m?.text === 'FIND THE KING', `a new game: ${m?.text}`);
   check(p?.x === LANDMARKS.frog.x && p?.y === LANDMARKS.frog.y, `the pin is on the king: ${JSON.stringify(p)}`);
-  check(!q.mainNote(), 'no note before you meet him');
+  check(!q.mainHint(), 'no hint before the first stone');
 
   // meeting him gives the quest, even carrying enough flies for a reward (those wait)
   const flies = sc.state.flies, rewards = sc.state.flyRewards;
@@ -33,7 +33,9 @@ export async function run() {
   check(sc.state.flyRewards === rewards, 'no fly reward at the first meeting');
   m = q.mainQuest();
   check(m?.text === `BREAK THE WARD STONES (0/${flagsOf.length})`, `after meeting him: ${m?.text}`);
-  check(q.mainNote().includes('STAIR'), `the note repeats his directions: ${q.mainNote()}`);
+  let st = q.mainStones();
+  check(st.rows.length === 1 && st.rows[0].name === 'BRIGHTWATER VALE' && st.unfound === 4, `only the Vale is listed: ${JSON.stringify(st)}`);
+  check(q.pin()?.x === world.wards[0].x, 'the pin is on the Vale stone');
   closeDialog();
   said = null;
   sc.talkFrog();
@@ -48,22 +50,43 @@ export async function run() {
   sc.flags.wardBroken = true;
   m = q.mainQuest();
   check(m?.text === `BREAK THE WARD STONES (1/${flagsOf.length})`, `an old save with one stone: ${m?.text}`);
-  check(q.mainNote().startsWith('STILL STANDING') && !q.mainNote().includes('VALE'), `the rest are listed: ${q.mainNote()}`);
+  check(q.mainStones().rows[0].text === 'STONE BROKEN', 'the Vale row shows it broken');
+  check(q.mainHint().includes('SOMEONE WAITS') && !q.mainHint().includes('FERRYMAN'), `the hint keeps his name: ${q.mainHint()}`);
+  sc.flags.metFerryman = true;
+  check(!q.mainHint(), 'no hint once you have met him');
 
-  // the outer stones come in any order: the pin is the nearest one up, and moves on
-  sc.flags.ward_frost = true;
-  const L = sc.leader, stand = world.wards.filter((w) => !sc.flags[w.flag]);
-  const near = [...stand].sort((a, b) => Math.hypot(a.x - L.x / 16, a.y - L.y / 16) - Math.hypot(b.x - L.x / 16, b.y - L.y / 16))[0];
-  p = q.pin();
-  check(p?.x === near.x && p?.y === near.y, `the pin is the nearest stone still up: ${near.id}`);
-  check(q.mainQuest().text.includes('(2/'), `two down, any order: ${q.mainQuest().text}`);
+  // a stone never seen isn't pinned or named; found, it is, and the nearest found one wins
+  const mm = sc.minimap;
+  mm.isExplored = () => false;
+  check(q.pin() === null, 'every stone left unseen: no pin');
+  check(q.mainStones().unfound === 4 && q.mainStones().rows.length === 1, 'and no names');
+  check(!JSON.stringify(q.mainQuest()).includes('TOWER') && !JSON.stringify(q.mainStones()).includes('TOWER'), 'and no Tower');
+  const g = world.wards.find((w) => w.id === 'gloam');
+  mm.isExplored = (x, y) => x === g.x && y === g.y;
+  check(q.pin()?.x === g.x && q.pin()?.y === g.y, 'found one: the pin goes there');
+  check(q.mainStones().rows.some((r) => r.name === 'GLOAMWOOD' && r.text.startsWith('FOLLOW')), 'and it gets a row');
+  sc.flags[g.guardian] = true;
+  check(q.mainStones().rows.find((r) => r.name === 'GLOAMWOOD').text.includes('WITHERED'), 'its Shadow beaten, the row says so');
+  sc.flags[g.warden] = true;
+  check(q.mainStones().rows.find((r) => r.name === 'GLOAMWOOD').text === 'BREAK THE STONE', 'its lieutenant beaten, the row says so');
+  delete mm.isExplored;
 
-  // all down: the Tower; Malgrim gone: done
+  // all down: back to the king, who names the Tower; Malgrim gone: done
   for (const f of flagsOf) sc.flags[f] = true;
   m = q.mainQuest(); p = q.pin();
+  check(m?.text === 'RETURN TO THE KING', `all five down: ${m?.text}`);
+  check(p?.x === LANDMARKS.frog.x, 'the pin is on the king');
+  sc.events.on('dialogue', say);
+  sc.state.flies = Array.from({ length: world.flyRewards[0].n }, (_, i) => i); sc.state.flyRewards = 0;
+  said = null; sc.talkFrog(); await step(2);
+  check(said?.[0]?.text.includes('ALL FIVE STONES'), `he names it, ahead of any flies: ${said?.[0]?.text}`);
+  sc.events.off('dialogue', say); closeDialog(); sc.state.flies = flies; sc.state.flyRewards = rewards;
+  m = q.mainQuest(); p = q.pin();
   const door = world.warps.find((w) => w.tower === 'door');
-  check(m?.text === 'CLIMB THE NINTH TOWER', `all five down: ${m?.text}`);
+  check(m?.text === 'CLIMB THE NINTH TOWER', `then: ${m?.text}`);
   check(p?.x === door.x && p?.y === door.y, 'the pin is on the Tower door');
+  delete sc.flags.kingTower; sc.flags.towerWarned = true;
+  check(q.mainQuest()?.text === 'CLIMB THE NINTH TOWER', 'standing at the door earlier counts too');
   sc.flags.malgrimDefeated = true;
   check(q.mainQuest() === null && q.pin() === null, 'Malgrim gone: nothing left to track');
   reset();

@@ -756,7 +756,8 @@ export class Menu extends Phaser.Scene {
     // the main quest: always first, and tracked whenever no errand is
     const main = Qm.mainQuest();
     if (main) {
-      const tracked = !st.tracked || !Qm.step(st.tracked), note = Qm.mainNote(), ch = 26 + (note ? 9 : 0);
+      const tracked = !st.tracked || !Qm.step(st.tracked), stones = main.stones ? Qm.mainStones() : null, hint = Qm.mainHint();
+      const ch = 26 + (stones ? stones.rows.length * 9 + (stones.unfound ? 9 : 0) + 3 : 0) + (hint ? 10 : 0);
       this.t(x, y, 'MAIN QUEST', 'fontGold'); y += 12;
       panel(g, x, y, w, ch, tracked ? 0x3a2f52 : C.night, tracked ? C.gold : C.slate);
       this.t(x + 5, y + 4, main.title, tracked ? 'fontGold' : 'font', undefined, w - 64);
@@ -764,9 +765,29 @@ export class Menu extends Phaser.Scene {
       this.t(x + w - 5 - tag.length * 5, y + 4, tag, 'fontPlain', tracked ? 0xf2c14e : 0x9d93b3);
       g.fillStyle(tracked ? C.gold : 0xd8d3e0).fillTriangle(x + 7, y + 15, x + 7, y + 21, x + 11, y + 18); // you are here
       this.t(x + 15, y + 15, main.text, 'font', undefined, w - 20);
-      if (note) this.t(x + 15, y + 25, note, 'fontPlain', 0x9fd8ff, w - 20);
+      let yy = y + 26;
+      for (const r of stones?.rows || []) {
+        if (r.stage === 3) g.fillStyle(0x8cff8c).fillRect(x + 9, yy + 3, 1, 2).fillRect(x + 10, yy + 4, 1, 2).fillRect(x + 11, yy + 1, 1, 4).fillRect(x + 12, yy, 1, 2); // a tick
+        else g.fillStyle(r.stage === 2 ? C.gold : 0x9fd8ff).fillRect(x + 9, yy + 2, 3, 3);
+        this.t(x + 17, yy, r.name, 'fontPlain', 0xd8d3e0);
+        this.t(x + 108, yy, r.text, 'fontPlain', r.stage === 3 ? 0x7fae86 : r.stage === 2 ? 0xf2c14e : 0x9fd8ff, w - 112);
+        yy += 9;
+      }
+      if (stones?.unfound) { this.t(x + 17, yy, `${stones.unfound} MORE ${stones.unfound === 1 ? 'STONE' : 'STONES'} YET TO BE FOUND`, 'fontPlain', 0x9d93b3); yy += 9; }
+      if (stones) yy += 3;
+      if (hint) this.t(x + 15, yy, hint, 'fontPlain', 0xc9a0ff, w - 20);
       this.btn(x, y, w, ch, () => { st.tracked = null; audio.sfx('click'); this.render(); });
       y += ch + 6;
+      // what it's all brought home
+      const home = Qm.homeAgain(), flies = Qm.fliesLine();
+      if (home.length || flies) { this.t(x, y, 'BRIGHTWATER', 'fontGold'); y += 11; }
+      if (home.length) {
+        const txt = fitString(`HOME AGAIN: ${home.join(', ')}`, w - 8, 3);
+        this.t(x + 4, y, txt, 'fontPlain', 0xd8d3e0).setMaxWidth(w - 8);
+        y += 9 * txt.split('\n').length + 1;
+      }
+      if (flies) { this.t(x + 4, y, flies, 'fontPlain', 0xd8d3e0); y += 10; }
+      if (home.length || flies) y += 4;
     }
     this.t(x, y, `ERRANDS - ${act.length} ACTIVE, ${done.length} DONE`, 'fontGold'); y += 12;
     if (!act.length && !done.length) { this.t(x, y, 'NO ERRANDS YET. TALK TO PEOPLE WITH A "!" OVER THEIR HEADS, OR READ THE RUMOUR BOARD IN THE TAVERN.', 'fontPlain', 0x9d93b3).setMaxWidth(w); y += 24; }

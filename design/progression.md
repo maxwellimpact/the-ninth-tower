@@ -29,7 +29,14 @@ See also: [regions.md](regions.md), [dungeons-relics.md](dungeons-relics.md), [h
 | **Gizmo** | Brightwater (2 stones) | *The Water Wheel:* gather parts from any two regions to fix the town's mill |
 
 ### The main quest **[BUILT 2026-11-02]**
-THE KING'S QUEST: **find the king**, then **break the five Ward Stones**, then **climb the Ninth Tower**. It's first in the journal, and it's what the HUD line and the map pin follow whenever no errand is tracked. It's read from the world's flags, so it never gates anything (the early Tower attempt stays) and an old save lands on the right step. Meeting the king gives it; breaking a stone first skips that step. The pin is the nearest stone still up, since the outer four come in any order. It's never a trip back to him: his lines already follow the count when you visit.
+THE KING'S QUEST: **find the king**, **break the five Ward Stones**, **return to the king**, **climb the Ninth Tower**. It's first in the journal, and it's what the HUD line and the map pin follow whenever no errand is tracked. It's read from the world's flags, so it never gates anything (the early Tower attempt stays) and an old save lands on the right step. Meeting the king gives it; breaking a stone first skips that step.
+
+**It never gets ahead of the player.** The journal's whole point is what to do next, not the plot:
+- The Tower isn't named until the king names it (at all five stones) or you've stood at its door.
+- A stone gets a row and a pin only once it's on your explored map or broken (the Vale's from the start, since the king names it). The rest are a count: "2 MORE STONES YET TO BE FOUND". The pin is the nearest found stone still up, since the outer four come in any order.
+- Each row says how far along that stone is: follow the vine, the vine has withered, break the stone, broken.
+- The Ferryman is "SOMEONE WAITS AT THE NEXT FIRE" from the first stone until you've met him.
+- Under it, Brightwater: who's home again, by the names you meet them by, and golden flies against the king's next reward. Nothing that hasn't happened yet.
 
 ### Errands (opt-in mini quests) **[LOCKED 2026-10-14]**
 Small, self-contained jobs from ordinary people. They're never required, but they're the main reason to talk to everyone and to poke into corners of the map.

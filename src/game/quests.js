@@ -778,39 +778,59 @@ export class QuestManager {
     return `${verb} ${names.join(', ')}`;
   }
 
-  // The main quest: find the king, break the Ward Stones, climb the Tower. It's read
-  // from the world's own flags, so it never gates anything and an old save lands on
-  // the right step. It's what's tracked whenever no errand is (state.tracked empty).
+  // The main quest: find the king, break the Ward Stones, go back to him, climb the Tower.
+  // It's read from the world's own flags, so it never gates anything and an old save lands
+  // on the right step. It's what's tracked whenever no errand is (state.tracked empty).
+  // It never gets ahead of the player: the Tower isn't named until the king has named it or
+  // you've stood at its door, and a stone isn't listed or pinned until you've found it.
   mainQuest() {
     const sc = this.sc;
     if (MAP || sc.state.lab || sc.flags.malgrimDefeated) return null; // (Aldermere's: a test map has no king)
     const title = "THE KING'S QUEST", wards = W.wards, down = this.brokenWards();
     if (!down && !sc.flags.metKing) return { title, text: 'FIND THE KING' };
-    if (down === wards.length) return { title, text: 'CLIMB THE NINTH TOWER' };
-    return { title, text: `BREAK THE WARD STONES (${down}/${wards.length})`, standing: wards.filter((w) => !sc.flags[w.flag]) };
+    if (down === wards.length) return { title, text: sc.flags.kingTower || sc.flags.towerWarned ? 'CLIMB THE NINTH TOWER' : 'RETURN TO THE KING' };
+    return { title, text: `BREAK THE WARD STONES (${down}/${wards.length})`, stones: true };
   }
 
-  // Where the main quest points (tile coords): the king, the nearest stone still up (the
-  // outer four come in any order), then the Tower's door.
+  // a stone the party knows of: the Vale's (the king names it), one already broken, or one on the explored map
+  stoneFound(w) { return w.id === 'vale' || !!this.sc.flags[w.flag] || !!this.sc.minimap?.isExplored(w.x, w.y); }
+
+  // Where the main quest points (tile coords): the king, the nearest stone you've found that's
+  // still up (the outer four come in any order), then the Tower's door.
   mainPin() {
     const m = this.mainQuest();
     if (!m) return null;
-    if (m.standing) {
+    if (m.stones) {
       const L = this.sc.leader, tx = L ? L.x / TILE : 0, ty = L ? L.y / TILE : 0;
-      const w = [...m.standing].sort((a, b) => Math.hypot(a.x - tx, a.y - ty) - Math.hypot(b.x - tx, b.y - ty))[0];
-      return { x: w.x, y: w.y };
+      const w = W.wards.filter((k) => !this.sc.flags[k.flag] && this.stoneFound(k)).sort((a, b) => Math.hypot(a.x - tx, a.y - ty) - Math.hypot(b.x - tx, b.y - ty))[0];
+      return w ? { x: w.x, y: w.y } : null;
     }
-    if (m.text === 'FIND THE KING') return { x: LANDMARKS.frog.x, y: LANDMARKS.frog.y };
+    if (m.text !== 'CLIMB THE NINTH TOWER') return { x: LANDMARKS.frog.x, y: LANDMARKS.frog.y };
     const door = W.warps.find((w) => w.tower === 'door');
     return door ? { x: door.x, y: door.y } : null;
   }
 
-  // Under the main quest in the journal: what the king said, then which stones are left.
-  mainNote() {
-    const m = this.mainQuest();
-    if (!m?.standing) return '';
-    if (m.standing.length === W.wards.length) return 'A STAIR IN THE RUINS LEADS DOWN TO ITS GUARDIAN';
-    return `STILL STANDING: ${m.standing.map((w) => W.regions.find((r) => r.id === w.region)?.name || w.region).join(', ')}`;
+  // The journal's rows under the main quest: each stone found and how far along it is, and how many are still out there.
+  mainStones() {
+    const f = this.sc.flags, found = W.wards.filter((w) => this.stoneFound(w));
+    const rows = found.map((w) => {
+      const stage = f[w.flag] ? 3 : f[w.warden] ? 2 : f[w.guardian] ? 2 : 1;
+      const text = f[w.flag] ? 'STONE BROKEN' : f[w.warden] ? 'BREAK THE STONE' : f[w.guardian] ? 'THE VINE HAS WITHERED. GO TO THE STONE' : 'FOLLOW THE VINE TO ITS DUNGEON';
+      return { name: W.regions.find((r) => r.id === w.region)?.name || w.region, text, stage };
+    });
+    return { rows, unfound: W.wards.length - found.length };
+  }
+
+  // Someone new to meet: the Ferryman, from the first stone until you've spoken (unnamed: he introduces himself).
+  mainHint() { return this.brokenWards() && !this.sc.flags.metFerryman ? 'SOMEONE WAITS AT THE NEXT FIRE YOU COME TO' : ''; }
+
+  // Who the stones and the rescues have brought back to Brightwater, by the names you'll meet them by.
+  homeAgain() { return ['greta', 'wick', 'orla', 'workbench', 'halloway', 'brew', 'aldric', 'bard', 'bess', 'wynn', 'hilde', 'inka', 'mayor'].map((id) => this.npc(id)).filter((n) => n && !n.hiddenNow).map((n) => n.name); }
+
+  // The king's golden flies, once you've some: how many, and what his next reward wants.
+  fliesLine() {
+    const st = this.sc.state, next = W.flyRewards[st.flyRewards];
+    return st.flies.length && next ? `GOLDEN FLIES: ${st.flies.length}. THE KING WANTS ${next.n}` : '';
   }
 
   // Where the tracked errand wants you to go (tile coords) for map pins.
