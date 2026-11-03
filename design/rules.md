@@ -106,3 +106,7 @@ Each of these shipped once and broke a playtest. Every new region, dungeon, room
    - **Check:** `node tools/comment-check.mjs` finds statements inside end-of-line comments.
 
 ---
+19. **Every foe and errand spot can be reached.**
+   - **The bug:** the deep pool east of the abbey sat in a pocket walled by the abbey and bog. Its leech swarm could be seen over the wall but never reached, and neither could the clapper the Drowned Bell errand sends you to dive for, Tide Charm or not.
+   - **The rule:** a pack, chest or errand spot has a way in: on foot, or by swimming from land you can walk to if it's meant to need the Tide Charm. Painting bog or water around a place counts as moving what's in it.
+   - **Check:** after changing a region's terrain, run `tools/region-check.js` for it and read every "can't be reached".

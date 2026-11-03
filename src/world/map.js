@@ -564,11 +564,14 @@ export function buildWorld() {
     if (d < 0.34) set(x, y, T.MARSH); else if (d < 1) set(x, y, T.WATER); else if (d < 1.25) set(x, y, T.SHALLOW);
   }
   set(125, 119, T.WALL); set(127, 121, T.WALL); // what's left of the mill walls
-  // the deep pool east of the abbey, where the bell clapper sank
-  for (let y = 94; y <= 104; y++) for (let x = 181; x <= 190; x++) {
-    const d = Math.hypot((x - 185.5) / 4.2, (y - 99) / 3.6) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;
-    if (d < 1) set(x, y, T.WATER); else if (d < 1.35) set(x, y, T.SHALLOW);
+  // the deep pool east of the abbey, where the bell clapper sank: firm ground
+  // around it, and round the abbey's corner from its north side
+  for (let y = 93; y <= 103; y++) for (let x = 180; x <= 191; x++) {
+    const d = Math.hypot((x - 185.5) / 3.4, (y - 99) / 2.9) + (vnoise(x / 3, y / 3, 40) - 0.5) * 0.25;
+    if (d < 1) set(x, y, T.WATER); else if (d < 1.3) set(x, y, T.SHALLOW); else if (d < 1.75) set(x, y, T.MARSH);
   }
+  rect(180, 93, 181, 101, T.MARSH);
+  rect(182, 93, 183, 94, T.MARSH);
   lap('features');
   // Lab dungeons: authored as text grids (src/data/dungeons.json)
   for (const d of Object.values(DUNGEONS)) {
