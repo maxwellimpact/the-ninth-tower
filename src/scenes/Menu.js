@@ -586,11 +586,11 @@ export class Menu extends Phaser.Scene {
     const st = this.g.state;
     panel(this.gfx, x, y, w, 28, C.night, C.slate);
     const tags = [RARITY[it.rarity].label, it.element ? it.element.toUpperCase() : null, it.passive ? 'ECHO' : null, it.trait ? TRAITS[it.trait]?.name : null].filter(Boolean).join(' - ');
-    const title = this.t(x + 4, y + 4, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col, w - 8);
+    const title = this.t(x + 4, y + 3, `${itemName(id)} - ${tags}`, 'font', RARITY[it.rarity].col, w - 8);
     if (title.full) this.playMarquee(title, true);
     const sockets = socketCount(id) ? `  SOCKETS: ${Array.from({ length: socketCount(id) }, (_, i) => (st.sockets[id]?.[i] ? gemName(st.sockets[id][i]) : 'EMPTY')).join(', ')}` : '';
     const line = it.desc || [statLine(it), it.trait ? TRAITS[it.trait]?.desc : null].filter(Boolean).join('  ');
-    this.t(x + 4, y + 14, line + sockets, 'fontPlain', undefined, w - 8, 2);
+    this.t(x + 4, y + 11, line + sockets, 'fontPlain', undefined, w - 8, 2);
   }
 
   // ------------------------------------------------------------------ CRAFT
