@@ -262,7 +262,7 @@ export class Hero extends Unit {
     this.texKey = bakeHero(this.scene, this.def.id, this.hs.equip, old);
     this.anim = '';
     this.sprite.setTexture(this.texKey, 'idle_down_0');
-    this.play(this.downed ? 'downed' : 'idle');
+    this.play(this.action?.type === 'harvest' ? this.action.anim : this.downed ? 'downed' : 'idle');
   }
 
   play(anim) {
